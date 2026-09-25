@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PropXchain Diagnostic</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #1e1e1e;
+            color: #d4d4d4;
+        }
+        h1 { color: #4ec9b0; }
+        h2 { color: #569cd6; margin-top: 30px; }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .success { background: #0e4429; border-left: 4px solid #2ea043; }
+        .error { background: #5a1e1e; border-left: 4px solid #f85149; }
+        .warning { background: #4d3800; border-left: 4px solid #d29922; }
+        .info { background: #0d1117; border-left: 4px solid #58a6ff; }
+        pre {
+            background: #0d1117;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            border: 1px solid #30363d;
+        }
+        button {
+            background: #238636;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        button:hover { background: #2ea043; }
+        button.danger {
+            background: #da3633;
+        }
+        button.danger:hover {
+            background: #f85149;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 PropXchain System Diagnostic</h1>
+
+    <div id="output"></div>
+
+    <h2>Actions</h2>
+    <button onclick="runDiagnostic()">Run Full Diagnostic</button>
+    <button onclick="clearLocalStorage()" class="danger">Clear localStorage</button>
+    <button onclick="testBlockchain()">Test Blockchain Connection</button>
+
+    <script type="module">
+        window.runDiagnostic = async function() {
+            const output = document.getElementById('output');
+            output.innerHTML = '<h2>Running Diagnostic...</h2>';
+
+            let html = '';
+
+            // Check localStorage
+            html += '<h2>📦 LocalStorage Status</h2>';
+            const user = localStorage.getItem('user');
+            const transactions = localStorage.getItem('transactions');
+            const token = localStorage.getItem('token');
+
+            if (user) {
+                try {
+                    const userData = JSON.parse(user);
+                    html += `<div class="status success">✅ User found: ${userData.name || userData.firstName + ' ' + userData.lastName}</div>`;
+                    html += `<pre>${JSON.stringify(userData, null, 2)}</pre>`;
+                } catch (e) {
+                    html += `<div class="status error">❌ Invalid user data: ${e.message}</div>`;
+                }
+            } else {
+                html += '<div class="status warning">⚠️ No user in localStorage</div>';
+            }
+
+            if (transactions) {
+                try {
+                    const txData = JSON.parse(transactions);
+                    html += `<div class="status info">📊 Transactions: ${Array.isArray(txData) ? txData.length : 'Invalid format'}</div>`;
+                    if (Array.isArray(txData)) {
+                        html += `<pre>${JSON.stringify(txData, null, 2)}</pre>`;
+                    }
+                } catch (e) {
+                    html += `<div class="status error">❌ Invalid transaction data: ${e.message}</div>`;
+                }
+            } else {
+                html += '<div class="status info">📊 No transactions in localStorage</div>';
+            }
+
+            // Check blockchain connection
+            html += '<h2>⛓️ Blockchain Connection</h2>';
+            try {
+                const { icpService } = await import('/src/services/icp.service.ts');
+                html += '<div class="status success">✅ ICP Service loaded</div>';
+
+                // Test getAllTransactions
+                try {
+                    const blockchainTx = await icpService.getAllTransactions();
+                    html += `<div class="status success">✅ Blockchain transactions: ${Array.isArray(blockchainTx) ? blockchainTx.length : 'Not an array!'}</div>`;
+                    if (Array.isArray(blockchainTx)) {
+                        html += `<pre>${JSON.stringify(blockchainTx, null, 2)}</pre>`;
+                    } else {
+                        html += `<div class="status error">❌ Blockchain returned: ${typeof blockchainTx}</div>`;
+                        html += `<pre>${JSON.stringify(blockchainTx, null, 2)}</pre>`;
+                    }
+                } catch (e) {
+                    html += `<div class="status error">❌ Failed to get transactions: ${e.message}</div>`;
+                    html += `<pre>${e.stack}</pre>`;
+                }
+
+                // Test getAllUsers
+                try {
+                    const blockchainUsers = await icpService.getAllUsers();
+                    html += `<div class="status success">✅ Blockchain users: ${Array.isArray(blockchainUsers) ? blockchainUsers.length : 'Not an array!'}</div>`;
+                    if (Array.isArray(blockchainUsers)) {
+                        html += `<pre>${JSON.stringify(blockchainUsers, null, 2)}</pre>`;
+                    }
+                } catch (e) {
+                    html += `<div class="status error">❌ Failed to get users: ${e.message}</div>`;
+                }
+
+            } catch (e) {
+                html += `<div class="status error">❌ Failed to load ICP service: ${e.message}</div>`;
+                html += `<pre>${e.stack}</pre>`;
+            }
+
+            output.innerHTML = html;
+        };
+
+        window.clearLocalStorage = function() {
+            if (confirm('Clear all localStorage data?')) {
+                localStorage.clear();
+                alert('localStorage cleared!');
+                location.reload();
+            }
+        };
+
+        window.testBlockchain = async function() {
+            const output = document.getElementById('output');
+            output.innerHTML = '<h2>Testing Blockchain...</h2>';
+
+            try {
+                const { icpService } = await import('/src/services/icp.service.ts');
+                const tx = await icpService.getAllTransactions();
+                output.innerHTML += `<div class="status success">✅ Response type: ${typeof tx}</div>`;
+                output.innerHTML += `<div class="status info">Is Array: ${Array.isArray(tx)}</div>`;
+                output.innerHTML += `<pre>${JSON.stringify(tx, null, 2)}</pre>`;
+            } catch (e) {
+                output.innerHTML += `<div class="status error">❌ ${e.message}</div>`;
+            }
+        };
+
+        // Auto-run on load
+        runDiagnostic();
+    </script>
+</body>
+</html>

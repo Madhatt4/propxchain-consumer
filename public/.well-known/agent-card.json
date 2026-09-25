@@ -1,0 +1,103 @@
+{
+  "protocolVersion": "0.3.0",
+  "name": "PropXchain Conveyancer",
+  "description": "Agent-facing access to PropXchain UK property conveyancing transactions on the Internet Computer: read transaction state, phase and checklist status, document proofs and property intelligence, and join a transaction via its TX-XXXX-XXXX invite code. The service endpoint speaks Model Context Protocol (JSON-RPC over streamable HTTP); the tools below are exposed as MCP tools rather than A2A message/send tasks.",
+  "url": "https://mcp.propxchain.com/mcp",
+  "preferredTransport": "JSONRPC",
+  "supportedInterfaces": [
+    {
+      "url": "https://mcp.propxchain.com/mcp",
+      "protocolBinding": "JSONRPC",
+      "protocolVersion": "0.3.0"
+    }
+  ],
+  "provider": {
+    "organization": "PropXchain Ltd",
+    "url": "https://propxchain.com"
+  },
+  "iconUrl": "https://propxchain.com/apple-touch-icon.png",
+  "documentationUrl": "https://propxchain.com/agent",
+  "version": "2.1.0",
+  "capabilities": {
+    "streaming": true,
+    "pushNotifications": false,
+    "stateTransitionHistory": false
+  },
+  "securitySchemes": {
+    "oauth2": {
+      "type": "oauth2",
+      "description": "Authorization server https://auth.propxchain.com (RFC 8414 metadata at /.well-known/oauth-authorization-server). Anonymous registration yields read-only scopes; consequential scopes need a human claim ceremony.",
+      "flows": {
+        "authorizationCode": {
+          "authorizationUrl": "https://auth.propxchain.com/authorize",
+          "tokenUrl": "https://auth.propxchain.com/token",
+          "scopes": {
+            "chain:read": "Read on-chain transaction, property and document records",
+            "tx:read": "Read transactions the agent has been invited to",
+            "panel:read": "Read conveyancer and provider panel options",
+            "quote:read": "Read quotes and pricing",
+            "aml:write": "Initiate AML / identity checks (requires human approval)",
+            "conveyancer:instruct": "Instruct a conveyancer (requires human approval)",
+            "exchange:confirm": "Confirm exchange of contracts (requires human approval)",
+            "completion:funds": "Release completion funds (requires human approval)",
+            "offline_access": "Refresh tokens"
+          }
+        }
+      }
+    }
+  },
+  "security": [{ "oauth2": ["chain:read", "tx:read"] }],
+  "defaultInputModes": ["text/plain", "application/json"],
+  "defaultOutputModes": ["application/json", "text/plain"],
+  "skills": [
+    {
+      "id": "join-transaction",
+      "name": "Join a transaction by invite code",
+      "description": "Adds the agent to a transaction's access list using the TX-XXXX-XXXX invite code the user shares. Idempotent.",
+      "tags": ["transactions", "onboarding"],
+      "examples": ["Join transaction TX-1234-ABCD as my assistant"]
+    },
+    {
+      "id": "read-transaction",
+      "name": "Read transaction state",
+      "description": "Returns a transaction's parties, phase, status, chain of linked transactions and outstanding items.",
+      "tags": ["transactions", "status"],
+      "examples": ["What's outstanding on my sale?", "List my PropXchain transactions"]
+    },
+    {
+      "id": "checklist",
+      "name": "Track and update the conveyancing checklist",
+      "description": "Reads phase checklists and marks items complete where the agent has been granted write access.",
+      "tags": ["checklists", "workflow"],
+      "examples": ["Which checklist items are still open?"]
+    },
+    {
+      "id": "documents",
+      "name": "Register and verify documents",
+      "description": "Lists documents on a transaction, registers a document's SHA-256 hash on-chain and verifies a file against its on-chain proof. Files never leave the user's device.",
+      "tags": ["documents", "proofs"],
+      "examples": ["Verify this TA6 against the chain"]
+    },
+    {
+      "id": "property-intel",
+      "name": "Property intelligence",
+      "description": "Returns HM Land Registry title data, search results and address intelligence for a property on a transaction.",
+      "tags": ["property", "hmlr", "searches"],
+      "examples": ["Summarise the title register for 12 Example Road"]
+    },
+    {
+      "id": "messaging",
+      "name": "Message transaction parties",
+      "description": "Posts a message into the transaction's shared thread visible to seller, buyer, conveyancer and agent.",
+      "tags": ["messaging"],
+      "examples": ["Tell the conveyancer the searches are back"]
+    },
+    {
+      "id": "explain-process",
+      "name": "Explain the conveyancing process",
+      "description": "Plain-English explanation of any stage of a UK sale or purchase and what the next step is.",
+      "tags": ["education"],
+      "examples": ["What happens between exchange and completion?"]
+    }
+  ]
+}

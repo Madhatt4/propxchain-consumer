@@ -1,0 +1,15 @@
+# CI secrets-scan config (gitleaks-action reads this file). Extends gitleaks' default rules with ONE allowlist:
+# a `key:` field whose value is a lowercase snake_case identifier (letters,
+# digits, underscore, dot; no uppercase, no base64 alphabet). Those are flag /
+# question ids in PropXchain fixtures (`key: 'missing_consents'`), never a
+# credential. Real API keys carry mixed case or digits-heavy alphabets and
+# still trip generic-api-key.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "snake_case identifier ids in a key: field (PropXchain fixtures)"
+regexTarget = "line"
+regexes = [
+  '''\bkey:\s*['"][a-z][a-z0-9_.]*['"]''',
+]

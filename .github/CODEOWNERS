@@ -1,0 +1,25 @@
+# Code owners for propxchain-consumer.
+#
+# CODEOWNERS only takes effect where branch protection requires review, so on a
+# solo repo that permits direct-to-main this is documentation rather than
+# enforcement. It is here so the boundary is already drawn if protection is
+# turned on or a second contributor joins.
+
+# Everything, by default.
+*                       @Madhatt4
+
+# --- Security-sensitive paths -------------------------------------------------
+# CI workflows hold the ICP deploy identity and the build-time secrets. A change
+# here can exfiltrate both, so it should never merge unreviewed.
+/.github/workflows/     @Madhatt4
+/.github/CODEOWNERS     @Madhatt4
+
+# Edge functions run with service-role credentials and third-party API keys
+# (Anthropic, Resend, Twilio, MHCLG EPC).
+/supabase/functions/    @Madhatt4
+
+# Auth and admin surfaces: registration paths feed the conveyancer panel, and
+# the admin panel is the only route onto the active panel.
+/src/pages/auth/        @Madhatt4
+/src/components/admin/  @Madhatt4
+/src/stores/authStore.ts @Madhatt4

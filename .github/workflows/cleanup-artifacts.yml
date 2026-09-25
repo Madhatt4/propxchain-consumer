@@ -1,0 +1,45 @@
+name: Cleanup old Actions artifacts
+
+# GitHub's purge of expired artifacts lags badly, so they keep counting
+# against the 0.5 GB account storage allowance. This sweeps anything past
+# its retention period once a week. Only deletes artifacts already flagged
+# expired:true — never a live build->deploy handoff artifact.
+
+on:
+  schedule:
+    - cron: '0 3 * * 1'  # Mondays 03:00 UTC
+  workflow_dispatch:
+
+# Least privilege: repo default token is read-only; grant write only here.
+permissions:
+  actions: write
+
+concurrency:
+  group: cleanup-artifacts
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete expired artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          ids=$(gh api --paginate \
+            "repos/${REPO}/actions/artifacts?per_page=100" \
+            -q '.artifacts[] | select(.expired==true) | .id')
+          count=$(printf '%s\n' "$ids" | grep -c . || true)
+          echo "Found ${count} expired artifact(s) to delete"
+          deleted=0
+          for id in $ids; do
+            if gh api -X DELETE "repos/${REPO}/actions/artifacts/${id}" >/dev/null 2>&1; then
+              deleted=$((deleted + 1))
+            else
+              echo "::warning::Failed to delete artifact ${id} (may already be purged)"
+            fi
+          done
+          echo "Deleted ${deleted}/${count} expired artifact(s)"
+          echo "### Artifact cleanup: deleted ${deleted}/${count} expired" >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- PropXchain mark. Geometry measured from the master lockup
+       (src/assets/brand/propxchain-logo-on-light.png), whose mark occupies a
+       583x474 box: chevron roof, two blocks split by a three-link chain, key
+       below. Drawn in those coordinates, then scaled to fit the tile.
+       The links' end-holes are omitted: they are sub-pixel below ~64px and
+       only muddy the silhouette at favicon size. -->
+  <rect width="512" height="512" rx="92" fill="#0A0F1E"/>
+  <g transform="translate(41 81) scale(0.7376)" fill="#00D2BE">
+    <path d="M291 0 L583 178 L519 178 L291 46 L64 178 L0 178 Z"/>
+    <rect x="167" y="170" width="103" height="226" rx="13"/>
+    <rect x="312" y="170" width="103" height="226" rx="13"/>
+    <rect x="271" y="206" width="40" height="26" rx="13"/>
+    <rect x="271" y="279" width="40" height="26" rx="13"/>
+    <rect x="271" y="351" width="40" height="26" rx="13"/>
+    <rect x="269" y="407" width="46" height="36" rx="13"/>
+    <rect x="283" y="435" width="17" height="39" rx="5"/>
+  </g>
+</svg>

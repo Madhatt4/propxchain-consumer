@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- Google tag (gtag.js). Static so Google's tag detector sees it in the
+         raw HTML. send_page_view is off: AnalyticsTracker reports every React
+         Router navigation instead, since gtag fires once per full load. -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-D01CE0HY6L"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-D01CE0HY6L', { send_page_view: false });
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#0D9488" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="PropXchain" />
+    <meta name="description" content="PropXchain coordinates UK property transactions on a single shared ledger. One source of truth for sellers, buyers, conveyancers, and developers, visible to everyone, falsifiable by no one." />
+    <meta name="keywords" content="conveyancing, property transaction, sell house, UK property, PropXchain, online conveyancing, property seller, TA6, TA10" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://propxchain.com/" />
+    <meta property="og:title" content="Sell or Buy Your Home Online — Free to Start · PropXchain" />
+    <meta property="og:description" content="Run your UK property sale or purchase yourself for free: pick your own providers and see every price before you commit. Add the optional £75 AI co-pilot to read your HMLR title and search results in plain English and tailor your conveyancer quote. Real-time, on-chain audit trail." />
+    <meta property="og:image" content="https://propxchain.com/og-image.png" />
+    <meta property="og:site_name" content="PropXchain" />
+    
+    <!-- Twitter / X -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://propxchain.com/" />
+    <meta name="twitter:title" content="Sell or Buy Your Home Online — Free to Start · PropXchain" />
+    <meta name="twitter:description" content="Run your UK property sale or purchase yourself for free: pick your own providers and see every price before you commit. Add the optional £75 AI co-pilot to read your HMLR title and search results in plain English and tailor your conveyancer quote. Real-time, on-chain audit trail." />
+    <meta name="twitter:image" content="https://propxchain.com/og-image.png" />
+    
+    <!-- Canonical -->
+    <link rel="canonical" href="https://propxchain.com/" />
+    
+    <title>Sell or Buy Your Home Online — UK Conveyancing | PropXchain</title>
+
+    <!-- Fonts are loaded non-render-blocking: fetch via media="print" then flip
+         to all on load. Every family ships display=swap, so text paints
+         immediately in the fallback stack and swaps in without blocking FCP. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,300;1,9..144,400&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@300;400;500&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+    <noscript>
+      <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,300;1,9..144,400&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@300;400;500&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    </noscript>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- Agentic Resource Discovery manifest (rel="ard" is current, "ai-catalog" the predecessor) -->
+    <link rel="ard" href="/.well-known/ard.json" />
+    <link rel="ai-catalog" href="/.well-known/ai-catalog.json" />
+
+    <!-- AI-readable references (llms.txt standard) -->
+    <link rel="alternate" type="text/plain" title="LLM summary" href="/llms.txt" />
+    <link rel="alternate" type="text/plain" title="LLM full documentation" href="/llms-full.txt" />
+
+    <!-- Structured data: Organization -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "PropXchain",
+      "legalName": "PropXchain Ltd",
+      "url": "https://propxchain.com",
+      "logo": "https://propxchain.com/og-image.png",
+      "description": "On-chain, consumer-direct UK property conveyancing platform. Start free — pick your own providers and see every price up front. An optional £75 AI co-pilot reads your title and searches in plain English and tailors your conveyancer quote.",
+      "foundingDate": "2024",
+      "identifier": {
+        "@type": "PropertyValue",
+        "propertyID": "UK Companies House",
+        "value": "17018978"
+      },
+      "address": {
+        "@type": "PostalAddress",
+        "addressCountry": "GB"
+      },
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "email": "info@propxchain.com",
+        "contactType": "customer support",
+        "areaServed": "GB",
+        "availableLanguage": "en"
+      },
+      "sameAs": [
+        "https://lzpic-oaaaa-aaaaa-qcwva-cai.icp0.io/"
+      ]
+    }
+    </script>
+
+    <!-- Structured data: WebSite -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "PropXchain",
+      "url": "https://propxchain.com",
+      "inLanguage": "en-GB",
+      "publisher": {
+        "@type": "Organization",
+        "name": "PropXchain Ltd"
+      }
+    }
+    </script>
+
+    <!-- Structured data: Service (free Starter + £75 AI co-pilot) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Service",
+      "serviceType": "Online Property Conveyancing",
+      "provider": {
+        "@type": "Organization",
+        "name": "PropXchain Ltd",
+        "url": "https://propxchain.com"
+      },
+      "areaServed": {
+        "@type": "Country",
+        "name": "United Kingdom"
+      },
+      "audience": {
+        "@type": "Audience",
+        "audienceType": "Property sellers, property buyers, conveyancers, estate agents"
+      },
+      "description": "Consumer-direct, blockchain-verified UK property conveyancing. Run your own transaction free, pick your own providers and see every price up front, complete TA6 and TA10 forms, and track every milestone on-chain in real time. An optional £75 AI co-pilot reads your title and searches and tailors your conveyancer quote.",
+      "offers": {
+        "@type": "AggregateOffer",
+        "priceCurrency": "GBP",
+        "lowPrice": "0",
+        "highPrice": "75",
+        "offerCount": "2",
+        "description": "Starter is free: pick your own providers and see every price before you commit. Premium adds a £75-per-transaction AI co-pilot.",
+        "availability": "https://schema.org/PreOrder",
+        "url": "https://propxchain.com/#cost"
+      }
+    }
+    </script>
+
+    <!-- Structured data: FAQ -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "How much does PropXchain cost?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Starting is free. On the Starter tier you run your own transaction and see every provider's price before you commit — there is no platform fee. The optional Premium tier adds a £75-per-transaction AI co-pilot that reads your HM Land Registry title and search results in plain English and tailors your conveyancer quote."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Why is UK conveyancing so slow?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "UK conveyancing takes 20 to 24 weeks on average. Most of that time is spent waiting for solicitors to chase each other while information travels through intermediaries. Around 30% of transactions collapse before completion, largely because buyers and sellers have no visibility into progress."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How does PropXchain work?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "You add the property, complete the TA6 and TA10 forms, pick your own providers and order your own searches, and every milestone is recorded on the Internet Computer blockchain. All parties (seller, buyer, conveyancer, estate agent) see the same live view of the transaction."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is the blockchain audit trail legally valid?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Every action is recorded on-chain on the Internet Computer. Documents stay local to your device. Only their SHA-256 hashes are written to the blockchain, so verification is cryptographic but GDPR-compliant. Exchange of contracts is signed via tmSign QES (qualified electronic signature) for legal validity in England and Wales."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is there a platform fee?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No. Both buyers and sellers can run a transaction free on the Starter tier, paying their own providers direct. The only optional charge is the £75-per-transaction Premium AI co-pilot."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Does PropXchain connect to HM Land Registry?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. PropXchain is integrated directly with HM Land Registry's Business Gateway, so title checks, official copies and registration of dealings happen inside the platform."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What about AML and identity checks?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "AML and KYC checks are handled in a single step via a regulated provider. Once completed, the AML certificate is stored on-chain and is reusable with lenders and other regulated parties, so you don't have to repeat the same check multiple times."
+          }
+        }
+      ]
+    }
+    </script>
+  </head>
+  <body>
+    <script>
+      // Apply saved theme before React mounts to prevent flash of wrong theme
+      try {
+        var s = JSON.parse(localStorage.getItem('settings') || '{}');
+        if (s.theme === 'dark') document.documentElement.classList.add('dark');
+      } catch(e) {}
+      // Marketing landing uses its own data-theme (default light) on <html>,
+      // persisted to localStorage['px-theme']. Apply before paint so dark-mode
+      // returners don't flash light. Only the .px-landing-scoped CSS reads this.
+      try {
+        var pt = localStorage.getItem('px-theme') || 'light';
+        document.documentElement.setAttribute('data-theme', pt);
+      } catch(e) { document.documentElement.setAttribute('data-theme', 'light'); }
+    </script>
+    <script>
+      // BrowserRouter auth routing. External redirects (Supabase auth, Stripe)
+      // now land on real paths, which the asset canister serves index.html for
+      // and React Router resolves natively — so NO bare-path → hash rewrite is
+      // needed any more. We only step in for Supabase auth params that land on
+      // a path other than /auth/callback and need routing to the right SPA page.
+      // /auth/callback itself is handled entirely by the AuthCallback component
+      // (it reads ?code / ?token_hash / #access_token directly), so we must
+      // leave it untouched — otherwise the ?type= branch below would steal a
+      // token_hash/PKCE callback and wrongly bounce it to /login.
+      (function() {
+        var p = location.pathname;
+        var s = location.search;
+        var h = location.hash;
+        if (p === '/auth/callback') return;
+
+        // Supabase confirmation/recovery links carrying ?type=... on a bare path
+        // (e.g. the hosted /auth/confirm endpoint or the site root).
+        var authType = new URLSearchParams(s).get('type');
+        if (authType) {
+          var dest = '/';
+          if (authType === 'recovery') dest = '/reset-password';
+          else if (authType === 'signup' || authType === 'magiclink') dest = '/login';
+          else if (authType === 'invite') dest = '/join';
+          if (p !== dest) { location.replace(location.origin + dest + s); return; }
+        }
+
+        // Legacy implicit flow: access_token in the hash fragment on a
+        // non-callback path. Route by type, preserving the tokens as a query.
+        if (h && h.indexOf('access_token=') !== -1 && h.indexOf('type=') !== -1) {
+          var hType = new URLSearchParams(h.substring(1)).get('type');
+          var dest2 = hType === 'recovery' ? '/reset-password' : '/login';
+          if (p !== dest2) { location.replace(location.origin + dest2 + '?' + h.substring(1)); return; }
+        }
+      })();
+    </script>
+    <div id="root">
+      <!-- SEO fallback content for non-JS crawlers (GPTBot, ClaudeBot, etc.).
+           React's createRoot replaces this on mount, so real users never see it. -->
+      <style>
+        #seo-fallback{display:none;font-family:system-ui,-apple-system,sans-serif;max-width:72ch;margin:4rem auto;padding:0 1.5rem;color:#1e293b;line-height:1.6}
+        #seo-fallback h1{font-size:2rem;margin:0 0 1rem}
+        #seo-fallback h2{font-size:1.35rem;margin:2rem 0 .75rem;color:#0f172a}
+        #seo-fallback h3{font-size:1.05rem;margin:1rem 0 .35rem}
+        #seo-fallback p,#seo-fallback li{margin:.35rem 0}
+        #seo-fallback ul{padding-left:1.25rem}
+        #seo-fallback .muted{color:#64748b;font-size:.9rem}
+      </style>
+      <noscript><style>#seo-fallback{display:block!important}</style></noscript>
+      <main id="seo-fallback" role="main" aria-label="Loading PropXchain. Summary for assistive technology and search crawlers">
+        <p class="muted">Loading PropXchain…</p>
+        <h1>Sell or buy your home for free. Add a £75 AI co-pilot when you want it.</h1>
+        <p>PropXchain is the online way to sell or buy a home in the UK. Start free on the Starter tier: pick your own providers and see every price before you commit — there is no platform fee. The optional <strong>£75 Premium AI co-pilot</strong> reads your HM Land Registry title and search results in plain English, flags what matters, and tailors your conveyancer quote to the real complexity of your transaction. Conveyancers on the CLC-verified panel join free and quote each job per transaction from a pre-assembled brief: HMLR title pulled, searches returned, and any enquiries surfaced by AI document review. Every milestone is recorded on the Internet Computer blockchain and visible in real time to seller, buyer, conveyancer and estate agent.</p>
+
+        <section aria-labelledby="problem">
+          <h2 id="problem">Why UK conveyancing is broken</h2>
+          <ul>
+            <li><strong>20–24 weeks</strong> to complete on average. Most of it spent waiting for solicitors to chase each other.</li>
+            <li><strong>£1,500–£2,500</strong> average seller cost, most of which is admin work rather than legal work.</li>
+            <li><strong>30%+ of transactions collapse</strong> before completion, largely because buyers and sellers have no visibility.</li>
+            <li><strong>Zero real-time visibility</strong>:all information flows through solicitors who chase each other while you wait.</li>
+          </ul>
+        </section>
+
+        <section aria-labelledby="how">
+          <h2 id="how">How PropXchain works</h2>
+          <ol>
+            <li><strong>Add your property</strong>:list the property on-chain in minutes.</li>
+            <li><strong>Complete your forms</strong>:guided TA6 (Property Information) and TA10 (Fixtures and Fittings).</li>
+            <li><strong>Order your searches</strong> yourself (local authority, drainage, environmental): pick your own provider and see the price before you commit.</li>
+            <li><strong>Everyone sees the same view</strong>:seller, buyer, conveyancer, estate agent share one live transaction.</li>
+            <li><strong>Exchange and complete</strong> with qualified electronic signatures (tmSign QES) and FCA-regulated escrow.</li>
+          </ol>
+        </section>
+
+        <section aria-labelledby="features">
+          <h2 id="features">What PropXchain does</h2>
+          <ul>
+            <li><strong>Immutable audit trail</strong> on the Internet Computer; 12 canisters on ICP mainnet.</li>
+            <li><strong>HM Land Registry</strong> direct via the Business Gateway; title checks and registration in one place.</li>
+            <li><strong>AML and KYC in one step</strong>. Certificate stored on-chain and reusable with lenders.</li>
+            <li><strong>GDPR-compliant documents</strong>:only SHA-256 hashes on-chain, files stay on your device.</li>
+            <li><strong>Instant milestone alerts</strong> by email and in-app.</li>
+            <li><strong>Escrow you can verify</strong>:FCA-regulated, on-chain audit of every payment.</li>
+            <li><strong>Oscar AI assistant</strong> guides you through each step and analyses documents.</li>
+          </ul>
+        </section>
+
+        <section aria-labelledby="cost">
+          <h2 id="cost">Transparent pricing</h2>
+          <p><strong>Free to start.</strong> Run your own sale or purchase on the Starter tier and see every provider's price before you commit — no platform fee. Add the optional <strong>£75 AI co-pilot</strong> (Premium) to have your title and searches read in plain English and your conveyancer quote tailored to the real complexity of your transaction. Conveyancer fees are quoted per transaction and never marked up.</p>
+        </section>
+
+        <section aria-labelledby="who">
+          <h2 id="who">Who it's for</h2>
+          <ul>
+            <li><strong>Sellers</strong>:take control of your sale and save thousands.</li>
+            <li><strong>Buyers</strong>:free access, full visibility into every milestone.</li>
+            <li><strong>Conveyancers and solicitors</strong>:a shared workspace with every party on the same page.</li>
+            <li><strong>Estate agents</strong>:real-time progress for every listing.</li>
+          </ul>
+        </section>
+
+        <section aria-labelledby="help">
+          <h2 id="help">Help &amp; Support</h2>
+          <p>Plain-English guides for every stage of your move &mdash; Getting Started, Selling, Buying, Searches &amp; Legal, and Industry &amp; Reform. Read them in <a href="/resources">Resources</a>.</p>
+        </section>
+
+        <section aria-labelledby="faq">
+          <h2 id="faq">Frequently asked questions</h2>
+
+          <h3>How much does PropXchain cost?</h3>
+          <p>Starting is free — you run your own transaction and see every provider's price before you commit, with no platform fee. The optional £75 Premium AI co-pilot reads your title and searches in plain English and tailors your conveyancer quote.</p>
+
+          <h3>Is the blockchain audit trail legally valid in England and Wales?</h3>
+          <p>Yes. Every action is recorded on the Internet Computer. Documents themselves stay on your device. Only their SHA-256 hashes are written to the blockchain, which keeps verification cryptographic but GDPR-compliant. Exchange of contracts is signed via tmSign QES for legal validity.</p>
+
+          <h3>Does PropXchain connect to HM Land Registry?</h3>
+          <p>Yes. PropXchain is integrated with HM Land Registry's Business Gateway, so title checks, official copies and registration of dealings happen inside the platform.</p>
+
+          <h3>What about money laundering (AML) and identity (KYC) checks?</h3>
+          <p>AML and KYC checks are handled in a single step via a regulated provider. The resulting AML certificate is stored on-chain and reusable with lenders and other regulated parties.</p>
+
+          <h3>Is there a platform fee?</h3>
+          <p>No. Buyers and sellers both use the Starter tier free, paying their own providers direct. The only optional charge is the £75 Premium AI co-pilot.</p>
+
+          <h3>Which blockchain does PropXchain use?</h3>
+          <p>The Internet Computer Protocol (ICP). PropXchain runs 12 canisters on ICP mainnet. There is no gas fee for users.</p>
+
+          <h3>Does PropXchain replace my solicitor?</h3>
+          <p>No. PropXchain is the coordination and verification platform. You still instruct a regulated conveyancer or solicitor; PropXchain simply removes the admin overhead so they can focus on legal work.</p>
+        </section>
+
+        <section aria-labelledby="org">
+          <h2 id="org">About PropXchain</h2>
+          <p>PropXchain Ltd is a UK company (Companies House registration <strong>17018978</strong>) building on-chain conveyancing infrastructure for the UK property market. The platform is currently open for waitlist sign-ups at <a href="https://propxchain.com/#notify">propxchain.com</a>. For AI agents and integrators, see <a href="/llms.txt">llms.txt</a> and <a href="/llms-full.txt">llms-full.txt</a>.</p>
+        </section>
+
+        <noscript>
+          <p><strong>JavaScript is required to use the PropXchain app.</strong> Please enable JavaScript in your browser. The content above is a summary of what the app provides.</p>
+        </noscript>
+      </main>
+    </div>
+    <script>
+      // Clear stale service workers from old deployments that cache outdated content
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+          registrations.forEach(function(registration) {
+            registration.unregister();
+          });
+          // If we had a stale SW, clear all caches and reload to get fresh content
+          if (registrations.length > 0 && 'caches' in window) {
+            caches.keys().then(function(names) {
+              return Promise.all(names.map(function(name) { return caches.delete(name); }));
+            }).then(function() {
+              // Only reload once — use sessionStorage flag to prevent loop
+              if (!sessionStorage.getItem('sw-cleared')) {
+                sessionStorage.setItem('sw-cleared', '1');
+                location.reload();
+              }
+            });
+          }
+        });
+      }
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

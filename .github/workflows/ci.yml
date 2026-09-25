@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  # Manual re-run. GitHub blocks retrying a run once it has aged out or used its
+  # attempts, so a run lost to an Actions-minutes outage could otherwise only be
+  # revived by pushing a dummy commit. This lets it be re-fired from the UI/CLI.
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: install + build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check
+        run: pnpm type-check
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Test
+        # `pnpm test:run` (vitest single pass), NOT `pnpm test`, which starts
+        # vitest in watch mode and hangs the runner until the job times out.
+        run: pnpm test:run
+
+      - name: Check explainer rubric stays in the cached system field
+        # Invariant prompt text interpolated into `messages` beside per-call
+        # bytes destroys the prompt cache for every request. Grep-level guard.
+        run: bash scripts/check-explainer-rubric.sh
+
+      - name: Check canister access stays behind core-client
+        # The contributor rules have carried this since A3.1 as an audit command that
+        # "must always return zero hits", and nothing ever ran it — so it drifted.
+        # Checks real imports, not textual mentions: a comment explaining why a
+        # file avoids @dfinity is the decoupling being documented, not broken.
+        run: node scripts/check-canister-decoupling.mjs
+
+      - name: Check the builder portal uses theme tokens
+        # The builder pages drifted to Tailwind greys while the dashboard used
+        # the theme variables; #383 swept 31 files to reconcile them. This
+        # keeps the next builder page on the tokens.
+        run: node scripts/check-builder-theme-tokens.mjs
+
+      - name: Check no file claims to be proprietary
+        # The repo is AGPL-3.0-or-later. 613 files once carried a proprietary
+        # notice that contradicted the LICENSE; this stops a copied file
+        # bringing it back.
+        run: node scripts/check-license-headers.mjs
+
+      - name: Build
+        run: pnpm build
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+
+      - name: Contract smoke test
+        # Trivial smoke: @propxchain/core-client must import and instantiate.
+        # Sharpens in A3.1 (expanded surface) and A7 (full cross-repo contract).
+        run: node --input-type=module -e "import('@propxchain/core-client').then(m => { const c = new m.PropXchainClient(); if (!c.transactionManager) throw new Error('core-client missing transactionManager'); console.log('core-client smoke OK'); })"

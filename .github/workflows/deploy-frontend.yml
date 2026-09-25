@@ -1,0 +1,474 @@
+name: Build, Verify & Deploy frontend
+
+# This workflow builds + verifies the frontend, then auto-deploys to ICP
+# on push to main. Deploy uses the consumer-deploy CI identity (a controller
+# of both asset canisters, with Prepare + Commit) and runs `dfx deploy` in
+# default upgrade mode — never `--mode reinstall`, which would wipe the
+# controller ACL.
+#
+# History: the 2026-04-23 deploy outage was a silent CanisterReject
+# masked by the icp-api.io boundary node, on top of a missing Prepare
+# ACL for the CI identity. Both root causes are fixed: dfx.json points at
+# ic0.app and the CI identity is authorised on both u4idr and lzpic with
+# Prepare + Commit. The deploy job below also pins the principal to the CI
+# identity's literal value,
+# so a wrong PEM in the secret fails fast instead of silently no-op'ing.
+#
+# Manual fallback (if CI deploy is reverted): /deploy-consumer or the
+# WSL dfx flow in docs/plans/chunks/RUNBOOK.md.
+#
+# Security scan M7 (2026-09-24): the deploy job ships the EXACT dist that
+# build-verify checked, from a folder holding only dfx.json,
+# canister_ids.json and dist/. With no package.json there, dfx has no
+# `npm run build` to run, so no dependency code executes while the deploy
+# PEM is on disk. Every action is pinned to a commit SHA, and the token is
+# read-only.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "public/**"
+      - "scripts/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "vite.config.ts"
+      - "index.html"
+      - "dfx.json"
+      - "canister_ids.json"
+      - ".github/workflows/deploy-frontend.yml"
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: "20"
+  DFX_VERSION: "0.30.1"
+  DFX_WARNING: "-mainnet_plaintext_identity"
+
+permissions:
+  contents: read
+
+jobs:
+  build-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: build-verify-frontend-${{ github.ref }}
+      cancel-in-progress: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5
+
+      - name: Setup Node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify build env secrets
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_RIGHTMOVE_WORKER_URL: ${{ secrets.VITE_RIGHTMOVE_WORKER_URL }}
+          VITE_PAYMENT_WORKER_URL: ${{ secrets.VITE_PAYMENT_WORKER_URL }}
+          VITE_ONESEARCH_WORKER_URL: ${{ secrets.VITE_ONESEARCH_WORKER_URL }}
+          VITE_GROUNDSURE_WORKER_URL: ${{ secrets.VITE_GROUNDSURE_WORKER_URL }}
+          VITE_AML_WORKER_URL: ${{ secrets.VITE_AML_WORKER_URL }}
+          VITE_TMGROUP_WORKER_URL: ${{ secrets.VITE_TMGROUP_WORKER_URL }}
+        run: |
+          if [ -z "$VITE_SUPABASE_URL" ]; then
+            echo "::error::VITE_SUPABASE_URL secret is empty or missing"
+            exit 1
+          fi
+          if [ -z "$VITE_SUPABASE_ANON_KEY" ]; then
+            echo "::error::VITE_SUPABASE_ANON_KEY secret is empty or missing"
+            exit 1
+          fi
+          if [ -z "$VITE_RIGHTMOVE_WORKER_URL" ]; then
+            echo "::error::VITE_RIGHTMOVE_WORKER_URL secret is empty or missing"
+            exit 1
+          fi
+          if [ -z "$VITE_PAYMENT_WORKER_URL" ]; then
+            echo "::error::VITE_PAYMENT_WORKER_URL secret is empty or missing"
+            exit 1
+          fi
+          if [ -z "$VITE_ONESEARCH_WORKER_URL" ]; then
+            echo "::error::VITE_ONESEARCH_WORKER_URL secret is empty or missing"
+            exit 1
+          fi
+          # GROUNDSURE_ENABLED is true, so an empty URL here would not fail the
+          # build — groundsure.service.ts would just mock every order silently.
+          # Fail the deploy instead.
+          if [ -z "$VITE_GROUNDSURE_WORKER_URL" ]; then
+            echo "::error::VITE_GROUNDSURE_WORKER_URL secret is empty or missing — GROUNDSURE_ENABLED is true, so this would ship a build that silently mocks every Groundsure order"
+            exit 1
+          fi
+          # This guard is CONDITIONAL on AML_ENABLED's actual value in
+          # src/config/features.ts, read fresh on every run rather than
+          # asserted here — unlike Groundsure/tmGroup, this flag is OFF
+          # today, so a missing secret is currently harmless (aml.service is
+          # unreachable regardless of the URL) and must not fail every other
+          # team's deploy. The moment the flag flips to true, this starts
+          # hard-failing: an empty URL would otherwise ship a build where
+          # aml.service's assertEnabled() throws "ID & AML checks are not
+          # available yet" for every caller — silently at build time, only
+          # surfacing to users in production. If the flag's value can't be
+          # determined at all (file moved, pattern changed), fail loudly
+          # rather than silently assume it is off.
+          AML_FLAG_MATCHES=$(grep -cE '^[[:space:]]*AML_ENABLED[[:space:]]*:[[:space:]]*(true|false)' src/config/features.ts || true)
+          if [ "$AML_FLAG_MATCHES" != "1" ]; then
+            echo "::error::Could not find exactly one 'AML_ENABLED: true|false' assignment in src/config/features.ts (found $AML_FLAG_MATCHES matches) — refusing to assume the flag is off"
+            exit 1
+          fi
+          # Both patterns are anchored to the start of the line (whitespace
+          # only), so a COMMENTED occurrence such as `// AML_ENABLED: true`
+          # in a JSDoc example or a leftover note cannot be counted or read
+          # as the value — that would hard-fail a deploy over a comment.
+          # Extract the VALUE at its position right after the colon, not a
+          # substring search over the whole line — a trailing comment like
+          # "// flip to true once..." on the same line would otherwise match
+          # grep -q true and hard-fail a deploy while the flag is still off.
+          AML_FLAG_VALUE=$(sed -nE 's/^[[:space:]]*AML_ENABLED[[:space:]]*:[[:space:]]*(true|false).*/\1/p' src/config/features.ts)
+          if [ "$AML_FLAG_VALUE" != "true" ] && [ "$AML_FLAG_VALUE" != "false" ]; then
+            echo "::error::Could not extract AML_ENABLED's value from src/config/features.ts (got '$AML_FLAG_VALUE') — refusing to assume the flag is off"
+            exit 1
+          fi
+          if [ "$AML_FLAG_VALUE" = "true" ]; then
+            if [ -z "$VITE_AML_WORKER_URL" ]; then
+              echo "::error::VITE_AML_WORKER_URL secret is empty or missing — AML_ENABLED is true, so this would ship a build where every ID & AML check fails with a 'not available' error"
+              exit 1
+            fi
+          else
+            echo "AML_ENABLED is false in src/config/features.ts — VITE_AML_WORKER_URL not required yet (this guard enforces itself automatically once the flag flips on)"
+          fi
+          # TMGROUP_ENABLED is true. tmgroup.service fails closed rather than
+          # mocking — a fabricated tmGroup price is the bug we removed — so an
+          # empty URL ships a card that can never quote or order.
+          if [ -z "$VITE_TMGROUP_WORKER_URL" ]; then
+            echo "::error::VITE_TMGROUP_WORKER_URL secret is empty or missing — TMGROUP_ENABLED is true, so every tmGroup quote and order would fail"
+            exit 1
+          fi
+          echo "Build env secrets present (URL: ${#VITE_SUPABASE_URL} chars, ANON_KEY: ${#VITE_SUPABASE_ANON_KEY} chars, RIGHTMOVE: ${#VITE_RIGHTMOVE_WORKER_URL} chars, PAYMENT: ${#VITE_PAYMENT_WORKER_URL} chars, ONESEARCH: ${#VITE_ONESEARCH_WORKER_URL} chars, GROUNDSURE: ${#VITE_GROUNDSURE_WORKER_URL} chars)"
+          # Sanity check anon key format — legacy JWTs start with eyJ and are >=200 chars
+          if [ ${#VITE_SUPABASE_ANON_KEY} -lt 100 ]; then
+            echo "::warning::VITE_SUPABASE_ANON_KEY is only ${#VITE_SUPABASE_ANON_KEY} chars — legacy Supabase JWTs are typically 200+ chars. If this is a 'sb_publishable_*' key, verify it's the correct key format for your app."
+          fi
+
+      - name: Build
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_RIGHTMOVE_WORKER_URL: ${{ secrets.VITE_RIGHTMOVE_WORKER_URL }}
+          VITE_PAYMENT_WORKER_URL: ${{ secrets.VITE_PAYMENT_WORKER_URL }}
+          VITE_ONESEARCH_WORKER_URL: ${{ secrets.VITE_ONESEARCH_WORKER_URL }}
+          VITE_GROUNDSURE_WORKER_URL: ${{ secrets.VITE_GROUNDSURE_WORKER_URL }}
+          VITE_AML_WORKER_URL: ${{ secrets.VITE_AML_WORKER_URL }}
+          VITE_TMGROUP_WORKER_URL: ${{ secrets.VITE_TMGROUP_WORKER_URL }}
+          VITE_ADMIN_PRINCIPALS: ${{ secrets.VITE_ADMIN_PRINCIPALS }}
+          VITE_MAINTENANCE_MODE: ${{ vars.VITE_MAINTENANCE_MODE }}
+          VITE_VC_DEMO: ${{ vars.VITE_VC_DEMO }}
+          VITE_TITLE_WORKER_URL: ${{ vars.VITE_TITLE_WORKER_URL }}
+          VITE_CARTO_BASEMAPS_KEY: ${{ vars.VITE_CARTO_BASEMAPS_KEY }}
+        run: |
+          # Confirm process.env has each VITE_ var right before pnpm build —
+          # if a length is 0 here, the secret didn't make it into this step's
+          # process env, which is the only place Vite reads from in CI.
+          echo "Pre-build process.env audit:"
+          echo "  VITE_SUPABASE_URL:        ${#VITE_SUPABASE_URL} chars"
+          echo "  VITE_SUPABASE_ANON_KEY:   ${#VITE_SUPABASE_ANON_KEY} chars"
+          echo "  VITE_RIGHTMOVE_WORKER_URL: ${#VITE_RIGHTMOVE_WORKER_URL} chars"
+          echo "  VITE_PAYMENT_WORKER_URL:  ${#VITE_PAYMENT_WORKER_URL} chars"
+          echo "  VITE_ONESEARCH_WORKER_URL: ${#VITE_ONESEARCH_WORKER_URL} chars"
+          echo "  VITE_GROUNDSURE_WORKER_URL: ${#VITE_GROUNDSURE_WORKER_URL} chars"
+          echo "  VITE_AML_WORKER_URL:      ${#VITE_AML_WORKER_URL} chars"
+          echo "  VITE_ADMIN_PRINCIPALS:    ${#VITE_ADMIN_PRINCIPALS} chars"
+          if [ -z "$VITE_SUPABASE_URL" ] || [ -z "$VITE_SUPABASE_ANON_KEY" ]; then
+            echo "::error::Supabase env vars not visible to pnpm build — secrets aren't reaching this step"
+            exit 1
+          fi
+          pnpm build
+
+      - name: Verify build output contains baked env vars
+        env:
+          # Re-import so the verification can match secret values against
+          # bundle contents. Worker URLs are non-sensitive but kept in
+          # secrets for parity; ANON_KEY is sensitive.
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_RIGHTMOVE_WORKER_URL: ${{ secrets.VITE_RIGHTMOVE_WORKER_URL }}
+          VITE_PAYMENT_WORKER_URL: ${{ secrets.VITE_PAYMENT_WORKER_URL }}
+          VITE_ONESEARCH_WORKER_URL: ${{ secrets.VITE_ONESEARCH_WORKER_URL }}
+          VITE_GROUNDSURE_WORKER_URL: ${{ secrets.VITE_GROUNDSURE_WORKER_URL }}
+          VITE_AML_WORKER_URL: ${{ secrets.VITE_AML_WORKER_URL }}
+          VITE_TMGROUP_WORKER_URL: ${{ secrets.VITE_TMGROUP_WORKER_URL }}
+        run: |
+          set -e
+          if [ -z "$(ls dist/assets/*.js 2>/dev/null)" ]; then
+            echo "::error::No dist/assets/*.js produced by build"
+            exit 1
+          fi
+          echo "Chunks produced:"
+          ls -lah dist/assets/*.js | awk '{print "  " $9 " (" $5 ")"}'
+
+          fail=0
+          # The full Supabase URL (including https://) is only present when
+          # VITE_SUPABASE_URL was correctly substituted by Vite. The bare
+          # project ref also lives in src/services/transactionAudit.ts, so
+          # MUST check the protocol prefix to avoid false-positives.
+          if grep -qrlF "$VITE_SUPABASE_URL" dist/assets/; then
+            echo "  ✓ Supabase URL baked into bundle"
+          else
+            echo "::error::Supabase URL ($VITE_SUPABASE_URL) NOT in any dist/assets/*.js — env-var substitution failed"
+            fail=1
+          fi
+
+          if grep -qrlF "$VITE_SUPABASE_ANON_KEY" dist/assets/; then
+            echo "  ✓ Supabase anon key baked into bundle"
+          else
+            echo "::error::Supabase anon key NOT in any dist/assets/*.js — env-var substitution failed"
+            fail=1
+          fi
+
+          if grep -qrlF "$VITE_RIGHTMOVE_WORKER_URL" dist/assets/; then
+            echo "  ✓ Rightmove worker URL baked into bundle"
+          else
+            echo "::error::Rightmove worker URL NOT in any dist/assets/*.js"
+            fail=1
+          fi
+
+          if grep -qrlF "$VITE_PAYMENT_WORKER_URL" dist/assets/; then
+            echo "  ✓ Payment worker URL baked into bundle"
+          else
+            echo "::error::Payment worker URL NOT in any dist/assets/*.js"
+            fail=1
+          fi
+
+          # OneSearch worker URL is NOT bake-checked. The comment here used to
+          # say that was because ONESEARCH_ENABLED was false; it has since
+          # flipped to true, so that reasoning is stale. Left unchecked for now
+          # rather than added blind — see the note in the commit message.
+
+          # Groundsure IS bake-checked: GROUNDSURE_ENABLED is true, so the URL
+          # is referenced on live paths and must survive tree-shaking. If it is
+          # missing from the bundle the panel would mock every order while
+          # looking live, which is worse than a failed deploy.
+          if grep -qrlF "$VITE_GROUNDSURE_WORKER_URL" dist/assets/; then
+            echo "  ✓ Groundsure worker URL baked into bundle"
+          else
+            echo "::error::Groundsure worker URL NOT in any dist/assets/*.js — the deployed panel would silently mock every order"
+            fail=1
+          fi
+
+          if [ "$fail" -ne 0 ]; then
+            echo "::error::One or more env vars failed to bake into the bundle — refusing to proceed"
+            exit 1
+          fi
+          echo "All env vars baked into bundle ✓"
+
+      - name: Build summary
+        if: success()
+        run: |
+          INDEX_JS=$(ls dist/assets/index-*.js | head -1 | sed 's|dist/||')
+          {
+            echo "## Frontend build verified ✓"
+            echo ""
+            echo "Bundle: \`$INDEX_JS\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload verified dist for deploy job
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: frontend-dist
+          path: dist/
+          retention-days: 1
+          if-no-files-found: error
+          # dist/.ic-assets.json5 carries the security headers (CSP, HSTS)
+          # and dist/.well-known/ the II alternative origins. Both are
+          # dotfiles, which upload-artifact drops by default.
+          include-hidden-files: true
+
+  deploy:
+    needs: build-verify
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    concurrency:
+      group: deploy-frontend-${{ github.ref }}
+      cancel-in-progress: false
+
+    steps:
+      - name: Checkout (dfx config only)
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            dfx.json
+            canister_ids.json
+          sparse-checkout-cone-mode: false
+
+      - name: Install dfx
+        uses: dfinity/setup-dfx@e50c04f104ee4285ec010f10609483cf41e4d365 # main @ 2024-04-01 (repo publishes no tags)
+        with:
+          dfx-version: ${{ env.DFX_VERSION }}
+
+      - name: Download verified dist from build-verify
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: frontend-dist
+          path: deploy/dist/
+
+      - name: Assemble the deploy folder
+        # deploy/ holds dfx.json, canister_ids.json and the verified dist,
+        # nothing else. dfx runs `npm run build` on asset canisters whenever a
+        # package.json sits beside dfx.json; with none here it uploads dist/
+        # as is, and no npm code runs while the identity PEM exists.
+        run: |
+          cp dfx.json canister_ids.json deploy/
+          if [ -e deploy/package.json ]; then
+            echo "::error::deploy/ contains a package.json, so dfx would rebuild"
+            exit 1
+          fi
+          ls -la deploy
+
+      - name: Re-verify downloaded dist
+        working-directory: deploy
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+        run: |
+          if [ -z "$(ls dist/assets/*.js 2>/dev/null)" ]; then
+            echo "::error::No dist/assets/*.js in downloaded artifact"
+            exit 1
+          fi
+          # Match against the full URL (with https://) — the bare project
+          # ref is hardcoded in src/services/transactionAudit.ts, so only
+          # the URL with protocol proves Vite substituted the env var.
+          if ! grep -qrlF "$VITE_SUPABASE_URL" dist/assets/; then
+            echo "::error::Downloaded artifact does not contain the Supabase URL — refusing to deploy a broken bundle"
+            exit 1
+          fi
+          # Without these the site would ship with no CSP/HSTS headers and
+          # Internet Identity sign-in on www would break.
+          for f in dist/.ic-assets.json5 dist/.well-known/ii-alternative-origins; do
+            if [ ! -f "$f" ]; then
+              echo "::error::$f missing from the artifact (hidden files dropped?)"
+              exit 1
+            fi
+          done
+          echo "Artifact bundle verified ✓"
+
+      - name: Setup deploy identity
+        env:
+          # Holds the consumer-deploy identity's PEM (created 2026-09-25 when
+          # this repo was re-founded; the key is not kept anywhere else in git).
+          DFX_IDENTITY_PEM: ${{ secrets.IC_CI_IDENTITY_PEM }}
+        run: |
+          if [ -z "$DFX_IDENTITY_PEM" ]; then
+            echo "::error::IC_CI_IDENTITY_PEM secret is not set"
+            exit 1
+          fi
+          TMPPEM=$(mktemp)
+          printf '%s' "$DFX_IDENTITY_PEM" > "$TMPPEM"
+          sed -i 's/\r$//' "$TMPPEM"
+          if [ -n "$(tail -c 1 "$TMPPEM")" ]; then
+            printf '\n' >> "$TMPPEM"
+          fi
+          echo "PEM size: $(wc -c < "$TMPPEM" | tr -d '[:space:]') bytes, $(wc -l < "$TMPPEM" | tr -d '[:space:]') lines"
+          if ! head -n 1 "$TMPPEM" | grep -q -- '-----BEGIN'; then
+            echo "::error::PEM does not start with a -----BEGIN header — secret is malformed (newlines stripped?)"
+            rm -f "$TMPPEM"
+            exit 1
+          fi
+          chmod 600 "$TMPPEM"
+          dfx identity import ci-deployer "$TMPPEM" --storage-mode plaintext
+          rm -f "$TMPPEM"
+          dfx identity use ci-deployer
+          PRINCIPAL=$(dfx identity get-principal)
+          EXPECTED="ytnnq-7tobc-o7flv-uuc5e-a2f4i-a5b4b-tmpzu-hwsxe-neawr-o3ymc-hqe"
+          if [ "$PRINCIPAL" != "$EXPECTED" ]; then
+            echo "::error::CI principal is '$PRINCIPAL', expected '$EXPECTED' — wrong PEM in secret"
+            exit 1
+          fi
+          echo "CI principal: $PRINCIPAL ✓"
+
+      - name: Deploy frontend (u4idr)
+        working-directory: deploy
+        run: dfx deploy frontend --ic --no-wallet
+
+      - name: Deploy frontend_custom_domain (lzpic)
+        working-directory: deploy
+        run: dfx deploy frontend_custom_domain --ic --no-wallet
+
+      - name: Cleanup identity
+        if: always()
+        run: |
+          dfx identity use anonymous || true
+          dfx identity remove ci-deployer --drop-wallets || true
+
+      - name: Verify deployed bundle matches local
+        working-directory: deploy
+        run: |
+          ENTRY=$(grep -oE '/assets/index-[^"]+\.js' dist/index.html | head -1)
+          if [ -z "$ENTRY" ]; then
+            echo "::error::Could not extract entry script from dist/index.html"
+            exit 1
+          fi
+          echo "Local entry: $ENTRY"
+
+          # Poll each URL until it serves the new entry. The raw canister URLs
+          # (u4idr/lzpic) update near-instantly, but propxchain.com sits behind
+          # a cache/boundary layer that can lag tens of seconds. A single
+          # 15s shot produced false-red deploys where the canisters were
+          # already correct, so retry for up to MAX_WAIT before failing.
+          MAX_WAIT=90
+          INTERVAL=10
+          FAIL=0
+          for URL in https://propxchain.com https://u4idr-jyaaa-aaaab-qco5q-cai.icp0.io https://lzpic-oaaaa-aaaaa-qcwva-cai.icp0.io; do
+            elapsed=0
+            ok=0
+            last_html=""
+            while [ "$elapsed" -le "$MAX_WAIT" ]; do
+              last_html=$(curl -sSfL --max-time 30 -H 'Cache-Control: no-cache' "$URL/" || true)
+              if echo "$last_html" | grep -qF "$ENTRY"; then
+                echo "✓ $URL serves $ENTRY (after ${elapsed}s)"
+                ok=1
+                break
+              fi
+              sleep "$INTERVAL"
+              elapsed=$((elapsed + INTERVAL))
+            done
+            if [ "$ok" -ne 1 ]; then
+              SERVED=$(echo "$last_html" | grep -oE '/assets/index-[^"]+\.js' | head -1 || echo "(none found / no response)")
+              echo "::error::$URL serves $SERVED, expected $ENTRY after ${MAX_WAIT}s"
+              FAIL=1
+            fi
+          done
+          if [ "$FAIL" -ne 0 ]; then
+            echo "::error::Deploy verification failed — at least one URL doesn't match the local bundle"
+            exit 1
+          fi
+          echo "All 3 URLs serve the freshly-deployed entry ✓"
+
+      - name: Deploy summary
+        if: success()
+        working-directory: deploy
+        run: |
+          ENTRY=$(grep -oE '/assets/index-[^"]+\.js' dist/index.html | head -1)
+          {
+            echo "## Frontend deployed ✓"
+            echo ""
+            echo "Entry: \`$ENTRY\`"
+            echo ""
+            echo "- \`frontend\` (u4idr) → https://u4idr-jyaaa-aaaab-qco5q-cai.icp0.io"
+            echo "- \`frontend_custom_domain\` (lzpic) → https://lzpic-oaaaa-aaaaa-qcwva-cai.icp0.io"
+            echo "- Custom domain → https://propxchain.com"
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,72 @@
+# PropXchain
+
+> Open-source blockchain property conveyancing platform for UK property transactions, built on the Internet Computer Protocol (ICP). Free to start for buyers and sellers: pick your own providers and see every price before you commit, with no platform fee. An optional GBP 75 per-transaction AI co-pilot reads your HM Land Registry title and search results in plain English and tailors your conveyancer quote.
+
+PropXchain digitises the end-to-end UK conveyancing process with on-chain verification, GDPR-compliant document management (hash-only storage -- files never touch the blockchain), and integrated property intelligence. Authentication is handled by Internet Identity (no passwords). The platform supports 18 user role types across buyers, sellers, solicitors, conveyancers, estate agents, mortgage brokers, and platform admins.
+
+- Production: https://propxchain.com
+- Canister URL: https://lzpic-oaaaa-aaaaa-qcwva-cai.icp0.io/
+
+## Docs
+
+- [API Reference](https://propxchain.com/docs/api): Canister Candid interfaces and REST endpoints
+- [Architecture Overview](https://propxchain.com/docs/architecture): System design, canister topology, data flow
+- [User Guide](https://propxchain.com/docs/guide): Getting started for buyers, sellers, and solicitors
+- [Conveyancing Guide](https://propxchain.com/docs/conveyancing): UK conveyancing workflow on PropXchain
+- [Full Documentation](https://propxchain.com/llms-full.txt): Extended AI-readable reference
+
+## Bot Integration
+
+- [Set up the MCP server](https://propxchain.com/agent): Step-by-step install guide for AI agents (Claude Desktop, Claude Code, Codex, Cursor) with copy-paste prompts. The agent generates its own keypair locally; the user shares only a TX-XXXX-XXXX invite code to grant access.
+- [MCP manifest](https://propxchain.com/.well-known/mcp.json): Machine-readable install + config manifest for autonomous agents
+- [npm package](https://www.npmjs.com/package/@propxchain/mcp-server): `npm install -g @propxchain/mcp-server`
+- [Bot management](https://propxchain.com/dashboard/bot-agents): View bots active on your transactions; revoke per-transaction access. Bots self-register via the agent prompt above; this UI is read + revoke only.
+- [Candid Interfaces](https://propxchain.com/docs/candid): ICP canister interface definitions
+
+## Key Features
+
+- 2-phase transaction creation wizard (property details then transaction details)
+- Invite code system (TX-XXXX-XXXX) for parties to join transactions
+- Transaction lifecycle: active, exchanged, completion_initiated, blockchain_completed, land_registry_registered
+- GDPR-compliant document storage (SHA-256 hash on-chain, files stay local)
+- Solicitor document verification via hash comparison
+- Property intelligence via Land Registry API, Environment Agency flood data, Historic England heritage checks, and local authority planning data
+- Oscar AI assistant for guided conveyancing and document analysis
+- Role-based access control across 18 user types
+- Internet Identity authentication (no passwords, blockchain-native)
+- Legal forms: TA6 (Property Information), TA7 (Leasehold), TA10 (Fixtures and Fittings)
+- Contract exchange with dual solicitor signing
+- In-app messaging between transaction parties
+- Firm management and subscription tiers
+
+## Canister Architecture
+
+12 canisters deployed on IC mainnet:
+
+- Core (`3tv4o-xiaaa-aaaaa-qedaa-cai`): Core platform services
+- Frontend (`lzpic-oaaaa-aaaaa-qcwva-cai`): React application asset canister
+- Property Registry (`l6oow-dyaaa-aaaaa-qcwvq-cai`): Property blockchain records and ownership
+- Document Verification (`xand7-wiaaa-aaaah-arlea-cai`): Solicitor document verification tracking
+- Document Storage (`646az-pqaaa-aaaaa-qczja-cai`): Hash-only document proofs (GDPR compliant)
+- Transaction Manager (`llj73-cqaaa-aaaaa-qcwwa-cai`): Transaction lifecycle and contract exchange
+- User Management (`lmizp-piaaa-aaaaa-qcwwq-cai`): User profiles, roles, and audit logs
+- Email Service (`5by6v-qyaaa-aaaaa-qc65a-cai`): Notification delivery
+- Firm Factory (`gcqvm-tiaaa-aaaaa-qdszq-cai`): Law firm management
+- Ledger Manager (`hty74-maaaa-aaaaa-qcxza-cai`): Financial and analytics tracking
+- Subscription Manager (`3jsrn-tqaaa-aaaaa-qddxq-cai`): Premium subscription management
+- Message Manager (`37una-maaaa-aaaaa-qd3mq-cai`): In-app messaging between parties
+- Oscar Canister (`khstc-3qaaa-aaaaa-qdyfq-cai`): AI assistant backend
+- Land Registry (`o4flv-xaaaa-aaaaa-qdaeq-cai`): UK Land Registry integration
+
+## Tech Stack
+
+- Frontend: React, TypeScript, Vite, TailwindCSS
+- Backend: Motoko (ICP canisters)
+- Blockchain: Internet Computer Protocol (IC mainnet)
+- Authentication: Internet Identity
+- AI: Anthropic Claude (Oscar assistant)
+
+## Optional
+
+- Source code: https://github.com/propxchain/propxchain-dapp
+- Contact: hello@propxchain.com

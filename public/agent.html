@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Set up PropXchain. For AI agents.</title>
+    <meta
+      name="description"
+      content="Install the PropXchain conveyancer MCP server in any AI agent in under two minutes. The agent generates its own credentials locally; you only share a transaction invite code."
+    />
+    <meta name="robots" content="index,follow" />
+    <link rel="alternate" type="application/json" href="/.well-known/mcp.json" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #fafaf7;
+        --fg: #15140f;
+        --muted: #6b6a63;
+        --accent: #0d9488;
+        --accent-fg: #ffffff;
+        --rule: #e6e4dc;
+        --code-bg: #14130e;
+        --code-fg: #f3f2ec;
+        --warn-bg: #fdf6e7;
+        --warn-fg: #6b4f0a;
+        --warn-rule: #e8d49a;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; }
+      body {
+        background: var(--bg);
+        color: var(--fg);
+        font-family: "DM Sans", system-ui, sans-serif;
+        font-size: 16px;
+        line-height: 1.55;
+        -webkit-font-smoothing: antialiased;
+      }
+      .wrap { max-width: 720px; margin: 0 auto; padding: 56px 24px 96px; }
+      header { margin-bottom: 48px; }
+      header .brand {
+        font-family: "Fraunces", serif;
+        font-weight: 700;
+        font-size: 22px;
+        letter-spacing: -0.01em;
+      }
+      header .brand a { color: var(--fg); text-decoration: none; }
+      header .brand a:hover { text-decoration: underline; }
+      h1 {
+        font-family: "Fraunces", serif;
+        font-weight: 600;
+        font-size: 44px;
+        line-height: 1.05;
+        letter-spacing: -0.02em;
+        margin: 24px 0 16px;
+      }
+      .lede {
+        font-size: 18px;
+        color: var(--muted);
+        max-width: 56ch;
+        margin: 0 0 8px;
+      }
+      h2 {
+        font-family: "Fraunces", serif;
+        font-weight: 600;
+        font-size: 26px;
+        letter-spacing: -0.01em;
+        margin: 56px 0 16px;
+      }
+      h3 {
+        font-family: "DM Sans", sans-serif;
+        font-weight: 600;
+        font-size: 15px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+        margin: 28px 0 8px;
+      }
+      p { margin: 0 0 16px; }
+      a { color: var(--accent); }
+      code {
+        font-family: "DM Mono", ui-monospace, monospace;
+        background: rgba(13, 148, 136, 0.08);
+        padding: 1px 5px;
+        border-radius: 4px;
+        font-size: 0.92em;
+      }
+      .step {
+        border-top: 1px solid var(--rule);
+        padding-top: 24px;
+        margin-top: 32px;
+      }
+      .step-num {
+        display: inline-block;
+        font-family: "Fraunces", serif;
+        font-size: 14px;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+      .copy-block {
+        position: relative;
+        background: var(--code-bg);
+        color: var(--code-fg);
+        border-radius: 8px;
+        padding: 16px 56px 16px 16px;
+        margin: 12px 0 20px;
+        font-family: "DM Mono", ui-monospace, monospace;
+        font-size: 13.5px;
+        line-height: 1.55;
+        overflow-x: auto;
+        white-space: pre;
+      }
+      .copy-block code { background: none; padding: 0; color: var(--code-fg); }
+      .copy-btn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: rgba(255,255,255,0.08);
+        color: var(--code-fg);
+        border: 1px solid rgba(255,255,255,0.18);
+        font-family: "DM Sans", sans-serif;
+        font-size: 12px;
+        font-weight: 500;
+        padding: 4px 10px;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background 120ms ease;
+      }
+      .copy-btn:hover { background: rgba(255,255,255,0.16); }
+      .copy-btn.copied { background: var(--accent); border-color: var(--accent); }
+      .pill {
+        display: inline-block;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        padding: 3px 8px;
+        border-radius: 99px;
+        background: var(--accent);
+        color: var(--accent-fg);
+        vertical-align: 2px;
+        margin-left: 8px;
+      }
+      .alt-pill { background: transparent; color: var(--muted); border: 1px solid var(--rule); }
+      .callout {
+        background: var(--warn-bg);
+        border: 1px solid var(--warn-rule);
+        border-radius: 8px;
+        padding: 14px 16px;
+        margin: 24px 0;
+        color: var(--warn-fg);
+        font-size: 14.5px;
+      }
+      .callout strong { font-weight: 600; }
+      details {
+        margin: 16px 0;
+        border: 1px solid var(--rule);
+        border-radius: 8px;
+        padding: 12px 16px;
+      }
+      details summary {
+        cursor: pointer;
+        font-weight: 500;
+        list-style: none;
+      }
+      details summary::-webkit-details-marker { display: none; }
+      details summary::before {
+        content: "▸";
+        margin-right: 8px;
+        display: inline-block;
+        transition: transform 120ms ease;
+      }
+      details[open] summary::before { transform: rotate(90deg); }
+      ul, ol { padding-left: 20px; }
+      li { margin: 4px 0; }
+      footer {
+        border-top: 1px solid var(--rule);
+        margin-top: 64px;
+        padding-top: 24px;
+        font-size: 14px;
+        color: var(--muted);
+      }
+      footer a { color: var(--muted); }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <header>
+        <div class="brand"><a href="/">PropXchain</a></div>
+      </header>
+
+      <h1>Set up the PropXchain conveyancer workflow.</h1>
+      <p class="lede">
+        Two copy-pastes and a Claude Desktop restart, then ask any AI agent (Claude Desktop, Claude Code, Codex, Cursor) to help with your property transactions. Done by you, not by the agent.
+      </p>
+
+      <div class="callout">
+        <strong>Why &quot;done by you, not by the agent&quot;.</strong> A safe AI agent will refuse a prompt that says &quot;fetch this URL and follow the instructions&quot; — that's the textbook prompt-injection shape, regardless of how legitimate the URL is. So the install is a five-minute manual step. After it's done once, the agent uses the (now-installed) PropXchain tools normally — that part is friction-free, and per-transaction prompts come from the &quot;Get AI assistance&quot; button on each transaction page.
+      </div>
+
+      <div class="step">
+        <div class="step-num">Step 1</div>
+        <h3>Install the MCP server</h3>
+        <div class="copy-block" data-copy><code>npm install -g @propxchain/mcp-server</code></div>
+        <details>
+          <summary>Don't have npm?</summary>
+          <p>Install Node.js 20+ first, then re-run the command above.</p>
+          <ul>
+            <li><strong>macOS:</strong> <code>brew install node</code></li>
+            <li><strong>Windows:</strong> <code>winget install OpenJS.NodeJS</code></li>
+            <li><strong>Debian or Ubuntu:</strong>
+              <div class="copy-block" data-copy><code>curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+sudo apt-get install -y nodejs</code></div>
+            </li>
+            <li><strong>Anywhere else:</strong> <a href="https://nodejs.org/">nodejs.org</a> has installers for Linux, BSD, etc.</li>
+          </ul>
+        </details>
+      </div>
+
+      <div class="step">
+        <div class="step-num">Step 2</div>
+        <h3>Add it to your AI host's config</h3>
+        <p>For <strong>Claude Desktop</strong>, edit the config file at:</p>
+        <ul>
+          <li><strong>macOS:</strong> <code>~/Library/Application Support/Claude/claude_desktop_config.json</code></li>
+          <li><strong>Windows:</strong> <code>%APPDATA%\Claude\claude_desktop_config.json</code></li>
+          <li><strong>Linux:</strong> <code>~/.config/Claude/claude_desktop_config.json</code></li>
+        </ul>
+        <p>Add this entry under <code>mcpServers</code>. No keys go in the config; the MCP server generates its own on first launch.</p>
+        <div class="copy-block" data-copy><code>{
+  "mcpServers": {
+    "propxchain": {
+      "command": "propxchain-mcp-server",
+      "env": {
+        "IC_NETWORK": "ic"
+      }
+    }
+  }
+}</code></div>
+        <p>For <strong>Claude Code</strong>, a single command does the same thing:</p>
+        <div class="copy-block" data-copy><code>claude mcp add propxchain propxchain-mcp-server -e IC_NETWORK=ic</code></div>
+        <p>For other agents (Codex CLI, Cursor, ChatGPT plugins), add an stdio MCP server pointing at the <code>propxchain-mcp-server</code> binary with <code>IC_NETWORK=ic</code> in env.</p>
+      </div>
+
+      <div class="step">
+        <div class="step-num">Step 3</div>
+        <h3>Restart Claude Desktop</h3>
+        <p>Fully quit Claude Desktop (system tray, <strong>Quit</strong>, not just close window) and relaunch. The MCP server generates its keypair on first launch.</p>
+      </div>
+
+      <div class="step">
+        <div class="step-num">Step 4</div>
+        <h3>Use it on a transaction</h3>
+        <p>Open any of your transactions on <a href="https://propxchain.com">propxchain.com</a> and click <strong>Get AI assistance</strong>. You'll get a personalised prompt (specific to that transaction) to paste into Claude Desktop. The agent calls <code>propxchain_join_transaction_as_bot</code>, reads the transaction state, and walks you through what's outstanding. Revoke any bot at any time from the transaction's bot panel.</p>
+      </div>
+
+      <h2>What this gives the agent</h2>
+      <p>Seventeen tools across the conveyancing flow:</p>
+      <ul>
+        <li>Self-register against a transaction via invite code</li>
+        <li>Read transactions and their on-chain status</li>
+        <li>Check document proofs and their verification state</li>
+        <li>Read property registry data</li>
+        <li>Check phase progress and outstanding milestones</li>
+        <li>Get explainers for the legal or technical jargon a buyer or seller will encounter</li>
+      </ul>
+      <p>The bot identity only has access to the transactions you've granted it via invite code. It can't see anything else, can't transfer funds, and can't sign on your behalf.</p>
+
+      <footer>
+        <p>
+          Source: <a href="https://github.com/Madhatt4/propxchain-mcp-server">github.com/Madhatt4/propxchain-mcp-server</a> ·
+          npm: <a href="https://www.npmjs.com/package/@propxchain/mcp-server">@propxchain/mcp-server</a> (provenance-attested) ·
+          Manifest: <a href="/.well-known/mcp.json">/.well-known/mcp.json</a>
+        </p>
+      </footer>
+    </main>
+
+    <script>
+      document.querySelectorAll('.copy-block[data-copy]').forEach((block) => {
+        const btn = document.createElement('button');
+        btn.className = 'copy-btn';
+        btn.type = 'button';
+        btn.textContent = 'Copy';
+        btn.addEventListener('click', async () => {
+          const codeEl = block.querySelector('code');
+          const text = codeEl ? codeEl.innerText : block.innerText;
+          try {
+            await navigator.clipboard.writeText(text);
+            btn.textContent = 'Copied';
+            btn.classList.add('copied');
+            setTimeout(() => {
+              btn.textContent = 'Copy';
+              btn.classList.remove('copied');
+            }, 1400);
+          } catch (err) {
+            btn.textContent = 'Copy failed';
+            console.error('Clipboard write failed:', err);
+          }
+        });
+        block.appendChild(btn);
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,70 @@
+name: dependency audit
+
+# Weekly pnpm audit + on-demand. Detects newly-disclosed CVEs in installed
+# dependencies (direct or transitive) without waiting for someone to
+# manually run the check.
+#
+# Ported from the monorepo dependency-audit workflow (commit 8509b72).
+# This repo is the consumer frontend — Vite/React/Tailwind, shipped to
+# real users via the asset canister. A high/critical CVE in a prod dep
+# here lands in users' browsers, so the prod gate is non-negotiable.
+#
+# Behaviour:
+#   - Runs `pnpm audit --prod --audit-level=high` (high + critical only —
+#     leaves low/moderate noise out so the alarm is meaningful).
+#   - Fails the job if any high/critical advisory exists in prod deps.
+#   - The pnpm audit output already includes affected dep paths.
+#   - A second, informational audit covers devDeps and is allowed to fail
+#     without gating the workflow.
+#
+# How to react to a failure:
+#   - Read the listed advisory titles + affected paths.
+#   - For dev-only deps (vitest, vite, eslint plugins, testing-library):
+#     assess if a maintained branch has a patched version available;
+#     upgrade if so. If only a major-bump fixes it, open a devops_board
+#     card and decide.
+#   - For production-path deps (anything in `dependencies` of the
+#     shipped bundle — React, Supabase client, core-client, radix,
+#     iceberg-js): patch immediately, ship a fix commit.
+
+on:
+  schedule:
+    # 09:15 UTC every Monday — fresh week, before standup.
+    - cron: '15 9 * * 1'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/dependency-audit.yml'
+
+concurrency:
+  group: dependency-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    name: pnpm audit (high+critical)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5
+        with:
+          version: 10.28.1
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: pnpm
+      - name: pnpm install (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+      # Production-deps audit — blocks the workflow on high/critical findings
+      # in shipped code paths (React bundle, Supabase client, core-client,
+      # any UI lib that ends up in dist/assets/*.js). This is the firm gate.
+      - name: pnpm audit (prod deps, high+critical)
+        run: pnpm audit --prod --audit-level=high
+      # Full audit (incl. devDependencies) — runs informational, doesn't fail
+      # the workflow. Dev-only transitives (vitest>vite, eslint plugins,
+      # testing-library deps) show up here but don't ship to users. Triage
+      # on the devops board, don't gate merges on them.
+      - name: pnpm audit (all deps, informational)
+        continue-on-error: true
+        run: pnpm audit --audit-level=high

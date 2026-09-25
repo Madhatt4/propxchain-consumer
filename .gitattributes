@@ -1,0 +1,8 @@
+# Shell scripts must keep LF endings. core.autocrlf=true otherwise checks them
+# out with CRLF on Windows, and bash then fails on the shebang with
+# "bad interpreter: /usr/bin/env bash^M". The scripts in scripts/ are run by hand
+# from WSL, so this is load-bearing rather than cosmetic.
+*.sh text eol=lf
+# Agent Skills artifacts are content-addressed (sha256 in index.json); pin LF so
+# Windows and Linux checkouts serve identical bytes.
+public/.well-known/agent-skills/**/SKILL.md text eol=lf

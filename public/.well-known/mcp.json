@@ -1,0 +1,132 @@
+{
+  "$comment": "Machine-readable manifest for the PropXchain MCP server. The MCP discovery format is still emerging; fields here mirror the conventions ChatGPT plugins and the @modelcontextprotocol/sdk use, plus pragmatic install fields for AI-driven setup. Human-readable equivalent: https://propxchain.com/agent",
+  "name": "@propxchain/mcp-server",
+  "displayName": "PropXchain Conveyancer",
+  "version": "2.1.0",
+  "description": "Model Context Protocol server giving LLM agents access to PropXchain property conveyancing transactions on the Internet Computer. Read on-chain transactions, document proofs, property registry data, and phase status. The agent generates its own Ed25519 keypair locally on the user's machine; access to a specific transaction is granted by the user sharing that transaction's TX-XXXX-XXXX invite code.",
+  "homepage": "https://propxchain.com",
+  "documentation": "https://propxchain.com/agent",
+  "source": "https://github.com/Madhatt4/propxchain-mcp-server",
+  "provenance": {
+    "attested": true,
+    "verifyCommand": "npm view @propxchain/mcp-server",
+    "description": "Each release of @propxchain/mcp-server is published with npm provenance attestation via Sigstore. Verifiers can confirm the tarball came from a specific GitHub Actions run on github.com/Madhatt4/propxchain-mcp-server."
+  },
+  "license": "UNLICENSED",
+  "transport": "stdio",
+  "remote": {
+    "url": "https://mcp.propxchain.com/mcp",
+    "transport": "streamable-http",
+    "auth": "oauth2.1",
+    "description": "Hosted MCP server for claude.ai, Claude Desktop, Claude Code and other MCP clients. Add it as a custom connector; the client discovers the authorization server from the 401 challenge, and the user approves at auth.propxchain.com with their PropXchain email and a 6-digit code. No install, no local key: each connection signs canister calls as its own principal. Access to a transaction still comes from that transaction's invite code."
+  },
+  "install": {
+    "primary": {
+      "method": "npm",
+      "command": "npm install -g @propxchain/mcp-server",
+      "binary": "propxchain-mcp-server"
+    },
+    "prerequisites": {
+      "node": ">=18.0.0",
+      "npm": ">=8"
+    },
+    "fallback": {
+      "method": "install-node-then-npm",
+      "instructions": "Install Node.js 20+ via your OS package manager (brew install node on macOS, winget install OpenJS.NodeJS on Windows, NodeSource setup script on Debian/Ubuntu) and then re-run the npm install command above."
+    }
+  },
+  "installModel": {
+    "description": "Install is human-driven, not agent-driven. The user runs `npm install -g @propxchain/mcp-server` and edits their Claude Desktop config by hand (or via Claude Code with Desktop Commander). After that, the agent uses the MCP tools normally; nothing about the install asks the agent to fetch URLs and execute their instructions. Once installed, per-transaction prompts come from the 'Get AI assistance' button on each transaction page in propxchain.com — those prompts are user-asserted content the agent reasons about, not a 'fetch and obey' loop.",
+    "rationale": "Earlier iterations of this manifest tried to ship an install-via-URL-fetch flow gated by single-use codes. Real-world testing showed safe AI agents (correctly) refuse to execute on instructions fetched from a URL because the shape is indistinguishable from prompt injection. We don't fight that: install is manual, the agent handles the work afterwards."
+  },
+  "config": {
+    "env": [
+      {
+        "name": "IC_NETWORK",
+        "required": false,
+        "default": "ic",
+        "description": "Internet Computer network identifier. Use 'ic' for mainnet (default). 'local' is for development against a pocket-ic / dfx replica."
+      },
+      {
+        "name": "BOT_PRIVATE_KEY",
+        "required": false,
+        "secret": true,
+        "format": "base64-32-byte-ed25519-seed",
+        "description": "Optional override for ops/CI use. If set, the server uses this seed instead of reading from the local identity file. Most users should leave this unset; the server generates and persists a fresh keypair on first run.",
+        "default": null
+      }
+    ],
+    "identity": {
+      "model": "local-file",
+      "filePath": {
+        "darwin": "~/.config/propxchain-mcp/identity.key",
+        "linux": "~/.config/propxchain-mcp/identity.key (or $XDG_CONFIG_HOME/propxchain-mcp/identity.key when set)",
+        "win32": "%APPDATA%/propxchain-mcp/identity.key"
+      },
+      "format": "base64-encoded 32-byte Ed25519 seed, single line, trailing newline",
+      "permissions": "0600 on POSIX (best-effort on Windows)",
+      "firstRun": "If the file does not exist on startup the server generates a fresh seed via node:crypto.randomBytes(32), writes it, and proceeds. The bot principal is logged to stderr each launch."
+    },
+    "claudeDesktop": {
+      "configPath": {
+        "darwin": "~/Library/Application Support/Claude/claude_desktop_config.json",
+        "win32": "%APPDATA%/Claude/claude_desktop_config.json",
+        "linux": "~/.config/Claude/claude_desktop_config.json"
+      },
+      "snippet": {
+        "mcpServers": {
+          "propxchain": {
+            "command": "propxchain-mcp-server",
+            "env": {
+              "IC_NETWORK": "ic"
+            }
+          }
+        }
+      }
+    },
+    "claudeCode": {
+      "command": "claude mcp add propxchain propxchain-mcp-server -e IC_NETWORK=ic"
+    }
+  },
+  "verify": {
+    "prompt": "list my propxchain transactions",
+    "expectedToolCalls": ["propxchain_list_my_transactions"],
+    "successCriteria": "Tool result returns a list of transaction IDs (possibly empty if the bot has not yet been granted access to any transaction via invite code)."
+  },
+  "agentUsePrompt": "Once the user has installed the MCP server (manually, see installModel above), per-transaction prompts they paste into agents look like: 'I've connected PropXchain to Claude. My transaction is TX-XXXX-XXXX. Please call propxchain_join_transaction_as_bot with that code and a sensible bot name, read the transaction state, and walk me through what's outstanding. Quote panel options, summarise trade-offs, and wait for me to pick before moving on.' Generated by the consumer UI's 'Get AI assistance' button.",
+  "linking": {
+    "model": "invite-code",
+    "tool": "propxchain_join_transaction_as_bot",
+    "userArtifact": "Transaction invite code in TX-XXXX-XXXX format. Found on the transaction page in propxchain.com, share panel.",
+    "description": "After install, the user shares a transaction's invite code with the agent. The agent calls propxchain_join_transaction_as_bot(inviteCode, botName), which invokes transaction_manager.joinAsBotByInviteCode on chain. The bot's principal is added to the transaction's access list. Idempotent on retries with the same principal."
+  },
+  "security": {
+    "model": "Per-transaction bot identity. The bot generates its own Ed25519 keypair locally; the seed never crosses any chat or config-file boundary. The bot principal only sees transactions the user has granted it via invite code. Cannot transfer funds, sign on the user's behalf, or access transactions it wasn't invited to.",
+    "revocation": "The user can revoke a bot's access at any time in the propxchain.com UI under Settings, Bot Agents, or per-transaction via the bot panel on the transaction page. Revocation calls transaction_manager.disconnectBot."
+  },
+  "agentAuth": {
+    "protocol": "oauth2.1",
+    "skill": "https://propxchain.com/auth.md",
+    "authorizationServer": "https://auth.propxchain.com",
+    "protectedResourceMetadata": "https://mcp.propxchain.com/.well-known/oauth-protected-resource/mcp",
+    "httpGateway": "https://mcp.propxchain.com/mcp",
+    "transport": "streamable-http",
+    "description": "MCP clients connect to the httpGateway with OAuth 2.1 (authorization code + PKCE S256, Client ID Metadata Documents, public client); see auth.md. An unauthenticated call returns 401 with WWW-Authenticate pointing at the protectedResourceMetadata. The user approves with their PropXchain email and a one-time code, which grants every scope; the on-chain consent checkpoint still gates money and legal actions. auth.md self-registration was retired on 2026-09-17.",
+    "tiers": {
+      "read_only": ["chain:read", "tx:read", "panel:read", "quote:read"],
+      "consequential": ["aml:write", "conveyancer:instruct", "exchange:confirm", "completion:funds"]
+    }
+  },
+  "tools": {
+    "discoveryMethod": "list_tools",
+    "categories": [
+      "transactions",
+      "documents",
+      "checklists",
+      "property-intel",
+      "education",
+      "bot-management"
+    ],
+    "summary": "18 tools for joining transactions via invite code, reading transactions, document proofs, property registry data, and phase/checklist status. Read-mostly with limited write surface (e.g. document hash registration). The bot can only act within transactions the user has invited it to."
+  }
+}

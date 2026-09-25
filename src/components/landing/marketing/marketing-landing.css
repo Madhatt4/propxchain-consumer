@@ -1,0 +1,545 @@
+/* SPDX-License-Identifier: AGPL-3.0-or-later
+ * Copyright (C) 2026 PropXchain Ltd */
+
+/*
+ * Scoped styles for the cinematic marketing landing page.
+ *
+ * Everything is namespaced under `.px-landing` so this stylesheet is safe to
+ * load globally (it never bleeds into the dashboard or other routes). Theme is
+ * driven by `data-theme="dark|light"` on <html>. For the unified landing the
+ * WHOLE page re-themes (hero included), so every content token flips at the
+ * `.px-landing` root rather than being scoped to `.px-pg`.
+ */
+
+/* ── Tokens — dark defaults ───────────────────────────────────────────────── */
+.px-landing {
+  --t: #00D4B8;
+  --t-h: #00A896;
+  --t-ink: #03261f;
+  --t-30: rgba(0, 212, 184, 0.3);
+  --sage: #84A98C;
+  --ink: #0A0F1E;
+  --ink2: #060B18;
+  --border-teal: rgba(0, 212, 184, 0.14);
+  --fg: #ffffff;
+  --fg-2: rgba(255, 255, 255, 0.72);
+  --fg-3: rgba(255, 255, 255, 0.52);
+  --card-bg: rgba(13, 19, 33, 0.7);
+  --card-border: rgba(255, 255, 255, 0.07);
+  --glass-bg: rgba(10, 15, 30, 0.55);
+  --glass-border: transparent;
+  --input-bg: rgba(255, 255, 255, 0.04);
+  --input-border: rgba(255, 255, 255, 0.12);
+  --input-fg: #ffffff;
+  --input-ph: rgba(255, 255, 255, 0.4);
+  --btn-ghost-fg: #ffffff;
+  /* Milestone-chain node palette (dark) */
+  --node-done-bg: rgba(0, 212, 184, 0.12);
+  --node-pending-bg: rgba(255, 255, 255, 0.04);
+  --node-pending-border: rgba(255, 255, 255, 0.15);
+  --node-pending-fg: rgba(255, 255, 255, 0.4);
+  --node-done-label: rgba(255, 255, 255, 0.65);
+
+  position: relative;
+  min-height: 100vh;
+  background: var(--ink2);
+  color: var(--fg);
+  font-family: 'DM Sans', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+.px-landing * { box-sizing: border-box; }
+
+/* Light theme — all tokens flip at the root so the hero re-themes too. */
+[data-theme='light'] .px-landing {
+  --t: #0d9488;
+  --t-h: #0f766e;
+  --t-ink: #ffffff;
+  --t-30: rgba(13, 148, 136, 0.3);
+  --ink: #ffffff;
+  --ink2: #f4f1ea;
+  --border-teal: rgba(13, 148, 136, 0.16);
+  --fg: #15181d;
+  --fg-2: rgba(21, 24, 29, 0.74);
+  --fg-3: rgba(21, 24, 29, 0.52);
+  --card-bg: #ffffff;
+  --card-border: #ece7dc;
+  --glass-bg: rgba(255, 255, 255, 0.8);
+  --glass-border: #ece7dc;
+  --input-bg: #ffffff;
+  --input-border: #d8d2c4;
+  --input-fg: #15181d;
+  --input-ph: rgba(21, 24, 29, 0.42);
+  --btn-ghost-fg: #15181d;
+  --node-done-bg: rgba(13, 148, 136, 0.12);
+  --node-pending-bg: rgba(21, 24, 29, 0.04);
+  --node-pending-border: rgba(21, 24, 29, 0.15);
+  --node-pending-fg: rgba(21, 24, 29, 0.4);
+  --node-done-label: rgba(21, 24, 29, 0.65);
+}
+/* Tailwind text-white utilities used by reused content sections re-theme. */
+[data-theme='light'] .px-landing .text-white { color: var(--fg) !important; }
+[data-theme='light'] .px-landing .text-white\/85,
+[data-theme='light'] .px-landing .text-white\/80,
+[data-theme='light'] .px-landing .text-white\/75,
+[data-theme='light'] .px-landing .text-white\/70,
+[data-theme='light'] .px-landing .text-white\/65,
+[data-theme='light'] .px-landing .text-white\/60 { color: var(--fg-2) !important; }
+[data-theme='light'] .px-landing .text-white\/55,
+[data-theme='light'] .px-landing .text-white\/45,
+[data-theme='light'] .px-landing .text-white\/40 { color: var(--fg-3) !important; }
+/* Soften the bright teal grid/orbs on paper */
+[data-theme='light'] .px-landing .grid-bg::after { opacity: 0.6; }
+
+.px-pg { color: var(--fg); }
+
+/* ── Layout ───────────────────────────────────────────────────────────────── */
+.px-landing .wrap { max-width: 1200px; margin: 0 auto; }
+.px-landing section { position: relative; }
+.px-landing .section-pad { padding: 6rem 3.5rem; overflow: hidden; }
+@media (max-width: 768px) {
+  .px-landing .section-pad { padding: 4rem 1.4rem; }
+}
+.px-landing .divider-top { border-top: 1px solid var(--border-teal); }
+
+/* Ambient orbs + faint grid */
+.px-landing .orb {
+  position: absolute;
+  border-radius: 9999px;
+  pointer-events: none;
+  filter: blur(60px);
+  z-index: 0;
+}
+.px-landing .grid-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(0, 212, 184, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 212, 184, 0.04) 1px, transparent 1px);
+  background-size: 58px 58px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 30%, transparent 75%);
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 30%, transparent 75%);
+}
+/* Hero ambient still — the brand render sitting behind the hero copy. One
+   image now serves both themes, so these two opacities are the only thing
+   adapting it to the two grounds; separate per-theme renders used to do that
+   job.
+   The pair is inherited from the video era and reads correctly on both themes,
+   so it is left alone. Worth knowing if it is ever retuned: the reasoning
+   behind these particular numbers no longer applies. They were set to stop a
+   *dark* clip muddying the white ground, and the still is a bright render —
+   the opposite problem. A deliberate pass would likely raise light and lower
+   dark, which is the reverse of the order below. */
+.px-landing .px-hero-loop {
+  z-index: 0;
+  opacity: 0.34;
+  pointer-events: none;
+}
+[data-theme='light'] .px-landing .px-hero-loop { opacity: 0.30; }
+
+.px-landing .sec-inner { position: relative; z-index: 1; }
+
+/* Glass */
+.px-landing .liquid-glass {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.08);
+  position: relative;
+  overflow: hidden;
+}
+.px-landing .liquid-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.2px;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 212, 184, 0.35) 0%,
+    rgba(255, 255, 255, 0.1) 22%,
+    rgba(255, 255, 255, 0) 45%,
+    rgba(255, 255, 255, 0) 60%,
+    rgba(255, 255, 255, 0.08) 80%,
+    rgba(0, 212, 184, 0.3) 100%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Eyebrow */
+.px-landing .eyebrow {
+  font-family: 'DM Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--t);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+.px-landing .eyebrow::before {
+  content: '';
+  width: 22px;
+  height: 1px;
+  background: var(--t);
+  display: inline-block;
+}
+.px-landing .eyebrow.center { justify-content: center; }
+
+/* Display headings */
+.px-landing .h-sec {
+  font-family: 'Fraunces', serif;
+  font-weight: 900;
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  color: var(--fg);
+  margin: 1.2rem 0 0;
+}
+.px-landing .key { font-style: italic; font-weight: 400; color: var(--t); }
+.px-landing .lead {
+  color: var(--fg-2);
+  font-size: 1.05rem;
+  line-height: 1.7;
+  max-width: 42rem;
+}
+
+/* Cards */
+.px-landing .card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  transition: border-color 200ms ease-out;
+}
+.px-landing .card:hover { border-color: var(--border-teal); }
+.px-landing .card-teal {
+  box-shadow: 0 4px 24px rgba(0, 212, 184, 0.1);
+  border-color: var(--border-teal);
+}
+
+/* Buttons */
+.px-landing .btn-primary {
+  background: var(--t);
+  color: var(--t-ink);
+  border-radius: 2px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 180ms ease-out, transform 180ms ease-out, box-shadow 180ms ease-out;
+}
+.px-landing .btn-primary:hover {
+  background: var(--t-h);
+  transform: translateY(-1px);
+  box-shadow: 0 0 18px rgba(0, 212, 184, 0.45);
+}
+.px-landing .btn-ghost {
+  border-radius: 2px;
+  border: 1px solid rgba(0, 212, 184, 0.3);
+  color: var(--btn-ghost-fg);
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 180ms ease-out, color 180ms ease-out, border-color 180ms ease-out;
+}
+.px-landing .btn-ghost:hover {
+  background: rgba(0, 212, 184, 0.1);
+  border-color: var(--t);
+  color: var(--t);
+}
+
+/* Status dot */
+@keyframes px-badge-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(0.85); }
+}
+.px-landing .status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 9999px;
+  background: var(--t);
+  box-shadow: 0 0 10px rgba(0, 212, 184, 0.9);
+  animation: px-badge-pulse 2s ease-in-out infinite;
+}
+
+/* Hero char animation */
+.px-landing .char {
+  display: inline-block;
+  opacity: 0;
+  transform: translateX(-18px);
+  transition: opacity 500ms ease-out, transform 500ms ease-out;
+  will-change: opacity, transform;
+}
+.px-landing .char.in { opacity: 1; transform: translateX(0); }
+
+/* Hero entrance — fade + rise, staggered via inline animation-delay. */
+@keyframes px-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.px-landing .px-up { animation: px-up 700ms ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  .px-landing .px-up { animation: none; }
+}
+
+/* Generic fade */
+.px-landing .fade {
+  opacity: 0;
+  transition-property: opacity;
+  transition-timing-function: ease-out;
+}
+.px-landing .fade.in { opacity: 1; }
+
+/* Scroll reveal */
+.px-landing .reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 500ms ease-out, transform 500ms ease-out;
+  will-change: opacity, transform;
+}
+.px-landing .reveal.in { opacity: 1; transform: translateY(0); }
+
+@media (prefers-reduced-motion: reduce) {
+  .px-landing .char,
+  .px-landing .fade,
+  .px-landing .reveal {
+    transition: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .px-landing .status-dot { animation: none; }
+}
+
+.px-landing .num {
+  font-family: 'Geist Mono', monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* CTA input + footer divider (theme-aware) */
+.px-landing .cta-input {
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  color: var(--input-fg);
+  border-radius: 2px;
+  transition: border-color 160ms ease-out;
+}
+.px-landing .cta-input::placeholder { color: var(--input-ph); }
+.px-landing .cta-input:focus { border-color: var(--t); outline: none; }
+.px-landing .foot-divider { border-top: 1px solid var(--card-border); }
+
+/* Segmentation chips (Home Mover Report form) — selected chip flips to the
+   accent fill, matching btn-primary's ink-on-teal. */
+.px-landing .seg-chip {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.55rem 0.9rem;
+  /* These chips ARE the lead-capture interaction on the landing page, and they
+     sat at 37px high. min-height rather than more padding, so the type stays
+     put and only the hit area grows. */
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 2px;
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--input-fg);
+  cursor: pointer;
+  transition: border-color 160ms ease-out, background 160ms ease-out, color 160ms ease-out;
+}
+.px-landing .seg-chip:hover { border-color: var(--t); }
+.px-landing .seg-chip[aria-pressed='true'] {
+  background: var(--t);
+  border-color: var(--t);
+  color: var(--t-ink);
+  font-weight: 500;
+}
+
+/* Theme toggle — re-themes with the page (hero is now theme-aware). */
+.px-landing .theme-toggle {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  /* 44px hit area (WCAG 2.5.5 AAA) without growing the 19px icon — the padding
+     that used to size this button gave it 27px. This toggle is hand-rolled and
+     does NOT use the shared ThemeToggle component, which is why the sweep that
+     fixed that component left this one behind. */
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  color: var(--fg-2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 160ms ease-out;
+}
+.px-landing .theme-toggle:hover { color: var(--t); }
+.px-landing .icon-sun,
+.px-landing .icon-moon { width: 19px; height: 19px; }
+.px-landing .icon-moon { display: none; }
+[data-theme='light'] .px-landing .icon-sun { display: none; }
+[data-theme='light'] .px-landing .icon-moon { display: inline-block; }
+
+/* ── Hero milestone chain ─────────────────────────────────────────────────── */
+.px-landing .px-chain-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  position: relative;
+}
+/* Growing teal fill line — starts at the first node (8.3%), spans to 91.7%. */
+.px-landing .px-chain-fill {
+  position: absolute;
+  top: 14px;
+  left: 8.3%;
+  height: 1px;
+  background: var(--t);
+  transition: width 900ms ease-in-out;
+}
+.px-landing .px-chain-track {
+  position: absolute;
+  top: 14px;
+  left: 8.3%;
+  right: 8.3%;
+  height: 1px;
+  background: var(--border-teal);
+}
+.px-landing .px-node {
+  width: 29px;
+  height: 29px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  border: 1px solid var(--node-pending-border);
+  background: var(--node-pending-bg);
+  color: var(--node-pending-fg);
+  transition: background 400ms ease-out, border-color 400ms ease-out, color 400ms ease-out;
+}
+.px-landing .px-node.is-done {
+  background: var(--node-done-bg);
+  border-color: var(--t);
+  color: var(--t);
+}
+.px-landing .px-node.is-active {
+  background: var(--t);
+  border-color: var(--t);
+  color: var(--t-ink);
+  box-shadow: 0 0 16px rgba(0, 212, 184, 0.6);
+  animation: px-badge-pulse 1.2s ease-in-out infinite;
+}
+.px-landing .px-node-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--node-pending-fg);
+  transition: color 400ms ease-out;
+}
+.px-landing .px-node-label.is-done { color: var(--node-done-label); }
+.px-landing .px-node-label.is-active { color: var(--t); }
+@media (prefers-reduced-motion: reduce) {
+  .px-landing .px-node.is-active { animation: none; }
+  .px-landing .px-chain-fill { transition: none; }
+}
+
+/* ── Responsive grids (custom 1100 / 768 breakpoints from the design) ─────── */
+.px-landing .px-g5 { display: grid; grid-template-columns: repeat(5, 1fr); }
+.px-landing .px-g3 { display: grid; grid-template-columns: repeat(3, 1fr); }
+/* Two-column audience layouts. Base ratios live in CSS (not inline) so the
+   media query can override them — an inline grid-template-columns would win. */
+.px-landing .px-cols { display: grid; grid-template-columns: 1.1fr 0.9fr; }
+.px-landing .px-cols-rev { display: grid; grid-template-columns: 0.9fr 1.1fr; }
+@media (max-width: 1100px) {
+  .px-landing .px-g5,
+  .px-landing .px-g3 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 768px) {
+  .px-landing .px-g5,
+  .px-landing .px-g3,
+  .px-landing .px-cols,
+  .px-landing .px-cols-rev { grid-template-columns: 1fr; }
+  .px-landing .px-cols,
+  .px-landing .px-cols-rev { gap: 2.5rem; }
+  .px-landing .px-chain { overflow-x: auto; padding-bottom: 0.5rem; }
+  .px-landing .px-chain-grid { min-width: 560px; }
+}
+
+/* ── Partner strip ────────────────────────────────────────────────────────── */
+.px-landing .px-partner-head { text-align: center; }
+.px-landing .px-partner-lead {
+  max-width: 46rem;
+  margin: 1rem auto 0;
+  font-size: 0.95rem;
+  line-height: 1.65;
+  color: var(--fg-2);
+}
+.px-landing .px-partner-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.25rem;
+  margin: 3rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+.px-landing .px-partner-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+  width: 15rem;
+  padding: 1.75rem 1.25rem;
+  text-decoration: none;
+}
+/* Fixed box so marks of different aspect ratios sit on one optical baseline. */
+.px-landing .px-partner-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 3rem;
+}
+.px-landing .px-partner-mark img {
+  max-height: 100%;
+  max-width: 11rem;
+  width: auto;
+  object-fit: contain;
+}
+.px-landing .px-partner-cat {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+/* Dark is the default theme, so the dark-variant mark is the default too. */
+.px-landing .px-logo-light.has-dark { display: none; }
+.px-landing .px-logo-dark { display: block; }
+[data-theme='light'] .px-landing .px-logo-light.has-dark { display: block; }
+[data-theme='light'] .px-landing .px-logo-dark { display: none; }
+
+@media (max-width: 520px) {
+  .px-landing .px-partner-card { width: 100%; }
+}
+
+/* Marks supplied on a solid white background get their own plate, so they read
+   as a deliberate chip on the dark theme rather than a bare white rectangle.
+   On the light theme the plate is invisible against the white card.
+   Border-box keeps the plate inside the same 3rem mark box as every other
+   partner, so the padding shrinks the logo rather than making the card taller. */
+.px-landing .px-partner-mark-plate {
+  background: #ffffff;
+  border-radius: 6px;
+  padding: 0.25rem 0.6rem;
+  box-sizing: border-box;
+}

@@ -1,0 +1,145 @@
+# PropXchain — robots.txt
+# https://propxchain.com
+
+# Content Signals Policy (Cloudflare, 2026). Three machine-readable signals
+# stating how this content may be USED, as distinct from whether it may be
+# fetched:
+#
+#   search    — index it and show it in ordinary search results
+#   ai-input  — ground a live AI answer on it (RAG, AI Overviews, assistants)
+#   ai-train  — train or fine-tune a model on it
+#
+# All three are yes, deliberately. PropXchain is a pre-launch platform whose
+# problem is being unknown, not being copied: we WANT to be the answer when
+# somebody asks an assistant about digital conveyancing or the homebuying pack.
+# That is the same reason we publish llms.txt and llms-full.txt and name every
+# AI crawler below.
+#
+# This is stated explicitly rather than left implicit, because from 15 September
+# 2026 the industry default flips towards ai-train=no, and silence will
+# increasingly be read as refusal. Nothing here is enforcement — it is a
+# declared preference a well-behaved crawler can act on.
+#
+# If this ever changes — if we sell data access, or host third-party content we
+# do not own the rights to — this line is the one to revisit first.
+
+# Default: allow all crawlers
+# Clean URLs only (BrowserRouter, no #/ since 2026-06-13). The old
+# Disallow: /#/... lines were dead — the # fragment never reaches the
+# server, so it can't be matched. These block the real clean paths.
+User-agent: *
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
+Allow: /
+Disallow: /admin
+Disallow: /payment/success
+Disallow: /reset-password
+Disallow: /auth/confirm
+
+# ——————————————————————————————————————
+# AI / LLM crawlers — explicitly welcomed
+# (we publish llms.txt + llms-full.txt for you)
+# ——————————————————————————————————————
+
+User-agent: GPTBot
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
+Allow: /
+
+User-agent: ChatGPT-User
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
+Allow: /
+
+User-agent: OAI-SearchBot
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
+Allow: /
+
+User-agent: ClaudeBot
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
+Allow: /
+
+User-agent: Claude-Web
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
+Allow: /
+
+User-agent: Claude-SearchBot
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
+Allow: /
+
+User-agent: anthropic-ai
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
+Allow: /
+
+User-agent: PerplexityBot
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
+Allow: /
+
+User-agent: Perplexity-User
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
+Allow: /
+
+User-agent: Google-Extended
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
+Allow: /
+
+User-agent: Applebot
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
+Allow: /
+
+User-agent: Applebot-Extended
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
+Allow: /
+
+User-agent: CCBot
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
+Allow: /
+
+User-agent: cohere-ai
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
+Allow: /
+
+User-agent: cohere-training-data-crawler
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
+Allow: /
+
+User-agent: Meta-ExternalAgent
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
+Allow: /
+
+User-agent: Meta-ExternalFetcher
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
+Allow: /
+
+User-agent: FacebookBot
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
+Allow: /
+
+User-agent: Bytespider
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
+Allow: /
+
+User-agent: DuckAssistBot
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
+Allow: /
+
+User-agent: YouBot
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
+Allow: /
+
+User-agent: Diffbot
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
+Allow: /
+
+User-agent: Amazonbot
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
+Allow: /
+
+User-agent: MistralAI-User
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
+Allow: /
+
+# ——————————————————————————————————————
+# Sitemap + structured docs for AI agents
+# ——————————————————————————————————————
+Sitemap: https://propxchain.com/sitemap.xml
+# Agentic Resource Discovery capability manifest (MCP server, A2A card, skills)
+Agentmap: https://propxchain.com/.well-known/ard.json
+Agentmap: https://propxchain.com/.well-known/ai-catalog.json

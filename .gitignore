@@ -1,0 +1,115 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-backup/
+.vite/
+
+# graphify code-graph output (local dev tool; regenerated on demand via `graphify update`)
+**/graphify-out/
+
+# Testing
+coverage/
+
+# Env / secrets — never commit
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+*.pfx
+*.p12
+*.jks
+*.keystore
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Dead-code audit scratch (knip/jscpd outputs, type-check dumps, tier scripts) —
+# transient, regenerated on demand. knip.json (the config) IS committed.
+_audit-*
+_typecheck.txt
+_t2*
+_tier*
+# Transient cut checklist — lives in the Obsidian vault, not shipped to main.
+CUT-LIST.md
+_design-reference/
+
+# Understand-anything knowledge graph (derived artifact, rebuilt nightly)
+.understand-anything/
+.superpowers/
+
+# Security audit reports — findings name unfixed weaknesses and live table/
+# function names. This repo goes public at Phase 4, so they stay local.
+.gstack/
+
+# Internal working documents — kept on disk, not published.
+#
+# Implementation plans, design specs, session handoffs and integration designs
+# are process artefacts: they capture how we got somewhere, name commercial
+# partners, and go stale the moment the code moves on. The repo flips public at
+# Phase 4, so the only markdown that ships is README.md and the agent-discovery
+# files the site serves from public/. Everything else (AGENTS.md, CLAUDE.md,
+# CONTEXT.md, ADRs, specs) is local to the maintainer's checkout and never
+# ships in a clone. A new public doc (SECURITY.md, CHANGELOG.md) needs its own
+# !/NAME.md line below.
+#
+# NOTE: untracking these does NOT remove them from git history. Anything
+# already committed is still reachable via `git log`. If a specific document
+# must not be in the public history, it needs `git filter-repo` before the
+# Phase 4 flip.
+*.md
+!/README.md
+!/public/**/*.md
+docs/handoffs/
+docs/plans/
+docs/runbooks/
+docs/onesearch/
+docs/superpowers/
+MOVE_NARRATOR_FRONTEND_HANDOFF.md
+
+# Design handoff mockups (reference HTML + assets, not shipped app code)
+design_handoff_*/
+
+# Throwaway UI prototypes. This repo goes public at Phase 4, so exploratory
+# routes and placeholder imagery must never reach history. Rebuild anything
+# worth keeping as a real page instead of restoring a /prototype/* route.
+src/pages/prototype/
+public/prototype/
+
+# Supabase CLI scratch dir (holds the linked project ref + version cache)
+supabase/.temp/
+
+# Backups of env files — never let one land in the repo
+.env*.bak*
+.env*.backup*
+
+# Archives. This repo goes public at Phase 4 and design/handoff bundles are
+# dropped in the root by hand, so a bare `git add .` must never sweep one in.
+*.zip
+
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+/graft/
+
+# Web Bot Auth private signing key (scripts/web-bot-auth-keygen.mjs)
+**/private*.jwk.json
+
+# Local tooling state. dfx build output is regenerated on every deploy, and
+# settings.local.json holds one developer's machine-specific permissions.
+.dfx/
+.claude/settings.local.json

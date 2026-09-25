@@ -1,0 +1,192 @@
+[
+  {
+    // Default: security headers + caching for all assets
+    // These mirror the CSP from vite.config.ts but apply in PRODUCTION on IC
+    "match": "**/*",
+    "headers": {
+      "Content-Security-Policy": "default-src 'self'; script-src 'self' 'sha256-cXiZeUoUH0eop2rOqJhm04zC59cbQUgK4gBwP0p8/mk=' 'sha256-YyBAZ4lLS6ENQIbBKRAUzKtEnmuHQ6iJ/zm7ENQCa6k=' 'sha256-gGt2r0fTuR5SCRnzwozO0D+RekZBjM33H8tcx8BPkO8=' 'sha256-08FPA4mXi+p4WsPjojT/Zm+jSitvKMB/iOJ/Q13lH44=' 'unsafe-eval' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https://*.google-analytics.com https://*.googletagmanager.com https://media.rightmove.co.uk https://*.onthemarket.com https://*.purplebricks.co.uk https://*.basemaps.cartocdn.com https://basemaps.cartocdn.com https://tile.openstreetmap.org; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://api.propxchain.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://*.googletagmanager.com https://stats.g.doubleclick.net https://www.google.com https://ic0.app https://*.ic0.app https://icp0.io https://*.icp0.io https://icp-api.io https://identity.ic0.app https://id.ai https://*.supabase.co https://*.hatton-marc.workers.dev https://propxchain.onrender.com https://propxchain-proxy-render.onrender.com https://propxchain-property-enrich.onrender.com https://propxchain-4k8l.onrender.com https://*.stripe.com https://landregistry.data.gov.uk https://api.postcodes.io https://environment.data.gov.uk https://www.planning.data.gov.uk https://www.planit.org.uk; frame-src 'self' https://identity.ic0.app https://id.ai https://*.stripe.com; object-src 'none'; base-uri 'self'; form-action 'self' https://*.stripe.com;",
+      "X-Frame-Options": "DENY",
+      "X-Content-Type-Options": "nosniff",
+      "Referrer-Policy": "strict-origin-when-cross-origin",
+      "Permissions-Policy": "geolocation=(), microphone=(), camera=()",
+      "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+      "Cache-Control": "public, no-cache, must-revalidate"
+    },
+    // Disable raw (uncertified) access — certified responses only
+    "allow_raw_access": false,
+    // SPA fallback: serve index.html for unmatched routes
+    "enable_aliasing": true
+  },
+  {
+    // Hashed static assets — cache aggressively (Vite adds content hashes)
+    "match": "assets/**/*",
+    "headers": {
+      "Cache-Control": "public, max-age=31536000, immutable"
+    }
+  },
+  {
+    // Images — long cache
+    "match": "*.{jpg,jpeg,png,gif,svg,webp,ico}",
+    "headers": {
+      "Cache-Control": "public, max-age=86400"
+    }
+  },
+  {
+    // Background video — week-long cache; rename the file if it's ever replaced
+    "match": "*.{mp4,webm}",
+    "headers": {
+      "Cache-Control": "public, max-age=604800"
+    }
+  },
+  {
+    // robots.txt — search + AI crawlers
+    "match": "robots.txt",
+    "headers": {
+      "Content-Type": "text/plain; charset=utf-8",
+      "Cache-Control": "public, max-age=3600"
+    }
+  },
+  {
+    // sitemap.xml — search discovery
+    "match": "sitemap.xml",
+    "headers": {
+      "Content-Type": "application/xml; charset=utf-8",
+      "Cache-Control": "public, max-age=3600"
+    }
+  },
+  {
+    // llms.txt / llms-full.txt — AI agent documentation
+    "match": "llms*.txt",
+    "headers": {
+      "Content-Type": "text/plain; charset=utf-8",
+      "Cache-Control": "public, max-age=3600",
+      "Access-Control-Allow-Origin": "*"
+    }
+  },
+  {
+    // .well-known files must be served (custom domain + II alt origins)
+    "match": ".well-known",
+    "ignore": false
+  },
+  {
+    "match": ".well-known/ic-domains",
+    "headers": {
+      "Content-Type": "text/plain"
+    },
+    "ignore": false
+  },
+  {
+    "match": ".well-known/ii-alternative-origins",
+    "headers": {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*"
+    },
+    "ignore": false
+  },
+  {
+    // RFC 8414 authorization-server metadata. Mirror of
+    // https://auth.propxchain.com/.well-known/oauth-authorization-server so
+    // agents probing the apex domain find it. Refresh with
+    // node scripts/sync-oauth-metadata.mjs; issuer stays auth.propxchain.com.
+    "match": ".well-known/oauth-authorization-server",
+    "headers": {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "public, max-age=3600",
+      "Access-Control-Allow-Origin": "*"
+    },
+    "ignore": false
+  },
+  {
+    // RFC 9728 protected-resource metadata: points agents at the auth server.
+    "match": ".well-known/oauth-protected-resource",
+    "headers": {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "public, max-age=3600",
+      "Access-Control-Allow-Origin": "*"
+    },
+    "ignore": false
+  },
+  {
+    // A2A Agent Card (a2a-protocol.org) for agent-to-agent discovery.
+    "match": ".well-known/agent-card.json",
+    "headers": {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "public, max-age=3600",
+      "Access-Control-Allow-Origin": "*"
+    },
+    "ignore": false
+  },
+  {
+    // Agent Skills Discovery index (cloudflare/agent-skills-discovery-rfc v0.2.0),
+    // generated post-build by scripts/generate-agent-skills-index.mjs.
+    "match": ".well-known/agent-skills/index.json",
+    "headers": {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "public, max-age=3600",
+      "Access-Control-Allow-Origin": "*"
+    },
+    "ignore": false
+  },
+  {
+    // The skill artifacts themselves; digests in index.json are of these bytes.
+    "match": ".well-known/agent-skills/*/SKILL.md",
+    "headers": {
+      "Content-Type": "text/markdown; charset=utf-8",
+      "Cache-Control": "public, max-age=3600",
+      "Access-Control-Allow-Origin": "*"
+    },
+    "ignore": false
+  },
+  {
+    // Web Bot Auth key directory (IETF webbotauth, draft-meunier-*). Public
+    // Ed25519 JWKS receivers use to verify requests our bots sign. Rotate with
+    // node scripts/web-bot-auth-keygen.mjs; the private key never enters git.
+    "match": ".well-known/http-message-signatures-directory",
+    "headers": {
+      "Content-Type": "application/http-message-signatures-directory+json",
+      "Cache-Control": "public, max-age=86400",
+      "Access-Control-Allow-Origin": "*"
+    },
+    "ignore": false
+  },
+  {
+    // RFC 9727 API catalog (RFC 9264 linkset) listing the agent-facing APIs.
+    "match": ".well-known/api-catalog",
+    "headers": {
+      "Content-Type": "application/linkset+json",
+      "Cache-Control": "public, max-age=3600",
+      "Access-Control-Allow-Origin": "*"
+    },
+    "ignore": false
+  },
+  {
+    // Agentic Resource Discovery manifest, current spec path (v0.91).
+    "match": ".well-known/ard.json",
+    "headers": {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "public, max-age=3600",
+      "Access-Control-Allow-Origin": "*"
+    },
+    "ignore": false
+  },
+  {
+    // ARD predecessor path that scanners still probe; same bytes as ard.json (enforced by src/__tests__/config/ard.test.ts).
+    "match": ".well-known/ai-catalog.json",
+    "headers": {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "public, max-age=3600",
+      "Access-Control-Allow-Origin": "*"
+    },
+    "ignore": false
+  },
+  {
+    // MCP server discovery manifest — cross-origin readable for AI agents
+    "match": ".well-known/mcp.json",
+    "headers": {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "public, max-age=3600",
+      "Access-Control-Allow-Origin": "*"
+    },
+    "ignore": false
+  }
+]

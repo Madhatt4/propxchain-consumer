@@ -1,0 +1,257 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 9%;
+    --primary: 0 0% 13%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
+    --accent: 0 0% 96%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --success: 142.1 76.2% 36.3%;
+    --success-foreground: 355.7 100% 97.3%;
+    --warning: 47.9 95.8% 53.1%;
+    --warning-foreground: 26 83.3% 14.1%;
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 0 0% 13%;
+    --radius: 0.5rem;
+    /* Staged dashboard brand colours */
+    --brand: 172 66% 26%;
+    --seller: 160 84% 39%;
+    --buyer: 221 83% 53%;
+    --fee: 263 70% 50%;
+    --warning-accent: 38 92% 50%;
+
+    /* PropXchain brand tokens (per DESIGN.md). Marketing surfaces consume `--px-*`.
+       Light values live here; `.dark` flips them. Hardcoded hex (not HSL) so values
+       stay legible against DESIGN.md spec without a triple-translation. */
+    --px-primary: #0D9488;
+    --px-primary-hover: #0F766E;
+    --px-primary-light: #CCFBF1;
+    --px-sage: #84A98C;
+    --px-sage-light: #DAE5DC;
+    --px-sage-dark: #5F8A68;
+    --px-bg: #FAFAF8;
+    --px-surface: #FFFFFF;
+    --px-surface-alt: #F0F5F0;
+    --px-text: #1A1A1A;
+    --px-text-muted: #6B7280;
+    --px-border: #E5E7EB;
+    --px-success: #059669;
+    --px-warning: #D97706;
+    --px-error: #DC2626;
+    --px-font-display: 'Fraunces', Georgia, serif;
+    --px-font-body: 'DM Sans', system-ui, sans-serif;
+    --px-font-mono: 'Geist Mono', ui-monospace, monospace;
+    --px-radius-sm: 4px;
+    --px-radius-md: 8px;
+    --px-radius-lg: 12px;
+    --px-radius-xl: 16px;
+  }
+
+  .dark {
+    --background: 0 0% 9%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 80%;
+    --primary-foreground: 0 0% 9%;
+    --secondary: 0 0% 18%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 18%;
+    --muted-foreground: 0 0% 65%;
+    --accent: 0 0% 18%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --success: 142.1 70.6% 45.3%;
+    --success-foreground: 144.9 80.4% 10%;
+    --warning: 47.9 95.8% 53.1%;
+    --warning-foreground: 26 83.3% 14.1%;
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
+    --ring: 0 0% 50%;
+
+    /* PropXchain brand tokens — dark mode (per DESIGN.md). */
+    --px-primary: #14B8A6;
+    --px-primary-hover: #2DD4BF;
+    --px-primary-light: #042F2E;
+    --px-sage: #9CB8A4;
+    --px-sage-light: #1A2A1E;
+    --px-bg: #060B18;
+    --px-surface: #0F1729;
+    --px-surface-alt: #141F33;
+    --px-text: #F1F5F9;
+    --px-text-muted: #94A3B8;
+    --px-border: #1E293B;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+    -webkit-tap-highlight-color: transparent;
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'DM Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overscroll-behavior: none;
+    /* Safe area insets for notched devices (iPhone 14/15/16, Pixel 8+) */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  button, a, [role="button"] {
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+}
+
+#root {
+  min-height: 100vh;
+}
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ===== VIGAZZLE: Keyframes ===== */
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 4px 24px rgba(20,184,166,0.12), 0 0 0 1px rgba(20,184,166,0.05); }
+  50% { box-shadow: 0 4px 32px rgba(20,184,166,0.22), 0 0 0 2px rgba(20,184,166,0.12); }
+}
+
+@keyframes gradient-drift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes star-fill {
+  0% { transform: scale(0); opacity: 0; }
+  60% { transform: scale(1.3); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes badge-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.65; }
+}
+
+/* ===== VIGAZZLE: Glass Utilities ===== */
+
+.glass {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.glass-teal {
+  background: rgba(15, 118, 110, 0.1);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(20, 184, 166, 0.18);
+}
+
+.glass-green {
+  background: rgba(16, 185, 129, 0.08);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(16, 185, 129, 0.18);
+}
+
+.glass-amber {
+  background: rgba(251, 191, 36, 0.08);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(251, 191, 36, 0.18);
+}
+
+.glass-purple {
+  background: rgba(124, 58, 237, 0.06);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(124, 58, 237, 0.15);
+}
+
+.glow-teal {
+  box-shadow: 0 0 16px rgba(20, 184, 166, 0.3);
+}
+
+.glow-green {
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.3);
+}
+
+/* Light mode glass overrides — apply when .dark is NOT on <html> */
+:root:not(.dark) .glass {
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+:root:not(.dark) .glass-teal {
+  background: rgba(15, 118, 110, 0.06);
+  border: 1px solid rgba(20, 184, 166, 0.15);
+}
+:root:not(.dark) .glass-purple {
+  background: rgba(124, 58, 237, 0.04);
+  border: 1px solid rgba(124, 58, 237, 0.12);
+}
+:root:not(.dark) .glass-green {
+  background: rgba(16, 185, 129, 0.05);
+  border: 1px solid rgba(16, 185, 129, 0.15);
+}
+:root:not(.dark) .glass-amber {
+  background: rgba(251, 191, 36, 0.05);
+  border: 1px solid rgba(251, 191, 36, 0.15);
+}
+
+/* Dark mode glass */
+.dark .glass {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+/* Stagger animation delays */
+.animate-stagger-1 { animation: fade-in-up 0.4s ease-out 0ms both; }
+.animate-stagger-2 { animation: fade-in-up 0.4s ease-out 50ms both; }
+.animate-stagger-3 { animation: fade-in-up 0.4s ease-out 100ms both; }
+.animate-stagger-4 { animation: fade-in-up 0.4s ease-out 150ms both; }
+.animate-stagger-5 { animation: fade-in-up 0.4s ease-out 200ms both; }
+.animate-stagger-6 { animation: fade-in-up 0.4s ease-out 250ms both; }
+.animate-stagger-7 { animation: fade-in-up 0.4s ease-out 300ms both; }
+.animate-stagger-8 { animation: fade-in-up 0.4s ease-out 350ms both; }

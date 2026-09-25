@@ -1,0 +1,414 @@
+/**
+ * TR1Form - Guided form for creating a TR1 Transfer Deed
+ * Auto-populates from transaction data, conveyancer fills remaining fields
+ * Generates PDF via jsPDF and registers hash on-chain
+ */
+
+import React, { useState, useMemo } from 'react';
+import jsPDF from 'jspdf';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { icpService } from '@/services/icp.service';
+import { logger } from '@/utils/logger';
+
+interface TR1FormProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onComplete: (docId: number) => void;
+  transaction: {
+    id: string;
+    propertyAddress: string;
+    amount: number;
+    buyer: string;
+    seller: string;
+  };
+}
+
+type FormStep = 'details' | 'declarations' | 'review';
+
+interface TR1Fields {
+  titleNumber: string;
+  transferDate: string;
+  titleGuarantee: 'FULL' | 'LIMITED' | 'NO_GUARANTEE';
+  additionalProvisions: string;
+  sellerAddress: string;
+  buyerAddress: string;
+  identityVerified: boolean;
+  sellerEntitled: boolean;
+  noUndisclosedInterests: boolean;
+}
+
+const TR1Form: React.FC<TR1FormProps> = ({
+  isOpen,
+  onClose,
+  onComplete,
+  transaction,
+}) => {
+  const [step, setStep] = useState<FormStep>('details');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [fields, setFields] = useState<TR1Fields>({
+    titleNumber: '',
+    transferDate: new Date().toISOString().split('T')[0],
+    titleGuarantee: 'FULL',
+    additionalProvisions: '',
+    sellerAddress: '',
+    buyerAddress: '',
+    identityVerified: false,
+    sellerEntitled: false,
+    noUndisclosedInterests: false,
+  });
+
+  const updateField = <K extends keyof TR1Fields>(key: K, value: TR1Fields[K]): void => {
+    setFields((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const isDetailsValid = useMemo((): boolean => {
+    return fields.titleNumber.trim().length > 0 && fields.transferDate.length > 0;
+  }, [fields.titleNumber, fields.transferDate]);
+
+  const isDeclarationsValid = useMemo((): boolean => {
+    return fields.identityVerified && fields.sellerEntitled && fields.noUndisclosedInterests;
+  }, [fields.identityVerified, fields.sellerEntitled, fields.noUndisclosedInterests]);
+
+  const generatePDF = (): Blob => {
+    const doc = new jsPDF();
+    const pw = doc.internal.pageSize.getWidth();
+    let y = 20;
+
+    // Header
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 51, 102);
+    doc.text('FORM TR1', pw / 2, y, { align: 'center' });
+    y += 8;
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(80);
+    doc.text('Transfer of whole of registered title(s)', pw / 2, y, { align: 'center' });
+
+    y += 15;
+    doc.setDrawColor(0, 51, 102);
+    doc.setLineWidth(0.5);
+    doc.line(20, y, pw - 20, y);
+    y += 10;
+
+    const addField = (label: string, value: string): void => {
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0);
+      doc.text(label, 25, y);
+      doc.setFont('helvetica', 'normal');
+      const lines = doc.splitTextToSize(value, pw - 100);
+      doc.text(lines, 80, y);
+      y += Math.max(8, lines.length * 6);
+    };
+
+    addField('1. Title Number:', fields.titleNumber);
+    addField('2. Property:', transaction.propertyAddress);
+    addField('3. Date:', new Date(fields.transferDate).toLocaleDateString('en-GB'));
+    addField('4. Transferor:', transaction.seller);
+    if (fields.sellerAddress) addField('   Address:', fields.sellerAddress);
+    addField('5. Transferee:', transaction.buyer);
+    if (fields.buyerAddress) addField('   Address:', fields.buyerAddress);
+    addField('6. Consideration:', `£${transaction.amount.toLocaleString()}`);
+
+    const guaranteeLabel: Record<string, string> = {
+      FULL: 'Full title guarantee',
+      LIMITED: 'Limited title guarantee',
+      NO_GUARANTEE: 'No title guarantee',
+    };
+    addField('7. Title Guarantee:', guaranteeLabel[fields.titleGuarantee]);
+
+    if (fields.additionalProvisions.trim()) {
+      addField('8. Additional:', fields.additionalProvisions);
+    }
+
+    y += 10;
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 51, 102);
+    doc.text('DECLARATIONS', 25, y);
+    y += 8;
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(0);
+    const decls = [
+      ['Identity verified', fields.identityVerified],
+      ['Seller is entitled to transfer', fields.sellerEntitled],
+      ['No undisclosed interests', fields.noUndisclosedInterests],
+    ] as const;
+
+    decls.forEach(([label, checked]) => {
+      doc.text(`[${checked ? 'X' : ' '}] ${label}`, 25, y);
+      y += 7;
+    });
+
+    y += 10;
+    doc.setFontSize(8);
+    doc.setTextColor(100);
+    doc.text('Generated by PropXchain - Blockchain Property Conveyancing', pw / 2, y, { align: 'center' });
+    doc.text(`Transaction ID: ${transaction.id}`, pw / 2, y + 5, { align: 'center' });
+
+    return doc.output('blob');
+  };
+
+  const handleSubmit = async (): Promise<void> => {
+    setSubmitting(true);
+    setError(null);
+    try {
+      const pdfBlob = generatePDF();
+      const pdfFile = new File([pdfBlob], `TR1_${fields.titleNumber || 'transfer'}.pdf`, {
+        type: 'application/pdf',
+      });
+
+      const result = await icpService.registerDocumentProof(
+        pdfFile,
+        0,
+        'tr1_transfer',
+        'onchain',
+        transaction.id,
+      );
+
+      // Save to localStorage for local reference
+      const localDocs = JSON.parse(localStorage.getItem(`conveyancer_docs_${transaction.id}`) || '[]');
+      localDocs.push({
+        storageDocId: result.storageDocumentId,
+        docType: 'tr1_transfer',
+        fileName: pdfFile.name,
+        hash: result.documentHash,
+        createdAt: new Date().toISOString(),
+      });
+      localStorage.setItem(`conveyancer_docs_${transaction.id}`, JSON.stringify(localDocs));
+
+      // Also trigger PDF download for conveyancer's records
+      const url = URL.createObjectURL(pdfBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = pdfFile.name;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      onComplete(result.storageDocumentId);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to register TR1';
+      logger.error('TR1 submission failed:', err);
+      setError(msg);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const inputClass = 'w-full h-10 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent';
+  const labelClass = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1';
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Generate TR1 Transfer Deed</DialogTitle>
+          <DialogDescription>
+            Step {step === 'details' ? '1/3' : step === 'declarations' ? '2/3' : '3/3'}
+            {' — '}
+            {step === 'details' ? 'Transfer Details' : step === 'declarations' ? 'Declarations' : 'Review & Submit'}
+          </DialogDescription>
+        </DialogHeader>
+
+        {/* Auto-populated banner */}
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-3 py-2">
+          <p className="text-xs text-blue-700 dark:text-blue-300">
+            Property: <strong>{transaction.propertyAddress}</strong> |
+            Price: <strong>£{transaction.amount.toLocaleString()}</strong>
+          </p>
+        </div>
+
+        {/* Step 1: Details */}
+        {step === 'details' && (
+          <div className="space-y-3">
+            <div>
+              <label className={labelClass}>Title Number *</label>
+              <input
+                type="text"
+                value={fields.titleNumber}
+                onChange={(e) => updateField('titleNumber', e.target.value.toUpperCase())}
+                className={inputClass}
+                placeholder="e.g., NGL123456"
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Transfer Date *</label>
+              <input
+                type="date"
+                value={fields.transferDate}
+                onChange={(e) => updateField('transferDate', e.target.value)}
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Title Guarantee</label>
+              <select
+                value={fields.titleGuarantee}
+                onChange={(e) => updateField('titleGuarantee', e.target.value as TR1Fields['titleGuarantee'])}
+                className={inputClass}
+              >
+                <option value="FULL">Full title guarantee</option>
+                <option value="LIMITED">Limited title guarantee</option>
+                <option value="NO_GUARANTEE">No title guarantee</option>
+              </select>
+            </div>
+            <div>
+              <label className={labelClass}>Seller Address</label>
+              <input
+                type="text"
+                value={fields.sellerAddress}
+                onChange={(e) => updateField('sellerAddress', e.target.value)}
+                className={inputClass}
+                placeholder="Seller's correspondence address"
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Buyer Address</label>
+              <input
+                type="text"
+                value={fields.buyerAddress}
+                onChange={(e) => updateField('buyerAddress', e.target.value)}
+                className={inputClass}
+                placeholder="Buyer's correspondence address"
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Additional Provisions</label>
+              <textarea
+                value={fields.additionalProvisions}
+                onChange={(e) => updateField('additionalProvisions', e.target.value)}
+                className={`${inputClass} h-20 resize-none`}
+                placeholder="Any additional clauses or restrictions..."
+              />
+            </div>
+            <button
+              onClick={() => setStep('declarations')}
+              disabled={!isDetailsValid}
+              className="w-full h-10 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg disabled:opacity-40 transition-colors"
+            >
+              Next: Declarations
+            </button>
+          </div>
+        )}
+
+        {/* Step 2: Declarations */}
+        {step === 'declarations' && (
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Confirm the following before generating the TR1:
+            </p>
+            {([
+              ['identityVerified', 'I have verified the identity of all parties to this transfer'],
+              ['sellerEntitled', 'The seller is entitled to transfer this property'],
+              ['noUndisclosedInterests', 'There are no undisclosed interests affecting the property'],
+            ] as const).map(([key, label]) => (
+              <label key={key} className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={fields[key]}
+                  onChange={(e) => updateField(key, e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-gray-300"
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
+              </label>
+            ))}
+            <div className="flex gap-2">
+              <button
+                onClick={() => setStep('details')}
+                className="flex-1 h-10 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+              >
+                Back
+              </button>
+              <button
+                onClick={() => setStep('review')}
+                disabled={!isDeclarationsValid}
+                className="flex-1 h-10 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg disabled:opacity-40 transition-colors"
+              >
+                Next: Review
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 3: Review */}
+        {step === 'review' && (
+          <div className="space-y-3">
+            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-500">Title Number</span>
+                <span className="font-medium text-gray-900 dark:text-white">{fields.titleNumber}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Property</span>
+                <span className="font-medium text-gray-900 dark:text-white text-right max-w-[60%]">{transaction.propertyAddress}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Transfer Date</span>
+                <span className="font-medium text-gray-900 dark:text-white">
+                  {new Date(fields.transferDate).toLocaleDateString('en-GB')}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Consideration</span>
+                <span className="font-medium text-gray-900 dark:text-white">£{transaction.amount.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Guarantee</span>
+                <span className="font-medium text-gray-900 dark:text-white capitalize">{fields.titleGuarantee.toLowerCase().replace('_', ' ')}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Seller</span>
+                <span className="font-medium text-gray-900 dark:text-white">{transaction.seller}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Buyer</span>
+                <span className="font-medium text-gray-900 dark:text-white">{transaction.buyer}</span>
+              </div>
+            </div>
+
+            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg px-3 py-2">
+              <p className="text-xs text-green-700 dark:text-green-300">
+                All declarations confirmed. PDF will be generated and hash registered on-chain.
+              </p>
+            </div>
+
+            {error && (
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2">
+                <p className="text-xs text-red-700 dark:text-red-300">{error}</p>
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setStep('declarations')}
+                disabled={submitting}
+                className="flex-1 h-10 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-40"
+              >
+                Back
+              </button>
+              <button
+                onClick={handleSubmit}
+                disabled={submitting}
+                className="flex-1 h-10 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg disabled:opacity-50 transition-colors"
+              >
+                {submitting ? 'Generating...' : 'Generate TR1 & Register'}
+              </button>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default TR1Form;

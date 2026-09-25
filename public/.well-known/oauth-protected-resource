@@ -1,0 +1,18 @@
+{
+  "resource": "https://propxchain.com",
+  "authorization_servers": ["https://auth.propxchain.com"],
+  "bearer_methods_supported": ["header"],
+  "scopes_supported": [
+    "chain:read",
+    "tx:read",
+    "panel:read",
+    "quote:read",
+    "aml:write",
+    "conveyancer:instruct",
+    "exchange:confirm",
+    "completion:funds",
+    "offline_access"
+  ],
+  "resource_name": "PropXchain",
+  "resource_documentation": "https://propxchain.com/agent"
+}

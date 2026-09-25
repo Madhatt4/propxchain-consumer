@@ -1,0 +1,76 @@
+{
+  "specVersion": "1.0",
+  "host": {
+    "displayName": "PropXchain",
+    "url": "https://propxchain.com",
+    "description": "On-chain UK property conveyancing. Sellers, buyers, conveyancers and estate agents share one transaction record on the Internet Computer; agents join a transaction by invite code and act through MCP tools."
+  },
+  "entries": [
+    {
+      "identifier": "urn:air:propxchain.com:mcp:conveyancer",
+      "displayName": "PropXchain Conveyancer MCP Server",
+      "type": "application/mcp-server-card+json",
+      "mediaType": "application/mcp-server-card+json",
+      "url": "https://propxchain.com/.well-known/mcp.json",
+      "description": "MCP server for reading and progressing UK property transactions: join by invite code, transaction state, checklists, document proofs, HM Land Registry and search intelligence, messaging. HTTP endpoint at https://mcp.propxchain.com/mcp (OAuth 2.1) or local stdio via npm @propxchain/mcp-server.",
+      "tags": ["conveyancing", "property", "uk", "mcp", "blockchain", "hmlr"],
+      "capabilities": [
+        "propxchain_join_transaction_as_bot",
+        "propxchain_get_transaction",
+        "propxchain_get_checklist",
+        "propxchain_next_step",
+        "propxchain_list_documents",
+        "propxchain_verify_document",
+        "propxchain_get_property_intel",
+        "propxchain_send_message"
+      ],
+      "representativeQueries": [
+        "what is outstanding on my house sale",
+        "join my PropXchain transaction TX-1234-ABCD",
+        "verify this TA6 against the on-chain proof",
+        "summarise the Land Registry title for my purchase"
+      ],
+      "version": "2.1.0"
+    },
+    {
+      "identifier": "urn:air:propxchain.com:a2a:conveyancer",
+      "displayName": "PropXchain Conveyancer Agent Card",
+      "type": "application/a2a-agent-card+json",
+      "mediaType": "application/a2a-agent-card+json",
+      "url": "https://propxchain.com/.well-known/agent-card.json",
+      "description": "A2A agent card describing the PropXchain Conveyancer, its JSON-RPC interface at mcp.propxchain.com, OAuth2 security scheme and skills.",
+      "tags": ["conveyancing", "property", "a2a"],
+      "representativeQueries": [
+        "find an agent that can track a UK property purchase",
+        "which agent handles conveyancing checklists"
+      ],
+      "version": "2.1.0"
+    },
+    {
+      "identifier": "urn:air:propxchain.com:skill:agent-auth",
+      "displayName": "PropXchain agent authentication skill",
+      "type": "text/markdown",
+      "mediaType": "text/markdown",
+      "url": "https://propxchain.com/.well-known/agent-skills/propxchain-agent-auth/SKILL.md",
+      "description": "Agent Skill: authenticate to PropXchain over OAuth 2.1 with PKCE, discover endpoints via RFC 9728 and RFC 8414, handle tokens and errors.",
+      "tags": ["skill", "oauth", "authentication"],
+      "representativeQueries": [
+        "how do I authenticate an agent to PropXchain",
+        "PropXchain MCP returned 401, what now"
+      ]
+    },
+    {
+      "identifier": "urn:air:propxchain.com:skill:conveyancing",
+      "displayName": "PropXchain conveyancing skill",
+      "type": "text/markdown",
+      "mediaType": "text/markdown",
+      "url": "https://propxchain.com/.well-known/agent-skills/propxchain-conveyancing/SKILL.md",
+      "description": "Agent Skill: work a UK sale or purchase on PropXchain through its MCP tools, with guard rails on money actions and personal data.",
+      "tags": ["skill", "conveyancing", "workflow"],
+      "representativeQueries": [
+        "walk me through my PropXchain sale",
+        "what should my conveyancer be doing next"
+      ]
+    }
+  ]
+}

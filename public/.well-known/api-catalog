@@ -1,0 +1,36 @@
+{
+  "linkset": [
+    {
+      "anchor": "https://propxchain.com/.well-known/api-catalog",
+      "item": [
+        { "href": "https://mcp.propxchain.com/mcp", "title": "PropXchain MCP endpoint" },
+        { "href": "https://auth.propxchain.com", "title": "PropXchain authorization server" }
+      ]
+    },
+    {
+      "anchor": "https://mcp.propxchain.com/mcp",
+      "service-desc": [
+        { "href": "https://propxchain.com/.well-known/mcp.json", "type": "application/json", "title": "MCP server manifest" },
+        { "href": "https://propxchain.com/.well-known/agent-card.json", "type": "application/json", "title": "A2A agent card" },
+        { "href": "https://mcp.propxchain.com/.well-known/oauth-protected-resource/mcp", "type": "application/json", "title": "OAuth protected resource metadata (RFC 9728)" }
+      ],
+      "service-doc": [
+        { "href": "https://propxchain.com/agent", "type": "text/html", "title": "Agent integration guide" },
+        { "href": "https://propxchain.com/auth.md", "type": "text/markdown", "title": "Agent authorization (auth.md)" },
+        { "href": "https://propxchain.com/.well-known/agent-skills/index.json", "type": "application/json", "title": "Agent Skills index" }
+      ],
+      "status": [
+        { "href": "https://propxchain.com/.well-known/mcp.json", "title": "Manifest; endpoint answers 401 with WWW-Authenticate when unauthenticated" }
+      ]
+    },
+    {
+      "anchor": "https://auth.propxchain.com",
+      "service-desc": [
+        { "href": "https://auth.propxchain.com/.well-known/oauth-authorization-server", "type": "application/json", "title": "OAuth 2.0 authorization server metadata (RFC 8414)" }
+      ],
+      "service-doc": [
+        { "href": "https://propxchain.com/auth.md", "type": "text/markdown", "title": "Agent authorization (auth.md)" }
+      ]
+    }
+  ]
+}

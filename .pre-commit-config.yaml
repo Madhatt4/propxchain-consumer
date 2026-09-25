@@ -1,0 +1,16 @@
+# Pre-commit hook running gitleaks on staged files before every commit.
+# This repo will flip public AGPL at Phase 4 — every leak risk is permanent.
+# Defence-in-depth with the secrets-scan CI workflow.
+#
+# Setup (one-time, per clone):
+#   pipx install pre-commit   # or: pip install --user pre-commit
+#   pre-commit install        # wires .git/hooks/pre-commit to this config
+#
+# Bypass (emergencies only): `git commit --no-verify` — never in regular use.
+
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.22.0
+    hooks:
+      - id: gitleaks
+        name: gitleaks (scan staged changes)

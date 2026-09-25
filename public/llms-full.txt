@@ -1,0 +1,1864 @@
+# PropXchain — Comprehensive AI Agent Documentation
+
+> Version: 1.0.0 | Updated: 2026-02-07 | License: AGPL-3.0-or-later
+
+PropXchain is an open-source blockchain property conveyancing platform for UK residential and commercial transactions, built on the Internet Computer Protocol (ICP). It digitalizes the entire process from seller preparation through to HM Land Registry registration, with GDPR-compliant hash-only document storage and on-chain verification.
+
+- Production: https://propxchain.com
+- Canister URL: https://lzpic-oaaaa-aaaaa-qcwva-cai.icp0.io/
+- MCP Server (planned): mcp.propxchain.com
+- Repository: https://github.com/PropXchain/propxchain-dapp
+- llms.txt: https://propxchain.com/llms.txt
+
+---
+
+## Table of Contents
+
+1. [Platform Overview](#1-platform-overview)
+2. [Technology Stack](#2-technology-stack)
+3. [Authentication — Internet Identity](#3-authentication--internet-identity)
+4. [Canister Architecture (12 Canisters)](#4-canister-architecture)
+5. [User Management Canister API](#5-user-management-canister-api)
+6. [Transaction Manager Canister API](#6-transaction-manager-canister-api)
+7. [Document Storage Canister API](#7-document-storage-canister-api)
+8. [Document Verification Canister API](#8-document-verification-canister-api)
+9. [Property Registry Canister API](#9-property-registry-canister-api)
+10. [Email Service Canister API](#10-email-service-canister-api)
+11. [Ledger Manager Canister API](#11-ledger-manager-canister-api)
+12. [Land Registry Integration Canister API](#12-land-registry-integration-canister-api)
+13. [Additional Canisters](#13-additional-canisters)
+14. [RBAC Permission Model — 18 User Roles](#14-rbac-permission-model--18-user-roles)
+15. [Transaction Lifecycle](#15-transaction-lifecycle)
+16. [UK Conveyancing Process — 6 Phases](#16-uk-conveyancing-process--6-phases)
+17. [Document Types Catalog](#17-document-types-catalog)
+18. [Hash-Only Document Architecture (GDPR)](#18-hash-only-document-architecture-gdpr)
+19. [MCP Tool Specifications — 12 Tools](#19-mcp-tool-specifications--12-tools)
+20. [Pricing Model](#20-pricing-model)
+21. [Frontend Architecture](#21-frontend-architecture)
+22. [Error Handling Patterns](#22-error-handling-patterns)
+23. [Code Examples](#23-code-examples)
+
+---
+
+## 1. Platform Overview
+
+PropXchain brings transparency, speed, and blockchain-backed trust to UK property conveyancing. Every transaction state change is recorded immutably on the Internet Computer, while documents remain stored locally in GDPR-compliant systems with only their SHA-256 hashes on-chain.
+
+Key capabilities:
+- 2-phase transaction creation with postcode search via Land Registry API
+- Invite code system (TX-XXXX-XXXX) for multi-party access
+- Property chain linking across related transactions
+- Solicitor document verification with audit trail
+- Contract exchange with dual solicitor signatures
+- Blockchain completion proof with immutable timestamp
+- HM Land Registry submission integration (simulated, enterprise feature)
+- Role-based access control with 18 distinct user roles
+- Oscar AI assistant for transaction guidance
+
+---
+
+## 2. Technology Stack
+
+### Backend
+- Language: Motoko (persistent actors on ICP)
+- Runtime: Internet Computer Protocol mainnet (ic0.app boundary nodes)
+- 12 canisters with stable storage for data persistence across upgrades
+- Inter-canister communication via async actor calls
+
+### Frontend
+- Framework: React 18 + TypeScript 5 + Vite
+- UI: shadcn/ui (Radix UI primitives) + Tailwind CSS
+- ICP SDK: @dfinity/agent, @dfinity/auth-client, @dfinity/principal
+- State: React Context + rbac.service.ts + icp.service.ts
+- Routing: React Router v6
+
+### Key Libraries
+- jsPDF: PDF contract generation
+- lucide-react: Icon library
+- Web Crypto API: SHA-256 hash generation in browser
+
+---
+
+## 3. Authentication — Internet Identity
+
+PropXchain uses Internet Identity (II), ICP's native Web3 authentication. No passwords. No usernames for login. Users authenticate via biometrics, security keys, or passkeys.
+
+Flow:
+1. User clicks "Sign in with Internet Identity"
+2. Redirect to identity.ic0.app
+3. User authenticates (biometric, security key, passkey)
+4. II returns a Principal ID to PropXchain
+5. Frontend holds the session in its auth store (isAuthenticated, principal)
+6. Backend checks if principal has a user profile
+7. If profile exists, load dashboard; otherwise redirect to registration
+
+Principal IDs are unique cryptographic identifiers (e.g., "2vxsx-fae..."). Each application gets a different principal for the same II anchor, preserving privacy.
+
+Authorisation is enforced by the canisters against the caller's principal, never by client-side state.
+
+---
+
+## 4. Canister Architecture
+
+PropXchain runs 12 canisters on ICP mainnet:
+
+| # | Canister | ID | Purpose | Status |
+|---|----------|----|---------|--------|
+| 1 | Core | 3tv4o-xiaaa-aaaaa-qedaa-cai | Core platform services | Production |
+| 2 | Frontend | lzpic-oaaaa-aaaaa-qcwva-cai | React app (asset canister) | Production |
+| 3 | User Management | lmizp-piaaa-aaaaa-qcwwq-cai | Auth, RBAC, profiles, audit | Production |
+| 4 | Transaction Manager | llj73-cqaaa-aaaaa-qcwwa-cai | Transaction lifecycle | Production |
+| 5 | Document Storage | 646az-pqaaa-aaaaa-qczja-cai | Hash-only document proofs | Production |
+| 6 | Document Verification | xand7-wiaaa-aaaah-arlea-cai | Solicitor verification | Production |
+| 7 | Property Registry | l6oow-dyaaa-aaaaa-qcwvq-cai | Property records, chains | Production |
+| 8 | Email Service | 5by6v-qyaaa-aaaaa-qc65a-cai | Contact forms, notifications | Production |
+| 9 | Firm Factory | gcqvm-tiaaa-aaaaa-qdszq-cai | Law firm management | Production |
+| 10 | Ledger Manager | hty74-maaaa-aaaaa-qcxza-cai | Analytics, event logging | Production |
+| 11 | Subscription Manager | 3jsrn-tqaaa-aaaaa-qddxq-cai | Premium subscriptions | Production |
+| 12 | Message Manager | 37una-maaaa-aaaaa-qd3mq-cai | In-app messaging | Production |
+| 13 | Oscar Canister | khstc-3qaaa-aaaaa-qdyfq-cai | AI assistant | Production |
+| 14 | Land Registry | o4flv-xaaaa-aaaaa-qdaeq-cai | UK Land Registry integration | Simulated |
+
+Inter-canister dependency graph:
+- transaction_manager is the central orchestrator
+- transaction_manager calls: user_management, property_registry, email_service, ledger_manager, land_registry
+- document_verification calls: document_storage, user_management
+- All canisters call user_management for authorization checks
+
+---
+
+## 5. User Management Canister API
+
+Canister ID: lmizp-piaaa-aaaaa-qcwwq-cai
+
+Central authentication and RBAC hub. Manages user registration, profiles, role-based access control, transaction membership, solicitor-client relationships, and audit logging.
+
+### Type Definitions
+
+```motoko
+// 18 user role variants
+public type UserType = {
+    // Individual users
+    #diy_buyer;                    // Solo buyer, no professional help
+    #diy_seller;                   // Solo seller, no professional help
+    #assisted_buyer;               // Buyer with solicitor support
+    #assisted_seller;              // Seller with solicitor support
+    // Professionals
+    #solicitor_transparent;        // Client can see everything on platform
+    #solicitor_managed;            // Client has NO platform access
+    #conveyancer_transparent;      // Licensed conveyancer (client access)
+    #conveyancer_managed;          // Licensed conveyancer (no client access)
+    // Commercial
+    #estate_agent;                 // Read-only facilitator
+    #property_developer;           // Bulk seller (new builds)
+    #mortgage_broker;              // Document verifier (future)
+    // Platform
+    #platform_admin;               // Full system access
+    #platform_support;             // Limited admin
+    // Legacy (backward compatibility)
+    #buyer;
+    #seller;
+    #solicitor_client_linked;
+    #solicitor_platform_only;
+    #admin;
+};
+
+public type UserProfile = {
+    principal: Principal;
+    name: Text;
+    email: Text;
+    mobile: Text;
+    userType: UserType;
+    role: ?UserRole;
+    isVerified: Bool;
+    createdAt: Time.Time;
+    emailVerified: Bool;
+    emailVerificationToken: ?Text;
+    emailVerificationSentAt: ?Time.Time;
+    solicitorLicenseNumber: ?Text;
+    lawFirmName: ?Text;
+    lawFirmAddress: ?Text;
+    isPlatformOnlySolicitor: Bool;
+    clientPrincipals: [Principal];
+    managedBySolicitor: ?Principal;
+    sraNumber: ?Text;
+    businessGatewayEnabled: Bool;
+    businessGatewayUsername: ?Text;
+    firmSRANumber: ?Text;
+    conveyancerReference: ?Text;
+};
+
+public type TransactionMember = {
+    transactionId: Text;
+    principal: Principal;
+    role: UserType;
+    canViewProgress: Bool;
+    canInviteOthers: Bool;
+    joinedAt: Time.Time;
+    requiredDocuments: [Text];
+    uploadedDocuments: [Text];
+    documentsComplete: Bool;
+    lastActivityAt: Time.Time;
+};
+
+public type TransactionProgress = {
+    transactionId: Text;
+    members: [TransactionMember];
+    readyToExchange: Bool;
+    blockingParties: [Principal];
+    completionPercentage: Nat;  // 0-100
+    totalMembers: Nat;
+    membersComplete: Nat;
+};
+
+public type Permission = {
+    #ViewSharedTransaction: Text;
+    #ViewTransactionProgress: Text;
+    #UpdateMemberDocuments: (Text, Principal);
+    #InvitePartyToTransaction: Text;
+    #ViewDevelopmentUnits: Text;
+    #ManageClientAccess: Principal;
+    #AdminViewAllTransactions;
+    #AdminManageUsers;
+};
+
+public type AuditLog = {
+    id: Nat;
+    timestamp: Time.Time;
+    actorPrincipal: Principal;
+    action: Text;
+    targetPrincipal: ?Principal;
+    transactionId: ?Text;
+    success: Bool;
+    metadata: Text;
+};
+```
+
+### Methods
+
+#### registerUser
+Register a new user (legacy version, backward compatible).
+```motoko
+public shared(msg) func registerUser(
+    name: Text, email: Text, mobile: Text, username: Text, userType: Text
+) : async Bool
+```
+Parameters: name, email, mobile, username, userType ("buyer", "seller", "solicitor", "solicitor_platform_only", "admin")
+Returns: true on success, false if user exists or unauthorized admin attempt.
+Authorization: Anyone can register. Only admins can register other admins.
+
+#### registerUserV2
+Register with full UserType variant and solicitor details.
+```motoko
+public shared(msg) func registerUserV2(
+    name: Text, email: Text, mobile: Text, username: Text,
+    userType: UserType,
+    solicitorLicenseNumber: ?Text, lawFirmName: ?Text, lawFirmAddress: ?Text
+) : async Bool
+```
+
+#### getMyProfile
+Get current authenticated user's profile.
+```motoko
+public shared query(msg) func getMyProfile() : async ?UserProfile
+```
+Returns: UserProfile or null if not registered.
+
+#### getUserProfile
+Get another user's profile by principal.
+```motoko
+public shared query(msg) func getUserProfile(principal: Principal) : async ?UserProfile
+```
+Authorization: Own profile always accessible. Admins can view any. Solicitors can view clients.
+
+#### verifyUser
+Verify a user (admin only).
+```motoko
+public shared(msg) func verifyUser(userPrincipal: Principal) : async Bool
+```
+
+#### getAllUsers
+Get all registered users (admin only).
+```motoko
+public shared query(msg) func getAllUsers() : async [UserProfile]
+```
+
+#### linkSolicitorToClient
+Link a solicitor to a client (requires client consent).
+```motoko
+public shared(msg) func linkSolicitorToClient(
+    solicitorPrincipal: Principal, consentGiven: Bool
+) : async Bool
+```
+Called by the client. consentGiven must be true.
+
+#### revokeSolicitorAccess
+Revoke solicitor's access to client data.
+```motoko
+public shared(msg) func revokeSolicitorAccess(solicitorPrincipal: Principal) : async Bool
+```
+
+#### addTransactionMember
+Add a user to a transaction with specific permissions.
+```motoko
+public shared(msg) func addTransactionMember(
+    transactionId: Text, memberPrincipal: Principal,
+    role: UserType, canViewProgress: Bool, canInviteOthers: Bool
+) : async Bool
+```
+Required documents are auto-assigned based on role.
+
+#### updateMemberDocuments
+Update transaction member's uploaded documents status.
+```motoko
+public shared(msg) func updateMemberDocuments(
+    transactionId: Text, uploadedDocumentName: Text
+) : async Bool
+```
+Automatically recalculates documentsComplete status.
+
+#### updateTransactionMemberRequiredDocs
+Remove required documents (e.g., cash buyers don't need mortgage docs).
+```motoko
+public shared(msg) func updateTransactionMemberRequiredDocs(
+    transactionId: Text, documentsToRemove: [Text]
+) : async Bool
+```
+
+#### getTransactionMembers
+Get all members of a transaction.
+```motoko
+public shared query(msg) func getTransactionMembers(transactionId: Text) : async ?[TransactionMember]
+```
+Authorization: Transaction members and admins only.
+
+#### getTransactionProgress
+Get transaction progress dashboard.
+```motoko
+public shared query(msg) func getTransactionProgress(transactionId: Text) : async ?TransactionProgress
+```
+
+#### hasPermission
+Check if user has a specific permission.
+```motoko
+public shared query(msg) func hasPermission(permission: Permission) : async Bool
+```
+
+#### checkPermissionWithAudit
+Check permission with audit logging.
+```motoko
+public shared(msg) func checkPermissionWithAudit(permission: Permission) : async Bool
+```
+
+#### getMySolicitorClients
+Get solicitor's linked clients.
+```motoko
+public shared query(msg) func getMySolicitorClients() : async [UserProfile]
+```
+
+#### getMyManagingSolicitor
+Get client's managing solicitor.
+```motoko
+public shared query(msg) func getMyManagingSolicitor() : async ?UserProfile
+```
+
+#### getAuditLogs
+Get audit logs (admin only).
+```motoko
+public shared query(msg) func getAuditLogs(limit: Nat) : async [AuditLog]
+```
+
+#### getCycles
+Get canister cycle balance.
+```motoko
+public query func getCycles() : async Nat
+```
+
+---
+
+## 6. Transaction Manager Canister API
+
+Canister ID: llj73-cqaaa-aaaaa-qcwwa-cai
+
+Core transaction lifecycle orchestration. Handles creation, contract exchange, blockchain completion, property chain linking, and invite code management.
+
+### Type Definitions
+
+```motoko
+public type TransactionStatus = {
+    #active;
+    #exchanged;
+    #completion_initiated;
+    #blockchain_completed;
+    #land_registry_registered;
+};
+
+public type LandRegistryStatus = {
+    // Pre-submission
+    #not_initiated;
+    #pending_official_search;
+    #official_search_completed;
+    #official_search_expired;
+    // Submission
+    #pending_submission;
+    #pre_validation_failed;
+    #submitted;
+    #queued_manual_processing;
+    // Processing
+    #application_received;
+    #under_examination;
+    #requisition_raised;
+    #requisition_responded;
+    // Completion
+    #registered;
+    #completed_with_notes;
+    // Failure
+    #rejected;
+    #cancelled;
+    #failed;
+};
+
+public type LandRegistryIntegration = {
+    status: LandRegistryStatus;
+    // Official Search (OS1)
+    officialSearchRequestedAt: ?Int;
+    officialSearchCompletedAt: ?Int;
+    officialSearchPriorityExpiry: ?Int;
+    officialSearchCertificateRef: ?Text;
+    registerChangedSinceSearch: ?Bool;
+    advisoryEntries: [Text];
+    // Application Submission
+    submittedToLRAt: ?Int;
+    applicationReference: ?Text;
+    landRegistryConfirmationNumber: ?Text;
+    submissionResponseCode: ?Nat;
+    preValidationErrors: [Text];
+    // Processing
+    estimatedCompletionDate: ?Text;
+    estimatedLRCompletionTime: ?Int;
+    caseworkerAssigned: ?Bool;
+    lastPolledAt: ?Int;
+    pollCount: Nat;
+    // Requisitions
+    requisitions: [Requisition];
+    // Completion
+    registeredAt: ?Int;
+    newTitleNumber: ?Text;
+    registrationNotes: [Text];
+    // Cost Tracking
+    officialSearchCost: Nat;
+    applicationFee: Nat;
+    totalLRCosts: Nat;
+    // Metadata
+    lrPayloadID: ?Text;
+    lastUpdated: Int;
+};
+
+public type Requisition = {
+    requisitionId: Text;
+    raisedAt: Int;
+    description: Text;
+    category: Text;
+    respondedAt: ?Int;
+    responseText: ?Text;
+    resolvedAt: ?Int;
+    isResolved: Bool;
+};
+
+public type Transaction = {
+    id: Text;                       // "TX-1" or "tx_1704067200000000000"
+    propertyId: Text;
+    propertyAddress: Text;
+    postcode: Text;
+    titleNumber: Text;
+    seller: Principal;
+    buyer: Principal;
+    amount: Nat64;                  // Price in pence
+    status: TransactionStatus;
+    oldStatus: Text;                // Legacy: "pending", "in_progress", etc.
+    solicitor: ?Principal;
+    // Transaction details
+    transactionType: Text;          // "sale", "purchase", "lease"
+    userRole: Text;                 // "seller", "buyer", "landlord", "tenant"
+    propertyType: Text;             // "freehold", "leasehold", "shared-ownership"
+    propertyCategory: Text;         // "residential", "commercial"
+    mode: Text;                     // "diy", "solicitor-assisted", "full-service"
+    // Financial
+    deposit: Nat64;
+    mortgageAmount: Nat64;
+    completionDate: Text;
+    // Blockchain completion
+    blockchainCompletionTimestamp: ?Int;
+    blockchainCompletionProof: ?Text;
+    buyerFundsHash: ?Text;
+    completionStatementHash: ?Text;
+    // Land Registry
+    landRegistryIntegration: LandRegistryIntegration;
+    // Timeline
+    createdAt: Int;
+    exchangedAt: ?Int;
+    completionInitiatedAt: ?Int;
+    blockchainCompletedAt: ?Int;
+    landRegistryRegisteredAt: ?Int;
+    // Parties
+    previousOwner: Text;
+    buyerSolicitorSignature: ?Text;
+    sellerSolicitorSignature: ?Text;
+    contractExchangeTimestamp: ?Int;
+    // Access control
+    accessList: [Principal];
+    createdBy: Principal;
+    inviteCode: Text;               // "TX-A7F2-9K3L" format
+    // Chain linking
+    chainedTransactions: [Text];
+    chainPosition: ?Nat;
+    linkToTransaction: ?Text;
+};
+
+public type TransactionTimeline = {
+    createdAt: Int;
+    exchangedAt: ?Int;
+    completionInitiatedAt: ?Int;
+    blockchainCompletedAt: ?Int;
+    landRegistryRegisteredAt: ?Int;
+    totalTimeToCompletion: Nat;
+    totalTimeIncludingLR: Nat;
+};
+```
+
+### Methods
+
+#### createTransaction
+Create a new property transaction.
+```motoko
+public shared(msg) func createTransaction(
+    propertyId: Text, propertyAddress: Text, postcode: Text,
+    titleNumber: Text, seller: Principal, previousOwner: Text,
+    amount: Nat64, transactionType: Text, userRole: Text,
+    propertyType: Text, propertyCategory: Text, mode: Text,
+    deposit: Nat64, mortgageAmount: Nat64, completionDate: Text
+) : async Text
+```
+Returns: Transaction ID (e.g., "TX-1" or timestamp-based format).
+Auto-generates invite code and registers buyer/seller as transaction members.
+
+#### createTransactionWithInvite
+Create transaction and return both ID and invite code.
+```motoko
+public shared(msg) func createTransactionWithInvite(
+    /* same parameters as createTransaction */
+) : async Result.Result<(Text, Text), Text>
+```
+Returns: #ok((transactionId, inviteCode)) or #err(message).
+
+#### getTransaction
+Get transaction by ID.
+```motoko
+public query func getTransaction(id: Text) : async ?Transaction
+```
+
+#### getAllTransactions
+Get all transactions.
+```motoko
+public query func getAllTransactions() : async [Transaction]
+```
+
+#### getMyTransactions
+Get all transactions the caller has access to.
+```motoko
+public shared query(msg) func getMyTransactions() : async [Transaction]
+```
+
+#### getTransactionsByStatus
+Filter transactions by status.
+```motoko
+public query func getTransactionsByStatus(status: TransactionStatus) : async [Transaction]
+```
+
+#### recordContractExchange
+Record contract exchange with solicitor signatures.
+```motoko
+public shared(msg) func recordContractExchange(
+    transactionID: Text,
+    buyerSolicitorSignature: Text,
+    sellerSolicitorSignature: Text
+) : async Result.Result<Text, Text>
+```
+Authorization: Authorized solicitor or admin only. Sets status to #exchanged.
+
+#### initiate_blockchain_completion
+Initiate blockchain completion workflow.
+```motoko
+public shared(msg) func initiate_blockchain_completion(
+    transactionID: Text,
+    buyerFundsHash: Text,
+    completionStatementHash: Text
+) : async Result.Result<Text, Text>
+```
+Sets status to #completion_initiated, then #blockchain_completed.
+
+#### trigger_land_registry_submission
+Trigger Land Registry submission after blockchain completion.
+```motoko
+public shared(msg) func trigger_land_registry_submission(
+    transactionID: Text
+) : async Result.Result<Text, Text>
+```
+
+#### joinTransactionByInviteCode
+Join a transaction using an invite code.
+```motoko
+public shared(msg) func joinTransactionByInviteCode(
+    inviteCode: Text
+) : async Result.Result<Transaction, Text>
+```
+Adds caller's principal to the transaction's access list.
+
+#### getInviteCode
+Get invite code for a transaction.
+```motoko
+public shared query(msg) func getInviteCode(transactionId: Text) : async Result.Result<Text, Text>
+```
+
+#### canAccessTransaction
+Check if caller can access a transaction.
+```motoko
+public shared query(msg) func canAccessTransaction(transactionId: Text) : async Bool
+```
+
+#### linkTransactionToChain
+Link your sale transaction to your purchase transaction (property chain).
+```motoko
+public shared(msg) func linkTransactionToChain(
+    myTransactionId: Text, buyingTransactionId: Text
+) : async Result.Result<(), Text>
+```
+Caller must have access to both transactions.
+
+#### getTransactionChain
+Get full chain of linked transactions.
+```motoko
+public query func getTransactionChain(transactionId: Text) : async Result.Result<[Transaction], Text>
+```
+
+#### get_transaction_timeline
+Get transaction timeline with timestamps.
+```motoko
+public query func get_transaction_timeline(transactionID: Text) : async ?TransactionTimeline
+```
+
+#### deleteTransaction
+Delete a transaction (creator only).
+```motoko
+public shared(msg) func deleteTransaction(transactionId: Text) : async Result.Result<Text, Text>
+```
+
+#### adminForceDeleteTransaction
+Admin force delete.
+```motoko
+public shared(msg) func adminForceDeleteTransaction(transactionId: Text) : async Result.Result<Text, Text>
+```
+
+---
+
+## 7. Document Storage Canister API
+
+Canister ID: 646az-pqaaa-aaaaa-qczja-cai
+
+GDPR-compliant hash-only document storage. Actual files stay on local GDPR-compliant systems; only SHA-256 hashes and metadata are stored on-chain.
+
+### Type Definitions
+
+```motoko
+public type DocumentSource = {
+    #UserUploaded;
+    #LandRegistryAPI;
+    #LandRegistryNotification;
+    #SystemGenerated;
+};
+
+public type DocumentProof = {
+    id: Nat;
+    fileName: Text;
+    fileHash: Text;                 // SHA-256 hash (64 hex chars)
+    fileSize: Nat;
+    contentType: Text;
+    uploadedBy: Principal;
+    uploadedAt: Time.Time;
+    storageLocation: Text;          // "local", "solicitor_system", "onchain", "indexeddb://42"
+    transactionId: ?Text;
+    docType: Text;                  // "proofOfId", "epc", "ta6", etc.
+    verified: Bool;
+    totalChunks: Nat;
+    uploadedChunks: Nat;
+    documentSource: DocumentSource;
+    landRegistryReference: ?Text;
+    validUntil: ?Int;
+    fetchedFromApi: Bool;
+    apiCostPence: ?Nat;
+    titleNumber: ?Text;
+};
+
+public type AuditLog = {
+    id: Nat;
+    timestamp: Time.Time;
+    actorPrincipal: Principal;
+    action: Text;                   // "REGISTER", "VERIFY", "DELETE"
+    documentId: Nat;
+    success: Bool;
+    metadata: Text;
+};
+```
+
+### Methods
+
+#### registerDocumentProof
+Register a document hash on blockchain (file stays local).
+```motoko
+public shared(msg) func registerDocumentProof(
+    fileName: Text, fileHash: Text, fileSize: Nat,
+    contentType: Text, storageLocation: Text, transactionId: ?Text
+) : async Result.Result<Nat, Text>
+```
+Returns: #ok(documentId) or #err("Invalid hash format").
+Hash must be 64 hex characters (SHA-256).
+
+#### verifyDocumentHash
+Verify a local file matches the on-chain hash.
+```motoko
+public shared(msg) func verifyDocumentHash(
+    documentId: Nat, providedHash: Text
+) : async Result.Result<Bool, Text>
+```
+Returns: #ok(true) if match, #ok(false) if mismatch. Updates verified status on match.
+
+#### getDocumentProof
+Get document proof metadata.
+```motoko
+public query func getDocumentProof(documentId: Nat) : async ?DocumentProof
+```
+
+#### getTransactionDocuments
+Get all document proofs for a transaction.
+```motoko
+public query func getTransactionDocuments(transactionId: Text) : async [DocumentProof]
+```
+
+#### deleteDocument
+Delete document proof (GDPR right to be forgotten).
+```motoko
+public shared(msg) func deleteDocument(documentId: Nat) : async Result.Result<Text, Text>
+```
+Authorization: Document owner or admin only.
+
+#### getStorageStats
+Get storage statistics.
+```motoko
+public query func getStorageStats() : async {
+    totalDocuments: Nat;
+    verifiedDocuments: Nat;
+    totalSizeBytes: Nat;
+    averageFileSizeBytes: Nat;
+}
+```
+
+#### getAuditLogs
+Get audit logs for a specific document.
+```motoko
+public query func getAuditLogs(documentId: Nat) : async [AuditLog]
+```
+
+#### getRecentAuditLogs
+Get recent audit logs (admin).
+```motoko
+public query func getRecentAuditLogs(limit: Nat) : async [AuditLog]
+```
+
+---
+
+## 8. Document Verification Canister API
+
+Canister ID: xand7-wiaaa-aaaah-arlea-cai
+
+Solicitor-authorized document verification with hash checking, audit trails, and future API integration hooks.
+
+### Type Definitions
+
+```motoko
+public type VerificationMethod = {
+    #manual_solicitor;          // Current: Solicitor manually verifies
+    #dvla_api;                  // Future: UK DVLA driving license API
+    #passport_dcs;              // Future: UK Passport Document Checking Service
+    #commercial_api: Text;      // Future: Onfido, Shufti Pro, etc.
+    #system_hash_only;          // System verified hash match only
+};
+
+public type DocumentVerification = {
+    id: Nat;
+    documentId: Nat;
+    propertyId: Nat;
+    documentType: Text;
+    calculatedHash: Text;
+    expectedHash: Text;
+    hashVerified: Bool;
+    verifiedBy: Principal;
+    verificationMethod: VerificationMethod;
+    verificationDate: Time.Time;
+    expiresAt: ?Time.Time;      // 90-day default expiry
+    isValid: Bool;
+    failureReason: ?Text;
+    notes: ?Text;
+};
+
+public type DocumentMetadata = {
+    id: Nat;
+    propertyId: Nat;
+    transactionId: ?Nat;
+    documentType: Text;
+    documentHash: Text;
+    storageDocumentId: ?Nat;
+    fileName: ?Text;
+    fileSize: ?Nat;
+    contentType: ?Text;
+    uploadedBy: Principal;
+    uploadedAt: Time.Time;
+    isVerified: Bool;
+    lastVerificationId: ?Nat;
+};
+```
+
+### Methods
+
+#### registerDocument
+Register a document for verification.
+```motoko
+public shared(msg) func registerDocument(
+    propertyId: Nat, transactionId: ?Nat, documentType: Text,
+    documentHash: Text, storageDocumentId: ?Nat,
+    fileName: ?Text, fileSize: ?Nat, contentType: ?Text
+) : async Nat
+```
+Returns: Document ID.
+
+#### verifyDocumentWithHash
+Verify document with full hash checking (solicitor/admin only).
+```motoko
+public shared(msg) func verifyDocumentWithHash(
+    documentId: Nat, notes: ?Text
+) : async Result.Result<DocumentVerification, Text>
+```
+Process: Checks authorization, fetches hash from document_storage, compares, creates verification record with 90-day expiry.
+
+#### getDocument
+Get document metadata by ID.
+```motoko
+public query func getDocument(id: Nat) : async ?DocumentMetadata
+```
+
+#### getPropertyDocuments
+Get all documents for a property.
+```motoko
+public query func getPropertyDocuments(propertyId: Nat) : async [DocumentMetadata]
+```
+
+#### getDocumentVerifications
+Get all verifications for a document.
+```motoko
+public query func getDocumentVerifications(documentId: Nat) : async [DocumentVerification]
+```
+
+#### getUnverifiedDocuments
+Get unverified documents for a property.
+```motoko
+public query func getUnverifiedDocuments(propertyId: Nat) : async [DocumentMetadata]
+```
+
+#### getVerificationsByVerifier
+Get all verifications performed by a specific verifier.
+```motoko
+public query func getVerificationsByVerifier(verifier: Principal) : async [DocumentVerification]
+```
+
+#### deleteDocument
+Delete a document (uploader only).
+```motoko
+public shared(msg) func deleteDocument(documentId: Nat) : async { #ok; #err: Text }
+```
+
+#### getStats
+Get verification statistics.
+```motoko
+public query func getStats() : async {
+    totalDocuments: Nat;
+    totalVerifications: Nat;
+    verifiedDocuments: Nat;
+    totalAuditLogs: Nat;
+}
+```
+
+---
+
+## 9. Property Registry Canister API
+
+Canister ID: l6oow-dyaaa-aaaaa-qcwvq-cai
+
+Property records with anonymous IDs for GDPR-safe chain views, ownership tracking, and progress monitoring.
+
+### Type Definitions
+
+```motoko
+public type PropertyStatus = {
+    #Listed;
+    #InTransaction;
+    #Completed;
+    #Cancelled;
+};
+
+public type Property = {
+    id: Nat;
+    address: Text;
+    owner: Principal;
+    price: Nat;
+    size: Nat;
+    propertyType: Text;
+    description: Text;
+    isVerified: Bool;
+    createdAt: Time.Time;
+    anonymousPropertyId: Text;      // "Property #A7F2" (GDPR-safe)
+    transactionId: ?Text;
+    chainPosition: ?Nat;
+    linkedProperties: [Text];
+    status: PropertyStatus;
+    documentsComplete: Bool;
+    searchesComplete: Bool;
+    financingComplete: Bool;
+};
+
+public type ChainPropertyView = {
+    anonymousId: Text;              // No personal data
+    status: PropertyStatus;
+    progressPercentage: Nat;
+    role: Text;                     // "Your Sale" | "In chain"
+    documentsComplete: Bool;
+    searchesComplete: Bool;
+    financingComplete: Bool;
+};
+```
+
+### Methods
+
+#### registerProperty
+Register a new property.
+```motoko
+public shared(msg) func registerProperty(
+    address: Text, price: Nat, size: Nat, propertyType: Text, description: Text
+) : async Nat
+```
+Returns: Property ID. Auto-generates anonymous property ID.
+
+#### getProperty
+Get property by ID.
+```motoko
+public query func getProperty(id: Nat) : async ?Property
+```
+
+#### getAllProperties
+Get all properties.
+```motoko
+public query func getAllProperties() : async [Property]
+```
+
+#### verifyProperty
+Verify a property (admin only).
+```motoko
+public shared(msg) func verifyProperty(id: Nat) : async Bool
+```
+
+#### transferOwnership
+Transfer property ownership.
+```motoko
+public shared(msg) func transferOwnership(propertyId: Nat, newOwner: Principal) : async Bool
+```
+
+#### getPropertyForChainView
+Get GDPR-safe property view for chain visualization.
+```motoko
+public shared query(msg) func getPropertyForChainView(
+    propertyId: Text, requesterId: Principal
+) : async Result.Result<ChainPropertyView, Text>
+```
+
+#### buildPropertyChain
+Build full property chain from a root property.
+```motoko
+public shared func buildPropertyChain(rootPropertyId: Text) : async Result.Result<[Text], Text>
+```
+
+#### updatePropertyTransaction
+Link property to a transaction and chain.
+```motoko
+public shared(msg) func updatePropertyTransaction(
+    propertyId: Nat, transactionId: ?Text, chainPosition: ?Nat, linkedProperties: [Text]
+) : async Result.Result<(), Text>
+```
+
+#### updatePropertyProgress
+Update property progress tracking.
+```motoko
+public shared(msg) func updatePropertyProgress(
+    propertyId: Nat, documentsComplete: Bool, searchesComplete: Bool, financingComplete: Bool
+) : async Result.Result<(), Text>
+```
+
+#### updatePropertyStatus
+Update property status.
+```motoko
+public shared(msg) func updatePropertyStatus(
+    propertyId: Nat, status: PropertyStatus
+) : async Result.Result<(), Text>
+```
+
+---
+
+## 10. Email Service Canister API
+
+Canister ID: 5by6v-qyaaa-aaaaa-qc65a-cai
+
+Stores contact form submissions and email notifications on-chain for admin processing.
+
+### Type Definitions
+
+```motoko
+public type ContactType = {
+    #support;
+    #sales;
+    #partners;
+};
+
+public type EmailNotification = {
+    id: Nat;
+    contactType: ContactType;
+    name: Text;
+    email: Text;
+    subject: Text;
+    message: Text;
+    company: ?Text;
+    phone: ?Text;
+    userType: ?Text;
+    volume: ?Text;
+    website: ?Text;
+    partnerType: ?Text;
+    timestamp: Int;
+    processed: Bool;
+};
+```
+
+### Methods
+
+#### submitSupportRequest
+```motoko
+public shared func submitSupportRequest(
+    name: Text, email: Text, subject: Text, message: Text
+) : async Nat
+```
+
+#### submitSalesInquiry
+```motoko
+public shared func submitSalesInquiry(
+    name: Text, email: Text, company: Text, phone: Text,
+    userType: Text, volume: Text, message: Text
+) : async Nat
+```
+
+#### submitPartnerInquiry
+```motoko
+public shared func submitPartnerInquiry(
+    name: Text, email: Text, company: Text, website: Text,
+    partnerType: Text, message: Text
+) : async Nat
+```
+
+#### getAllNotifications
+Get all notifications (admin only).
+```motoko
+public query func getAllNotifications() : async [EmailNotification]
+```
+
+#### getUnprocessedNotifications
+Get unprocessed notifications.
+```motoko
+public query func getUnprocessedNotifications() : async [EmailNotification]
+```
+
+#### getUnprocessedCount
+```motoko
+public query func getUnprocessedCount() : async Nat
+```
+
+#### markAsProcessed
+```motoko
+public shared func markAsProcessed(id: Nat) : async Bool
+```
+
+---
+
+## 11. Ledger Manager Canister API
+
+Canister ID: hty74-maaaa-aaaaa-qcxza-cai
+
+Analytics, event logging, and transaction ledger tracking. NOT a financial ledger -- tracks transaction events and platform statistics.
+
+### Type Definitions
+
+```motoko
+public type TransactionRole = {
+    #buyer;
+    #seller;
+    #agent;
+    #solicitor;
+};
+
+public type TransactionStatus = {
+    #active;
+    #pending;
+    #completed;
+    #failed;
+};
+
+public type UserLedgerEntry = {
+    entryID: Text;
+    accountID: Text;
+    transactionID: Text;
+    roleInTransaction: TransactionRole;
+    status: TransactionStatus;
+    propertyAddress: Text;
+    propertyValue: Nat;
+    counterparties: [Counterparty];
+    initiatedDate: Time.Time;
+    completedDate: ?Time.Time;
+    documentStatus: DocumentVerification;
+    costsSaved: Nat;
+};
+```
+
+### Methods
+
+#### logEvent
+Log a transaction event.
+```motoko
+public shared func logEvent(transactionId: Text, eventType: Text, details: Text) : async ()
+```
+
+#### getTransactionEvents
+```motoko
+public query func getTransactionEvents(transactionId: Text) : async [TransactionEvent]
+```
+
+#### getAnalytics
+Get platform analytics.
+```motoko
+public query func getAnalytics(period: Period) : async PlatformAnalytics
+```
+
+#### getUserLedger
+```motoko
+public query func getUserLedger(accountId: Text) : async [UserLedgerEntry]
+```
+
+#### addTransactionToLedger
+```motoko
+public shared func addTransactionToLedger(
+    accountID: Text, transactionID: Text, roleInTransaction: TransactionRole,
+    propertyAddress: Text, propertyValue: Nat, counterparties: [Counterparty]
+) : async Bool
+```
+
+---
+
+## 12. Land Registry Integration Canister API
+
+Canister ID: o4flv-xaaaa-aaaaa-qdaeq-cai
+
+HM Land Registry API integration. Currently simulated; real integration requires Business Gateway account, OAuth2 credentials, and a solicitor/conveyancer license.
+
+### Type Definitions
+
+```motoko
+public type Environment = {
+    #sandbox;
+    #production;
+};
+
+public type OwnershipTransferPayload = {
+    transferID: Text;
+    propertyAddress: Text;
+    postcode: Text;
+    titleNumber: Text;
+    previousOwner: Text;
+    newOwnerDetails: NewOwnerInfo;
+    transactionAmount: Nat64;
+    transactionDate: Int;
+    blockchainProofHash: Text;
+    blockchainCompletionProof: Text;
+    conveyancerDetails: ConveyancerInfo;
+    buyerSolicitorSignature: Text;
+    sellerSolicitorSignature: Text;
+    contractExchangeTimestamp: Int;
+    blockchainCompletionTimestamp: Int;
+};
+
+public type LRStatus = {
+    #received;
+    #processing;
+    #registered;
+    #failed;
+};
+
+public type LandRegistryAPIResponse = {
+    responseID: Text;
+    status: LRStatus;
+    landRegistryConfirmationNumber: Text;
+    estimatedCompletionTime: Int;
+    errorMessage: ?Text;
+    receivedTimestamp: Int;
+    processedTimestamp: ?Int;
+    registeredTimestamp: ?Int;
+};
+```
+
+### Methods
+
+#### setAPICredentials
+Set API credentials (admin only).
+```motoko
+public shared func setAPICredentials(
+    apiKey: Text, apiEndpoint: Text, environment: Environment
+) : async Result.Result<(), Text>
+```
+
+#### submitOwnershipTransfer
+Submit ownership transfer to Land Registry.
+```motoko
+public shared func submitOwnershipTransfer(
+    payload: OwnershipTransferPayload
+) : async Result.Result<Text, Text>
+```
+
+#### pollRegistrationStatus
+Poll for registration status.
+```motoko
+public shared func pollRegistrationStatus(
+    landRegistryConfirmationNumber: Text
+) : async Result.Result<LandRegistryAPIResponse, Text>
+```
+
+#### retryFailedSubmission
+Retry a failed submission.
+```motoko
+public shared func retryFailedSubmission(transactionID: Text) : async Result.Result<Text, Text>
+```
+
+#### getPendingTransactions
+```motoko
+public query func getPendingTransactions() : async [LandRegistryTransactionRecord]
+```
+
+#### getFailedTransactions
+```motoko
+public query func getFailedTransactions() : async [LandRegistryTransactionRecord]
+```
+
+#### getLandRegistryStats
+```motoko
+public query func getLandRegistryStats() : async LandRegistryStats
+```
+
+---
+
+## 13. Additional Canisters
+
+### Core (3tv4o-xiaaa-aaaaa-qedaa-cai)
+Core platform services canister providing shared infrastructure.
+
+### Firm Factory (gcqvm-tiaaa-aaaaa-qdszq-cai)
+Law firm management. Handles firm creation, team member management, and firm-level configuration for solicitor practices.
+
+### Subscription Manager (3jsrn-tqaaa-aaaaa-qddxq-cai)
+Premium subscription management. Handles plan creation, billing cycles, and feature access control for paid tiers.
+
+### Message Manager (37una-maaaa-aaaaa-qd3mq-cai)
+In-app messaging system for communication between transaction parties (buyers, sellers, solicitors).
+
+### Oscar Canister (khstc-3qaaa-aaaaa-qdyfq-cai)
+AI assistant canister. Oscar provides transaction guidance, document analysis, and conveyancing process explanations. Frontend sends TransactionSummaryInput[] via oscarService.ts; backend builds system prompt and calls Anthropic API.
+
+---
+
+## 14. RBAC Permission Model — 18 User Roles
+
+PropXchain implements a comprehensive role-based access control system with 18 distinct user roles organized in a hierarchy.
+
+### Role Categories
+
+#### Individual Users (4 roles)
+| Role | Variant | Description |
+|------|---------|-------------|
+| DIY Buyer | #diy_buyer | Solo buyer handling everything themselves |
+| DIY Seller | #diy_seller | Solo seller handling everything themselves |
+| Assisted Buyer | #assisted_buyer | Buyer with solicitor/conveyancer support |
+| Assisted Seller | #assisted_seller | Seller with solicitor/conveyancer support |
+
+#### Professionals (4 roles)
+| Role | Variant | Description |
+|------|---------|-------------|
+| Solicitor (Transparent) | #solicitor_transparent | Client has platform access and visibility |
+| Solicitor (Managed) | #solicitor_managed | Client has NO platform access, email updates only |
+| Conveyancer (Transparent) | #conveyancer_transparent | Licensed conveyancer, client has access |
+| Conveyancer (Managed) | #conveyancer_managed | Licensed conveyancer, no client access |
+
+#### Commercial Users (3 roles)
+| Role | Variant | Description |
+|------|---------|-------------|
+| Estate Agent | #estate_agent | Read-only facilitator with commission tracking |
+| Property Developer | #property_developer | Bulk seller for new builds and multiple units |
+| Mortgage Broker | #mortgage_broker | Document verifier (future feature) |
+
+#### Platform Roles (2 roles)
+| Role | Variant | Description |
+|------|---------|-------------|
+| Platform Admin | #platform_admin | Full system access including user management |
+| Platform Support | #platform_support | Limited admin (no delete/edit user docs) |
+
+#### Legacy Roles (5 roles, maintained for backward compatibility)
+| Role | Variant | Migrates To |
+|------|---------|-------------|
+| Buyer | #buyer | #diy_buyer or #assisted_buyer |
+| Seller | #seller | #diy_seller or #assisted_seller |
+| Solicitor (Client Linked) | #solicitor_client_linked | #solicitor_transparent |
+| Solicitor (Platform Only) | #solicitor_platform_only | #solicitor_managed |
+| Admin | #admin | #platform_admin |
+
+### Permission Hierarchy
+
+```
+Platform Admin (#platform_admin, #admin)
+  - Full platform access
+  - View ALL transactions
+  - Verify users and properties
+  - Modify any data
+  - Manage user accounts
+  - Force delete transactions
+
+Platform Support (#platform_support)
+  - View all transactions
+  - Limited admin functions
+  - No delete/edit user documents
+
+Solicitors (#solicitor_transparent, #solicitor_managed, #solicitor_client_linked, #solicitor_platform_only)
+Conveyancers (#conveyancer_transparent, #conveyancer_managed)
+  - View all transactions
+  - Verify documents
+  - Manage client properties
+  - Link to buyer/seller clients
+
+Estate Agents (#estate_agent)
+  - Read-only view of assigned transactions
+  - Commission tracking
+
+Property Developers (#property_developer)
+  - Bulk unit management
+  - Development project creation
+  - View development-linked transactions
+
+Buyers/Sellers (#diy_buyer, #diy_seller, #assisted_buyer, #assisted_seller, #buyer, #seller)
+  - View OWN transactions only
+  - Upload own documents
+  - Manage own properties
+  - Join transactions via invite code
+```
+
+### Permission Types (Canister-Level)
+```motoko
+public type Permission = {
+    #ViewSharedTransaction: Text;
+    #ViewTransactionProgress: Text;
+    #UpdateMemberDocuments: (Text, Principal);
+    #InvitePartyToTransaction: Text;
+    #ViewDevelopmentUnits: Text;
+    #ManageClientAccess: Principal;
+    #AdminViewAllTransactions;
+    #AdminManageUsers;
+};
+```
+
+---
+
+## 15. Transaction Lifecycle
+
+### State Machine
+
+```
+#active --> #exchanged --> #completion_initiated --> #blockchain_completed --> #land_registry_registered
+```
+
+| State | Description | Typical Duration |
+|-------|-------------|------------------|
+| #active | Transaction created, parties uploading documents, solicitors verifying, searches underway | 8-12 weeks |
+| #exchanged | Both solicitors signed, contracts exchanged, completion date fixed | 1-4 weeks |
+| #completion_initiated | Buyer funds verified (hash proof), completion statement generated | Same day |
+| #blockchain_completed | Immutable completion record on ICP, ownership transfer proof | 1-5 business days |
+| #land_registry_registered | HM Land Registry confirms, new owner registered, transaction complete | Final |
+
+### Land Registry Sub-States (16 variants)
+
+Pre-submission: #not_initiated, #pending_official_search, #official_search_completed, #official_search_expired
+Submission: #pending_submission, #pre_validation_failed, #submitted, #queued_manual_processing
+Processing: #application_received, #under_examination, #requisition_raised, #requisition_responded
+Completion: #registered, #completed_with_notes
+Failure: #rejected, #cancelled, #failed
+
+### Key Timestamps
+Every transaction records: createdAt, exchangedAt, completionInitiatedAt, blockchainCompletedAt, landRegistryRegisteredAt (all Int, nanoseconds since epoch).
+
+### Property Chains
+Multiple transactions can be linked in a chain where one sale depends on another:
+```
+Position 0: Alice selling to Bob
+Position 1: Bob selling to Carol (needs Alice's sale funds)
+Position 2: Carol selling to Dave (needs Bob's sale funds)
+```
+All linked transactions complete together on the same completion date.
+
+### Invite Code System
+Format: TX-XXXX-XXXX (e.g., "TX-A7F2-9K3L")
+Share to give parties access: joinTransactionByInviteCode(inviteCode) adds caller to accessList.
+
+---
+
+## 16. UK Conveyancing Process — 6 Phases
+
+PropXchain digitalizes the complete UK property conveyancing process across six phases.
+
+### Phase 1: Seller Preparation
+
+Activities:
+- Obtain Energy Performance Certificate (EPC)
+- Complete TA6 Property Information Form (boundaries, disputes, notices, services)
+- Complete TA7 Leasehold Information Form (if applicable: service charges, ground rent, lease term)
+- Complete TA10 Fixtures and Fittings Form (included/excluded items)
+- Gather title deeds and office copy entries
+- Instruct solicitor/conveyancer
+- Set asking price and list property
+
+Key documents: EPC, TA6, TA7 (leasehold), TA10, title deeds, office copy entries, property information pack.
+
+### Phase 2: Buyer Setup
+
+Activities:
+- Obtain mortgage Agreement in Principle (AIP)
+- Instruct solicitor/conveyancer
+- Make offer (via estate agent or direct)
+- Provide proof of identity and proof of funds (AML checks)
+- Pay deposit to solicitor
+
+Key documents: Mortgage AIP, proof of identity (passport/driving license), proof of funds (bank statements), proof of deposit source.
+
+### Phase 3: Searches and Due Diligence
+
+Activities:
+- Local authority search (planning permissions, building control, roads)
+- Environmental search (contamination, flood risk, subsidence)
+- Water and drainage search (connection, public sewers)
+- Chancel repair liability search
+- Mining search (relevant areas)
+- Land Registry official search (OS1)
+- Survey/valuation (HomeBuyer, Building Survey, or RICS Valuation)
+
+Key documents: Local authority search results, environmental search report, water/drainage search, survey report, flood risk assessment.
+
+### Phase 4: Pre-Contract and Exchange
+
+Activities:
+- Raise and respond to pre-contract enquiries
+- Review contract pack (draft contract, title information, search results)
+- Negotiate terms and amendments
+- Agree completion date
+- Exchange contracts (both solicitors sign — legally binding)
+- Buyer pays deposit (typically 10% of purchase price)
+
+Key documents: Draft contract, replies to enquiries, amended contract terms, signed contract, deposit receipt.
+
+PropXchain state change: #active --> #exchanged (recorded via recordContractExchange with dual solicitor signatures).
+
+### Phase 5: Pre-Completion
+
+Activities:
+- Prepare transfer deed (TR1 form)
+- Prepare completion statement (financial breakdown)
+- Calculate and prepare Stamp Duty Land Tax (SDLT) return
+- Buyer's solicitor requests mortgage funds from lender
+- Pre-completion searches (priority search, bankruptcy search)
+- Final checks and sign-off
+
+Key documents: Transfer deed (TR1), completion statement, SDLT return, mortgage deed, requisitions on title.
+
+### Phase 6: Post-Completion
+
+Activities:
+- Transfer of funds (buyer's solicitor to seller's solicitor)
+- Keys released to buyer
+- Submit SDLT return to HMRC (within 14 days)
+- Apply to HM Land Registry for registration (AP1 form)
+- Land Registry processes application
+- New ownership registered
+
+Key documents: Proof of funds transfer, SDLT receipt, AP1 application form, Land Registry confirmation.
+
+PropXchain state changes:
+- #completion_initiated (funds proof hash + completion statement hash)
+- #blockchain_completed (immutable record created)
+- #land_registry_registered (LR confirms registration)
+
+---
+
+## 17. Document Types Catalog
+
+### Identity Verification
+- Proof of Identity (passport, driving license)
+- Proof of Address (utility bill, bank statement)
+- Anti-Money Laundering (AML) check results
+
+### Property Documents
+- Energy Performance Certificate (EPC)
+- Title Deeds / Office Copy Entries
+- TA6 Property Information Form
+- TA7 Leasehold Information Form
+- TA10 Fixtures and Fittings Form
+- Property information pack
+- Floor plans and site plans
+- Building regulations completion certificates
+- Planning permissions
+
+### Search Results
+- Local authority search
+- Environmental search
+- Water and drainage search
+- Chancel repair liability search
+- Mining search
+- Land Registry official search (OS1)
+
+### Survey Reports
+- RICS HomeBuyer Report
+- Full Building Survey
+- Mortgage Valuation
+
+### Legal Documents
+- Draft contract
+- Final signed contract
+- Transfer deed (TR1)
+- Mortgage deed
+- Replies to pre-contract enquiries
+- Requisitions on title
+
+### Financial Documents
+- Mortgage offer / Agreement in Principle
+- Proof of funds / Proof of deposit source
+- Completion statement
+- SDLT return
+- Bank transfer confirmation
+
+### Post-Completion
+- AP1 Land Registry application form
+- SDLT receipt from HMRC
+- Land Registry confirmation of registration
+- New title register
+
+---
+
+## 18. Hash-Only Document Architecture (GDPR)
+
+### Why Hash-Only?
+- GDPR Compliance: Personal data on blockchain cannot be deleted, but hashes reveal nothing about content
+- Privacy: Sensitive documents (IDs, financial records) stay private
+- Efficiency: ~500 bytes per document on-chain vs megabytes for actual files
+- Verification: Cryptographic SHA-256 proof without exposing content
+
+### Upload Flow
+1. User selects file in browser (file NEVER leaves their machine)
+2. Browser generates SHA-256 hash via Web Crypto API (hashGenerator.ts)
+3. Only hash + metadata sent to document_storage canister
+4. User stores actual file on their GDPR-compliant local system
+5. localDocumentRegistry.ts maps blockchain document ID to local file location
+
+### Verification Flow
+1. User provides local file for verification
+2. Browser regenerates SHA-256 hash from local file
+3. Hash compared against on-chain record via verifyDocumentHash()
+4. Match = document verified (integrity confirmed)
+5. Mismatch = document may have been tampered with
+
+### SHA-256 Properties
+If even 1 bit of the file changes, the hash is completely different. Hash is 64 hexadecimal characters (256 bits). One-way function: hash reveals nothing about file contents.
+
+### GDPR Right to Be Forgotten
+deleteDocument() removes hash record from blockchain. User deletes local file. No personal data remains.
+
+### Dual Document IDs
+Each document has two IDs:
+- storageDocumentId: from document_storage canister (physical proof)
+- verificationDocumentId: from document_verification canister (verification metadata)
+
+---
+
+## 19. MCP Tool Specifications — 12 Tools
+
+PropXchain plans an MCP (Model Context Protocol) server at mcp.propxchain.com enabling AI agents to interact with the platform programmatically.
+
+### Read-Only Tools (6)
+
+#### propxchain_search_transactions
+Search transactions by address, postcode, status, or party.
+- Input: { query: string, filters?: { status?, postcode?, dateRange? } }
+- Output: Array of transaction summaries
+
+#### propxchain_get_transaction
+Get full transaction details by ID.
+- Input: { transactionId: string }
+- Output: Complete Transaction object with all fields
+
+#### propxchain_get_status
+Get transaction status and progress percentage.
+- Input: { transactionId: string }
+- Output: { status, completionPercentage, blockingParties, readyToExchange }
+
+#### propxchain_get_property_intel
+Get property intelligence from Land Registry data.
+- Input: { postcode: string } or { titleNumber: string }
+- Output: Property details, price history, ownership info
+
+#### propxchain_verify_document
+Verify a document hash against on-chain record.
+- Input: { documentId: number, fileHash: string }
+- Output: { verified: boolean, onChainHash, uploadedBy, uploadedAt }
+
+#### propxchain_list_documents
+List all documents for a transaction.
+- Input: { transactionId: string }
+- Output: Array of DocumentProof objects
+
+### Action Tools (6)
+
+#### propxchain_get_checklist
+Get conveyancing checklist for a transaction with completion status.
+- Input: { transactionId: string, role: string }
+- Output: Checklist items with done/pending status
+
+#### propxchain_explain_process
+Explain a conveyancing concept or process step.
+- Input: { topic: string, context?: string }
+- Output: Plain-language explanation with PropXchain-specific guidance
+
+#### propxchain_create_transaction
+Create a new property transaction.
+- Input: { propertyAddress, postcode, titleNumber, amount, propertyType, mode, ... }
+- Output: { transactionId, inviteCode }
+
+#### propxchain_upload_document
+Register a document hash on-chain.
+- Input: { transactionId, fileName, fileHash, fileSize, contentType, docType }
+- Output: { documentId, registered: true }
+
+#### propxchain_update_checklist
+Update checklist item status.
+- Input: { transactionId, checklistItemId, completed: boolean }
+- Output: Updated checklist item
+
+#### propxchain_send_message
+Send a message to a transaction party.
+- Input: { transactionId, recipientPrincipal, message }
+- Output: { messageId, sent: true }
+
+---
+
+## 20. Pricing Model
+
+| Tier / cost | Price | Details |
+|-------------|-------|---------|
+| Starter (buyers and sellers) | Free | No platform fee. Run your own transaction; pick your own providers and see every price before you commit. |
+| Premium AI co-pilot | 75 GBP per transaction | Optional. Reads your HM Land Registry title and search results in plain English, flags what matters, and tailors your conveyancer quote request. |
+| Property searches | 50–450 GBP | Bought through PropXchain from the provider you choose. |
+| Conveyancer (reserved legal acts) | Quoted per transaction | The panel conveyancer quotes you directly; PropXchain never marks up the fee. |
+| Solicitors / firms | Subscription plans available | Contact for pricing. |
+
+Stamp Duty Land Tax (SDLT) is separate and paid to HMRC, not to PropXchain. Standard SDLT rates apply based on purchase price.
+
+---
+
+## 21. Frontend Architecture
+
+### Key Services
+
+#### icp.service.ts
+Centralized canister communication layer. Creates HTTP agent and Actor instances for all canisters.
+```typescript
+import { icpService } from '@/services/icp.service';
+await icpService.initialize();
+const profile = await icpService.getMyProfile();
+const transactions = await icpService.getAllTransactions();
+```
+
+#### rbac.service.ts
+Role-based access control on the frontend.
+```typescript
+import { rbacService } from '@/services/rbac.service';
+await rbacService.initialize(principalId);
+rbacService.isAdmin();
+rbacService.isSolicitor();
+const myTx = await rbacService.getAuthorizedTransactions();
+```
+
+#### localDocumentRegistry.ts
+Maps local files to blockchain document IDs. Uses IndexedDB or localStorage.
+
+#### hashGenerator.ts
+SHA-256 hash generation using Web Crypto API.
+```typescript
+import { generateFileHash } from '@/utils/hashGenerator';
+const hash = await generateFileHash(file);
+```
+
+### Directory Structure
+```
+frontend/src/
+  pages/           - Route components (DashboardPage, CreateTransactionPage, etc.)
+  components/      - Reusable UI (forms/, dashboard/, common/, ui/)
+  services/        - Business logic (icp.service, rbac.service, localDocumentRegistry)
+  utils/           - Utilities (hashGenerator, formatters, validators)
+  types/           - TypeScript definitions
+  constants/       - Document types, roles, transaction states
+  declarations/    - Auto-generated Candid interfaces (one per canister)
+```
+
+### Key Pages
+- / - Landing page (public)
+- /login - Internet Identity login
+- /register - User registration
+- /dashboard - Main user dashboard
+- /transactions - Transaction list
+- /transactions/create - 2-phase transaction creation
+- /transactions/:id - Transaction detail dashboard
+- /documents - Document management
+- /admin - Admin dashboard (admin only)
+- /join/:inviteCode - Join transaction via invite
+
+---
+
+## 22. Error Handling Patterns
+
+### Result Type (most canister methods)
+```typescript
+const result = await canister.someMethod();
+if ('ok' in result) {
+    const data = result.ok;
+} else {
+    console.error('Error:', result.err);
+}
+```
+
+### Optional Type (query methods)
+```typescript
+const data = await canister.queryMethod();
+if (data && data.length > 0 && data[0]) {
+    const record = data[0];
+}
+```
+
+### Common Error Messages
+| Error | Meaning |
+|-------|---------|
+| "Unauthorized" | Caller not authorized |
+| "Not found" | Resource doesn't exist |
+| "Already exists" | Duplicate creation |
+| "Invalid input" | Validation failed |
+| "Document not found" | Document ID invalid |
+| "Transaction not found" | Transaction ID invalid |
+| "Hash mismatch" | Document hash doesn't match (possible tampering) |
+| "Invalid hash format" | Hash must be 64 hex characters |
+| "Rate limit exceeded" | Too many requests |
+
+### ICP-Specific Notes
+- Timestamps are nanoseconds (divide by 1_000_000 for milliseconds)
+- Transaction status is a variant enum: extract with Object.keys(tx.status)[0]
+- Principals need .toText?.() or .toString?.() for string comparison
+- BigInt is used for Nat64 fields (amount, deposit, mortgageAmount)
+- Optional fields from Motoko return as arrays: [] for null, [value] for some
+
+---
+
+## 23. Code Examples
+
+### Complete Document Upload Flow
+```typescript
+import { generateFileHash } from '@/utils/hashGenerator';
+import { icpService } from '@/services/icp.service';
+
+async function uploadDocument(file: File, transactionId: string) {
+    // 1. Generate hash locally (file NEVER leaves user's machine)
+    const hash = await generateFileHash(file);
+
+    // 2. Register hash on blockchain
+    const result = await icpService.documentStorageActor.registerDocumentProof(
+        file.name,
+        hash,
+        BigInt(file.size),
+        file.type || 'application/octet-stream',
+        "local",
+        [transactionId]
+    );
+
+    if ('ok' in result) {
+        const documentId = Number(result.ok);
+        // 3. User stores actual file on their secure system
+    }
+}
+```
+
+### Join Transaction via Invite Code
+```typescript
+const result = await icpService.transactionManagerActor.joinTransactionByInviteCode(
+    "TX-A7F2-9K3L"
+);
+if ('ok' in result) {
+    const tx = result.ok;
+    // User now has access to this transaction
+}
+```
+
+### Check Transaction Progress
+```typescript
+const progress = await rbacService.getTransactionProgress(transactionId);
+if (progress) {
+    // progress.completionPercentage (0-100)
+    // progress.readyToExchange (boolean)
+    // progress.blockingParties (array of Principals who haven't completed)
+    // progress.members (array of TransactionMember with document status)
+}
+```
+
+### RBAC-Filtered Transaction Loading
+```typescript
+// principalId: the signed-in user's principal, from the auth store
+await rbacService.initialize(principalId);
+const transactions = await rbacService.getAuthorizedTransactions();
+// Admins/solicitors see all; buyers/sellers see only their own
+```
+
+---
+
+## License
+
+PropXchain is free and open source software licensed under AGPL-3.0-or-later.
+
+Copyright (C) 2025 PropXchain Contributors
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.

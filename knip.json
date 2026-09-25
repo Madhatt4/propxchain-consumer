@@ -1,0 +1,34 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "src/main.tsx",
+    "src/setupTests.ts",
+    "src/test/setup.ts",
+    "scripts/prerender-marketing.mjs",
+    "vite.config.ts",
+    "vitest.config.ts"
+  ],
+  "project": [
+    "src/**/*.{ts,tsx}",
+    "scripts/**/*.{ts,mjs}"
+  ],
+  "ignore": [
+    ".dfx/**",
+    "dist/**",
+    "dist-backup/**",
+    "**/*.d.ts",
+    "src/components/oscar/**",
+    "src/pages/OscarDashboard.tsx",
+    "src/services/oscar/**",
+    "src/types/oscar.types.ts",
+    "src/utils/oscarGreeting.ts",
+    "src/components/conveyancer/ConveyancerPanel.tsx",
+    "src/services/conveyancer.service.ts"
+  ],
+  "ignoreDependencies": [
+    "@typescript-eslint/eslint-plugin",
+    "@typescript-eslint/parser",
+    "eslint-plugin-react-hooks",
+    "eslint-plugin-react-refresh"
+  ]
+}

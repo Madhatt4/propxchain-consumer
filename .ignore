@@ -1,0 +1,8 @@
+# graft's cards are gitignored but should stay greppable: ripgrep reads
+# .ignore before .gitignore, so this re-admits the tree to search only.
+# `!graft/**` is needed as well as `!graft/`: re-admitting the directory is
+# not enough when a broad rule like `*.md` still matches the cards inside it.
+!graft/
+!graft/**
+graft/.cache/
+graft/.graph/
