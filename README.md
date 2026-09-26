@@ -7,6 +7,18 @@ the Internet Computer through the
 [`@propxchain/core-client`](https://www.npmjs.com/package/@propxchain/core-client)
 package.
 
+## Screenshots
+
+![The PropXchain landing page](docs/screenshots/landing.jpg)
+
+*The landing page at [propxchain.com](https://propxchain.com).*
+
+![A seller's transaction, showing the stage rail, the listing form and the listing card](docs/screenshots/seller-transaction.png)
+
+*A seller's transaction: the stages from sales pack to completion, the
+listing details and what the buyer has done so far. Shown with a demo
+account and synthetic data.*
+
 ## About this repository
 
 This repository contains the consumer frontend for PropXchain. The code is
