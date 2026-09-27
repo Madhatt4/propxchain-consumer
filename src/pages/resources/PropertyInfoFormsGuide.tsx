@@ -50,6 +50,10 @@ const PropertyInfoFormsGuide: React.FC = () => (
         'Japanese knotweed: "no" means you have checked and are confident. If you are unsure what it looks like, "not known" is the honest answer.',
       ]}
     />
+    <GuideP>
+      For every section of the 6th edition in detail, see{' '}
+      <GuideLink to="/resources/selling/ta6-form-explained">the TA6 form explained</GuideLink>.
+    </GuideP>
 
     <GuideH2 id="ta10">TA10 — Fittings and Contents</GuideH2>
     <GuideP>

@@ -11,6 +11,10 @@
  * in sync).
  */
 
+import { LAW_SOCIETY_TA6_URL, REMOVED_SECTIONS, TA6_SECTIONS } from '../src/pages/resources/ta6GuideData.mjs';
+
+const escHtml = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
 const SITE = 'https://propxchain.com';
 const ORG = { '@type': 'Organization', name: 'PropXchain Ltd', url: SITE };
 
@@ -88,6 +92,8 @@ export const resourcePages = [
   <p>Title register, searches, TA6, EPC: the documents every buyer eventually needs, gathered before you list rather than after you accept an offer. The government calls it a sales pack — you may know it as a property pack. Why upfront information sells houses faster, and what actually goes in one.</p>
   <h3><a href="/resources/selling/property-information-forms-explained">TA6, TA10 and TA7 explained</a></h3>
   <p>The three forms every seller fills in, what each one asks, why your answers are legally binding representations rather than opinions, and the questions people most often get wrong.</p>
+  <h3><a href="/resources/selling/ta6-form-explained">The TA6 form explained</a></h3>
+  <p>The TA6 Property Information Form (6th edition), in use since 30 March 2026: what changed, what each of the 15 sections asks, what to have ready, and how to answer without creating problems later.</p>
 
   <h2><a href="/resources/buying">Buying</a></h2>
   <p>The buyer-side journey, from agreement in principle to keys.</p>
@@ -140,6 +146,8 @@ export const resourcePages = [
   <p>Title register, searches, TA6, EPC: the documents every buyer eventually needs, gathered before you list rather than after you accept an offer. The government calls it a sales pack — you may know it as a property pack. Why upfront information sells houses faster, and what actually goes in one.</p>
   <h2><a href="/resources/selling/property-information-forms-explained">TA6, TA10 and TA7 explained</a></h2>
   <p>The three forms every seller fills in, what each one asks, why your answers are legally binding representations rather than opinions, and the questions people most often get wrong.</p>
+  <h2><a href="/resources/selling/ta6-form-explained">The TA6 form explained</a></h2>
+  <p>The TA6 Property Information Form (6th edition), in use since 30 March 2026: what changed, what each of the 15 sections asks, what to have ready, and how to answer without creating problems later.</p>
 </main>`.replace(
       '</main>',
       `<script type="application/ld+json">${breadcrumbJsonLd([{ name: 'Home', path: '/' },
@@ -579,6 +587,7 @@ export const resourcePages = [
   <h2 id="ti-ta6">TA6 — Property Information</h2>
   <p>The long one. Boundaries and who maintains them, disputes and complaints, notices you have received, alterations and whether they had consent, guarantees, services, and rights of way.</p>
   <p>The questions people get wrong: disputes (a running disagreement counts even if nothing formal happened), alterations (conservatories, knocked-through walls and replacement windows all need paperwork), flooding (this asks about the property, not the postcode), and Japanese knotweed (if you are unsure what it looks like, "not known" is the honest answer).</p>
+  <p>For every section of the 6th edition in detail, see <a href="/resources/selling/ta6-form-explained">the TA6 form explained</a>.</p>
 </section>
 
 <section aria-labelledby="ti-ta10">
@@ -609,6 +618,80 @@ export const resourcePages = [
 </section>
 
 <p>See also <a href="/resources/industry-and-reform/baspi-explained">BASPI explained</a> and <a href="/resources/selling/what-is-a-property-pack">what is a sales pack</a>, or <a href="/register">start your transaction free</a>.</p>
+</main>`,
+  }),
+  withJsonLd({
+    route: 'resources/selling/ta6-form-explained',
+    category: 'selling',
+    catName: 'Selling',
+    published: '2026-09-27',
+    modified: '2026-09-27',
+    crumb: 'The TA6 form explained',
+    title: 'TA6 Form Explained: the 6th Edition, Section by Section · PropXchain',
+    description: 'The TA6 Property Information Form (6th edition) replaced older editions on 30 March 2026. What each of its 15 sections asks, what to have ready, and how to fill it in online free.',
+    main: `<main id="seo-fallback" role="main" aria-label="The TA6 form explained — guide">
+<p class="muted">Loading PropXchain…</p>
+<h1>The TA6 form explained</h1>
+<p>The TA6 is the long form every seller in England and Wales fills in. The 6th edition became the standard on 30 March 2026, with 15 sections instead of 25. Here is what each section asks, what to have ready, and how to answer without creating problems for yourself later.</p>
+
+<section aria-labelledby="t6-what">
+  <h2 id="t6-what">What is the TA6 form?</h2>
+  <p>The TA6 is the Law Society's <strong>Property Information Form</strong>. The seller fills it in to tell the buyer what they know about the home: boundaries, disputes, building work, guarantees, flooding, services and more. It is used for most sales of owner-occupied homes in England and Wales. It is not meant for new builds, and it may need adapting for auctions and part exchange.</p>
+  <p>It usually arrives from your conveyancer once an offer is accepted, but the Law Society says it can be completed before a buyer is found. Doing it early is one of the simplest ways to take weeks off a sale (see <a href="/resources/buying/how-long-does-conveyancing-take">how long conveyancing takes</a>).</p>
+</section>
+
+<section aria-labelledby="t6-sixth">
+  <h2 id="t6-sixth">The 6th edition: what changed in 2026</h2>
+  <p>The TA6 (6th edition) replaced the 4th and 5th editions on 30 March 2026. Conveyancing firms in the Law Society's Conveyancing Quality Scheme must use it for any sale they were instructed on from that date (<a href="${LAW_SOCIETY_TA6_URL}" rel="noopener noreferrer">Law Society</a>).</p>
+  <ul>
+    <li><strong>15 sections, down from 25.</strong> The structure is closer to the 4th edition. Sections the Law Society lists as removed include: ${escHtml(REMOVED_SECTIONS.join(', ').toLowerCase())}.</li>
+    <li><strong>No EPC request.</strong> The Energy Performance Certificate is now handled by the estate agent at marketing.</li>
+    <li><strong>More "not known" options.</strong> More questions are phrased as "are you aware…", where "no" means the same as "not known".</li>
+    <li><strong>Clearer explanatory notes.</strong> The Law Society rewrote them after user testing found the old ones too dense to read.</li>
+  </ul>
+</section>
+
+<section aria-labelledby="t6-download">
+  <h2 id="t6-download">Can I download the TA6 as a free PDF?</h2>
+  <p>Not the current edition, legitimately. The Law Society supplies the TA6 through licensed third-party suppliers, and your conveyancer will normally send it to you. Free PDFs found online are often the 4th or 5th edition, which suppliers have withdrawn and which conveyancers in the quality scheme can no longer use for new instructions. Filling in an old edition means doing the work twice.</p>
+</section>
+
+<section aria-labelledby="t6-sections">
+  <h2 id="t6-sections">The 15 sections, one by one</h2>
+  <p>A plain-English summary of each section and what to dig out before you start. It paraphrases the form; the official wording is what your answers are judged against.</p>
+  <table>
+    <caption>The 15 sections of the TA6 Property Information Form (6th edition)</caption>
+    <thead><tr><th scope="col">Section</th><th scope="col">What it asks</th><th scope="col">Have ready</th></tr></thead>
+    <tbody>
+${TA6_SECTIONS.map((s) => `      <tr><td>${s.n}. ${escHtml(s.title)}</td><td>${escHtml(s.asks)}</td><td>${escHtml(s.ready)}</td></tr>`).join('\n')}
+    </tbody>
+  </table>
+</section>
+
+<section aria-labelledby="t6-answering">
+  <h2 id="t6-answering">How to answer without causing problems</h2>
+  <p>A "yes" or "no" is a statement the buyer is entitled to rely on. If it turns out to be wrong and they relied on it, they may have a claim for misrepresentation, and that can follow you after completion. "Not known" is a legitimate answer when it is true, but you need honest grounds for giving it.</p>
+  <ul>
+    <li><strong>Answer from what you know.</strong> You are not expected to investigate, but do not guess. A confident wrong answer is worse than an honest "not known".</li>
+    <li><strong>Disputes count even if they were settled.</strong> A long-running disagreement with a neighbour counts even if nothing formal happened.</li>
+    <li><strong>Paperwork matters as much as the work.</strong> Missing certificates for windows, extensions or electrics are common. Say so rather than leaving a blank; your conveyancer can advise on options.</li>
+    <li><strong>Knotweed and flooding are about the property.</strong> Answer for the home itself, not the postcode.</li>
+  </ul>
+  <p><strong>Before you start:</strong> gather the certificates and guarantees first. Most of the time spent on a TA6 is looking for documents, and most of the enquiries it triggers are about documents that were not attached.</p>
+</section>
+
+<section aria-labelledby="t6-related">
+  <h2 id="t6-related">TA6, TA10 and TA7</h2>
+  <p>The TA6 usually travels with the TA10 (fittings and contents) and, for leasehold homes, the TA7 (leasehold information). See <a href="/resources/selling/property-information-forms-explained">TA6, TA10 and TA7 explained</a> for how the three fit together, and <a href="/resources/selling/what-is-a-property-pack">what is a sales pack</a> for everything else a buyer will ask for.</p>
+</section>
+
+<section aria-labelledby="t6-propxchain">
+  <h2 id="t6-propxchain">Filling in your TA6 on PropXchain</h2>
+  <p>On the free Starter tier you can fill in your TA6 answers online, one section at a time, with a plain-English help card above each section. Each section saves as you finish it. When you are done you can export a PDF record of them for your conveyancer, and share them with buyers and their conveyancers through a read-only link that removes personal details.</p>
+  <p>PropXchain's version follows the 6th edition section by section and paraphrases the questions. The official Law Society wording is what governs your answers, and your conveyancer may still ask you to sign the official form through their supplier. See <a href="/pricing">pricing</a> for what is included in each tier.</p>
+</section>
+
+<p>Ready to get your TA6 done before you list? <a href="/register">Start free</a>.</p>
 </main>`,
   }),
 ];
