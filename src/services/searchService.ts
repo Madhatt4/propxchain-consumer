@@ -15,6 +15,7 @@ import {
 } from '../utils/searchTypes';
 import { icpService } from './icp.service';
 import { generateFileHash } from '../utils/hashGenerator';
+import { onChainFileName, storageObjectName } from '../lib/onChainDocument';
 import { localDocumentRegistry } from './localDocumentRegistry';
 import { logger } from '@/utils/logger';
 
@@ -86,7 +87,7 @@ class SearchService {
     const userPrincipal = await icpService.getUserPrincipal();
 
     // Create local storage path reference
-    const localPath = `${userPrincipal}/${propertyId}/searches/${searchType}/${file.name}`;
+    const localPath = `${userPrincipal}/${propertyId}/searches/${searchType}/${storageObjectName(documentHash, file.name)}`;
     const storageLocation = localDocumentRegistry.generateStorageLocation(localPath);
 
     // Register hash on blockchain
@@ -94,7 +95,7 @@ class SearchService {
     await icpService.ensureDocumentStorageActor();
 
     const storageResult = await (await icpService.requireDocumentStorage()).registerDocumentProof(
-      file.name,
+      onChainFileName(`property_search_${searchType}`, file.name),
       documentHash,
       BigInt(file.size),
       file.type || 'application/octet-stream',
@@ -123,14 +124,14 @@ class SearchService {
       `property_search_${searchType}`,
       documentHash,
       [BigInt(storageDocId)],
-      [file.name],
+      [onChainFileName(`property_search_${searchType}`, file.name)],
       [BigInt(file.size)],
       [file.type || 'application/octet-stream']
     );
 
     logger.info('Search document registered in verification canister, ID:', verificationDocId);
 
-    icpService.emitDocumentUploadedEvent(transactionId, file.name, `property_search_${searchType}`, documentHash);
+    icpService.emitDocumentUploadedEvent(transactionId, `property_search_${searchType}`, documentHash);
 
     // Register in local document registry
     localDocumentRegistry.registerDocument({

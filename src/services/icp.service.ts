@@ -53,6 +53,7 @@ import { getStorePrincipalId, getStoreIsAuthenticated } from '../stores/authStor
 // Session management for secure auth state
 import { SessionManager } from '../utils/sessionManager';
 import { logger } from '@/utils/logger';
+import { onChainFileName } from '@/lib/onChainDocument';
 
 // Canister IDs for IC mainnet (from canister_ids.json)
 const CANISTER_IDS = {
@@ -2129,7 +2130,7 @@ class ICPService {
 
       // Register proof on blockchain (hash + metadata only)
       const storageResult = await this.dsActor.registerDocumentProof(
-        file.name,
+        onChainFileName(documentType, file.name),
         documentHash,
         BigInt(file.size),
         file.type || 'application/octet-stream',
@@ -2156,12 +2157,12 @@ class ICPService {
         documentType,
         documentHash,
         [storageDocumentId],
-        [file.name],
+        [onChainFileName(documentType, file.name)],
         [BigInt(file.size)],
         [file.type || 'application/octet-stream']
       );
 
-      this.emitDocumentUploadedEvent(transactionId, file.name, documentType, documentHash);
+      this.emitDocumentUploadedEvent(transactionId, documentType, documentHash);
 
       return {
         storageDocumentId: Number(storageDocumentId),
@@ -2175,10 +2176,10 @@ class ICPService {
    * Fire-and-forget `document_uploaded` audit event.
    * No-op when transactionId is missing (property-level uploads pre-transaction).
    * Mirrors the pattern used for buyer_joined / stage_completed / provider_selected.
+   * Takes no filename: the ledger is permanent and filenames carry personal data.
    */
   emitDocumentUploadedEvent(
     transactionId: string | undefined,
-    fileName: string,
     documentType: string,
     fileHash: string,
   ): void {
@@ -2187,8 +2188,8 @@ class ICPService {
       ?.logEvent(
         transactionId,
         'document_uploaded',
-        `Document ${fileName} (${documentType}) registered on chain`,
-        [JSON.stringify({ fileName, documentType, fileHash })],
+        `Document (${documentType}) registered on chain`,
+        [JSON.stringify({ documentType, fileHash })],
       )
       .catch((err: unknown) => logger.error('[audit] logEvent failed', { transactionId, eventType: 'document_uploaded', err }));
   }

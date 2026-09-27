@@ -26,6 +26,7 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { onChainFileName, storageObjectName } from '../lib/onChainDocument';
 import { icpService } from './icp.service';
 import { generateFileHash } from '../utils/hashGenerator';
 import { getBackendDocumentName } from '../constants/documentTypes';
@@ -106,7 +107,7 @@ class FundingDocumentService {
 
     // Audit anchor: the seller's "Tick" milestone notice and the conveyancer's
     // access both derive from this event + transaction membership.
-    icpService.emitDocumentUploadedEvent(transactionId, file.name, documentType, fileHash);
+    icpService.emitDocumentUploadedEvent(transactionId, documentType, fileHash);
     await this.updateProgress(transactionId, documentType);
 
     return {
@@ -140,10 +141,10 @@ class FundingDocumentService {
     contentType: string,
     folder: string,
   ): Promise<string> {
-    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    // The path becomes the on-chain storageLocation, so no filename in it.
     const path =
       `transactions/${transactionId}/${folder}/` +
-      `${documentType}-${fileHash.substring(0, 12)}-${safeName}`;
+      `${documentType}-${storageObjectName(fileHash, file.name)}`;
 
     const { error } = await supabase.storage
       .from(STORAGE_BUCKET)
@@ -169,7 +170,7 @@ class FundingDocumentService {
     }
     const csrfToken = await icpService.getDocumentStorageCsrfToken();
     const result = await (await icpService.requireDocumentStorage()).registerDocumentProof(
-      file.name,
+      onChainFileName(documentType, file.name),
       fileHash,
       BigInt(file.size),
       contentType,
@@ -200,7 +201,7 @@ class FundingDocumentService {
       documentType,
       fileHash,
       [BigInt(storageDocId)],
-      [file.name],
+      [onChainFileName(documentType, file.name)],
       [BigInt(file.size)],
       [contentType],
     );
