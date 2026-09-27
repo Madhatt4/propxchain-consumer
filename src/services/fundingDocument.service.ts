@@ -215,14 +215,12 @@ class FundingDocumentService {
   }
 
   private async updateProgress(transactionId: string, documentType: string): Promise<void> {
-    const numericTransactionId = transactionId.replace(/^tx_/, '');
-    if (!numericTransactionId) return;
+    if (!transactionId) return;
     try {
       const backendDocName = getBackendDocumentName(documentType);
       if (!backendDocName) return;
-      // Via the service wrapper: it stringifies the id and attaches the CSRF
-      // token, both of which this raw actor call was missing.
-      await icpService.updateMemberDocuments(numericTransactionId, backendDocName);
+      // The full "tx_…" id: members are keyed by it, so a stripped id never matched.
+      await icpService.updateMemberDocuments(transactionId, backendDocName);
     } catch (err) {
       // Best-effort: the document is already recorded; progress is cosmetic.
       logger.warn('[funding] progress update failed', err);

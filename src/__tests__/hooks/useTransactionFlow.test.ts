@@ -323,4 +323,43 @@ describe('useTransactionFlow', () => {
       expect(() => act(() => result.current.completeStage('seller-1'))).not.toThrow();
     });
   });
+
+  describe('stage completion is earned, not timed', () => {
+    it('should not complete a stage just because a provider was picked', async () => {
+      vi.useFakeTimers();
+      try {
+        const { result } = renderHook(() => useTransactionFlow('tx-123'));
+        await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
+
+        act(() => result.current.selectProvider('buyer-3', makeProvider()));
+        act(() => { vi.advanceTimersByTime(5000); });
+
+        expect(result.current.providerSelections.get('buyer-3')?.completedAt).toBeUndefined();
+        expect(result.current.stages.find((s) => s.id === 'buyer-3')?.status).not.toBe('completed');
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('should mark the picked provider complete when the stage completes', async () => {
+      const { result } = renderHook(() => useTransactionFlow('tx-123'));
+      await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      act(() => result.current.selectProvider('buyer-3', makeProvider()));
+      act(() => result.current.completeStage('buyer-3'));
+
+      expect(result.current.providerSelections.get('buyer-3')?.completedAt).toBeTypeOf('number');
+    });
+
+    it('should surface an error when the on-chain save fails twice', async () => {
+      mockSetFlowState.mockRejectedValue(new Error('canister rejected'));
+      const { result } = renderHook(() => useTransactionFlow('tx-123'));
+      await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      act(() => result.current.completeStage('seller-1'));
+
+      await vi.waitFor(() => expect(result.current.chainPersistError).toMatch(/failed to record on-chain/));
+      mockSetFlowState.mockResolvedValue(undefined);
+    });
+  });
 });

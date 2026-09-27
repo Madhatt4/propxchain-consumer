@@ -564,36 +564,6 @@ export function useTransactionFlow(
         )
         .then(() => bumpInvalidationKey())
         .catch((err: unknown) => logger.error('[audit] logEvent failed', { transactionId, eventType: 'provider_selected', err }));
-
-      // DEMO STOPGAP: optimistically flag the provider as "verified" after
-      // 2s so the UI moves on. The real flow will receive a webhook or
-      // canister event from the provider (Landmark, tmGroup, etc.) when
-      // the order actually lands, and the stage will complete on that
-      // signal. Must be replaced before live rollout — otherwise a user
-      // who picks any provider sees the stage complete regardless of
-      // whether the order succeeded.
-      // TODO(providers-phase): replace with real completion event from
-      // the provider-integration canister / worker.
-      setTimeout(() => {
-        setFlowState((prev) => {
-          const existing = prev.providerSelections[stageId];
-          if (!existing || existing.completedAt) return prev;
-          const next = {
-            ...prev,
-            providerSelections: {
-              ...prev.providerSelections,
-              [stageId]: { ...existing, completedAt: Date.now() },
-            },
-            completedStages: {
-              ...prev.completedStages,
-              [stageId]: Date.now(),
-            },
-          };
-          saveFlowState(transactionId, principalId ?? null, next);
-          persistToChain(transactionId, next);
-          return next;
-        });
-      }, 2000);
     },
     [transactionId],
   );
@@ -674,11 +644,19 @@ export function useTransactionFlow(
     (stageId: string): void => {
       setChainPersistError(null);
       setFlowState((prev) => {
+        const now = Date.now();
+        // The stage's panel calls this only once the order, referral or quote
+        // request has really gone through, so this is where a picked provider
+        // is marked done — never on a timer after merely picking one.
+        const selection = prev.providerSelections[stageId];
         const next = {
           ...prev,
+          providerSelections: selection && !selection.completedAt
+            ? { ...prev.providerSelections, [stageId]: { ...selection, completedAt: now } }
+            : prev.providerSelections,
           completedStages: {
             ...prev.completedStages,
-            [stageId]: Date.now(),
+            [stageId]: now,
           },
         };
         saveFlowState(transactionId, principalId ?? null, next);

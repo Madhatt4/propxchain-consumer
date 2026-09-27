@@ -445,15 +445,15 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
         verificationDocumentId: Number(verificationDocId)
       };
 
-      // Update progress tracking
-      if (numericTransactionId) {
+      // Update progress tracking. Uses the full "tx_…" id: user_management
+      // keys members by it, so the stripped numeric id never matched.
+      if (transactionId) {
         try {
           const backendDocName = getBackendDocumentName(documentName);
           if (backendDocName) {
-            // Via the service wrapper, which stringifies the id (the canister
-            // keys by Text) and attaches the CSRF token the method requires.
+            // Via the service wrapper, which attaches the CSRF token the method requires.
             const progressUpdated =
-              await icpService.updateMemberDocuments(numericTransactionId, backendDocName);
+              await icpService.updateMemberDocuments(transactionId, backendDocName);
             if (progressUpdated) {
               logger.info('[Upload] Transaction progress updated');
             }
