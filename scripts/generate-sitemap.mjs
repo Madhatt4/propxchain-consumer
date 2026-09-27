@@ -38,7 +38,7 @@ const routes = [
   { loc: '/resources/industry-and-reform', lastmod: '2026-09-01', changefreq: 'monthly', priority: '0.8' },
   { loc: '/resources/selling/what-is-a-property-pack', lastmod: '2026-08-14', changefreq: 'monthly', priority: '0.8' },
   { loc: '/resources/selling/property-information-forms-explained', lastmod: '2026-08-21', changefreq: 'monthly', priority: '0.8' },
-  { loc: '/resources/buying/how-long-does-conveyancing-take', lastmod: '2026-06-12', changefreq: 'monthly', priority: '0.8' },
+  { loc: '/resources/buying/how-long-does-conveyancing-take', lastmod: '2026-09-27', changefreq: 'monthly', priority: '0.8' },
   { loc: '/resources/industry-and-reform/baspi-explained', lastmod: '2026-06-12', changefreq: 'monthly', priority: '0.8' },
   { loc: '/resources/searches-and-legal/property-searches-explained', lastmod: '2026-08-21', changefreq: 'monthly', priority: '0.8' },
   { loc: '/resources/getting-started/how-to-sign-in', lastmod: '2026-09-04', changefreq: 'monthly', priority: '0.8' },

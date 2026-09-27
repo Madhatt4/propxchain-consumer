@@ -174,11 +174,11 @@ export const RESOURCES: ResourceArticle[] = [
     planNumber: null,
     title: 'How long does conveyancing take?',
     documentTitle:
-      'How Long Does Conveyancing Take in the UK? A Realistic Timeline · PropXchain',
+      'How Long Does Conveyancing Take in England & Wales? 2026 Timeline · PropXchain',
     teaser:
-      'A realistic stage-by-stage timeline for England and Wales, the delays that genuinely cost weeks (searches, chains, enquiry ping-pong), and what sellers and buyers can do to shorten the wait.',
-    readingTime: '7 min read',
-    updated: '2026-06-12',
+      'About five and a half months on average. A week-by-week timeline for England and Wales, the delays that genuinely cost weeks, and what sellers and buyers can do to shorten the wait.',
+    readingTime: '9 min read',
+    updated: '2026-09-27',
   },
   // --- Buying (planned, plan numbers 17–30) ---
   { status: 'planned', slug: 'agreement-in-principle-vs-mortgage-offer', category: 'buying', planNumber: 17, title: 'Agreement in Principle vs Full Mortgage Application', keyword: 'agreement in principle vs mortgage offer', intent: 'Informational', phase: 3 },

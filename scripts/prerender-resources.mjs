@@ -337,37 +337,76 @@ export const resourcePages = [
     category: 'buying',
     catName: 'Buying',
     published: '2026-06-12',
-    modified: '2026-06-12',
+    modified: '2026-09-27',
     crumb: 'How long does conveyancing take?',
-    title: 'How Long Does Conveyancing Take in the UK? A Realistic Timeline · PropXchain',
-    description: 'A realistic stage-by-stage conveyancing timeline for England and Wales: instruction, searches, enquiries, exchange and completion. What causes the big delays — chains, slow searches, enquiry ping-pong — and how to speed it up.',
+    title: 'How Long Does Conveyancing Take in England & Wales? 2026 Timeline · PropXchain',
+    description: 'Rightmove puts the average at 167 days from sale agreed to completion. A week-by-week conveyancing timeline for England and Wales, what slows it down, and how to speed it up.',
     main: `<main id="seo-fallback" role="main" aria-label="How long does conveyancing take — guide">
 <p class="muted">Loading PropXchain…</p>
 <h1>How long does conveyancing take?</h1>
-<p>The honest answer is "it depends what goes wrong". For a straightforward freehold sale or purchase with a willing buyer and seller, conveyancing in England and Wales typically takes several months from offer acceptance to completion. A clean, well-prepared transaction can move considerably faster; a long chain or a complicated leasehold can take far longer. Almost none of the calendar is legal work taking its natural course — most of it is waiting.</p>
+<p>On average, about five and a half months from sale agreed to completion. Here is where that figure comes from, a week-by-week timeline for England and Wales, what makes one sale take twice as long as another, and what you can do about it.</p>
+
+<section aria-labelledby="ct-quick">
+  <h2 id="ct-quick">The quick answer</h2>
+  <p>Rightmove reported that the average time from sale agreed to completion was <strong>167 days, about five and a half months</strong>, as of March 2026 (<a href="https://www.rightmove.co.uk/guides/buyer/buying-a-property/offer-accepted/" rel="noopener noreferrer">Rightmove</a>). That average covers every kind of sale, chains and leaseholds included.</p>
+  <p>Conveyancers often quote 12 to 16 weeks for a simple freehold with no chain. Treat that as what a clean sale can achieve, not what most sales do. The gap between the two figures is almost entirely waiting: for searches, for lenders, for answers, and for the slowest link in the chain.</p>
+  <p><strong>At a glance:</strong> average, all sales: about 5.5 months (Rightmove, March 2026). Clean, chain-free freehold: often around three months. Leasehold, long chains and slow councils: longer than average. Exchange to completion: usually one to two weeks.</p>
+</section>
+
+<section aria-labelledby="ct-weeks">
+  <h2 id="ct-weeks">A realistic timeline, week by week</h2>
+  <p>An illustration for a chain-free freehold bought with a mortgage, where everyone replies promptly. It is not a guarantee; each stage can stretch, and in a chain nobody exchanges until everybody can.</p>
+  <table>
+    <caption>Illustrative conveyancing timeline for a chain-free freehold purchase in England and Wales</caption>
+    <thead><tr><th scope="col">When</th><th scope="col">What happens</th></tr></thead>
+    <tbody>
+      <tr><td>Week 1</td><td>Offer accepted, memorandum of sale issued, both sides instruct conveyancers and pass ID and anti-money-laundering checks.</td></tr>
+      <tr><td>Weeks 1–3</td><td>Seller's conveyancer sends the draft contract pack: title, TA6, TA10 (and TA7 for leasehold). Buyer orders searches and a survey, and applies for the mortgage.</td></tr>
+      <tr><td>Weeks 2–6</td><td>Searches come back, at a speed set mostly by the council. Survey done. Lender values the property.</td></tr>
+      <tr><td>Weeks 4–10</td><td>Buyer's conveyancer raises enquiries and the seller answers them. Mortgage offer issued.</td></tr>
+      <tr><td>Weeks 8–12</td><td>Everything is signed off, deposit paid, contracts exchanged. The sale is now legally binding.</td></tr>
+      <tr><td>1–2 weeks after exchange</td><td>Completion: money moves, keys are released, the buyer is registered at HM Land Registry.</td></tr>
+    </tbody>
+  </table>
+</section>
 
 <section aria-labelledby="ct-stages">
   <h2 id="ct-stages">The stages, in order</h2>
   <h3>1. Instruction and identity checks</h3>
-  <p>Both sides appoint a conveyancer, sign terms, and complete identity and anti-money-laundering checks. Days if everyone responds quickly; weeks if paperwork drifts.</p>
+  <p>Both sides appoint a conveyancer, sign terms, and complete identity and anti-money-laundering checks. Days if everyone responds quickly; weeks if paperwork drifts. Instructing a conveyancer when you list, not when you accept an offer, takes this stage off the critical path.</p>
   <h3>2. Draft contract and seller's forms</h3>
-  <p>The seller's conveyancer obtains the title from HM Land Registry and prepares the draft contract pack, including the TA6 and TA10. If the seller prepared these in advance (see <a href="/resources/selling/what-is-a-property-pack">what is a sales pack</a>), this stage is nearly instant.</p>
+  <p>The seller's conveyancer obtains the title from HM Land Registry and prepares the draft contract pack, including the TA6 and TA10 (see <a href="/resources/selling/property-information-forms-explained">TA6, TA10 and TA7 explained</a>). If the seller prepared these in advance (see <a href="/resources/selling/what-is-a-property-pack">what is a sales pack</a>), this stage is nearly instant.</p>
   <h3>3. Searches</h3>
-  <p>The buyer's side orders local authority, drainage and water, and environmental searches (typically £50–£450 as a set). Turnaround varies enormously by council — days in some areas, weeks in others. One of the most common single sources of delay, and one of the easiest to start early.</p>
+  <p>The buyer's side orders local authority, drainage and water, and environmental searches (typically £50–£450 as a set). See <a href="/resources/searches-and-legal/property-searches-explained">property searches explained</a> for what each one covers.</p>
   <h3>4. Survey and mortgage offer</h3>
-  <p>The buyer commissions a survey and, if borrowing, waits for the lender's valuation and formal mortgage offer.</p>
+  <p>The buyer commissions a survey and, if borrowing, waits for the lender's valuation and formal mortgage offer. Buyers with an agreement in principle move noticeably faster.</p>
   <h3>5. Enquiries</h3>
-  <p>The buyer's conveyancer raises written questions to the seller's side. Each round trip can take days or weeks, and an incomplete answer spawns another round. This ping-pong is where transactions quietly lose a month or more.</p>
+  <p>The buyer's conveyancer raises written questions to the seller's side. Each round trip can take days or weeks, and an incomplete answer spawns another round. This is where transactions quietly lose a month or more.</p>
   <h3>6. Exchange of contracts</h3>
   <p>Once enquiries are settled and the mortgage offer is in place, contracts are exchanged: the deal becomes legally binding and the completion date is fixed. In a chain, every transaction must exchange together.</p>
   <h3>7. Completion and registration</h3>
-  <p>Usually one to two weeks after exchange, the money moves, keys are released, and the buyer's conveyancer registers the new owner with HM Land Registry.</p>
+  <p>Usually one to two weeks after exchange (same-day is possible), the money moves, keys are released, and the buyer's conveyancer registers the new owner with HM Land Registry.</p>
+</section>
+
+<section aria-labelledby="ct-searches">
+  <h2 id="ct-searches">How long do conveyancing searches take?</h2>
+  <p>Anything from a couple of days to several weeks. The local authority search sets the pace, and its turnaround depends on the council: some reply within days, others take weeks. Drainage, water and environmental searches are usually quicker. Searches are one of the most common single causes of delay and one of the easiest to start early, because nothing legally stops them being ordered before the other stages finish.</p>
+</section>
+
+<section aria-labelledby="ct-varies">
+  <h2 id="ct-varies">What makes one sale take longer than another</h2>
+  <ul>
+    <li><strong>No chain vs a chain</strong> — a first-time buyer purchasing an empty home can move as fast as the paperwork allows; in a chain, your sale moves at the speed of the slowest connected transaction.</li>
+    <li><strong>Freehold vs leasehold</strong> — leasehold adds a management pack from the freeholder or managing agent, which is chargeable and often slow to arrive.</li>
+    <li><strong>Cash vs mortgage</strong> — a cash buyer skips the lender's valuation and offer.</li>
+    <li><strong>Prepared vs unprepared seller</strong> — title, forms and certificates ready before listing remove weeks from the start and cut the number of enquiries later.</li>
+  </ul>
 </section>
 
 <section aria-labelledby="ct-delays">
   <h2 id="ct-delays">What causes the big delays</h2>
   <ul>
-    <li><strong>Chains</strong> — your sale moves at the speed of the slowest connected transaction.</li>
+    <li><strong>Chains</strong> — one slow buyer three links away stalls everybody.</li>
     <li><strong>Slow searches</strong> — council turnaround you cannot control; the order date you can.</li>
     <li><strong>Enquiry ping-pong</strong> — vague information up front guarantees more questions later.</li>
     <li><strong>Leasehold paperwork</strong> — management packs are chargeable and frequently slow.</li>
@@ -385,6 +424,12 @@ export const resourcePages = [
     <li><strong>Respond same-day</strong> — fast answers compound across the whole timeline.</li>
     <li><strong>Share one live view</strong> — when all parties see the same transaction state, chasing disappears and blockers surface the day they happen.</li>
   </ul>
+  <p>The industry is moving the same way: the push for upfront information is about getting these facts in front of buyers at listing instead of weeks into the sale. See <a href="/resources/industry-and-reform/baspi-explained">BASPI explained</a>.</p>
+</section>
+
+<section aria-labelledby="ct-scotland">
+  <h2 id="ct-scotland">What about Scotland?</h2>
+  <p>This guide covers England and Wales. Scotland has its own legal system: the seller provides a Home Report before marketing, and the sale is concluded through an exchange of letters called missives rather than an exchange of contracts, so its timeline and its bottlenecks are different.</p>
 </section>
 
 <section aria-labelledby="ct-propxchain">
