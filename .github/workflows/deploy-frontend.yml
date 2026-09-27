@@ -176,7 +176,6 @@ jobs:
           VITE_TMGROUP_WORKER_URL: ${{ secrets.VITE_TMGROUP_WORKER_URL }}
           VITE_ADMIN_PRINCIPALS: ${{ secrets.VITE_ADMIN_PRINCIPALS }}
           VITE_MAINTENANCE_MODE: ${{ vars.VITE_MAINTENANCE_MODE }}
-          VITE_VC_DEMO: ${{ vars.VITE_VC_DEMO }}
           VITE_TITLE_WORKER_URL: ${{ vars.VITE_TITLE_WORKER_URL }}
           VITE_CARTO_BASEMAPS_KEY: ${{ vars.VITE_CARTO_BASEMAPS_KEY }}
           # Both are read at build time by the Chain tab. Without them the
