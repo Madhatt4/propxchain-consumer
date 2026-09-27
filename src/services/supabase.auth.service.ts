@@ -77,6 +77,22 @@ export interface EmailRegistration {
   last_login_at: string;
 }
 
+/**
+ * Persist a freshly generated key blob. supabase.auth.updateUser reports
+ * failure in `error` rather than throwing, and an identity whose blob was
+ * never saved cannot be restored at the next sign-in — which then mints a
+ * different principal. So a failed save throws, and callers treat it as
+ * "no key yet" instead of handing out an identity that will not survive.
+ */
+async function saveNewKey(encryptedKey: string, principalText: string): Promise<void> {
+  const { error } = await supabase.auth.updateUser({
+    data: { encrypted_icp_key: encryptedKey, icp_principal: principalText },
+  });
+  if (error) {
+    throw new Error(`Could not save the new ICP key: ${error.message}`);
+  }
+}
+
 export const supabaseAuthService = {
   /** Register new user with email/password, generate ICP key pair */
   async signUp(email: string, password: string, metadata: {
@@ -166,9 +182,7 @@ export const supabaseAuthService = {
     if (!encryptedKey) {
       try {
         const { identity, encryptedKey: newKey } = await KeyPairService.generateAndEncrypt(user.id);
-        await supabase.auth.updateUser({
-          data: { encrypted_icp_key: newKey, icp_principal: identity.getPrincipal().toText() },
-        });
+        await saveNewKey(newKey, identity.getPrincipal().toText());
         await this._upsertEmailRegistration(user, identity.getPrincipal().toText());
         const orgJustCreated = await this._maybeCreatePendingDeveloperOrg(user, session);
         await this._maybeCreatePendingEstateAgentOrg(user, session);
@@ -328,12 +342,7 @@ export const supabaseAuthService = {
 
     try {
       const { identity, encryptedKey } = await KeyPairService.generateAndEncrypt(userId);
-      await supabase.auth.updateUser({
-        data: {
-          encrypted_icp_key: encryptedKey,
-          icp_principal: identity.getPrincipal().toText(),
-        },
-      });
+      await saveNewKey(encryptedKey, identity.getPrincipal().toText());
       return identity;
     } catch (retryError) {
       console.error('retryKeyGeneration failed:', retryError);
