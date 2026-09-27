@@ -7,7 +7,9 @@
  *
  * Supports OpenID4VP presentation requests and verification via a server-side
  * proxy. Set VITE_VC_VERIFIER_URL to the proxy base. With no proxy configured
- * we return bundled sample data so the VC tab renders in dev / offline.
+ * we return bundled sample data so the VC tab renders in dev / tests — never in
+ * a production build, where the sample would show a real user a fabricated
+ * "Verified" mortgage offer.
  */
 
 import { logger } from '@/utils/logger';
@@ -39,23 +41,29 @@ const SAMPLE_VERIFIED: VerifyResult = {
 
 export type WalletVcMode = 'live' | 'demo' | 'unavailable';
 
+/** Read at call time (not module load) so tests can stub the build mode. */
+function isSampleAllowed(): boolean {
+  return import.meta.env.PROD !== true;
+}
+
+function refuseSample(): never {
+  throw new Error('Credential verification is not available yet');
+}
+
 /**
  * How the Wallet (VC) UI should behave:
  * - `live`   — a verifier proxy is configured; do real verification.
- * - `demo`   — dev / test / explicit VITE_VC_DEMO; render the bundled sample.
+ * - `demo`   — dev / test build; render the bundled sample.
  * - `unavailable` — prod with no proxy: render an empty state, NEVER sample data.
  */
 export function walletVcMode(): WalletVcMode {
   if (BASE) return 'live';
-  const demo =
-    import.meta.env.DEV === true ||
-    import.meta.env.MODE === 'test' ||
-    import.meta.env.VITE_VC_DEMO === 'true';
-  return demo ? 'demo' : 'unavailable';
+  return isSampleAllowed() ? 'demo' : 'unavailable';
 }
 
 export async function getPresentationRequest(txId: string): Promise<PresentationRequest> {
   if (!BASE) {
+    if (!isSampleAllowed()) refuseSample();
     logger.warn('[walletVc] VITE_VC_VERIFIER_URL not set — returning sample presentation request (demo mode)');
     return SAMPLE_REQUEST;
   }
@@ -69,11 +77,16 @@ export async function getPresentationRequest(txId: string): Promise<Presentation
  * @param _txId reserved for Phase C — the on-chain proof-of-use write needs it.
  * @param jwt the presented credential. The sentinel `'SAMPLE'` short-circuits to
  *   bundled sample data (demo) even when a proxy is configured, so the slice-1 UI
- *   never sends the placeholder to a live verifier.
+ *   never sends the placeholder to a live verifier. A production build refuses
+ *   it, and refuses to "verify" anything without a proxy.
  */
 export async function verifyPresented(_txId: string, jwt: string): Promise<VerifyResult> {
-  if (jwt === 'SAMPLE') return SAMPLE_VERIFIED;
+  if (jwt === 'SAMPLE') {
+    if (!isSampleAllowed()) refuseSample();
+    return SAMPLE_VERIFIED;
+  }
   if (!BASE) {
+    if (!isSampleAllowed()) refuseSample();
     logger.warn('[walletVc] VITE_VC_VERIFIER_URL not set — returning verified sample (demo mode)');
     return SAMPLE_VERIFIED;
   }
