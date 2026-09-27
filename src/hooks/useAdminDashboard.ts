@@ -346,24 +346,35 @@ async function fetchBudgetData(): Promise<BudgetData> {
   };
 }
 
+const NANOS_PER_MILLI = 1_000_000;
+
+/**
+ * Map a row from icpService.getEmailNotifications (contactType, name, email,
+ * timestamp, processed) to the panel's shape. The canister stamps
+ * Time.now(), which is nanoseconds.
+ */
+export function toEmailNotification(n: Record<string, unknown>): EmailNotification {
+  const nanos = Number(n.timestamp);
+  const isProcessed = n.processed === true;
+  return {
+    id: Number(n.id),
+    type: String(n.contactType ?? ''),
+    fromName: String(n.name ?? ''),
+    fromEmail: String(n.email ?? ''),
+    subject: String(n.subject ?? ''),
+    date: nanos > 0 ? new Date(nanos / NANOS_PER_MILLI).toISOString() : '',
+    status: isProcessed ? 'processed' : 'new',
+    isProcessed,
+  };
+}
+
 async function fetchEmailsData(): Promise<EmailsData> {
   const [notifications, count] = await Promise.all([
     icpService.getEmailNotifications(),
     icpService.getUnprocessedEmailCount(),
   ]);
 
-  const mapped: EmailNotification[] = notifications.map((n: Record<string, unknown>) => ({
-    id: Number(n.id),
-    type: String(n.notificationType || n.type || ''),
-    fromName: String(n.senderName || n.fromName || ''),
-    fromEmail: String(n.senderEmail || n.fromEmail || ''),
-    subject: String(n.subject || ''),
-    date: String(n.createdAt || n.date || ''),
-    status: String(n.status || ''),
-    isProcessed: Boolean(n.isProcessed),
-  }));
-
-  return { notifications: mapped, count };
+  return { notifications: notifications.map(toEmailNotification), count };
 }
 
 async function fetchDocumentsData(): Promise<DocumentsData> {
