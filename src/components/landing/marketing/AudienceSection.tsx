@@ -17,6 +17,8 @@ export interface AudienceCta {
   to?: string;
   /** Section id to scroll to (defaults to the report form). */
   target?: string;
+  /** In-page action (e.g. opening a dialog). Takes precedence over `to` and `target`. */
+  onClick?: () => void;
 }
 
 interface AudienceSectionProps {
@@ -77,8 +79,16 @@ export function AudienceSection({
         {ctas.map((cta) => {
           const cls = `${cta.variant === 'primary' ? 'btn-primary' : 'btn-ghost'} px-7 py-3`;
           const style = cta.variant === 'ghost' ? { borderColor: 'var(--t)' } : undefined;
-          // A routed CTA (e.g. the partner form) navigates to a real page;
-          // otherwise the CTA smooth-scrolls to an in-page section.
+          // An action CTA runs its handler; a routed CTA (e.g. the partner
+          // form) navigates to a real page; otherwise the CTA smooth-scrolls
+          // to an in-page section.
+          if (cta.onClick) {
+            return (
+              <button key={cta.label} type="button" onClick={cta.onClick} className={cls} style={style}>
+                {cta.label}
+              </button>
+            );
+          }
           return cta.to ? (
             <Link key={cta.label} to={cta.to} className={cls} style={style}>
               {cta.label}
