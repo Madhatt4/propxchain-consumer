@@ -62,3 +62,25 @@ describe('getChain txId forwarding', () => {
     expect((init.headers as Record<string, string>).Authorization).toBeUndefined();
   });
 });
+
+describe('getChain without a proxy URL', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('should throw in a production build rather than show sample chain data', async () => {
+    vi.stubEnv('VITE_VMC_PROXY_URL', '');
+    vi.stubEnv('PROD', true);
+
+    await expect(getChain({ uprn: '100' })).rejects.toThrow(/not configured/i);
+  });
+
+  it('should return the sandbox sample outside production', async () => {
+    vi.stubEnv('VITE_VMC_PROXY_URL', '');
+    vi.stubEnv('PROD', false);
+
+    const result = await getChain({ uprn: '100' });
+
+    expect(result.status).toBe('in_chain');
+  });
+});

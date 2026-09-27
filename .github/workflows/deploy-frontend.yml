@@ -179,6 +179,11 @@ jobs:
           VITE_VC_DEMO: ${{ vars.VITE_VC_DEMO }}
           VITE_TITLE_WORKER_URL: ${{ vars.VITE_TITLE_WORKER_URL }}
           VITE_CARTO_BASEMAPS_KEY: ${{ vars.VITE_CARTO_BASEMAPS_KEY }}
+          # Both are read at build time by the Chain tab. Without them the
+          # entitlement check compiles to `false` and the chain view to the
+          # bundled sandbox sample, so a paid unlock can never show a chain.
+          VITE_ENTITLEMENT_CANISTER_ID: ${{ vars.VITE_ENTITLEMENT_CANISTER_ID }}
+          VITE_VMC_PROXY_URL: ${{ vars.VITE_VMC_PROXY_URL }}
         run: |
           # Confirm process.env has each VITE_ var right before pnpm build —
           # if a length is 0 here, the secret didn't make it into this step's
@@ -211,6 +216,8 @@ jobs:
           VITE_GROUNDSURE_WORKER_URL: ${{ secrets.VITE_GROUNDSURE_WORKER_URL }}
           VITE_AML_WORKER_URL: ${{ secrets.VITE_AML_WORKER_URL }}
           VITE_TMGROUP_WORKER_URL: ${{ secrets.VITE_TMGROUP_WORKER_URL }}
+          VITE_ENTITLEMENT_CANISTER_ID: ${{ vars.VITE_ENTITLEMENT_CANISTER_ID }}
+          VITE_VMC_PROXY_URL: ${{ vars.VITE_VMC_PROXY_URL }}
         run: |
           set -e
           if [ -z "$(ls dist/assets/*.js 2>/dev/null)" ]; then
@@ -238,6 +245,18 @@ jobs:
             echo "::error::Supabase anon key NOT in any dist/assets/*.js — env-var substitution failed"
             fail=1
           fi
+
+          # The Chain tab (View My Chain) sells a GBP 25 unlock. Without these two
+          # the unlock can never register and the tab shows sample data.
+          for pair in "VITE_ENTITLEMENT_CANISTER_ID:$VITE_ENTITLEMENT_CANISTER_ID" "VITE_VMC_PROXY_URL:$VITE_VMC_PROXY_URL"; do
+            name="${pair%%:*}"; value="${pair#*:}"
+            if [ -n "$value" ] && grep -qrlF "$value" dist/assets/; then
+              echo "  ✓ $name baked into bundle"
+            else
+              echo "::error::$name missing from the bundle (repo variable unset or not passed to the build)"
+              fail=1
+            fi
+          done
 
           if grep -qrlF "$VITE_RIGHTMOVE_WORKER_URL" dist/assets/; then
             echo "  ✓ Rightmove worker URL baked into bundle"
