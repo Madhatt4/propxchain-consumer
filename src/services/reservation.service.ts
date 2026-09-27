@@ -3,7 +3,10 @@
 
 /**
  * Reservation saga — multi-step orchestrator for plot reservations.
- * Steps: set pending → (ICP TODO) → snapshot → invite token.
+ * Steps: hold for the buyer → (ICP TODO) → snapshot → hand back the plot's code.
+ *
+ * The buyer claims the plot by entering its invite code on the Join screen
+ * (plotClaim.service). While pending, only the email named here can claim it.
  */
 
 import { supabase } from '@/lib/supabase';
@@ -24,24 +27,6 @@ export interface ReservationProgress {
   error?: string;
 }
 
-/** Generate a 32-char URL-safe random token. */
-function generateToken(): string {
-  const bytes = new Uint8Array(24);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes, (b) => b.toString(36).padStart(2, '0'))
-    .join('')
-    .slice(0, 32);
-}
-
-/** SHA-256 hash of a string, returned as hex. */
-async function sha256Hex(input: string): Promise<string> {
-  const encoded = new TextEncoder().encode(input);
-  const buffer = await crypto.subtle.digest('SHA-256', encoded);
-  return Array.from(new Uint8Array(buffer))
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
-}
-
 /** Record an error on the plot row for admin visibility. */
 async function recordPlotError(
   plotId: string,
@@ -53,11 +38,11 @@ async function recordPlotError(
     .eq('id', plotId);
 }
 
-/** Step 1: Set reservation_status to pending with race protection. */
-async function setPending(plotId: string): Promise<void> {
+/** Step 1: Hold the plot for this buyer's email, with race protection. */
+async function setPending(plotId: string, buyerEmail: string): Promise<void> {
   const { data, error } = await supabase
     .from('plots')
-    .update({ reservation_status: 'pending' })
+    .update({ reservation_status: 'pending', reserved_for_email: buyerEmail.trim().toLowerCase() })
     .eq('id', plotId)
     .eq('reservation_status', 'available')
     .select('id');
@@ -78,7 +63,7 @@ async function setPending(plotId: string): Promise<void> {
 async function rollbackPending(plotId: string): Promise<void> {
   const { error } = await supabase
     .from('plots')
-    .update({ reservation_status: 'available' })
+    .update({ reservation_status: 'available', reserved_for_email: null })
     .eq('id', plotId)
     .eq('reservation_status', 'pending');
 
@@ -132,66 +117,33 @@ async function createSnapshot(
   }
 }
 
-/** Step 4: Generate invite token and store hash. */
-async function createInviteToken(
-  plotId: string,
-  buyerEmail: string,
-): Promise<string> {
-  const { data: userData } = await supabase.auth.getUser();
-  if (!userData.user) {
-    throw new Error('Not authenticated');
+/** Step 4: The code the developer gives the buyer (every plot has one). */
+async function getInviteCode(plotId: string): Promise<string> {
+  const plot = await plotsService.getById(plotId);
+  if (!plot.invite_code) {
+    throw new Error('This plot has no invite code');
   }
-
-  const token = generateToken();
-  const tokenHash = await sha256Hex(token);
-  const expiresAt = new Date(
-    Date.now() + 7 * 24 * 60 * 60 * 1000,
-  ).toISOString();
-
-  const { error } = await supabase
-    .from('invite_codes')
-    .insert({
-      token_hash: tokenHash,
-      plot_id: plotId,
-      developer_user_id: userData.user.id,
-      buyer_email: buyerEmail,
-      expires_at: expiresAt,
-    });
-
-  if (error) {
-    throw new Error(`Failed to store invite code: ${error.message}`);
-  }
-
-  return token;
+  return plot.invite_code;
 }
 
 /** Release a reservation, returning the plot to available status. */
 async function releaseReservationRow(plotId: string): Promise<void> {
   // TODO: Write canister audit event for the release
 
-  // Clear reservation fields on the plot
+  // Clear reservation fields on the plot. The plots_rotate_code_on_release
+  // trigger issues a fresh invite code, so the old one stops working.
   const { error: plotError } = await supabase
     .from('plots')
     .update({
       reservation_status: 'available',
       reserved_by_buyer_user_id: null,
       reserved_at: null,
+      reserved_for_email: null,
     })
     .eq('id', plotId);
 
   if (plotError) {
     throw new Error(`Failed to release plot: ${plotError.message}`);
-  }
-
-  // Nullify any related invite codes for this plot
-  const { error: inviteError } = await supabase
-    .from('invite_codes')
-    .update({ revoked_at: new Date().toISOString() })
-    .eq('plot_id', plotId)
-    .is('revoked_at', null);
-
-  if (inviteError) {
-    throw new Error(`Failed to revoke invite codes: ${inviteError.message}`);
   }
 }
 
@@ -209,13 +161,13 @@ export const reservationService = {
   async reservePlot(
     input: ReservationInput,
     onProgress: (progress: ReservationProgress) => void,
-  ): Promise<{ inviteToken: string }> {
+  ): Promise<{ inviteCode: string }> {
     const { plotId, siteId, buyerEmail } = input;
 
     // Step 1: Set pending
     onProgress({ step: 1, status: 'pending' });
     try {
-      await setPending(plotId);
+      await setPending(plotId, buyerEmail);
       onProgress({ step: 1, status: 'success' });
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Unknown error';
@@ -243,12 +195,12 @@ export const reservationService = {
       throw err;
     }
 
-    // Step 4: Generate invite token
+    // Step 4: The plot's code, for the developer to give the buyer
     onProgress({ step: 4, status: 'pending' });
     try {
-      const inviteToken = await createInviteToken(plotId, buyerEmail);
+      const inviteCode = await getInviteCode(plotId);
       onProgress({ step: 4, status: 'success' });
-      return { inviteToken };
+      return { inviteCode };
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Unknown error';
       onProgress({ step: 4, status: 'failed', error: msg });
