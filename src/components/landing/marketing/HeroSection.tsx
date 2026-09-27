@@ -3,7 +3,7 @@
 
 /**
  * Unified-landing hero (design option "1b — The chain"). Full-viewport, centred
- * editorial layout with a glass nav, an ambient brand still behind the copy,
+ * editorial layout with a glass nav, an ambient London drone loop behind the copy,
  * an animated milestone chain, and a footer
  * stat strip. Unlike the old cinematic hero this one is fully theme-aware — it
  * re-themes with the toggle via the `.px-landing` root tokens.
@@ -16,6 +16,7 @@ import { IS_REGISTRATION_OPEN } from '@/config/registration';
 import { liveCategories } from '@/pages/resources/resourcesMeta';
 
 import { MarketingNav } from './MarketingNav';
+import { useAmbientVideo } from './hooks/useAmbientVideo';
 import { useMilestoneChain } from './hooks/useMilestoneChain';
 
 interface Milestone {
@@ -41,6 +42,7 @@ interface HeroSectionProps {
 
 export function HeroSection({ isDark, onToggleTheme, onScrollTo }: HeroSectionProps): JSX.Element {
   const activeIndex = useMilestoneChain();
+  const heroVideoRef = useAmbientVideo();
 
   const scroll = (id: string) => (e: MouseEvent) => {
     e.preventDefault();
@@ -68,26 +70,28 @@ export function HeroSection({ isDark, onToggleTheme, onScrollTo }: HeroSectionPr
       }}
       data-screen-label="Hero"
     >
-      {/* Ambient still behind the copy. Purely decorative, so it carries an
-          empty alt and is hidden from assistive tech. One render serves both
-          themes — the `.px-hero-loop` opacity token is what adapts it to each
-          ground, so there is no per-theme file and nothing to remount on a
-          toggle. The filename carries a version suffix because the service
-          worker serves static assets cache-first, so a same-URL swap would
-          keep serving the stale image.
-          v2 crops the left quarter off the source render: it was a flat white
-          wall, and `object-cover` faithfully filled a quarter of the hero with
-          it. Cropping leaves the frame at 1.32 rather than 16:9, so on a wide
-          viewport cover now trims top and bottom instead — which keeps the
-          holographic path and the couple, the two things worth showing. */}
-      <img
+      {/* Ambient drone loop over London housing behind the copy. Purely
+          decorative, so it is hidden from assistive tech and carries no audio.
+          One render serves both themes — the `.px-hero-loop` opacity token is
+          what adapts it to each ground, so nothing remounts on a toggle.
+          Playback starts from `useAmbientVideo` rather than `autoPlay`, which
+          would ignore prefers-reduced-motion; with that preference on, the
+          poster stays up. The last shot crossfades into the first, so `loop`
+          repeats with no visible cut. */}
+      <video
+        ref={heroVideoRef}
         className="px-hero-loop absolute inset-0 h-full w-full object-cover"
-        src="/images/hero-still-v2-2048.webp"
-        srcSet="/images/hero-still-v2-1280.webp 1280w, /images/hero-still-v2-2048.webp 2048w"
-        sizes="100vw"
-        alt=""
+        poster="/images/hero-london-drone-v1-poster.webp"
+        muted
+        loop
+        playsInline
+        preload="metadata"
         aria-hidden="true"
-      />
+        tabIndex={-1}
+      >
+        <source src="/videos/hero-london-drone-v1.webm" type="video/webm" />
+        <source src="/videos/hero-london-drone-v1.mp4" type="video/mp4" />
+      </video>
       <div className="grid-bg absolute inset-0" />
       <div
         className="absolute pointer-events-none"
