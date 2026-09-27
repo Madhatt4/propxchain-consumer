@@ -81,7 +81,7 @@ export function HeroSection({ isDark, onToggleTheme, onScrollTo }: HeroSectionPr
       <video
         ref={heroVideoRef}
         className="px-hero-loop absolute inset-0 h-full w-full object-cover"
-        poster="/images/hero-london-drone-v1-poster.webp"
+        poster="/images/hero-london-drone-v2-poster.webp"
         muted
         loop
         playsInline
@@ -89,8 +89,8 @@ export function HeroSection({ isDark, onToggleTheme, onScrollTo }: HeroSectionPr
         aria-hidden="true"
         tabIndex={-1}
       >
-        <source src="/videos/hero-london-drone-v1.webm" type="video/webm" />
-        <source src="/videos/hero-london-drone-v1.mp4" type="video/mp4" />
+        <source src="/videos/hero-london-drone-v2.webm" type="video/webm" />
+        <source src="/videos/hero-london-drone-v2.mp4" type="video/mp4" />
       </video>
       <div className="grid-bg absolute inset-0" />
       <div
