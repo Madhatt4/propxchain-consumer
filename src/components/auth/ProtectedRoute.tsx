@@ -4,6 +4,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
+import { useNoIndex } from '../../hooks/useNoIndex';
 import {
   SubscriptionTier,
   getUserSubscriptionTier,
@@ -30,6 +31,7 @@ interface ProtectedRouteProps {
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredTier }) => {
   const location = useLocation();
   const { isAuthenticated, isInitialized, isLoading } = useAuthStore();
+  useNoIndex();
 
   // Show loading spinner while auth is initializing
   if (!isInitialized || isLoading) {

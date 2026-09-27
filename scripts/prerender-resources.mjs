@@ -402,8 +402,8 @@ export const resourcePages = [
     published: '2026-06-12',
     modified: '2026-06-12',
     crumb: 'BASPI explained',
-    title: 'BASPI Explained: the Buyer’s and Seller’s Property Information Form · PropXchain',
-    description: 'BASPI is the Buyer’s and Seller’s Property Information form from the Home Buying and Selling Group: the industry blueprint for upfront information. What it covers, how it relates to the TA6 and material information rules, and where home moving is heading.',
+    title: 'What Is BASPI? Property Information Form Explained · PropXchain',
+    description: 'BASPI in plain English: what the Buyer’s and Seller’s Property Information form asks, how it fits with the TA6, and what it means if you are selling a home.',
     main: `<main id="seo-fallback" role="main" aria-label="BASPI explained — guide">
 <p class="muted">Loading PropXchain…</p>
 <h1>BASPI explained</h1>

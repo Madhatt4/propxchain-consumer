@@ -7,8 +7,8 @@
   "description": "PropXchain consumer UI (Vite + React). Consumes @propxchain/core-client.",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node scripts/prerender-marketing.mjs && node scripts/generate-sitemap.mjs && node scripts/generate-agent-skills-index.mjs",
-    "build:linux": "NODE_OPTIONS='--max-old-space-size=4096' vite build && node scripts/prerender-marketing.mjs && node scripts/generate-sitemap.mjs",
+    "build": "vite build && node scripts/prerender-marketing.mjs && node scripts/prerender-legacy-redirects.mjs && node scripts/generate-sitemap.mjs && node scripts/generate-agent-skills-index.mjs",
+    "build:linux": "NODE_OPTIONS='--max-old-space-size=4096' vite build && node scripts/prerender-marketing.mjs && node scripts/prerender-legacy-redirects.mjs && node scripts/generate-sitemap.mjs",
     "preview": "vite preview",
     "_comment_lint": "RATCHET, re-measured 2026-07-30 after the icp.service burn-down (376 -> 330). Only ever lower this number: each cleanup PR drops it, so any NEW warning fails CI immediately while the existing debt sits visibly. 216 of the 330 are @typescript-eslint/no-explicit-any, 24 of those still in icp.service.ts (mostly Promise<any> return types that need named result interfaces). Restore 0 once they are gone.",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 311",

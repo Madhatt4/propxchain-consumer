@@ -231,7 +231,7 @@ export const RESOURCES: ResourceArticle[] = [
     planNumber: null,
     title: 'BASPI explained',
     documentTitle:
-      'BASPI Explained: the Buyer’s and Seller’s Property Information Form · PropXchain',
+      'What Is BASPI? Property Information Form Explained · PropXchain',
     teaser:
       'The Buyer’s and Seller’s Property Information form is the industry’s blueprint for upfront information. What it covers, how it relates to the TA6 and material information rules, and where home moving is heading.',
     readingTime: '6 min read',
@@ -287,15 +287,5 @@ export function articlePath(r: { category: CategorySlug; slug: string }): string
   return `/resources/${r.category}/${r.slug}`;
 }
 
-/** Old /guides URLs that now live under /resources — used for redirects. */
-export const LEGACY_GUIDE_ROUTES: Record<string, string> = {
-  '/guides': '/resources',
-  '/guides/what-is-a-property-pack': '/resources/selling/what-is-a-property-pack',
-  '/guides/how-long-does-conveyancing-take':
-    '/resources/buying/how-long-does-conveyancing-take',
-  '/guides/baspi-explained': '/resources/industry-and-reform/baspi-explained',
-  '/guides/property-searches-explained':
-    '/resources/searches-and-legal/property-searches-explained',
-  '/guides/property-information-forms-explained':
-    '/resources/selling/property-information-forms-explained',
-};
+/** Old /guides URLs that now live under /resources — see legacyGuideRoutes.mjs. */
+export { LEGACY_GUIDE_ROUTES } from './legacyGuideRoutes';
