@@ -918,6 +918,20 @@ class ICPService {
    *
    * @throws Error if CSRF token is not available
    */
+  /**
+   * A user_management CSRF token for this caller. The session copy is only
+   * fetched on Internet Identity login, so email users never had one and every
+   * CSRF-protected call failed for them. Fall back to minting one on demand:
+   * the canister binds the token to msg.caller, which is this same identity.
+   */
+  private async userManagementCsrfToken(): Promise<string> {
+    const cached = this.getCsrfToken();
+    if (cached) return cached;
+    const token = await this.umActor.generateCSRFToken();
+    if (!token) throw new Error('Backend returned empty CSRF token');
+    return token;
+  }
+
   requireCsrfToken(): string {
     const token = this.getCsrfToken();
     if (!token) {
@@ -1685,13 +1699,12 @@ class ICPService {
     await this.initAuth();
     if (!this.transactionManagerActor) await this.initialize();
     const json = JSON.stringify(state);
-    try {
-      const result = await this.txActor.setFlowState(transactionId, json);
-      if ('err' in result) {
-        logger.error('[Flow] setFlowState canister error:', result.err);
-      }
-    } catch (err: unknown) {
-      logger.error('[Flow] setFlowState failed:', err);
+    // Throws on failure so the caller can retry and tell the user the stage
+    // was saved locally but not on-chain. Swallowing it hid every failure.
+    const result = await this.txActor.setFlowState(transactionId, json);
+    if ('err' in result) {
+      logger.error('[Flow] setFlowState canister error:', result.err);
+      throw new Error(`setFlowState rejected: ${result.err}`);
     }
   }
 
@@ -3510,7 +3523,9 @@ class ICPService {
   }
 
   /**
-   * Update member documents when a new document is uploaded
+   * Update member documents when a new document is uploaded. Pass the full
+   * transaction id ("tx_…"): user_management keys members by exactly the id
+   * transaction_manager registered them under.
    */
   async updateMemberDocuments(transactionId: number | string, documentName: string): Promise<boolean> {
     return wrapWriteCall(async () => {
@@ -3520,7 +3535,7 @@ class ICPService {
         const success = await this.umActor.updateMemberDocuments(
           String(transactionId),
           documentName,
-          this.requireCsrfToken()
+          await this.userManagementCsrfToken()
         );
 
         logger.info('✅ Member documents updated:', documentName);
@@ -3547,7 +3562,7 @@ class ICPService {
         const success = await this.umActor.updateTransactionMemberRequiredDocs(
           String(transactionId),
           documentsToRemove,
-          this.requireCsrfToken()
+          await this.userManagementCsrfToken()
         );
 
         logger.info('✅ Transaction member required documents updated');
@@ -3717,7 +3732,7 @@ class ICPService {
       if (!this.userManagementActor) await this.initialize();
 
       try {
-        const result = await this.umActor.verifyEmail(token, this.requireCsrfToken());
+        const result = await this.umActor.verifyEmail(token, await this.userManagementCsrfToken());
         if (result) {
           return { success: true, message: 'Email verified successfully' };
         } else {
@@ -3738,7 +3753,7 @@ class ICPService {
       if (!this.userManagementActor) await this.initialize();
 
       try {
-        const result = await this.umActor.resendVerificationEmail(this.requireCsrfToken());
+        const result = await this.umActor.resendVerificationEmail(await this.userManagementCsrfToken());
         if (result) {
           return { success: true, message: 'Verification email sent' };
         } else {

@@ -358,13 +358,13 @@ function renderStageContent(stageId: string, props: StageComponentProps): ReactE
           onSelect={handleProviderSelect}
           selectedId={selectedProviderId}
           onContinue={(providerId) => {
-            // In edit mode: still propagate the new provider via the standard
-            // selectProvider path (it persists + logs `provider_selected`),
-            // then run the edit-completion housekeeping so invalidationKey
-            // bumps and edit mode closes. Outside edit mode this falls
-            // through to handleProviderContinue + onComplete via the panel.
+            // SurveyPanel calls this only once the survey is arranged (the
+            // referral has been sent, or a provider with no referral step was
+            // chosen). Record the provider, then complete the stage — or, in
+            // edit mode, run the edit housekeeping instead.
             handleProviderContinue(providerId);
             if (props.isEditing) handleProviderEditComplete();
+            else onComplete?.(stageId);
           }}
           onSkip={onPanelDone}
           postcode={postcode}
