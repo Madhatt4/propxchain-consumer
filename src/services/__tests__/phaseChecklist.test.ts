@@ -54,9 +54,15 @@ describe('deriveChecklistState', () => {
     const state = deriveChecklistState('searches', [
       { eventType: 'searches_ordered', timestamp: 1 },
     ]);
-    // searches phase has 3 items; one complete = 1/3 ≈ 0.333
-    expect(state.progress).toBeGreaterThan(0.3);
-    expect(state.progress).toBeLessThan(0.4);
+    // searches phase has 4 items; one complete = 1/4
+    expect(state.progress).toBe(0.25);
+  });
+
+  it('ticks search sign-off when the buyer or their conveyancer signs off', () => {
+    const state = deriveChecklistState('searches', [
+      { eventType: 'searches_signed_off', timestamp: 2 },
+    ]);
+    expect(state.items.find((i) => i.id === 'searches-signed-off')?.completed).toBe(true);
   });
 
   it('accepts provider_selected as an alternative trigger for seller-solicitor', () => {

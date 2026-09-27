@@ -120,6 +120,8 @@ const MILESTONE_MAP: Record<string, string> = {
   // would render a freshly-listed transaction as journey-complete.
   hmlr_register_fetched: 'Title Register Fetched',
   searches_ordered: 'Searches Ordered',
+  searches_signed_off: 'Searches Signed Off',
+  searches_signoff_revoked: 'Searches Signed Off',
   seller_forms_completed: 'Seller Forms Complete',
   seller_conveyancer_confirmed: 'Providers Selected',
 
@@ -155,7 +157,7 @@ const MILESTONE_MAP: Record<string, string> = {
 };
 
 const MILESTONE_ORDER = [
-  'Property Listed', 'Title Register Fetched', 'Searches Ordered', 'Seller Forms Complete',
+  'Property Listed', 'Title Register Fetched', 'Searches Ordered', 'Searches Signed Off', 'Seller Forms Complete',
   'Buyer Joined', 'Buyer Onboarded', 'Mortgage Confirmed',
   'Survey Complete', 'Seller Pack Reviewed',
   'Quotes Requested', 'Quotes Received', 'Providers Selected',

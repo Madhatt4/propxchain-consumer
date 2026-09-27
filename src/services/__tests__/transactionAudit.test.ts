@@ -600,6 +600,8 @@ describe('groupEventsIntoMilestones', () => {
 
       // Ship 2c: stage-specific event types for the previously-unmapped stages
       'searches_ordered',              // seller-2
+      'searches_signed_off',           // searchSignOff.service.signOffSearches
+      'searches_signoff_revoked',      // searchSignOff.service.revokeSignOff
       'seller_forms_completed',        // seller-3
       'seller_conveyancer_confirmed',  // seller-5
       'buyer_onboarded',               // buyer-1
