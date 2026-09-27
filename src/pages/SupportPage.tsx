@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { icpService } from '../services/icp.service';
+import { sendEnquiry } from '@/services/enquiry.service';
 import { logger } from '@/utils/logger';
 import { Logo } from '@/components/brand/Logo';
 
@@ -10,7 +10,8 @@ const SupportPage: React.FC = () => {
     name: '',
     email: '',
     subject: '',
-    message: ''
+    message: '',
+    fax: ''
   });
   const [submitting, setSubmitting] = useState(false);
 
@@ -19,15 +20,16 @@ const SupportPage: React.FC = () => {
     setSubmitting(true);
 
     try {
-      await icpService.submitSupportRequest(
-        formData.name,
-        formData.email,
-        formData.subject,
-        formData.message
-      );
+      await sendEnquiry({
+        kind: 'support',
+        name: formData.name,
+        email: formData.email,
+        fields: { subject: formData.subject, message: formData.message },
+        fax: formData.fax,
+      });
 
       alert('✅ Support request submitted successfully!\n\nWe will get back to you at ' + formData.email + ' within 24 hours.');
-      setFormData({ name: '', email: '', subject: '', message: '' });
+      setFormData({ name: '', email: '', subject: '', message: '', fax: '' });
     } catch (error) {
       logger.error('Error submitting support request:', error);
       alert('Error submitting support request. Please try again or email us directly at info@propxchain.com');
@@ -201,6 +203,17 @@ const SupportPage: React.FC = () => {
               <h2 className="text-2xl font-bold text-black dark:text-[#F1F5F9] mb-6">Submit a Support Request</h2>
 
               <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Honeypot: off-screen and out of the tab order, so only bots fill it. */}
+              <input
+                type="text"
+                name="fax"
+                tabIndex={-1}
+                autoComplete="off"
+                aria-hidden="true"
+                value={formData.fax}
+                onChange={handleChange}
+                className="absolute -left-[9999px] h-px w-px opacity-0"
+              />
                 <div>
                   <label className="block text-sm font-medium text-black dark:text-[#F1F5F9] mb-2">
                     Name *

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { icpService } from '../services/icp.service';
+import { sendEnquiry } from '@/services/enquiry.service';
 import { logger } from '@/utils/logger';
 import { Logo } from '@/components/brand/Logo';
 
@@ -13,7 +13,8 @@ const SalesPage: React.FC = () => {
     phone: '',
     userType: '',
     volume: '',
-    message: ''
+    message: '',
+    fax: ''
   });
   const [submitting, setSubmitting] = useState(false);
 
@@ -22,18 +23,22 @@ const SalesPage: React.FC = () => {
     setSubmitting(true);
 
     try {
-      await icpService.submitSalesInquiry(
-        formData.name,
-        formData.email,
-        formData.company,
-        formData.phone,
-        formData.userType,
-        formData.volume,
-        formData.message
-      );
+      await sendEnquiry({
+        kind: 'sales',
+        name: formData.name,
+        email: formData.email,
+        fields: {
+          company: formData.company,
+          phone: formData.phone,
+          userType: formData.userType,
+          volume: formData.volume,
+          message: formData.message,
+        },
+        fax: formData.fax,
+      });
 
       alert('✅ Sales inquiry submitted successfully!\n\nOur sales team will contact you at ' + formData.email + ' within 1 business day.');
-      setFormData({ name: '', email: '', company: '', phone: '', userType: '', volume: '', message: '' });
+      setFormData({ name: '', email: '', company: '', phone: '', userType: '', volume: '', message: '', fax: '' });
     } catch (error) {
       logger.error('Error submitting sales inquiry:', error);
       alert('Error submitting inquiry. Please try again or email us directly at sales@propxchain.com');
@@ -352,6 +357,17 @@ const SalesPage: React.FC = () => {
           </p>
 
           <form onSubmit={handleSubmit} className="max-w-2xl mx-auto space-y-6">
+              {/* Honeypot: off-screen and out of the tab order, so only bots fill it. */}
+              <input
+                type="text"
+                name="fax"
+                tabIndex={-1}
+                autoComplete="off"
+                aria-hidden="true"
+                value={formData.fax}
+                onChange={handleChange}
+                className="absolute -left-[9999px] h-px w-px opacity-0"
+              />
             <div className="grid md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-black dark:text-[#F1F5F9] mb-2">Name *</label>
