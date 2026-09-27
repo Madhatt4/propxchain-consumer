@@ -34,7 +34,7 @@ import {
 import type { PdfSection } from './pdfPrimitives';
 import type { TA6PropertyInformation } from '../types/ta6.types';
 import type { TA7LeaseholdInformation } from '../types/ta7.types';
-import type { TA10FittingsAndContents } from '../types/ta10.types';
+import type { TA10FittingItem, TA10FittingsAndContents } from '../types/ta10.types';
 
 // Re-exported so existing importers keep the stable `formExportService` path.
 export { generateVerificationHash, downloadBlob } from './pdfPrimitives';
@@ -97,24 +97,27 @@ function ta7Sections(form: TA7LeaseholdInformation): PdfSection[] {
   ];
 }
 
-function ta10Sections(form: TA10FittingsAndContents): PdfSection[] {
-  // TA10 is a big itemised list by room. Render each room as a section.
-  const rooms = (form as unknown as { rooms?: Array<{ name?: string; items?: Array<{ name?: string; included?: boolean; notes?: string }> }> }).rooms ?? [];
-  if (!rooms.length) {
-    return [
-      {
-        title: 'Fittings & contents',
-        rows: [['Items recorded', '0']],
-      },
-    ];
-  }
-  return rooms.map((room) => ({
-    title: formatText(room.name) || 'Room',
-    rows: (room.items ?? []).map((it) => [
-      formatText(it.name),
-      `${it.included ? 'Included' : 'Excluded'}${it.notes ? ` — ${it.notes}` : ''}`,
-    ]),
+function fittingRow(item: TA10FittingItem): [string, string] {
+  const status = item.included ? 'Included' : 'Excluded';
+  return [formatText(item.item), item.notes ? `${status} — ${item.notes}` : status];
+}
+
+/** TA10 as PDF sections: one per room, then outdoor items, then additional items. */
+export function ta10Sections(form: TA10FittingsAndContents): PdfSection[] {
+  const sections: PdfSection[] = (form.rooms ?? []).map((room) => ({
+    title: formatText(room.roomName),
+    rows: (room.fittings ?? []).map(fittingRow),
   }));
+  if (form.outdoorItems?.length) {
+    sections.push({ title: 'Garden and outdoor', rows: form.outdoorItems.map(fittingRow) });
+  }
+  if (form.additionalItems?.trim()) {
+    sections.push({ title: 'Additional items', rows: [['', form.additionalItems.trim()]] });
+  }
+  if (sections.length === 0) {
+    return [{ title: 'Fittings & contents', rows: [['Items recorded', '0']] }];
+  }
+  return sections;
 }
 
 // ============================================

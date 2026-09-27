@@ -126,6 +126,17 @@ function propertyStatusKey(status: object): PropertyStatusKey {
     : 'Listed';
 }
 
+// TA7 money is a Nat on the canister, so it travels as whole pence. The form
+// takes pounds with pence (e.g. a £1,234.56 service charge), which BigInt()
+// rejects outright.
+function poundsToPence(pounds: number): bigint {
+  return BigInt(Math.round((Number.isFinite(pounds) ? pounds : 0) * 100));
+}
+
+function penceToPounds(pence: bigint | number): number {
+  return Number(pence) / 100;
+}
+
 function errorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message) return error.message;
   if (typeof error === 'string' && error) return error;
@@ -4577,9 +4588,9 @@ class ICPService {
         leaseTermYears: BigInt(data.leaseTermYears),
         leaseStartDate: data.leaseStartDate,
         leaseExpiryDate: data.leaseExpiryDate,
-        groundRentAmount: BigInt(data.groundRentAmount),
+        groundRentAmount: poundsToPence(data.groundRentAmount),
         groundRentPaymentFrequency: data.groundRentPaymentFrequency,
-        serviceChargeAmount: BigInt(data.serviceChargeAmount),
+        serviceChargeAmount: poundsToPence(data.serviceChargeAmount),
         serviceChargePaymentFrequency: data.serviceChargePaymentFrequency,
         freeholder: data.freeholder,
         managingAgent: toOpt(data.managingAgent),
@@ -4617,9 +4628,9 @@ class ICPService {
         leaseTermYears: Number(c.leaseTermYears),
         leaseStartDate: c.leaseStartDate,
         leaseExpiryDate: c.leaseExpiryDate,
-        groundRentAmount: Number(c.groundRentAmount),
+        groundRentAmount: penceToPounds(c.groundRentAmount),
         groundRentPaymentFrequency: c.groundRentPaymentFrequency as import('../types/ta7.types').TA7LeaseholdInformation['groundRentPaymentFrequency'],
-        serviceChargeAmount: Number(c.serviceChargeAmount),
+        serviceChargeAmount: penceToPounds(c.serviceChargeAmount),
         serviceChargePaymentFrequency: c.serviceChargePaymentFrequency as import('../types/ta7.types').TA7LeaseholdInformation['serviceChargePaymentFrequency'],
         freeholder: c.freeholder,
         managingAgent: c.managingAgent[0] ?? null,
