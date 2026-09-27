@@ -126,6 +126,7 @@ const MILESTONE_MAP: Record<string, string> = {
   // Buyer setup + progress
   buyer_joined: 'Buyer Joined',
   buyer_self_assigned: 'Buyer Joined',
+  plot_claimed: 'Buyer Joined', // developer plot claimed via its invite code
   buyer_onboarded: 'Buyer Onboarded',
   mortgage_confirmed: 'Mortgage Confirmed',
   survey_completed: 'Survey Complete',

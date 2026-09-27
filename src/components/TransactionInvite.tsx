@@ -13,6 +13,7 @@ import SolicitorOnboarding from './auth/SolicitorOnboarding';
 import type { SolicitorRecord, RegulatoryBody } from '../types/solicitor.types';
 import { getStorePrincipalId, getStoreIsAuthenticated } from '../stores/authStore';
 import { partyRoleService } from '../services/partyRole.service';
+import { checkPlotClaim, claimPlot, plotClaimBlockedReason } from '../services/plotClaim.service';
 import type { PartyRole } from '../services/shareParty.service';
 import type { InviteContext } from '@/utils/inviteContext';
 
@@ -298,6 +299,16 @@ const TransactionInvite: React.FC<TransactionInviteProps> = ({ onJoinSuccess, on
           return;
         }
 
+        // Ask before creating anything on-chain: a plot held for someone else
+        // (or already taken) must not leave an orphan deal behind.
+        const claimCheck = await checkPlotClaim(canonicalCode);
+        const blockedReason = plotClaimBlockedReason(claimCheck);
+        if (blockedReason) {
+          setError(blockedReason);
+          setIsLoading(false);
+          return;
+        }
+
         // Use data already available from foundTransaction (avoids development_sites RLS)
         const propertyAddress = foundTransaction.propertyAddress || `Plot ${plot.plot_number}`;
         const propertyType = foundTransaction.propertyType || 'New Build';
@@ -332,19 +343,12 @@ const TransactionInvite: React.FC<TransactionInviteProps> = ({ onJoinSuccess, on
 
         const canisterTxId = String(txResult.transactionId);
 
-        // 2. Reserve the plot in Supabase and link to canister transaction
-        const { error: reserveError } = await supabase
-          .from('plots')
-          .update({
-            reservation_status: 'reserved',
-            reserved_by_buyer_user_id: userData.user.id,
-            reserved_at: new Date().toISOString(),
-            transaction_id: canisterTxId,
-          })
-          .eq('id', plot.id)
-          .eq('reservation_status', 'available');
-
-        if (reserveError) {
+        // 2. Reserve the plot against the new deal. Server-side: the buyer has
+        //    no write access to plots, so a client UPDATE silently did nothing.
+        try {
+          await claimPlot(canonicalCode, canisterTxId);
+        } catch (claimErr) {
+          logger.error('claim_plot failed after creating the deal:', { canisterTxId, claimErr });
           setError('Failed to reserve plot. It may already be taken.');
           setIsLoading(false);
           return;

@@ -9,10 +9,10 @@ interface Call {
   filters: Array<[string, unknown]>;
 }
 
-const { calls, insertError, snapshotError } = vi.hoisted(() => ({
+const { calls, snapshotError, plotCode } = vi.hoisted(() => ({
   calls: [] as Call[],
-  insertError: { value: null as null | { message: string } },
   snapshotError: { value: null as null | { message: string } },
+  plotCode: { value: 'TX-ABCD-EFGH' as string | null },
 }));
 
 function builder(table: string): Record<string, unknown> {
@@ -20,7 +20,6 @@ function builder(table: string): Record<string, unknown> {
   calls.push(call);
   const result = (): { data: unknown; error: unknown } => {
     if (call.op === 'upsert') return { data: null, error: snapshotError.value };
-    if (call.op === 'insert') return { data: null, error: insertError.value };
     if (call.op === 'update' && call.filters.some(([k, v]) => k === 'reservation_status' && v === 'available')) {
       return { data: [{ id: 'plot-1' }], error: null }; // setPending succeeds
     }
@@ -46,7 +45,9 @@ vi.mock('@/lib/supabase', () => ({
 }));
 
 vi.mock('@/services/plots.service', () => ({
-  plotsService: { getById: async () => ({ id: 'plot-1-abcdef', plot_number: '7', plot_type_id: null }) },
+  plotsService: {
+    getById: async () => ({ id: 'plot-1-abcdef', plot_number: '7', plot_type_id: null, invite_code: plotCode.value }),
+  },
 }));
 vi.mock('@/services/plot-types.service', () => ({ plotTypesService: { getById: vi.fn() } }));
 vi.mock('@/services/sites.service', () => ({
@@ -55,7 +56,7 @@ vi.mock('@/services/sites.service', () => ({
 
 import { reservationService } from '../reservation.service';
 
-const INPUT = { plotId: 'plot-1', siteId: 'site-1', buyerName: 'B', buyerEmail: 'b@example.com' };
+const INPUT = { plotId: 'plot-1', siteId: 'site-1', buyerName: 'B', buyerEmail: ' Buyer@Example.com ' };
 
 function rollbacks(): Call[] {
   return calls.filter(
@@ -69,8 +70,8 @@ function rollbacks(): Call[] {
 describe('reservationService.reservePlot rollback', () => {
   beforeEach(() => {
     calls.length = 0;
-    insertError.value = null;
     snapshotError.value = null;
+    plotCode.value = 'TX-ABCD-EFGH';
   });
 
   it('should return the plot to available when the snapshot step fails', async () => {
@@ -82,18 +83,33 @@ describe('reservationService.reservePlot rollback', () => {
     expect(rollbacks()[0].filters).toContainEqual(['reservation_status', 'pending']);
   });
 
-  it('should return the plot to available when the invite step fails', async () => {
-    insertError.value = { message: 'invite insert refused' };
+  it('should return the plot to available when the plot has no invite code', async () => {
+    plotCode.value = null;
 
-    await expect(reservationService.reservePlot(INPUT, vi.fn())).rejects.toThrow(/invite/);
+    await expect(reservationService.reservePlot(INPUT, vi.fn())).rejects.toThrow(/invite code/);
 
     expect(rollbacks()).toHaveLength(1);
   });
 
-  it('should leave the plot pending when every step succeeds', async () => {
+  it('should hold the plot for the named buyer and hand back its code', async () => {
     const result = await reservationService.reservePlot(INPUT, vi.fn());
 
-    expect(result.inviteToken).toHaveLength(32);
+    expect(result.inviteCode).toBe('TX-ABCD-EFGH');
+    const hold = calls.find((c) => c.table === 'plots' && c.op === 'update');
+    expect(hold?.payload).toEqual({ reservation_status: 'pending', reserved_for_email: 'buyer@example.com' });
     expect(rollbacks()).toHaveLength(0);
+  });
+});
+
+describe('reservationService.releaseReservation', () => {
+  beforeEach(() => {
+    calls.length = 0;
+  });
+
+  it('should clear the buyer hold so no one can claim with the old email', async () => {
+    await reservationService.releaseReservation('plot-1');
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0].payload).toMatchObject({ reservation_status: 'available', reserved_for_email: null });
   });
 });

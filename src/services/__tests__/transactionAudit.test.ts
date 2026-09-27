@@ -596,6 +596,7 @@ describe('groupEventsIntoMilestones', () => {
       'provider_selected',    // useTransactionFlow.selectProvider
       'buyer_joined',         // icpService.joinTransactionByInviteCode
       'document_uploaded',    // icpService.emitDocumentUploadedEvent
+      'plot_claimed',         // plotClaim.service.claimPlot (developer plot via invite code)
 
       // Ship 2c: stage-specific event types for the previously-unmapped stages
       'searches_ordered',              // seller-2

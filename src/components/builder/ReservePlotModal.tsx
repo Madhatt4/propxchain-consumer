@@ -35,7 +35,7 @@ const STEP_LABELS: Record<number, string> = {
   1: 'Creating reservation',
   2: 'Recording on chain',
   3: 'Saving snapshot',
-  4: 'Sending invite',
+  4: 'Invite code ready',
 };
 
 function StepIcon({ status }: { status: StepState['status'] }): JSX.Element {
@@ -91,7 +91,7 @@ function StepList({
 function ProgressContent({
   steps,
   phase,
-  inviteToken,
+  inviteCode,
   existingInviteCode,
   onRetry,
   onClose,
@@ -99,7 +99,7 @@ function ProgressContent({
 }: {
   steps: Record<number, StepState>;
   phase: ModalPhase;
-  inviteToken: string | null;
+  inviteCode: string | null;
   existingInviteCode?: string | null;
   onRetry: () => void;
   onClose: () => void;
@@ -115,7 +115,11 @@ function ProgressContent({
             Invite code (share with buyer):
           </p>
           <p className="mt-1 font-[Geist_Mono] text-lg font-bold tracking-wider text-[var(--text-main)]">
-            {existingInviteCode ?? inviteToken}
+            {inviteCode ?? existingInviteCode}
+          </p>
+          <p className="mt-2 font-[DM_Sans] text-xs text-[var(--text-secondary)]">
+            The buyer enters this on the Join screen, signed in with the email
+            you reserved it for. No one else can claim the plot while it is held.
           </p>
         </div>
       )}
@@ -173,7 +177,7 @@ export default function ReservePlotModal({
 }: ReservePlotModalProps): JSX.Element | null {
   const [phase, setPhase] = useState<ModalPhase>('form');
   const [steps, setSteps] = useState<Record<number, StepState>>(initialSteps);
-  const [inviteToken, setInviteToken] = useState<string | null>(null);
+  const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [lastInput, setLastInput] = useState<{
     buyerName: string;
     buyerEmail: string;
@@ -183,7 +187,7 @@ export default function ReservePlotModal({
     async (buyerName: string, buyerEmail: string): Promise<void> => {
       setPhase('progress');
       setSteps(initialSteps());
-      setInviteToken(null);
+      setInviteCode(null);
       setLastInput({ buyerName, buyerEmail });
 
       const handleProgress = (p: ReservationProgress): void => {
@@ -198,7 +202,7 @@ export default function ReservePlotModal({
           { plotId, siteId, buyerName, buyerEmail },
           handleProgress,
         );
-        setInviteToken(result.inviteToken);
+        setInviteCode(result.inviteCode);
         setPhase('success');
       } catch {
         setPhase('failed');
@@ -223,14 +227,14 @@ export default function ReservePlotModal({
   const handleDone = useCallback((): void => {
     setPhase('form');
     setSteps(initialSteps());
-    setInviteToken(null);
+    setInviteCode(null);
     onComplete();
   }, [onComplete]);
 
   const handleClose = useCallback((): void => {
     setPhase('form');
     setSteps(initialSteps());
-    setInviteToken(null);
+    setInviteCode(null);
     onClose();
   }, [onClose]);
 
@@ -268,7 +272,7 @@ export default function ReservePlotModal({
             <ProgressContent
               steps={steps}
               phase={phase}
-              inviteToken={inviteToken}
+              inviteCode={inviteCode}
               existingInviteCode={existingInviteCode}
               onRetry={handleRetry}
               onClose={handleClose}

@@ -39,7 +39,6 @@ import { IS_REGISTRATION_OPEN } from './config/registration';
 import RegisterDeveloperPage from './pages/auth/RegisterDeveloperPage';
 import RegisterConveyancerPage from './pages/auth/RegisterConveyancerPage';
 import RegisterEstateAgentPage from './pages/auth/RegisterEstateAgentPage';
-import RedeemDeveloperInvitePage from './pages/auth/RedeemDeveloperInvitePage';
 import JoinConveyancerPage from './pages/conveyancer/JoinConveyancerPage';
 import ProfileSetup from './pages/auth/ProfileSetup';
 import PasswordResetForm from './components/auth/PasswordResetForm';
@@ -261,7 +260,6 @@ function App() {
               <Route path="/register/conveyancer" element={<RegisterConveyancerPage />} />
               <Route path="/register/estate-agent" element={<RegisterEstateAgentPage />} />
               <Route path="/conveyancer/join/:code" element={<JoinConveyancerPage />} />
-              <Route path="/redeem/dev" element={<RedeemDeveloperInvitePage />} />
               <Route path="/auth/callback" element={<Suspense fallback={<div />}><AuthCallback /></Suspense>} />
               <Route path="/reset-password" element={<Suspense fallback={<div />}><ResetPasswordPage /></Suspense>} />
               <Route path="/forgot-password" element={<PasswordResetForm />} />

@@ -4,7 +4,7 @@
  * Route: /conveyancer/join/:code
  *
  * The code arrives by email when a party accepts the firm's quote
- * (accept-conveyancer-quote edge fn). Flow mirrors /redeem/dev:
+ * (accept-conveyancer-quote edge fn). Flow:
  *   1. Preview the invitation (public — the code is the bearer)
  *   2. Signed out: create an account, sign in, or reset a forgotten password
  *      — all three in place, without leaving the code behind (JoinAuthPanel)
