@@ -29,7 +29,7 @@ vi.mock('../../../stores/authStore', () => ({
 vi.mock('@/utils/logger', () => ({ logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() } }));
 
 import { useActiveTransactionStore } from '../../../stores/activeTransactionStore';
-import { isDashboardPath } from '../chatRoutes';
+import { isHelpRoute } from '../chatRoutes';
 import SupportChatWidget from '../SupportChatWidget';
 
 interface InvokeBody {
@@ -94,17 +94,27 @@ describe('SupportChatWidget', () => {
     useActiveTransactionStore.getState().setActiveTransaction(null);
   });
 
-  it('should treat the dashboard, the transaction pages and nothing else as its routes', () => {
-    expect(isDashboardPath('/dashboard')).toBe(true);
-    expect(isDashboardPath('/dashboard/support/tickets/abc')).toBe(true);
-    expect(isDashboardPath('/transaction-dashboard')).toBe(true);
-    expect(isDashboardPath('/transaction/tx-1/flow')).toBe(true);
-    expect(isDashboardPath('/transaction/tx-1/forms/ta6')).toBe(true);
-    expect(isDashboardPath('/')).toBe(false);
-    expect(isDashboardPath('/login')).toBe(false);
-    // A route that merely starts with the same letters is not a dashboard route.
-    expect(isDashboardPath('/dashboards')).toBe(false);
-    expect(isDashboardPath('/transactions')).toBe(false);
+  it('should offer help on every signed-in portal, not just the buyer and seller dashboard', () => {
+    expect(isHelpRoute('/dashboard')).toBe(true);
+    expect(isHelpRoute('/dashboard/support/tickets/abc')).toBe(true);
+    expect(isHelpRoute('/transaction-dashboard')).toBe(true);
+    expect(isHelpRoute('/transaction/tx-1/flow')).toBe(true);
+    expect(isHelpRoute('/conveyancer')).toBe(true);
+    expect(isHelpRoute('/estate-agent/listings')).toBe(true);
+    expect(isHelpRoute('/builder/sites/s-1/plots')).toBe(true);
+    expect(isHelpRoute('/messages')).toBe(true);
+  });
+
+  it('should keep help off public, onboarding and admin pages', () => {
+    expect(isHelpRoute('/')).toBe(false);
+    expect(isHelpRoute('/login')).toBe(false);
+    expect(isHelpRoute('/support')).toBe(false);
+    expect(isHelpRoute('/resources/selling/ta6-form-explained')).toBe(false);
+    expect(isHelpRoute('/conveyancer/join/abc')).toBe(false);
+    expect(isHelpRoute('/onboarding/role')).toBe(false);
+    expect(isHelpRoute('/admin/support')).toBe(false);
+    // Whole segments only: a prefix of the same letters is a different page.
+    expect(isHelpRoute('/supporting')).toBe(true);
   });
 
   it('should show the launcher on a dashboard route', () => {
@@ -113,7 +123,7 @@ describe('SupportChatWidget', () => {
     expect(screen.getByRole('button', { name: 'Open help chat' })).toBeTruthy();
   });
 
-  it('should render nothing off the dashboard and transaction pages', () => {
+  it('should render nothing on a public page', () => {
     renderAt('/login');
 
     expect(screen.queryByRole('button', { name: 'Open help chat' })).toBeNull();
