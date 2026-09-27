@@ -6,6 +6,7 @@ import {
   exportTA6ToPDF,
   exportTA7ToPDF,
   exportTA10ToPDF,
+  ta10Sections,
 } from '../formExportService';
 import { buildTA6Sections } from '../ta6PdfSections';
 import { emptyTA6Form } from '../../types/ta6.types';
@@ -82,13 +83,15 @@ function sampleTA10(): TA10FittingsAndContents {
   return {
     rooms: [
       {
-        name: 'Kitchen',
-        items: [
-          { name: 'Cooker', included: true, notes: '' },
-          { name: 'Fridge', included: false, notes: 'Buyer to supply' },
+        roomName: 'Kitchen',
+        fittings: [
+          { item: 'Cooker', included: true, notes: null },
+          { item: 'Fridge', included: false, notes: 'Buyer to supply' },
         ],
       },
     ],
+    outdoorItems: [],
+    additionalItems: '',
   } as unknown as TA10FittingsAndContents;
 }
 
@@ -144,5 +147,38 @@ describe('exportTA10ToPDF', () => {
     const blob = await exportTA10ToPDF(sampleTA10(), { propertyAddress: '10 Example Road' });
     expect(blob).toBeInstanceOf(Blob);
     expect(blob.size).toBeGreaterThan(500);
+  });
+});
+
+describe('ta10Sections', () => {
+  const form = {
+    rooms: [
+      {
+        roomName: 'Kitchen',
+        fittings: [
+          { item: 'Cooker', included: true, notes: null },
+          { item: 'Fridge', included: false, notes: 'Buyer to supply' },
+        ],
+      },
+    ],
+    outdoorItems: [{ item: 'Garden shed', included: true, notes: null }],
+    additionalItems: 'Curtain poles in both bedrooms',
+  } as unknown as TA10FittingsAndContents;
+
+  it('should list each room under its real name with every fitting', () => {
+    const sections = ta10Sections(form);
+
+    const kitchen = sections.find((s) => s.title === 'Kitchen');
+    expect(kitchen?.rows).toEqual([
+      ['Cooker', 'Included'],
+      ['Fridge', 'Excluded — Buyer to supply'],
+    ]);
+  });
+
+  it('should include outdoor items and additional items', () => {
+    const sections = ta10Sections(form);
+
+    expect(sections.find((s) => s.title === 'Garden and outdoor')?.rows).toEqual([['Garden shed', 'Included']]);
+    expect(sections.find((s) => s.title === 'Additional items')?.rows).toEqual([['', 'Curtain poles in both bedrooms']]);
   });
 });
