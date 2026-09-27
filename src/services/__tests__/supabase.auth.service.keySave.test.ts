@@ -49,7 +49,6 @@ describe('saving a newly generated ICP key', () => {
   it('should not hand back an identity when the key blob fails to save at first login', async () => {
     mockUpdateUser.mockResolvedValue({ error: { message: 'network down' } });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test double for the Supabase User/Session types
     const result = await supabaseAuthService._completePostAuthSetup(NEW_USER as any, SESSION as any);
 
     expect(result.identity).toBeNull();
@@ -59,7 +58,6 @@ describe('saving a newly generated ICP key', () => {
   it('should return the identity when the key blob saves', async () => {
     mockUpdateUser.mockResolvedValue({ error: null });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test double for the Supabase User/Session types
     const result = await supabaseAuthService._completePostAuthSetup(NEW_USER as any, SESSION as any);
 
     expect(result.identity).toBe(identity);
