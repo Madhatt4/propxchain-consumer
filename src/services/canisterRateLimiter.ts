@@ -28,9 +28,14 @@ export interface CanisterCallConfig {
   priority?: RequestPriority;
   /** Custom retry configuration */
   retryConfig?: Partial<RetryConfig>;
-  /** Whether to enable request deduplication (default: true) */
+  /** Whether to enable request deduplication (default: true when a cacheKey is given) */
   deduplicate?: boolean;
-  /** Cache key for deduplication (auto-generated if not provided) */
+  /**
+   * Cache key for deduplication. Must identify the call's ARGUMENTS as well as
+   * the method: two concurrent calls sharing a key share one result. With no
+   * key there is no deduplication — a key cannot be derived from the function,
+   * because the arguments live in its closure, not its source text.
+   */
   cacheKey?: string;
   /** Whether to log this operation (default: true) */
   enableLogging?: boolean;
@@ -199,18 +204,17 @@ export class CanisterRateLimiter {
       operationType,
       priority = RequestPriority.NORMAL,
       retryConfig = {},
-      deduplicate = true,
       cacheKey,
+      deduplicate = cacheKey !== undefined,
       enableLogging = true
     } = config;
 
     this.stats.totalCalls++;
 
-    // Generate or use provided cache key for deduplication
-    const requestKey = cacheKey || this.generateCacheKey(fn, config);
+    const requestKey = cacheKey ?? '';
 
     // Check for in-flight duplicate request
-    if (deduplicate && this.inFlightRequests.has(requestKey)) {
+    if (deduplicate && requestKey && this.inFlightRequests.has(requestKey)) {
       this.stats.deduplicationHits++;
       this.emitEvent({
         event: RateLimitEvent.DEDUPLICATION_HIT,
@@ -322,7 +326,7 @@ export class CanisterRateLimiter {
     }
 
     // Store in deduplication cache if enabled
-    if (deduplicate) {
+    if (deduplicate && requestKey) {
       // Wrap in a new promise so each caller gets independent rejection handling.
       // Without this, concurrent callers sharing a rejected promise get unhandled rejections.
       const sharedPromise = queuedPromise.then(
@@ -446,36 +450,6 @@ export class CanisterRateLimiter {
    */
   flush(): number {
     return this.requestQueue.flush();
-  }
-
-  /**
-   * Generate a cache key for request deduplication
-   * @private
-   */
-  private generateCacheKey(fn: () => Promise<unknown>, config: CanisterCallConfig): string {
-    // Use function name and operation type as base key
-    const fnName = fn.name || 'anonymous';
-    const opType = config.operationType;
-
-    // Create a simple hash of the function string (for anonymous functions)
-    const fnString = fn.toString();
-    const hash = this.simpleHash(fnString);
-
-    return `${opType}-${fnName}-${hash}`;
-  }
-
-  /**
-   * Simple string hash function
-   * @private
-   */
-  private simpleHash(str: string): string {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash; // Convert to 32-bit integer
-    }
-    return Math.abs(hash).toString(36);
   }
 
   /**

@@ -122,6 +122,30 @@ describe('CanisterRateLimiter Integration Tests', () => {
   });
 
   describe('Request Deduplication Works', () => {
+    it('should return each call its own result when concurrent calls share a function body but not arguments', async () => {
+      const fakeCanister = async (id: number): Promise<string> => {
+        await wait(20);
+        return `proof-for-${id}`;
+      };
+      const getProof = (id: number): Promise<string> =>
+        rateLimiter.call(async () => fakeCanister(id), { operationType: 'read' });
+
+      const results = await Promise.all([getProof(1), getProof(2), getProof(3)]);
+
+      expect(results).toEqual(['proof-for-1', 'proof-for-2', 'proof-for-3']);
+      expect(rateLimiter.getStats().deduplicationHits).toBe(0);
+    });
+
+    it('should run every concurrent write when no cache key is given', async () => {
+      const writes: number[] = [];
+      const markProcessed = (id: number): Promise<void> =>
+        rateLimiter.call(async () => { writes.push(id); }, { operationType: 'write' });
+
+      await Promise.all([markProcessed(7), markProcessed(8)]);
+
+      expect(writes.sort()).toEqual([7, 8]);
+    });
+
     it('should deduplicate identical concurrent calls with same cache key', async () => {
       const mockFn = vi.fn(async () => {
         await wait(50); // Simulate some work
