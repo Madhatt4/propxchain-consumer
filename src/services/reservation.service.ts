@@ -70,6 +70,23 @@ async function setPending(plotId: string): Promise<void> {
   }
 }
 
+/**
+ * Undo step 1 after a later step fails, so the plot doesn't sit in "pending"
+ * with no buyer and no way to reserve it again (setPending only moves an
+ * "available" plot). Only a still-pending plot is touched.
+ */
+async function rollbackPending(plotId: string): Promise<void> {
+  const { error } = await supabase
+    .from('plots')
+    .update({ reservation_status: 'available' })
+    .eq('id', plotId)
+    .eq('reservation_status', 'pending');
+
+  if (error) {
+    await recordPlotError(plotId, `Rollback to available failed: ${error.message}`);
+  }
+}
+
 /** Step 3: Create a frozen snapshot of the listing. */
 async function createSnapshot(
   plot: Plot,
@@ -186,7 +203,8 @@ export const reservationService = {
 
   /**
    * Run the reservation saga. Calls onProgress after each step.
-   * On failure: records last_error on the plot, does not roll back.
+   * On failure: records last_error on the plot; after step 1 it also returns
+   * the plot from pending to available so the developer can retry.
    */
   async reservePlot(
     input: ReservationInput,
@@ -221,6 +239,7 @@ export const reservationService = {
       const msg = err instanceof Error ? err.message : 'Unknown error';
       onProgress({ step: 3, status: 'failed', error: msg });
       await recordPlotError(plotId, `Step 3 (snapshot): ${msg}`);
+      await rollbackPending(plotId);
       throw err;
     }
 
@@ -234,6 +253,7 @@ export const reservationService = {
       const msg = err instanceof Error ? err.message : 'Unknown error';
       onProgress({ step: 4, status: 'failed', error: msg });
       await recordPlotError(plotId, `Step 4 (invite): ${msg}`);
+      await rollbackPending(plotId);
       throw err;
     }
   },
