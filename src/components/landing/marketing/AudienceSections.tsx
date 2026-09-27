@@ -7,11 +7,12 @@
  * its own supporting visual card.
  */
 
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 
 import { IS_REGISTRATION_OPEN } from '@/config/registration';
 
 import { AudienceSection } from './AudienceSection';
+import { BookDemoDialog } from './BookDemoDialog';
 
 interface AudienceSectionsProps {
   onScrollTo: (id: string) => void;
@@ -165,6 +166,8 @@ function DevelopersImage(): JSX.Element {
 }
 
 export function AudienceSections({ onScrollTo }: AudienceSectionsProps): JSX.Element {
+  const [isDemoOpen, setIsDemoOpen] = useState(false);
+
   return (
     <>
       <AudienceSection
@@ -253,7 +256,7 @@ export function AudienceSections({ onScrollTo }: AudienceSectionsProps): JSX.Ele
         ]}
         ctas={[
           { label: 'Create your developer account', variant: 'primary', to: '/register/developer' },
-          { label: 'Book a 20-min demo', variant: 'ghost' },
+          { label: 'Book a 20-min demo', variant: 'ghost', onClick: () => setIsDemoOpen(true) },
         ]}
         side={<DevelopersImage />}
         sideFirst
@@ -276,6 +279,8 @@ export function AudienceSections({ onScrollTo }: AudienceSectionsProps): JSX.Ele
         side={<AgentsSide />}
         onScrollTo={onScrollTo}
       />
+
+      <BookDemoDialog open={isDemoOpen} onOpenChange={setIsDemoOpen} />
     </>
   );
 }
