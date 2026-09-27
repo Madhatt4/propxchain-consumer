@@ -3,12 +3,25 @@ import { renderHook, act } from '@testing-library/react';
 import { useTransactionFlow } from '../../hooks/useTransactionFlow';
 import { useSubscription } from '../../hooks/useSubscription';
 
-import { MOCK_AML_PROVIDERS } from '../../data/mockProviders';
 import type { ServiceProvider } from '../../types/provider.types';
+
+const BASE_PROVIDER: ServiceProvider = {
+  id: 'provider-1',
+  name: 'Test Provider',
+  category: 'aml_kyc',
+  description: 'Test provider',
+  priceInPence: 300,
+  currency: 'GBP',
+  averageRating: 4,
+  totalReviews: 10,
+  averageTurnaroundMinutes: 10,
+  isActive: true,
+  logoInitials: 'TP',
+};
 
 // Helper: create a full ServiceProvider for tests
 function makeProvider(overrides: Partial<ServiceProvider> = {}): ServiceProvider {
-  return { ...MOCK_AML_PROVIDERS[0], ...overrides };
+  return { ...BASE_PROVIDER, ...overrides };
 }
 
 // Mock icpService — must include getTransaction, getFlowState, setFlowState, ledgerManager

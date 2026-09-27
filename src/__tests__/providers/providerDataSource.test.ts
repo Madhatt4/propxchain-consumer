@@ -5,15 +5,12 @@ describe('StaticProviderDataSource', () => {
   const dataSource = new StaticProviderDataSource();
 
   describe('getProviders', () => {
-    it('should return 4 AML providers for aml_kyc category', async () => {
+    // ID & AML runs through the Verify365 stage (provider named by the AML
+    // worker). The old static list showed invented firms, ratings and review
+    // counts, so there must be nothing here to pick from.
+    it('should return no static providers for aml_kyc category', async () => {
       const providers = await dataSource.getProviders('aml_kyc');
-      expect(providers).toHaveLength(4);
-      providers.forEach((p) => {
-        expect(p).toHaveProperty('id');
-        expect(p).toHaveProperty('name');
-      });
-      // Verify365 never quoted a figure — the row must carry no price at all.
-      expect(providers.find((p) => p.id === 'verify365')?.price).toBeUndefined();
+      expect(providers).toEqual([]);
     });
 
     it('should return 4 search providers for searches category', async () => {
@@ -36,7 +33,7 @@ describe('StaticProviderDataSource', () => {
     });
 
     it('should return providers sorted ascending by price when sortBy is price', async () => {
-      const providers = await dataSource.getProviders('aml_kyc', { sortBy: 'price' });
+      const providers = await dataSource.getProviders('searches', { sortBy: 'price' });
       const priced = providers.map((p) => p.price).filter((p): p is number => p !== undefined);
       for (let i = 1; i < priced.length; i++) {
         expect(priced[i]).toBeGreaterThanOrEqual(priced[i - 1]);
@@ -50,7 +47,7 @@ describe('StaticProviderDataSource', () => {
     });
 
     it('should return providers sorted descending by rating when sortBy is rating', async () => {
-      const providers = await dataSource.getProviders('aml_kyc', { sortBy: 'rating' });
+      const providers = await dataSource.getProviders('searches', { sortBy: 'rating' });
       for (let i = 1; i < providers.length; i++) {
         expect(providers[i].rating).toBeLessThanOrEqual(providers[i - 1].rating);
       }
@@ -59,7 +56,7 @@ describe('StaticProviderDataSource', () => {
 
   describe('getProvider', () => {
     it('should return the provider when given a valid ID', async () => {
-      const allProviders = await dataSource.getProviders('aml_kyc');
+      const allProviders = await dataSource.getProviders('searches');
       const firstId = allProviders[0].id;
 
       const provider = await dataSource.getProvider(firstId);
