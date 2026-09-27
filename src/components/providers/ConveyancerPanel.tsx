@@ -230,11 +230,11 @@ export function ConveyancerPanel({
     <>
       <ProviderPanel
         title="Conveyancer / Solicitor"
-        subtitle="Choose a vetted, regulated conveyancer for your transaction"
+        subtitle="Pick your own conveyancer, or get an estimate from local firms"
         stageNumber={5}
         layout="rows"
-        badge="Vetted Panel"
-        description="Select from our curated panel of regulated conveyancers and solicitors. All firms have been vetted and agreed to work through the PropXchain platform, giving you full visibility of progress."
+        badge="Local Panel"
+        description="You can pick your own conveyancer, or use a panel of local conveyancers we can contact for an estimate."
         providers={finalProviders}
         isLoading={isLoading}
         error={error}
