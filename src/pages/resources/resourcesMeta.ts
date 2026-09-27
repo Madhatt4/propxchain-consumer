@@ -213,11 +213,11 @@ export const RESOURCES: ResourceArticle[] = [
     planNumber: 23,
     title: 'Property searches explained',
     documentTitle:
-      'Property Searches Explained: What They Are and Which You Need · PropXchain',
+      'Property Searches Explained: What Searches Are Done When Buying a House · PropXchain',
     teaser:
       'Local authority, drainage, environmental, coal: the searches a conveyancer orders before you can exchange, what each one actually tells you, why the list changes depending on where the house is, and how long they stay valid.',
-    readingTime: '8 min read',
-    updated: '2026-08-21',
+    readingTime: '10 min read',
+    updated: '2026-09-27',
   },
   // --- Searches & Legal (planned — plan numbers 24–25, reassigned from the
   // Buying table: these are the searches/legal middle the taxonomy describes) ---

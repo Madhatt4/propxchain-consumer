@@ -102,12 +102,20 @@ describe('SearchesExplainerContent', () => {
 
   it('should say Groundsure supply extras individually, not local authority searches', () => {
     // Groundsure's catalogue is environmental, geo, planning, flood and
-    // regional mining. They do not sell LLC1 or CON29, and at launch they are
-    // add-on singles rather than a pack — so the card must not imply either.
+    // regional mining, sold as bundles or singles. They do not sell LLC1 or
+    // CON29, so the card must not imply they do.
     renderContent();
     expect(
       screen.getByText(/do not carry out local authority searches/i),
     ).toBeInTheDocument();
+  });
+
+  it('should say OneSearch packs already include an environmental report', () => {
+    // Every OneSearch pack in services/searchProviderData.ts carries an
+    // environmental item, so the card must not imply environmental only
+    // comes from Groundsure as an add-on.
+    const { container } = renderContent();
+    expect(container.textContent).toMatch(/Every OneSearch pack already includes an environmental report/);
   });
 
   it('should not distinguish CON29M from CON29 by accident', () => {

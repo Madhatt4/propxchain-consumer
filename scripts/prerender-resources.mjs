@@ -12,6 +12,12 @@
  */
 
 import { LAW_SOCIETY_TA6_URL, REMOVED_SECTIONS, TA6_SECTIONS } from '../src/pages/resources/ta6GuideData.mjs';
+import {
+  CORE_PACK_FROM,
+  HMLR_ANNUAL_REPORT_URL,
+  LLC_MIGRATION,
+  SEARCHES_AT_A_GLANCE,
+} from '../src/pages/resources/searchesGuideData.mjs';
 
 const escHtml = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
@@ -512,27 +518,41 @@ export const resourcePages = [
     category: 'searches-and-legal',
     catName: 'Searches & Legal',
     published: '2026-06-12',
-    modified: '2026-08-21',
-    title: 'Property Searches Explained: What They Are and Which You Need · PropXchain',
+    modified: '2026-09-27',
+    crumb: 'Property searches explained',
+    title: 'Property Searches Explained: What Searches Are Done When Buying a House · PropXchain',
     description:
-      'Local authority, drainage, environmental, coal: the searches a conveyancer orders before you can exchange, what each one actually tells you, why the list changes depending on where the house is, and how long they stay valid.',
+      'Which searches are done when you buy a house in England and Wales, what each tells you, how long local searches take, what they cost, and whether you need them if buying with cash.',
     main: `<main id="seo-fallback" role="main" aria-label="Property searches explained">
 <p class="muted">Loading PropXchain…</p>
 <h1>Property searches explained</h1>
-<p>Searches are the part of buying a house nobody explains. They arrive as a line on an invoice with an acronym attached, and most people pay without ever learning what they bought. Here is what each one actually does, and why the list is different for a house in Barnsley and a house in Bedfordshire.</p>
+<p>Searches are the part of buying a house nobody explains. They arrive as a line on an invoice with an acronym attached, and most people pay without ever learning what they bought. Here is which searches are done when you buy a house, what each one tells you, how long they take, what they cost, and why the list is different for a house in Barnsley and a house in Bedfordshire.</p>
 
 <section aria-labelledby="ps-what">
   <h2 id="ps-what">What a search actually is</h2>
-  <p>A property search is a question put to an organisation that holds records about land — the council, the water company, the Coal Authority — and the written answer that comes back. It is a records check, not an inspection; nobody visits the house.</p>
-  <p>The party really asking is usually the buyer's lender. A mortgage is secured against the property, so the lender wants to know the council has no plans to drive a road through the garden before it releases the money. That is why searches are effectively compulsory on a mortgaged purchase and optional on a cash one.</p>
+  <p>A property search is a question put to an organisation that holds records about land — the council, the water company, the Coal Authority — and the written answer that comes back. It is not an inspection and nobody visits the house. It is a records check.</p>
+  <p>The party really asking is usually the buyer's lender. A mortgage is secured against the property, so the lender wants to know the council has no plans to drive a road through the garden before it releases the money.</p>
+</section>
+
+<section aria-labelledby="ps-which">
+  <h2 id="ps-which">What searches are done when buying a house?</h2>
+  <p>Four apply to almost every purchase in England and Wales. The rest depend on where the house is.</p>
+  <table>
+    <caption>The property searches done when buying a house in England and Wales</caption>
+    <thead><tr><th scope="col">Search</th><th scope="col">What it tells you</th><th scope="col">When it is needed</th><th scope="col">How long it takes</th></tr></thead>
+    <tbody>
+${SEARCHES_AT_A_GLANCE.map((s) => `      <tr><td>${escHtml(s.name)}</td><td>${escHtml(s.tells)}</td><td>${escHtml(s.when)}</td><td>${escHtml(s.speed)}</td></tr>`).join('\n')}
+    </tbody>
+  </table>
 </section>
 
 <section aria-labelledby="ps-core">
-  <h2 id="ps-core">The four almost every property needs</h2>
-  <h3>Local authority search (LLC1 + CON29)</h3>
-  <p>The LLC1 lists charges registered against the property. The CON29 answers a standard set of questions about planning permissions, building control, nearby road schemes and public footpaths.</p>
+  <h2 id="ps-core">Local authority search (LLC1 + CON29)</h2>
+  <p>Two documents that travel together. The LLC1 is a search of the local land charges register: financial obligations and restrictions that bind whoever owns the property, such as tree preservation orders, conservation area status or a council loan for improvements. The CON29 answers the Law Society's standard questions about planning and building control history, roads, and notices the council has served.</p>
+  <p>A second form, the CON29O, holds optional questions about things that only matter for some properties, such as common land, public paths or pipelines. Your conveyancer decides whether any are worth asking. Each council sets its own fees for these searches.</p>
+  <p>Local land charges are moving from individual councils to one national register run by HM Land Registry. By its 2025–26 annual report, ${LLC_MIGRATION.migrated} of ${LLC_MIGRATION.total} councils had moved across, with the rest due by the end of ${LLC_MIGRATION.targetYear} (<a href="${HMLR_ANNUAL_REPORT_URL}" rel="noopener noreferrer">HM Land Registry</a>). Where a council has moved, the LLC1 part comes back much faster.</p>
   <h3>Drainage and water (CON29DW)</h3>
-  <p>Confirms whether the property is connected to public water and sewers or relies on a private supply or septic tank, and whether a public sewer runs under the garden.</p>
+  <p>Confirms whether the property is connected to public water and sewers, or relies on a private supply or septic tank, and whether a public sewer runs under the garden.</p>
   <h3>Environmental search</h3>
   <p>Checks contaminated land, landfill history, flood risk and radon. Under contaminated land rules a current owner can be liable for cleaning up pollution somebody else caused.</p>
   <h3>Land Registry title search</h3>
@@ -541,23 +561,44 @@ export const resourcePages = [
 
 <section aria-labelledby="ps-location">
   <h2 id="ps-location">Why the list changes with location</h2>
-  <p>Those four apply almost everywhere. The rest depend on what the ground has been used for: coal mining (CON29M) over former coalfields, brine and salt extraction chiefly in Cheshire, tin and metalliferous mining in Cornwall and west Devon, and chancel repair liability in some parishes. Two identical houses in Sandy and Barnsley need different search lists.</p>
+  <p>The four above apply almost everywhere. The rest depend on what the ground has been used for: coal mining (CON29M) over former coalfields, brine and salt extraction chiefly in Cheshire, tin and metalliferous mining in Cornwall and west Devon, and chancel repair liability in some parishes. Two identical houses in Sandy and Barnsley need different search lists.</p>
+</section>
+
+<section aria-labelledby="ps-how-long">
+  <h2 id="ps-how-long">How long do local searches take?</h2>
+  <p>Anything from a few days to several weeks, and the council is almost always the reason. The title register is instant, and drainage, water and environmental reports usually come back quickly. The local authority search depends on how quickly that council answers the CON29 questions and, until it moves to the national register, how it runs its local land charges. There is no official national figure, so treat any single number you see with caution.</p>
+  <p>Because nothing legally stops searches being ordered early, the delay is also one of the few a seller can take off the timeline before a buyer appears (see <a href="/resources/buying/how-long-does-conveyancing-take">how long conveyancing takes</a>).</p>
+</section>
+
+<section aria-labelledby="ps-cost">
+  <h2 id="ps-cost">How much do searches cost?</h2>
+  <p>It depends on the council, the provider and what you add. On PropXchain, a OneSearch pack with the local authority, drainage and water, and environmental searches starts at <strong>${CORE_PACK_FROM} including VAT</strong>. Location-driven searches such as a coal report cost extra. Every price is the provider's published rate or a live quote for the property, and it is shown before you pay.</p>
 </section>
 
 <section aria-labelledby="ps-who">
   <h2 id="ps-who">Who supplies what</h2>
-  <p>No single company does all of it. The local authority search and drainage and water come from a search provider with a direct line to the council and the water company — OneSearch and tmGroup both do this, and sell them together as a pack.</p>
-  <p>The environmental, flood, planning and mining reports come from a data company instead, and are bought individually and added on top of whichever pack you choose. Note that the coal report, CON29M, is a different product from the CON29 local authority enquiries despite the near-identical name.</p>
+  <p>No single organisation holds all the records. On PropXchain, OneSearch sells the core searches as a pack: local authority, drainage and water, and an environmental report. tmGroup quotes each property individually from a wider list, including environmental, coal, chancel and flood reports.</p>
+  <p>Groundsure is a data company. It sells environmental, flood, planning and regional mining reports, as bundles or one at a time, for when you want more than a pack covers. It does not carry out local authority searches. Note that the coal report, CON29M, is a different product from the CON29 local authority enquiries despite the near-identical name.</p>
 </section>
 
 <section aria-labelledby="ps-bundle">
   <h2 id="ps-bundle">Bundle, or one at a time?</h2>
-  <p>Within a single provider, a bundle is usually cheaper when you need most of what is in it, and worse value when you need two items out of six. Across providers the question does not really arise — they are doing different jobs. A search you do not need is not a safety net — it is a document nobody will read, and every provider will happily sell you one.</p>
+  <p>A bundle is usually cheaper when you need most of what is in it, and worse value when you need two items out of six. PropXchain works out which searches your property actually needs from the postcode before showing you prices. A search you do not need is not a safety net — it is a document nobody will read.</p>
+</section>
+
+<section aria-labelledby="ps-cash">
+  <h2 id="ps-cash">Do I need searches if I am buying with cash?</h2>
+  <p>Not legally, and no lender will insist. But the searches exist to protect the buyer as much as the lender: a road scheme, an unpaid council charge or a contaminated plot becomes your problem the day you complete, however you paid. Most conveyancers will advise a cash buyer to order the core searches anyway, and skipping them can make the home harder to sell or mortgage later.</p>
+</section>
+
+<section aria-labelledby="ps-indemnity">
+  <h2 id="ps-indemnity">Search indemnity insurance</h2>
+  <p>A one-off insurance policy offered instead of some searches, usually the local authority search, when time is short. It covers certain financial losses from matters a search would have revealed. It does not tell you anything about the property, it usually stops covering you if you learn of the problem another way, and not every lender accepts it. It is a stopgap for speed, not a cheaper replacement for knowing.</p>
 </section>
 
 <section aria-labelledby="ps-timing">
-  <h2 id="ps-timing">How long they take, and how long they last</h2>
-  <p>Turnarounds run from instant for the title register to ten working days for a slow council. Most searches are treated as valid for six months, so a chain that drags on can mean paying for some of them twice. Ordering early is one of the few delays a seller can remove before a buyer even appears.</p>
+  <h2 id="ps-timing">How long they last</h2>
+  <p>Most searches are treated as valid for six months. A chain that drags past that can mean paying for some of them twice. Some OneSearch packs on PropXchain include a refresh: the expiry is tracked and the refresh arranged before it lapses, taking validity to 12 months. Nothing here replaces your conveyancer reading the results. Ordering is the easy half.</p>
 </section>
 
 <p>See also <a href="/resources/selling/what-is-a-property-pack">what is a sales pack</a>, or <a href="/register">start your transaction free</a>.</p>
