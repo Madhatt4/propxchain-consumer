@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 PropXchain Ltd
+import type React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
@@ -10,8 +11,9 @@ vi.mock('../../services/supportTicket.service', async (importOriginal) => {
   return { ...actual, listTickets: (...args: unknown[]) => mockListTickets(...args) };
 });
 
-vi.mock('../../components/navigation/DashboardSidebar', () => ({ default: () => <nav data-testid="sidebar" /> }));
-vi.mock('../../components/navigation/DashboardHeader', () => ({ default: () => <header data-testid="header" /> }));
+vi.mock('../../components/support/SupportShell', () => ({
+  default: ({ children }: { children: React.ReactNode }) => <main>{children}</main>,
+}));
 
 import TicketListPage from '../../pages/support/TicketListPage';
 import { formatWhen } from '../../components/support/TicketChrome';

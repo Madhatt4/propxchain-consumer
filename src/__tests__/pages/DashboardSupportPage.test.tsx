@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 PropXchain Ltd
+import type React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -16,10 +17,11 @@ vi.mock('react-router-dom', async (importOriginal) => {
   return { ...actual, useNavigate: () => mockNavigate };
 });
 
-// The dashboard chrome reaches for the canister (admin check, notifications);
-// this page's contract is the form, so the shell is stubbed out.
-vi.mock('../../components/navigation/DashboardSidebar', () => ({ default: () => <nav data-testid="sidebar" /> }));
-vi.mock('../../components/navigation/DashboardHeader', () => ({ default: () => <header data-testid="header" /> }));
+// The top bar needs the theme provider and reads the auth store for the
+// avatar; this page's contract is the form, so the shell is stubbed out.
+vi.mock('../../components/support/SupportShell', () => ({
+  default: ({ children }: { children: React.ReactNode }) => <main>{children}</main>,
+}));
 
 import DashboardSupportPage from '../../pages/DashboardSupportPage';
 import { useAuthStore } from '../../stores/authStore';
@@ -110,10 +112,15 @@ describe('DashboardSupportPage', () => {
     expect(screen.getByRole('link', { name: /My tickets/i })).toHaveAttribute('href', '/dashboard/support/tickets');
   });
 
-  it('should send an unauthenticated visitor to the login page', () => {
-    useAuthStore.setState({ isAuthenticated: false, principalId: null });
+  // Tickets live in Supabase and need no principal. The page used to bounce
+  // anyone without one to /login, which shut email-only users out of support;
+  // signing in is ProtectedRoute's job, not this page's.
+  it('should let a signed-in user with no principal raise a ticket', async () => {
+    useAuthStore.setState({ isAuthenticated: true, principalId: null });
     renderPage();
+    fillAndSubmit();
 
-    expect(mockNavigate).toHaveBeenCalledWith('/login');
+    await waitFor(() => expect(mockCreateTicket).toHaveBeenCalledTimes(1));
+    expect(mockNavigate).not.toHaveBeenCalledWith('/login');
   });
 });

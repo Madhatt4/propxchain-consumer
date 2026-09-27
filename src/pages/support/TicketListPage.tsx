@@ -8,8 +8,7 @@
  */
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import DashboardSidebar from '../../components/navigation/DashboardSidebar';
-import DashboardHeader from '../../components/navigation/DashboardHeader';
+import SupportShell from '../../components/support/SupportShell';
 import { BlockingPill, TicketStatusPill, formatWhen } from '../../components/support/TicketChrome';
 import { categoryLabel, listTickets, type SupportTicket } from '../../services/supportTicket.service';
 import { useAuthStore } from '../../stores/authStore';
@@ -52,7 +51,6 @@ const EmptyState: React.FC = () => (
 
 const TicketListPage: React.FC = () => {
   const navigate = useNavigate();
-  const principalId = useAuthStore((s) => s.principalId);
   const [tickets, setTickets] = useState<SupportTicket[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -76,11 +74,7 @@ const TicketListPage: React.FC = () => {
   }, [load, navigate]);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <DashboardHeader user={principalId ? { principal: principalId, id: principalId } : null} title="PropXchain" subtitle="My tickets" />
-      <div className="flex">
-        <DashboardSidebar activeRoute="/dashboard/support" />
-        <main className="flex-1 px-4 py-8 sm:px-6 lg:px-8">
+    <SupportShell title="My tickets" backTo="/dashboard/support" backLabel="Back to Help & Support">
           <div className="mx-auto max-w-4xl">
             <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
               <div>
@@ -114,9 +108,7 @@ const TicketListPage: React.FC = () => {
               </div>
             )}
           </div>
-        </main>
-      </div>
-    </div>
+    </SupportShell>
   );
 };
 
