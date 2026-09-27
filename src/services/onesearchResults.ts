@@ -14,10 +14,11 @@
  * showed it.
  *
  * SECURITY — read before widening anything here. PISCES authenticates in-band,
- * so `results_xml` contains our live `<Username>` and `<Password>` inside its
- * `<Authentication>` block. This parser reads ONLY `SearchProduct` and
- * `Attachment` nodes, which means credentials are *structurally* excluded from
- * everything it returns. Never change it to serialise the whole document, echo
+ * so the XML OneSearch sends back carries our `<Username>` and `<Password>` in
+ * its `<Authentication>` block. onesearch-worker blanks both before storing
+ * `results_xml` (since 2026-07-28, 9c1cf2e7), and this parser reads ONLY
+ * `SearchProduct` and `Attachment` nodes as a second line of defence, so
+ * credentials are *structurally* excluded from everything it returns. Never change it to serialise the whole document, echo
  * unmatched nodes, or pass raw XML onward — the bundle it produces is sent to a
  * third-party model.
  */
