@@ -10,10 +10,9 @@
  * be raised as yourself, and an editable email field would have implied
  * otherwise.
  */
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import DashboardSidebar from '../components/navigation/DashboardSidebar';
-import DashboardHeader from '../components/navigation/DashboardHeader';
+import SupportShell from '../components/support/SupportShell';
 import SupportFaq from '../components/support/SupportFaq';
 import { MAX_BODY, MAX_SUBJECT, createTicket, type SupportRequestContext } from '../services/supportTicket.service';
 import { logger } from '@/utils/logger';
@@ -50,7 +49,6 @@ function composeBody(topic: string, message: string): string {
 const DashboardSupportPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [user, setUser] = useState<{ principal: string; id: string } | null>(null);
   const [formData, setFormData] = useState({ topic: '', subject: '', message: '' });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,16 +61,6 @@ const DashboardSupportPage: React.FC = () => {
     setHasReset(true);
     navigate('/dashboard');
   };
-
-  useEffect(() => {
-    const authState = useAuthStore.getState();
-    const principalId = authState.principalId;
-    if (!principalId || !authState.isAuthenticated) {
-      navigate('/login');
-      return;
-    }
-    setUser({ principal: principalId, id: principalId });
-  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
@@ -103,13 +91,7 @@ const DashboardSupportPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <DashboardHeader user={user} title="PropXchain" subtitle="Support Center" />
-
-      <div className="flex">
-        <DashboardSidebar activeRoute="/dashboard/support" />
-
-        <main className="flex-1 px-4 py-8 sm:px-6 lg:px-8">
+    <SupportShell title="Help & Support">
           <div className="mx-auto max-w-4xl">
             <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
               <div>
@@ -277,9 +259,7 @@ const DashboardSupportPage: React.FC = () => {
 
             <SupportFaq />
           </div>
-        </main>
-      </div>
-    </div>
+    </SupportShell>
   );
 };
 

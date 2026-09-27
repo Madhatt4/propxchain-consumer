@@ -13,8 +13,7 @@
  */
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import DashboardSidebar from '../../components/navigation/DashboardSidebar';
-import DashboardHeader from '../../components/navigation/DashboardHeader';
+import SupportShell from '../../components/support/SupportShell';
 import { BlockingPill, TicketStatusPill, formatWhen } from '../../components/support/TicketChrome';
 import TicketMessageBubble from '../../components/support/TicketMessageBubble';
 import { toThread } from '../../components/support/ticketThread';
@@ -83,7 +82,6 @@ const ReplyBox: React.FC<ReplyBoxProps> = ({ disabled, onSend }) => {
 const TicketPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const principalId = useAuthStore((s) => s.principalId);
   const [ticket, setTicket] = useState<SupportTicket | null>(null);
   const [messages, setMessages] = useState<SupportTicketMessage[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -132,11 +130,7 @@ const TicketPage: React.FC = () => {
   const closed = ticket?.status === 'closed';
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <DashboardHeader user={principalId ? { principal: principalId, id: principalId } : null} title="PropXchain" subtitle="Support ticket" />
-      <div className="flex">
-        <DashboardSidebar activeRoute="/dashboard/support" />
-        <main className="flex-1 px-4 py-8 sm:px-6 lg:px-8">
+    <SupportShell title="Support ticket" backTo="/dashboard/support/tickets" backLabel="Back to my tickets">
           <div className="mx-auto max-w-3xl">
             <Link
               to="/dashboard/support/tickets"
@@ -199,9 +193,7 @@ const TicketPage: React.FC = () => {
               </>
             )}
           </div>
-        </main>
-      </div>
-    </div>
+    </SupportShell>
   );
 };
 
