@@ -11,7 +11,6 @@ import {
   HttpAgent,
   AuthClient,
   Principal,
-  Ed25519KeyIdentity,
   propertyRegistryIdl,
   documentVerificationIdl,
   transactionManagerIdl,
@@ -173,16 +172,6 @@ class ICPService {
   private emailServiceActor: ActorSubclass<EmailServiceService> | null = null;
   private ledgerManagerActor: ActorSubclass<LedgerManagerService> | null = null;
   private landRegistryIntegrationActor: ActorSubclass<LandRegistryIntegrationService> | null = null;
-
-  // Per-browser-session identity used only for the public marketing-form
-  // submitters on email_service. Anonymous calls into those methods now trap
-  // canister-side, so unauthed visitors need a stable distinct principal —
-  // otherwise every anon caller would share one rate-limit bucket again
-  // (the bug this guards against). Persisted in localStorage so a refresh
-  // does not reset the visitor's bucket.
-  private marketingSessionIdentity: Ed25519KeyIdentity | null = null;
-  private marketingFormActor: ActorSubclass<EmailServiceService> | null = null;
-  private readonly MARKETING_SESSION_KEY = 'px_marketing_session_v1';
 
   // Flag: external identity (e.g. Supabase) has been set via setIdentity()
   private isExternalIdentitySet = false;
@@ -3039,134 +3028,6 @@ class ICPService {
   }
 
   // ==================== Email Service Methods ====================
-
-  private getOrCreateMarketingSessionIdentity(): Ed25519KeyIdentity {
-    if (this.marketingSessionIdentity) return this.marketingSessionIdentity;
-
-    const stored = localStorage.getItem(this.MARKETING_SESSION_KEY);
-    if (stored) {
-      try {
-        this.marketingSessionIdentity = Ed25519KeyIdentity.fromJSON(stored);
-        return this.marketingSessionIdentity;
-      } catch (error) {
-        logger.warn('⚠️ Corrupt marketing session identity in storage; regenerating', error);
-        localStorage.removeItem(this.MARKETING_SESSION_KEY);
-      }
-    }
-
-    const identity = Ed25519KeyIdentity.generate();
-    localStorage.setItem(this.MARKETING_SESSION_KEY, JSON.stringify(identity.toJSON()));
-    this.marketingSessionIdentity = identity;
-    return identity;
-  }
-
-  // Marketing forms (support/sales/partner) always submit through a session
-  // identity rather than the default anonymous agent. The canister rejects
-  // anonymous callers on these methods; one identity per visitor keeps each
-  // visitor on their own per-principal rate-limit bucket.
-  private async getMarketingFormActor(): Promise<CanisterActor> {
-    if (this.marketingFormActor) return this.marketingFormActor;
-
-    const identity = this.getOrCreateMarketingSessionIdentity();
-    const agent = new HttpAgent({ identity, host: HOST });
-    this.marketingFormActor = Actor.createActor(emailServiceIdl, {
-      agent,
-      canisterId: CANISTER_IDS.email_service,
-    });
-    return this.marketingFormActor;
-  }
-
-  /**
-   * Submit support request to email_service canister
-   */
-  async submitSupportRequest(name: string, email: string, subject: string, message: string): Promise<number> {
-    return wrapWriteCall(async () => {
-      const actor = await this.getMarketingFormActor();
-
-      try {
-        const notificationId = await actor.submitSupportRequest(
-          name,
-          email,
-          subject,
-          message
-        );
-
-        logger.info('✅ Support request submitted to canister:', Number(notificationId));
-        return Number(notificationId);
-      } catch (error) {
-        logger.error('❌ Error submitting support request to canister:', error);
-        throw error;
-      }
-    });
-  }
-
-  /**
-   * Submit sales inquiry to email_service canister
-   */
-  async submitSalesInquiry(
-    name: string,
-    email: string,
-    company: string,
-    phone: string,
-    userType: string,
-    volume: string,
-    message: string
-  ): Promise<number> {
-    return wrapWriteCall(async () => {
-      const actor = await this.getMarketingFormActor();
-
-      try {
-        const notificationId = await actor.submitSalesInquiry(
-          name,
-          email,
-          company,
-          phone,
-          userType,
-          volume,
-          message
-        );
-
-        logger.info('✅ Sales inquiry submitted to canister:', Number(notificationId));
-        return Number(notificationId);
-      } catch (error) {
-        logger.error('❌ Error submitting sales inquiry to canister:', error);
-        throw error;
-      }
-    });
-  }
-
-  /**
-   * Submit partner inquiry to email_service canister
-   */
-  async submitPartnerInquiry(
-    name: string,
-    email: string,
-    company: string,
-    website: string,
-    partnerType: string,
-    message: string
-  ): Promise<number> {
-    return wrapWriteCall(async () => {
-      const actor = await this.getMarketingFormActor();
-
-      try {
-        const notificationId = await actor.submitPartnerInquiry(
-          name,
-          email,
-          company,
-          website,
-          partnerType,
-          message
-        );
-
-        logger.info('✅ Partner inquiry submitted to canister:', Number(notificationId));
-        return Number(notificationId);
-      } catch (error) {
-        logger.error('❌ Error submitting partner inquiry to canister:', error);
-        throw error;
-      }
-    });
-  }
 
   /**
    * Get all email notifications from canister (admin function)
