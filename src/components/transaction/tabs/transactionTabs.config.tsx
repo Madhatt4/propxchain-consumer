@@ -10,7 +10,7 @@
  * tab bar, deep-linking (?tab=), and locked-tab teasers automatically.
  */
 import type { ComponentType } from 'react';
-import { LayoutDashboard, MapPin, Link2, Wallet, Sparkles, ShieldCheck, Mail, MessageSquare, ClipboardCheck } from 'lucide-react';
+import { LayoutDashboard, MapPin, Link2, Wallet, Sparkles, ShieldCheck, Mail, MessageSquare, ClipboardCheck, FileSearch } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { SubscriptionTier } from '@/constants/subscriptionFeatures';
 import { ChainTab } from './ChainTab';
@@ -21,6 +21,7 @@ import { AmlPanelTab } from './AmlPanelTab';
 import { ConveyancerBriefTab } from './ConveyancerBriefTab';
 import { EnquiriesTab } from './EnquiriesTab';
 import { BuyerPackTab } from './BuyerPackTab';
+import { SearchesTab } from './SearchesTab';
 
 /** Data passed to every tab component. */
 export interface TransactionTabContext {
@@ -73,7 +74,9 @@ export const TRANSACTION_TABS: TransactionTabDef[] = [
   // Structured pre-contract enquiries (monorepo spec 2026-09-04). Starter: the
   // loop is the pack's value; the AI pack check inside it is Premium (402 → note).
   { id: 'enquiries', label: 'Enquiries', icon: MessageSquare, minTier: 'starter', kind: 'component', Component: EnquiriesTab },
-  // ＋ future: searches detail — add an entry here.
+  // The deal's search orders, which are back, and the buyer-side sign-off
+  // (review M23, 2026-09-27). Readable by every party; signing is server-gated.
+  { id: 'searches', label: 'Searches', icon: FileSearch, minTier: 'starter', kind: 'component', Component: SearchesTab },
 ];
 
 /** The one unlock rule for a section: starter sections are always open; premium ones need the premium tier. */

@@ -93,6 +93,11 @@ const DEFINITIONS: Record<Phase, ChecklistItem[]> = {
       completedByEvents: ['searches_ordered'],
     },
     {
+      id: 'searches-signed-off',
+      label: 'Search results signed off (buyer or their conveyancer)',
+      completedByEvents: ['searches_signed_off'],
+    },
+    {
       id: 'survey',
       label: 'Survey complete',
       completedByEvents: ['survey_completed'],
