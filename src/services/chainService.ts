@@ -83,7 +83,7 @@ const SANDBOX_SAMPLE: ChainResult = {
   provenance: { alg: 'RS256', signedAt: '2026-06-09T10:43:35Z' },
 };
 
-/** Fetch chain status for a property. Falls back to the sandbox sample in dev. */
+/** Fetch chain status for a property. Falls back to the sandbox sample in dev only; throws in production. */
 export async function getChain(query: ChainQuery): Promise<ChainResult> {
   // Read at call time (not hoisted to a module-level constant) so it reflects
   // the environment at call time rather than at first import — this also
@@ -91,6 +91,10 @@ export async function getChain(query: ChainQuery): Promise<ChainResult> {
   // (see src/services/chainEntitlement.service.ts for the same pattern).
   const proxyUrl: string | undefined = import.meta.env.VITE_VMC_PROXY_URL;
   if (!proxyUrl) {
+    // Never show sample chain data to a customer who paid to see their real one.
+    if (import.meta.env.PROD) {
+      throw new Error('View My Chain is not configured (VITE_VMC_PROXY_URL missing from the build)');
+    }
     logger.warn('[chainService] VITE_VMC_PROXY_URL not set — returning sandbox sample');
     return SANDBOX_SAMPLE;
   }
