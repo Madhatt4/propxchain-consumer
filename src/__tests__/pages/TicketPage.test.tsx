@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 PropXchain Ltd
+import type React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -17,8 +18,9 @@ vi.mock('../../services/supportTicket.service', async (importOriginal) => {
   };
 });
 
-vi.mock('../../components/navigation/DashboardSidebar', () => ({ default: () => <nav data-testid="sidebar" /> }));
-vi.mock('../../components/navigation/DashboardHeader', () => ({ default: () => <header data-testid="header" /> }));
+vi.mock('../../components/support/SupportShell', () => ({
+  default: ({ children }: { children: React.ReactNode }) => <main>{children}</main>,
+}));
 
 import TicketPage from '../../pages/support/TicketPage';
 import { useAuthStore } from '../../stores/authStore';
