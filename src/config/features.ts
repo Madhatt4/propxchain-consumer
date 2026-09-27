@@ -16,9 +16,6 @@ export interface FeatureFlags {
   /** Enable simplified transaction creation flow */
   ENABLE_SIMPLE_CREATION: boolean;
 
-  /** Enable Shieldpay AML/KYC integration (requires Worker deployment) */
-  SHIELDPAY_ENABLED: boolean;
-
   /** Enable OneSearch property search ordering (via Cloudflare Worker proxy) */
   ONESEARCH_ENABLED: boolean;
 
@@ -30,9 +27,6 @@ export interface FeatureFlags {
 
   /** Enable ID & AML checks via the AML Worker (Verify365 first). Prices come from the worker, never this repo. */
   AML_ENABLED: boolean;
-
-  /** Enable Conveyancer Panel firm allocation */
-  CONVEYANCER_PANEL_ENABLED: boolean;
 }
 
 /**
@@ -42,7 +36,6 @@ export interface FeatureFlags {
 export const FEATURE_FLAGS: FeatureFlags = {
   USE_PER_TRANSACTION_CANISTERS: false,
   ENABLE_SIMPLE_CREATION: false,
-  SHIELDPAY_ENABLED: false,
   // Live 2026-07-21: worker deployed with pack-signature pricing, PISCES codes
   // confirmed from OneSearch's product list.
   ONESEARCH_ENABLED: true,
@@ -78,7 +71,6 @@ export const FEATURE_FLAGS: FeatureFlags = {
   // aml.service fails explicitly when this is off — no mock path, same
   // reasoning as tmGroup.
   AML_ENABLED: true,
-  CONVEYANCER_PANEL_ENABLED: true,
 };
 
 /**
