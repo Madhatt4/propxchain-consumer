@@ -15,7 +15,10 @@
 
 export const LAW_SOCIETY_TA6_URL = 'https://www.lawsociety.org.uk/topics/property/ta6-6th-edition';
 
-/** Removed from the 5th edition, per the Law Society's 6th-edition page. */
+/**
+ * Sections the Law Society names as removed from the 5th edition. Its page says
+ * 10 fewer sections but lists these 9, so the copy says "include", not "were".
+ */
 export const REMOVED_SECTIONS = Object.freeze([
   'Council tax',
   'Asking price',

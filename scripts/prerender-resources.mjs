@@ -644,7 +644,7 @@ export const resourcePages = [
   <h2 id="t6-sixth">The 6th edition: what changed in 2026</h2>
   <p>The TA6 (6th edition) replaced the 4th and 5th editions on 30 March 2026. Conveyancing firms in the Law Society's Conveyancing Quality Scheme must use it for any sale they were instructed on from that date (<a href="${LAW_SOCIETY_TA6_URL}" rel="noopener noreferrer">Law Society</a>).</p>
   <ul>
-    <li><strong>15 sections, down from 25.</strong> The structure is closer to the 4th edition. The sections removed were: ${escHtml(REMOVED_SECTIONS.join(', ').toLowerCase())}.</li>
+    <li><strong>15 sections, down from 25.</strong> The structure is closer to the 4th edition. Sections the Law Society lists as removed include: ${escHtml(REMOVED_SECTIONS.join(', ').toLowerCase())}.</li>
     <li><strong>No EPC request.</strong> The Energy Performance Certificate is now handled by the estate agent at marketing.</li>
     <li><strong>More "not known" options.</strong> More questions are phrased as "are you aware…", where "no" means the same as "not known".</li>
     <li><strong>Clearer explanatory notes.</strong> The Law Society rewrote them after user testing found the old ones too dense to read.</li>

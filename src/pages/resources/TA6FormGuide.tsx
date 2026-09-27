@@ -67,7 +67,7 @@ const TA6FormGuide: React.FC = () => (
     </GuideP>
     <GuideList
       items={[
-        <><Term>15 sections, down from 25.</Term> The structure is closer to the 4th edition. The sections removed were: {REMOVED_SECTIONS.join(', ').toLowerCase()}.</>,
+        <><Term>15 sections, down from 25.</Term> The structure is closer to the 4th edition. Sections the Law Society lists as removed include: {REMOVED_SECTIONS.join(', ').toLowerCase()}.</>,
         <><Term>No EPC request.</Term> The Energy Performance Certificate is now handled by the estate agent at marketing.</>,
         <><Term>More &ldquo;not known&rdquo; options.</Term> More questions are phrased as &ldquo;are you aware&hellip;&rdquo;, where &ldquo;no&rdquo; means the same as &ldquo;not known&rdquo;.</>,
         <><Term>Clearer explanatory notes.</Term> The Law Society rewrote them after user testing found the old ones too dense to read.</>,

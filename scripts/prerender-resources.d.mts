@@ -6,5 +6,10 @@ export interface PrerenderPage {
   title: string;
   description: string;
   main: string;
+  category?: string;
+  catName?: string;
+  published?: string;
+  modified?: string;
+  crumb?: string;
 }
 export const resourcePages: PrerenderPage[];
