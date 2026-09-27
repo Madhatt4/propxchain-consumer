@@ -85,6 +85,20 @@ describe('fundingDocumentService.uploadFundingDocument', () => {
     expect(emitDocumentUploadedEvent).toHaveBeenCalledOnce();
   });
 
+  it('should keep the user filename off every on-chain field', async () => {
+    const named = new File(['x'], 'Mortgage offer - Jane Smith.pdf', { type: 'application/pdf' });
+
+    const record = await fundingDocumentService.uploadFundingDocument(named, OPTS);
+
+    const proofArgs = registerDocumentProof.mock.calls[0];
+    expect(proofArgs[0]).toBe('mortgageAgreement.pdf'); // on-chain fileName
+    expect(proofArgs[4]).not.toMatch(/Jane|Smith/); // on-chain storageLocation
+    expect(registerDocument.mock.calls[0][5]).toEqual(['mortgageAgreement.pdf']);
+    expect(emitDocumentUploadedEvent).toHaveBeenCalledWith('tx_5', 'mortgageAgreement', 'a'.repeat(64));
+    // Off-chain record still carries the real name for the UI.
+    expect(record.fileName).toBe('Mortgage offer - Jane Smith.pdf');
+  });
+
   it('throws a sign-in message when there is no Supabase session', async () => {
     getSession.mockResolvedValue({ data: { session: null }, error: null });
     await expect(fundingDocumentService.uploadFundingDocument(file, OPTS)).rejects.toThrow(/sign in/i);

@@ -6,6 +6,7 @@ import { Document, DocumentStatus } from '../../types/transaction.types';
 import { icpService } from '../../services/icp.service';
 import { getBackendDocumentName, getDocumentSubtypes, getOscarTypeFromSubtype } from '../../constants/documentTypes';
 import { generateFileHash } from '../../utils/hashGenerator';
+import { onChainFileName } from '../../lib/onChainDocument';
 import { localDocumentRegistry } from '../../services/localDocumentRegistry';
 import { logger } from '@/utils/logger';
 import { cleanupDocumentState } from '@/utils/documentCleanup';
@@ -334,7 +335,7 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
       // Call registerDocumentProof with 8 parameters matching canister interface
       const storageResult =
         await icpService.documentStorageActor!.registerDocumentProof(
-          file.name,                                    // fileName: text
+          onChainFileName(documentType, file.name),     // fileName: generic, never the user's own
           documentHash,                                 // fileHash: text
           BigInt(file.size),                           // fileSize: nat
           file.type || 'application/octet-stream',     // contentType: text
@@ -364,7 +365,7 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
           documentType,
           documentHash,
           [BigInt(storageDocId)],
-          [file.name],
+          [onChainFileName(documentType, file.name)],
           [BigInt(file.size)],
           [file.type || 'application/octet-stream']
         );
@@ -380,7 +381,7 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
 
       logger.info('[Upload] Verification registered, ID:', verificationDocId);
 
-      icpService.emitDocumentUploadedEvent(transactionId, file.name, documentType, documentHash);
+      icpService.emitDocumentUploadedEvent(transactionId, documentType, documentHash);
 
       setUploadState((prev) => ({ ...prev, progress: 85 }));
 

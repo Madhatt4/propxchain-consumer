@@ -15,6 +15,7 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { onChainFileName, storageObjectName } from '../lib/onChainDocument';
 import { icpService } from './icp.service';
 import { generateFileHash } from '../utils/hashGenerator';
 
@@ -34,7 +35,7 @@ export async function uploadTA6Document(
   const fileHash = await generateFileHash(file);
   const storageLocation = await uploadBytes(file, transactionId, fileHash, contentType);
   const documentId = await registerProof(file, fileHash, contentType, storageLocation, transactionId, docType);
-  icpService.emitDocumentUploadedEvent(transactionId, file.name, docType, fileHash);
+  icpService.emitDocumentUploadedEvent(transactionId, docType, fileHash);
   return documentId;
 }
 
@@ -58,8 +59,8 @@ async function uploadBytes(
   fileHash: string,
   contentType: string,
 ): Promise<string> {
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-  const path = `transactions/${transactionId}/ta6/${fileHash.substring(0, 12)}-${safeName}`;
+  // The path becomes the on-chain storageLocation, so no filename in it.
+  const path = `transactions/${transactionId}/ta6/${storageObjectName(fileHash, file.name)}`;
 
   const { error } = await supabase.storage
     .from(STORAGE_BUCKET)
@@ -86,7 +87,7 @@ async function registerProof(
   }
   const csrfToken = await icpService.getDocumentStorageCsrfToken();
   const result = await icpService.documentStorageActor.registerDocumentProof(
-    file.name,
+    onChainFileName(docType, file.name),
     fileHash,
     BigInt(file.size),
     contentType,
