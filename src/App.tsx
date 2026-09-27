@@ -93,6 +93,7 @@ const ConveyancingTimelineGuide = lazy(() => import('./pages/resources/Conveyanc
 const BaspiGuide = lazy(() => import('./pages/resources/BaspiGuide'));
 const PropertySearchesGuide = lazy(() => import('./pages/resources/PropertySearchesGuide'));
 const PropertyInfoFormsGuide = lazy(() => import('./pages/resources/PropertyInfoFormsGuide'));
+const TA6FormGuide = lazy(() => import('./pages/resources/TA6FormGuide'));
 const HowToSignInGuide = lazy(() => import('./pages/resources/HowToSignInGuide'));
 const PackViewPage = lazy(() => import('./pages/PackViewPage'));
 const WalletProofPage = lazy(() => import('./pages/WalletProofPage'));
@@ -239,6 +240,7 @@ function App() {
               <Route path="/resources/industry-and-reform/baspi-explained" element={<BaspiGuide />} />
               <Route path="/resources/searches-and-legal/property-searches-explained" element={<PropertySearchesGuide />} />
               <Route path="/resources/selling/property-information-forms-explained" element={<PropertyInfoFormsGuide />} />
+              <Route path="/resources/selling/ta6-form-explained" element={<TA6FormGuide />} />
               <Route path="/resources/getting-started/how-to-sign-in" element={<HowToSignInGuide />} />
               {/* Legacy /guides URLs — client-side redirects to the resources hub. */}
               <Route path="/guides" element={<Navigate to="/resources" replace />} />

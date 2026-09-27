@@ -150,6 +150,19 @@ export const RESOURCES: ResourceArticle[] = [
     readingTime: '7 min read',
     updated: '2026-08-21',
   },
+  {
+    status: 'published',
+    slug: 'ta6-form-explained',
+    category: 'selling',
+    planNumber: null,
+    title: 'The TA6 form explained',
+    documentTitle:
+      'TA6 Form Explained: the 6th Edition, Section by Section · PropXchain',
+    teaser:
+      'The TA6 Property Information Form (6th edition), in use since 30 March 2026: what changed, what each of the 15 sections asks, what to have ready, and how to answer without creating problems later.',
+    readingTime: '8 min read',
+    updated: '2026-09-27',
+  },
   // --- Selling (planned, plan numbers 1–16) ---
   { status: 'planned', slug: 'getting-sale-ready', category: 'selling', planNumber: 1, title: 'Getting Sale-Ready: The Paperwork That Decides Whether You Exchange in Weeks or Months', keyword: 'sale ready property', intent: 'Informational', phase: 3 },
   { status: 'planned', slug: 'choosing-an-estate-agent', category: 'selling', planNumber: 2, title: 'Choosing an Estate Agent: Tie-In Periods, Fee Structures and What to Negotiate', keyword: 'instructing an estate agent', intent: 'Commercial', phase: 3 },
