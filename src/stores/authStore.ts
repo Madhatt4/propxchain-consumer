@@ -31,6 +31,34 @@ interface UserProfile {
 
 let delegationExpiryInterval: ReturnType<typeof setInterval> | null = null;
 
+/**
+ * Drop every in-memory trace of the signed-out user. The app navigates to
+ * /login without a reload, so these singletons would otherwise keep signing
+ * canister calls, messages and cached reads as the previous user. Each reset
+ * is best-effort: a failure must never leave the user half signed in.
+ * message.service and queryClient are imported lazily — message.service
+ * imports this store, so a static import would be a cycle.
+ */
+async function resetPerUserSingletons(): Promise<void> {
+  try {
+    await icpService.logout();
+  } catch (err) {
+    logger.error('Sign-out: ICP service reset failed', err);
+  }
+  try {
+    const { messageService } = await import('../services/message.service');
+    await messageService.reinitialize();
+  } catch (err) {
+    logger.error('Sign-out: messaging reset failed', err);
+  }
+  try {
+    const { queryClient } = await import('@/lib/queryClient');
+    queryClient.clear();
+  } catch (err) {
+    logger.error('Sign-out: query cache clear failed', err);
+  }
+}
+
 interface AuthState {
   isAuthenticated: boolean;
   isInitialized: boolean;
@@ -548,6 +576,8 @@ export const useAuthStore = create<AuthState>()(
           // persists across logouts on shared devices. Wipe it so the next
           // sign-in starts clean (security scan L8).
           clearDealStorage();
+
+          await resetPerUserSingletons();
 
           set({
             isAuthenticated: false,

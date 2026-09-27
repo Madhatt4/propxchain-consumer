@@ -33,6 +33,10 @@ export const useAutoLogout = (): {
   const [timeRemaining, setTimeRemaining] = useState(WARNING_TIME);
 
   const logout = useAuthStore((state) => state.logout);
+  // Subscribed, not read once: App mounts this hook before the session is
+  // restored, so a one-off read at mount always saw "signed out" and the idle
+  // timer never started.
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   // Keep ref in sync with state
   useEffect(() => {
@@ -139,8 +143,9 @@ export const useAutoLogout = (): {
   }, [resetTimer]);
 
   useEffect(() => {
-    const isAuthenticated = useAuthStore.getState().isAuthenticated;
     if (!isAuthenticated) {
+      clearAllTimers();
+      setShowWarning(false);
       return;
     }
 
@@ -213,7 +218,7 @@ export const useAutoLogout = (): {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isAuthenticated]);
 
   return {
     resetTimer,

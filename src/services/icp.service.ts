@@ -506,6 +506,14 @@ class ICPService {
     // Clear session auth data to prevent principal mismatch
     SessionManager.getInstance().clearSession();
 
+    // An email login earlier in this tab leaves its key behind as the
+    // "external identity", which initAuth and getUserPrincipal trust ahead
+    // of Internet Identity. Drop it so this login's principal is the one used.
+    this.isExternalIdentitySet = false;
+    this.externalIdentity = null;
+    this._documentStorageActor = null;
+    this.myProfileCache = null;
+
     if (!this.authClient) {
       logger.info('🔐 login: Creating AuthClient...');
       await this.initAuth();
@@ -566,9 +574,13 @@ class ICPService {
       logger.info('🚪 logout: Internet Identity session cleared');
     }
 
-    // Reinitialize with anonymous agent
+    // Reinitialize with anonymous agent. Document storage is built on demand
+    // from whatever agent exists, so drop it too or it keeps the old identity;
+    // the profile cache is not keyed by principal, so it must go as well.
     this.agent = null;
     this.authClient = null;
+    this._documentStorageActor = null;
+    this.myProfileCache = null;
     await this.initialize();
     logger.info('🚪 logout: Reinitialized with anonymous agent');
   }
