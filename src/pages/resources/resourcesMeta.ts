@@ -174,7 +174,7 @@ export const RESOURCES: ResourceArticle[] = [
     planNumber: null,
     title: 'How long does conveyancing take?',
     documentTitle:
-      'How Long Does Conveyancing Take in England? 2026 Timeline · PropXchain',
+      'How Long Does Conveyancing Take in England & Wales? 2026 Timeline · PropXchain',
     teaser:
       'About five and a half months on average. A week-by-week timeline for England and Wales, the delays that genuinely cost weeks, and what sellers and buyers can do to shorten the wait.',
     readingTime: '9 min read',

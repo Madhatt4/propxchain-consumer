@@ -339,7 +339,7 @@ export const resourcePages = [
     published: '2026-06-12',
     modified: '2026-09-27',
     crumb: 'How long does conveyancing take?',
-    title: 'How Long Does Conveyancing Take in England? 2026 Timeline · PropXchain',
+    title: 'How Long Does Conveyancing Take in England & Wales? 2026 Timeline · PropXchain',
     description: 'Rightmove puts the average at 167 days from sale agreed to completion. A week-by-week conveyancing timeline for England and Wales, what slows it down, and how to speed it up.',
     main: `<main id="seo-fallback" role="main" aria-label="How long does conveyancing take — guide">
 <p class="muted">Loading PropXchain…</p>
