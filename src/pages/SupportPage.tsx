@@ -1,11 +1,48 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sendEnquiry } from '@/services/enquiry.service';
+import { MAX_SUBJECT, createTicket } from '@/services/supportTicket.service';
+import { useAuthStore } from '@/stores/authStore';
 import { logger } from '@/utils/logger';
 import { Logo } from '@/components/brand/Logo';
 
+const TOPICS: Record<string, string> = {
+  account: 'Account & Authentication',
+  transaction: 'Transaction Support',
+  documents: 'Document Upload Issues',
+  payment: 'Payment & Billing',
+  technical: 'Technical Issues',
+  compliance: 'Compliance & Legal',
+  other: 'Other',
+};
+
+/**
+ * The form asks for a topic, not a subject line, so the ticket's subject is
+ * the topic plus the opening of the message — enough to tell tickets apart in
+ * the admin queue without making the visitor write a headline.
+ */
+function ticketSubject(topic: string, message: string): string {
+  const label = TOPICS[topic] ?? 'Support request';
+  const opening = message.trim().split('\n')[0].trim();
+  const subject = opening ? `${label}: ${opening}` : label;
+  return subject.length > MAX_SUBJECT ? `${subject.slice(0, MAX_SUBJECT - 1)}…` : subject;
+}
+
+/**
+ * The public help page. A signed-in visitor raises a real support ticket —
+ * stored, threaded, in the admin queue, and answered by email — exactly as
+ * from the dashboard. A signed-out visitor has no account for a ticket to
+ * belong to, so their request is emailed to the team instead.
+ *
+ * If a signed-in visitor cannot raise a ticket (an Internet Identity session
+ * with no email login behind it, say), the form falls back to the email
+ * route rather than leaving them stuck.
+ */
 const SupportPage: React.FC = () => {
   const navigate = useNavigate();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const [ticketFailed, setTicketFailed] = useState(false);
+  const raisesTicket = isAuthenticated && !ticketFailed;
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -18,6 +55,25 @@ const SupportPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
+
+    if (raisesTicket) {
+      try {
+        const ticket = await createTicket({
+          subject: ticketSubject(formData.subject, formData.message),
+          body: `Topic: ${TOPICS[formData.subject] ?? 'Other'}\n\n${formData.message.trim()}`,
+          pagePath: '/support',
+          source: 'form',
+        });
+        navigate(`/dashboard/support/tickets/${ticket.id}`);
+      } catch (error) {
+        logger.error('Could not raise a support ticket; offering the email form instead:', error);
+        setTicketFailed(true);
+        alert('We could not open a ticket on your account just now. Please add your name and email and send the request by email instead.');
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
 
     try {
       await sendEnquiry({
@@ -214,6 +270,13 @@ const SupportPage: React.FC = () => {
                 onChange={handleChange}
                 className="absolute -left-[9999px] h-px w-px opacity-0"
               />
+                {raisesTicket ? (
+                  <p className="text-sm text-gray-700 dark:text-[#CBD5E1]">
+                    You're signed in, so this opens a support ticket on your account. We'll reply to your account email and
+                    you can follow the whole thread under Help &amp; Support.
+                  </p>
+                ) : (
+                <>
                 <div>
                   <label className="block text-sm font-medium text-black dark:text-[#F1F5F9] mb-2">
                     Name *
@@ -243,6 +306,8 @@ const SupportPage: React.FC = () => {
                     placeholder="your.email@example.com"
                   />
                 </div>
+                </>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-black dark:text-[#F1F5F9] mb-2">
