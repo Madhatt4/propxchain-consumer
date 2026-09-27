@@ -1,6 +1,5 @@
 import type { Provider } from '../components/providers/types';
 import {
-  amlProviders,
   searchProviders,
   conveyancerProviders,
   surveyProviders,
@@ -27,7 +26,9 @@ export interface ProviderDataSource {
 }
 
 const CATEGORY_DATA: Record<ProviderCategory, Provider[]> = {
-  aml_kyc: amlProviders,
+  // ID & AML runs through the Verify365 stage, not a provider picker, so
+  // there is no static list to show.
+  aml_kyc: [],
   searches: searchProviders,
   conveyancer: conveyancerProviders,
   survey: surveyProviders,
