@@ -2,7 +2,8 @@
 // Copyright (C) 2026 PropXchain Ltd
 
 /**
- * The floating help button, bottom right of every signed-in dashboard page.
+ * The floating help button, bottom right of every signed-in page — buyer,
+ * seller, conveyancer, estate agent and developer alike.
  *
  * Mounted once, inside the router in `App.tsx`, rather than dropped into each
  * page: this repo has no dashboard layout component to hang it off, and eight
@@ -14,7 +15,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import type { ChatContext } from '../../services/supportChat.service';
 import { useActiveTransactionStore } from '../../stores/activeTransactionStore';
 import { useAuthStore } from '../../stores/authStore';
-import { isDashboardPath } from './chatRoutes';
+import { isHelpRoute } from './chatRoutes';
 import SupportChatPanel from './SupportChatPanel';
 import { useSupportChat } from './useSupportChat';
 
@@ -58,7 +59,7 @@ const SupportChatWidget: React.FC = () => {
     [navigate],
   );
 
-  if (!isAuthenticated || !isDashboardPath(location.pathname)) return null;
+  if (!isAuthenticated || !isHelpRoute(location.pathname)) return null;
 
   return (
     <>
