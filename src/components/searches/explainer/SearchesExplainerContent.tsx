@@ -113,8 +113,9 @@ export default function SearchesExplainerContent({
           live quote.
         </p>
         <p className="mt-2 font-dm-sans text-xs leading-relaxed text-gray-600 dark:text-gray-400">
-          Groundsure supply the extras individually — environmental, flood, planning, and mining
-          searches such as the CON29M coal report — added on top of whichever pack you choose.
+          Every OneSearch pack already includes an environmental report, and tmGroup can add one
+          to its quote. Groundsure sell environmental, flood, planning and mining searches such as
+          the CON29M coal report, as bundles or one at a time, for anything a pack does not cover.
           They do not carry out local authority searches.
         </p>
         {comparisons.length > 0 && (

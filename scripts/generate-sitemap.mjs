@@ -41,7 +41,7 @@ const routes = [
   { loc: '/resources/selling/ta6-form-explained', lastmod: '2026-09-27', changefreq: 'monthly', priority: '0.8' },
   { loc: '/resources/buying/how-long-does-conveyancing-take', lastmod: '2026-09-27', changefreq: 'monthly', priority: '0.8' },
   { loc: '/resources/industry-and-reform/baspi-explained', lastmod: '2026-06-12', changefreq: 'monthly', priority: '0.8' },
-  { loc: '/resources/searches-and-legal/property-searches-explained', lastmod: '2026-08-21', changefreq: 'monthly', priority: '0.8' },
+  { loc: '/resources/searches-and-legal/property-searches-explained', lastmod: '2026-09-27', changefreq: 'monthly', priority: '0.8' },
   { loc: '/resources/getting-started/how-to-sign-in', lastmod: '2026-09-04', changefreq: 'monthly', priority: '0.8' },
   { loc: '/about', lastmod: '2026-06-13', changefreq: 'monthly', priority: '0.7' },
   { loc: '/llms.txt', lastmod: '2026-06-22', changefreq: 'weekly', priority: '0.5' },
