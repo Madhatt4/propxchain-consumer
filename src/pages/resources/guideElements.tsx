@@ -87,3 +87,55 @@ export const Callout: React.FC<{ label?: string; children: ReactNode }> = ({
     </div>
   </aside>
 );
+
+/** Outbound link for citing a source. Opens in a new tab and passes no referrer. */
+export const GuideExternalLink: React.FC<{ href: string; children: ReactNode }> = ({ href, children }) => (
+  <a
+    href={href}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="font-medium text-[#0D9488] underline decoration-[#0D9488]/40 underline-offset-2 transition-colors hover:decoration-[#0D9488] dark:text-[#14B8A6] dark:decoration-[#14B8A6]/40 dark:hover:decoration-[#14B8A6]"
+  >
+    {children}
+  </a>
+);
+
+/**
+ * Simple two-or-more column table. Scrolls sideways on narrow screens
+ * instead of squashing, so a timeline stays readable on a phone.
+ */
+export const GuideTable: React.FC<{ caption: string; head: string[]; rows: ReactNode[][] }> = ({
+  caption,
+  head,
+  rows,
+}) => (
+  <div className="mt-6 overflow-x-auto rounded-xl border border-[#DAE5DC] dark:border-[#1E293B]">
+    <table className="w-full border-collapse text-left font-[DM_Sans] text-[0.97rem] leading-[1.6]">
+      <caption className="sr-only">{caption}</caption>
+      <thead className="bg-[#F0F5F0] dark:bg-[#141F33]">
+        <tr>
+          {head.map((h) => (
+            <th
+              key={h}
+              scope="col"
+              className="px-4 py-3 font-[Geist_Mono] text-[0.7rem] font-medium uppercase tracking-[0.12em] text-[#5F8A68] dark:text-[#6EE7B7]"
+            >
+              {h}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((cells, r) => (
+          <tr key={r} className="border-t border-[#DAE5DC] dark:border-[#1E293B]">
+            {cells.map((cell, c) => (
+              <td key={c} className="px-4 py-3 align-top text-[#374151] dark:text-[#CBD5E1]">
+                {cell}
+              </td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+);
