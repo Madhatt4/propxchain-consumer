@@ -77,7 +77,10 @@ export function HeroSection({ isDark, onToggleTheme, onScrollTo }: HeroSectionPr
           Playback starts from `useAmbientVideo` rather than `autoPlay`, which
           would ignore prefers-reduced-motion; with that preference on, the
           poster stays up. The last shot crossfades into the first, so `loop`
-          repeats with no visible cut. */}
+          repeats with no visible cut. Phones get a 540x960 portrait crop of
+          the same loop (1.8 MB rather than 3.5–4.6 MB, and the part of the frame a
+          tall screen shows); if any source fails to decode, the hook moves on
+          to the next one. */}
       <video
         ref={heroVideoRef}
         className="px-hero-loop absolute inset-0 h-full w-full object-cover"
@@ -89,6 +92,11 @@ export function HeroSection({ isDark, onToggleTheme, onScrollTo }: HeroSectionPr
         aria-hidden="true"
         tabIndex={-1}
       >
+        <source
+          src="/videos/hero-london-drone-v2-mobile.mp4"
+          type="video/mp4"
+          media="(max-width: 767px)"
+        />
         <source src="/videos/hero-london-drone-v2.webm" type="video/webm" />
         <source src="/videos/hero-london-drone-v2.mp4" type="video/mp4" />
       </video>
