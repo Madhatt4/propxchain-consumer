@@ -1,5 +1,6 @@
 import { AuthError, Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import { trackSignUp } from '../lib/analytics';
 import { KeyPairService } from './keyPair.service';
 import { Ed25519KeyIdentity } from '@propxchain/core-client';
 import { CompaniesHouseCompany } from './companies-house.service';
@@ -128,6 +129,7 @@ export const supabaseAuthService = {
 
     // With email confirmation ON, there's no active session yet.
     // ICP key pair will be generated on first login after verification.
+    trackSignUp('email');
     return { user: data.user, identity: null, error: null };
   },
 

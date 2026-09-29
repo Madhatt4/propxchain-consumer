@@ -7,6 +7,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../stores/authStore';
 import { getPostLoginRoute } from './postLoginRoute';
 import { consumeOAuthSignUpIntent } from '../../utils/oauthSignUpIntent';
+import { trackSignUp } from '../../lib/analytics';
 import { Loader2, CheckCircle, AlertCircle, UserCheck } from 'lucide-react';
 
 /**
@@ -151,6 +152,20 @@ const AuthCallback: React.FC = () => {
         if (startedAsSignUp && !isBrandNewAccount(data.session.user?.created_at)) {
           setStatus('existing-account');
           return;
+        }
+
+        // Email sign-ups are counted when the form is submitted (signUp), so
+        // only OAuth accounts are counted here, and only on their first ever
+        // callback. A missing timestamp is not counted: over-reporting a
+        // sign-up would be worse than missing one.
+        const user = data.session.user;
+        const provider = user?.app_metadata?.provider;
+        if (
+          (provider === 'google' || provider === 'azure') &&
+          user?.created_at &&
+          isBrandNewAccount(user.created_at)
+        ) {
+          trackSignUp(provider);
         }
 
         setStatus('success');
