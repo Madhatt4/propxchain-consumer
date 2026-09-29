@@ -11,10 +11,12 @@
  * PropertyIntelligenceCard fed by free open-government APIs, so it costs
  * nothing to produce.
  *
- * On wide screens a short narrated promo video sits beside the form so
- * visitors can watch the tour before filling it in; it stacks above the form
- * on narrow screens. The video is a repo asset (`/videos/propxchain-promo.mp4`)
- * with a poster frame and `preload="none"` so it costs nothing until played.
+ * On wide screens a short seller promo video (with a music bed, no narration)
+ * sits beside the form so visitors can see the seller journey before filling
+ * it in; it stacks above the form on narrow screens. The video is a repo asset
+ * (`/videos/propxchain-seller-promo-v1.mp4`) with a poster frame and
+ * `preload="none"` so it costs nothing until played. It is rendered from an
+ * HTML timeline outside this repo (propxchain-media/seller-promo).
  * Versioned filename doubles as a cache-buster against the cache-first SW.
  */
 
@@ -185,11 +187,11 @@ export function FreeReportSection(): JSX.Element {
           </div>
 
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-12 items-start max-w-5xl mx-auto">
-            {/* Walkthrough: a short screen recording of getting the report, so a
-                visitor can watch the process before filling the form in. */}
+            {/* Walkthrough: the seller journey (details, title, TA forms, listed,
+                invite) so a visitor can see the process before filling the form in. */}
             <div className="text-left">
               <p className="font-micro uppercase text-[0.65rem] tracking-[0.12em] text-white/60 mb-2.5">
-                Watch the 80-second tour
+                Watch the 54-second tour
               </p>
               <div className="rounded-xl overflow-hidden border border-white/10 shadow-xl">
                 <video
@@ -197,14 +199,14 @@ export function FreeReportSection(): JSX.Element {
                   controls
                   preload="none"
                   playsInline
-                  poster="/videos/propxchain-promo-poster.jpg"
+                  poster="/videos/propxchain-seller-promo-v1-poster.jpg"
                 >
-                  <source src="/videos/propxchain-promo.mp4" type="video/mp4" />
+                  <source src="/videos/propxchain-seller-promo-v1.mp4" type="video/mp4" />
                   Your browser does not support the video tag.
                 </video>
               </div>
               <p className="text-xs text-white/50 mt-2.5">
-                Your property, your deal, your control — see how PropXchain works, then grab your free report alongside.
+                Selling? Fill in your details, pull your title, answer the TA forms and invite everyone with one code. Grab your free report alongside.
               </p>
             </div>
 
