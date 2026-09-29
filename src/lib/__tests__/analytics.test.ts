@@ -1,5 +1,34 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { trackPageView } from '../analytics';
+import { trackPageView, trackSignUp, trackWaitlistJoin } from '../analytics';
+
+describe('trackSignUp / trackWaitlistJoin', () => {
+  beforeEach(() => {
+    delete window.gtag;
+  });
+
+  it('should be no-ops when gtag is not present', () => {
+    expect(() => trackSignUp('email')).not.toThrow();
+    expect(() => trackWaitlistJoin('landing_page', 'seller')).not.toThrow();
+  });
+
+  it('should send sign_up with only the method', () => {
+    const layer: unknown[][] = [];
+    window.gtag = (...args: unknown[]) => { layer.push(args); };
+    trackSignUp('google');
+    expect(layer).toEqual([['event', 'sign_up', { method: 'google' }]]);
+  });
+
+  it('should send join_waitlist with source and role, defaulting to unknown', () => {
+    const layer: unknown[][] = [];
+    window.gtag = (...args: unknown[]) => { layer.push(args); };
+    trackWaitlistJoin('sellers_page', 'seller');
+    trackWaitlistJoin(null, undefined);
+    expect(layer).toEqual([
+      ['event', 'join_waitlist', { waitlist_source: 'sellers_page', waitlist_role: 'seller' }],
+      ['event', 'join_waitlist', { waitlist_source: 'unknown', waitlist_role: 'unknown' }],
+    ]);
+  });
+});
 
 describe('trackPageView', () => {
   beforeEach(() => {

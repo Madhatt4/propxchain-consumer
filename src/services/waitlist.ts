@@ -7,6 +7,8 @@
  * a single POST keeps this usable from any marketing surface.
  */
 
+import { trackWaitlistJoin } from '../lib/analytics';
+
 const WAITLIST_API = 'https://propxchain-waitlist.hatton-marc.workers.dev';
 
 /** Mirrors the Worker's ALLOWED_ROLES — keep in sync with waitlist-worker/index.js. */
@@ -47,7 +49,10 @@ export async function addToWaitlist(payload: WaitlistPayload): Promise<WaitlistR
       body: JSON.stringify(payload),
     });
     const data = await res.json();
-    if (res.ok && data.ok) return { ok: true, duplicate: !!data.duplicate };
+    if (res.ok && data.ok) {
+      if (!data.duplicate) trackWaitlistJoin(payload.source, payload.role);
+      return { ok: true, duplicate: !!data.duplicate };
+    }
     return { ok: false, duplicate: false, error: data.error || `HTTP ${res.status}` };
   } catch (e) {
     return { ok: false, duplicate: false, error: String(e) };
