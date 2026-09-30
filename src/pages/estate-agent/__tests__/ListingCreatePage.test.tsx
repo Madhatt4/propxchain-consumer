@@ -18,6 +18,30 @@ vi.mock('@/hooks/useEstateAgentOrg', () => ({
   useEstateAgentOrg: vi.fn(),
 }));
 
+let mockPrincipal: string | null = 'agent-principal';
+vi.mock('@/stores/authStore', () => ({ usePrincipalId: () => mockPrincipal }));
+
+vi.mock('@/components/estate-agent/StartSaleModal', () => ({
+  default: ({
+    isOpen,
+    listing,
+    onClose,
+    onComplete,
+  }: {
+    isOpen: boolean;
+    listing: { id: string };
+    onClose: () => void;
+    onComplete: (r: { transactionId: string; inviteCode: string }) => void;
+  }) =>
+    isOpen ? (
+      <div>
+        <span>start-sale-for-{listing.id}</span>
+        <button type="button" onClick={onClose}>mock-close</button>
+        <button type="button" onClick={() => onComplete({ transactionId: 'tx_9', inviteCode: 'ABC' })}>mock-done</button>
+      </div>
+    ) : null,
+}));
+
 vi.mock('@/services/estateAgentListings.service', () => ({
   estateAgentListingsService: {
     create: vi.fn(),
@@ -121,7 +145,7 @@ describe('ListingCreatePage', () => {
     mockUseEstateAgentOrg.mockReturnValue({ organisationId: 'ag', organisationName: null, isLoading: false, isError: false });
   });
 
-  it('creates a listing from a scraped import and navigates to it', async () => {
+  it('creates a listing from a scraped import and opens Start sale for it', async () => {
     mockCreate.mockResolvedValue(makeRow({ id: 'L1' }));
     renderPage();
 
@@ -137,12 +161,11 @@ describe('ListingCreatePage', () => {
       });
     });
 
-    await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith('/estate-agent/listings/L1');
-    });
+    expect(await screen.findByText('start-sale-for-L1')).toBeInTheDocument();
+    expect(mockNavigate).not.toHaveBeenCalled();
   });
 
-  it('creates a listing from the manual tab and navigates to it', async () => {
+  it('creates a listing from the manual tab and opens Start sale for it', async () => {
     mockCreate.mockResolvedValue(makeRow({ id: 'L1', source: 'manual' }));
     renderPage();
 
@@ -159,9 +182,38 @@ describe('ListingCreatePage', () => {
       });
     });
 
-    await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith('/estate-agent/listings/L1');
-    });
+    expect(await screen.findByText('start-sale-for-L1')).toBeInTheDocument();
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it('lands on the transaction flow when the sale completes', async () => {
+    mockCreate.mockResolvedValue(makeRow({ id: 'L1' }));
+    renderPage();
+    fireEvent.click(screen.getByText('mock-import'));
+    fireEvent.click(await screen.findByText('mock-done'));
+
+    expect(mockNavigate).toHaveBeenCalledWith('/transaction/tx_9/flow');
+  });
+
+  it('leaves a draft on the dashboard when Start sale is closed', async () => {
+    mockCreate.mockResolvedValue(makeRow({ id: 'L1' }));
+    renderPage();
+    fireEvent.click(screen.getByText('mock-import'));
+    fireEvent.click(await screen.findByText('mock-close'));
+
+    expect(mockNavigate).toHaveBeenCalledWith('/estate-agent/listings');
+    expect(mockNavigate).not.toHaveBeenCalledWith(expect.stringContaining('/transaction/'));
+    expect(screen.queryByText('start-sale-for-L1')).not.toBeInTheDocument();
+  });
+
+  it('falls back to the listing page when there is no signed-in principal', async () => {
+    mockPrincipal = null;
+    mockCreate.mockResolvedValue(makeRow({ id: 'L1' }));
+    renderPage();
+    fireEvent.click(screen.getByText('mock-import'));
+
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/estate-agent/listings/L1'));
+    expect(screen.queryByText('start-sale-for-L1')).not.toBeInTheDocument();
   });
 
   it('shows the unlinked-account state when there is no organisation', () => {
