@@ -16,6 +16,7 @@ import ListingPartiesSection from '@/components/estate-agent/ListingPartiesSecti
 import { StallLine } from '@/components/transaction/flow/StallLine';
 import ClientPanel from '@/components/estate-agent/ClientPanel';
 import ChaseLogPanel from '@/components/estate-agent/ChaseLogPanel';
+import { AuditTrailLink } from '@/components/estate-agent/AuditTrailLink';
 import type { AgentListingRow, AgentListingStatus } from '@/types/estateAgentListing.types';
 import type { MaterialInfo, MaterialInfoOverrides } from '@/types/materialInfo.types';
 import type { PropertyListing, ProvenanceMap } from '@/types/listing.types';
@@ -59,6 +60,7 @@ function ListingDetailExtras({ row, inviteCode, agentPrincipal, startSale }: Lis
         <>
           {/* Who the sale is waiting on, the same line the chase list shows. */}
           <StallLine transactionId={row.transaction_id} className="mb-4" />
+          <AuditTrailLink transactionId={row.transaction_id} className="mb-4" />
           <ClientPanel
             transactionId={row.transaction_id}
             inviteCode={inviteCode}
