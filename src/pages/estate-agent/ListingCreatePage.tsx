@@ -4,20 +4,19 @@
 /**
  * Add a listing: paste a Rightmove / OnTheMarket URL to scrape, or enter
  * details manually. Either path lands on `estateAgentListingsService.create`
- * and navigates to the new listing's detail page.
+ * and then opens the Start sale step; completing it lands on the transaction
+ * flow, closing it leaves a draft on the dashboard.
  */
 
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useMutation } from '@tanstack/react-query';
 
 import { useEstateAgentOrg } from '@/hooks/useEstateAgentOrg';
-import { estateAgentListingsService } from '@/services/estateAgentListings.service';
-import type { CreateAgentListingInput } from '@/services/estateAgentListings.service';
+import { useListingCreateFlow } from '@/hooks/useListingCreateFlow';
 import type { AgentListingSource } from '@/types/estateAgentListing.types';
 import type { PropertyListing, ProvenanceMap } from '@/types/listing.types';
 import ListingImport from '@/components/forms/ListingImport';
 import ListingEditForm from '@/components/forms/ListingEditForm';
+import StartSaleModal from '@/components/estate-agent/StartSaleModal';
 
 type Tab = 'import' | 'manual';
 
@@ -137,14 +136,9 @@ function MutationStatus({ isPending, isError, error }: MutationStatusProps): JSX
 }
 
 export default function ListingCreatePage(): JSX.Element {
-  const navigate = useNavigate();
   const { organisationId, isLoading: isOrgLoading } = useEstateAgentOrg();
   const [tab, setTab] = useState<Tab>('import');
-
-  const mutation = useMutation({
-    mutationFn: (input: CreateAgentListingInput) => estateAgentListingsService.create(input),
-    onSuccess: (row) => navigate(`/estate-agent/listings/${row.id}`),
-  });
+  const { mutation, createdRow, agentPrincipal, startSale, handleCancel } = useListingCreateFlow(organisationId);
 
   if (isOrgLoading) return <LoadingOrgState />;
   if (!organisationId) return <UnlinkedAccountState />;
@@ -177,6 +171,16 @@ export default function ListingCreatePage(): JSX.Element {
       </div>
 
       <MutationStatus isPending={mutation.isPending} isError={mutation.isError} error={mutation.error} />
+
+      {createdRow && agentPrincipal && (
+        <StartSaleModal
+          isOpen={startSale.isModalOpen}
+          listing={createdRow}
+          agentPrincipal={agentPrincipal}
+          onClose={handleCancel}
+          onComplete={startSale.handleComplete}
+        />
+      )}
     </div>
   );
 }
