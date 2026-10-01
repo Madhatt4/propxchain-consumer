@@ -73,7 +73,7 @@ Key capabilities:
 - Routing: React Router v6
 
 ### Key Libraries
-- jsPDF: PDF contract generation
+- jsPDF: PDF export (form answers, signature certificate)
 - lucide-react: Icon library
 - Web Crypto API: SHA-256 hash generation in browser
 

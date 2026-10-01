@@ -43,7 +43,7 @@ open source under the GNU AGPL v3 licence.
 PropXchain operates an open-core model: this frontend, including the seller,
 buyer and builder portals, is open source; the backend platform and premium
 add-ons are commercial products. This structure lets the frontend be openly
-auditable and community-improvable, while the regulated infrastructure
+auditable and community-improvable, while the backend platform
 operates under the commercial and compliance terms that property
 transactions require.
 

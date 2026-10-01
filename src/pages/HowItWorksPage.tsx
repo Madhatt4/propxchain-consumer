@@ -46,7 +46,7 @@ const steps: Step[] = [
     number: 6,
     title: 'Exchange and complete',
     body:
-      'Contracts are signed digitally, the exchange is recorded on the public ledger, and completion releases funds. The full history stays linkable for as long as you need it.',
+      'Your conveyancers exchange contracts and complete as they do today. The exchange is recorded on the ledger, and completion money moves between their client accounts — PropXchain never holds it. The full history stays linkable for as long as you need it.',
   },
 ];
 

@@ -53,7 +53,7 @@ const steps: string[] = [
   'Invite your buyer — or let us match you. The buyer uses PropXchain free.',
   'Order searches directly — local authority, drainage, environmental. No solicitor markup.',
   'Appoint a conveyancer from the CLC-verified panel — quoted directly, never marked up.',
-  'Exchange and complete with qualified electronic signatures and regulated escrow.',
+  'Exchange and complete through your conveyancers. PropXchain records the exchange and never holds your money.',
 ];
 
 interface Faq {
@@ -75,7 +75,7 @@ const faqs: Faq[] = [
   {
     question: 'How long does it take to sell a house online?',
     answer:
-      'With a willing buyer and both sides using PropXchain, completions routinely happen in 4–8 weeks rather than the UK average of 20+.',
+      'The UK average is 20+ weeks. PropXchain is built to cut that by getting the title, searches and property information together before your buyer’s conveyancer asks for them. How long your sale takes still depends on your buyer, any chain and the conveyancers.',
   },
 ];
 

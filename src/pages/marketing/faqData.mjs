@@ -43,7 +43,7 @@ export const FAQ_GROUPS = [
       },
       {
         q: 'How long does a transaction take?',
-        a: 'UK conveyancing averages 20+ weeks. PropXchain transactions routinely complete in 4–8 weeks when both sides are on the platform, because everyone sees the same live transaction — no chasing by phone, no waiting for the post.',
+        a: 'UK conveyancing averages 20+ weeks. PropXchain is built to shorten that: the title, searches and property information are gathered up front, and everyone sees the same live transaction — no chasing by phone, no waiting for the post. How long your own move takes still depends on your buyer, any chain and the conveyancers.',
       },
     ],
   },
@@ -96,7 +96,7 @@ export const FAQ_GROUPS = [
       },
       {
         q: 'How does signing work? Is an electronic signature legally valid?',
-        a: 'Exchange and completion documents are signed with qualified electronic signatures — the highest standard of e-signature under UK law, applied through a regulated signing provider. Each signature is identity-verified, and the signed contract is recorded on the blockchain audit trail.',
+        a: 'Electronic signatures are legally valid in the UK. Today, contracts are signed and exchanged by your conveyancers in the usual way, and PropXchain records that the exchange has happened on its audit trail. Signing inside PropXchain with a qualified electronic signature — the highest standard under UK law — is planned and not yet available.',
       },
     ],
   },

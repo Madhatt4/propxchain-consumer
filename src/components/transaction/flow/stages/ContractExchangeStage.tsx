@@ -216,7 +216,7 @@ export function ContractExchangeStage({ stage, journeyRole = 'seller' }: StagePr
       {completionDate && !hasSigned && (
         <div className="flex flex-col gap-2">
           <p className="text-xs text-gray-500 dark:text-slate-400">
-            In production, signing is handled securely via TMGroup tmSign (Qualified Electronic Signature).
+            Signing with a qualified electronic signature through tmSign is planned and not yet available.
           </p>
           <div className="flex gap-2">
             <button
