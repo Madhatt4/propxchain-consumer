@@ -61,6 +61,7 @@ const PropertiesPage = lazy(() => import('./pages/PropertiesPage'));
 const StakeholdersPage = lazy(() => import('./pages/StakeholdersPage'));
 const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const MobileHomePage = lazy(() => import('./pages/mobile/MobileHomePage'));
 // TransactionStatusPage + TransactionDetail no longer route-mounted — both now
 // redirect to /transaction/:id/flow (canonical page). Files retained in the
 // repo for reference during the two-week soak before deletion.
@@ -275,6 +276,7 @@ function App() {
               <Route path="/onboarding/profile" element={<ProtectedRoute><OnboardingKycPage /></ProtectedRoute>} />
               <Route path="/onboarding/verify-identity" element={<Navigate to="/onboarding/profile" replace />} />
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/app" element={<ProtectedRoute><RequirePrincipal><RequireProfile><Suspense fallback={<LoadingFallback />}><MobileHomePage /></Suspense></RequireProfile></RequirePrincipal></ProtectedRoute>} />
               <Route path="/dashboard/modern" element={<ProtectedRoute><DashboardModern /></ProtectedRoute>} />
               <Route path="/dashboard/ledger" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
               <Route path="/dashboard/properties" element={<ProtectedRoute><PropertiesPage /></ProtectedRoute>} />

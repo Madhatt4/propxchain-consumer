@@ -7,6 +7,7 @@ import { Loader2 } from 'lucide-react';
 import { useAuthStore, usePrincipalId } from '../stores/authStore';
 import { decideRoute } from './decideRoute';
 import { isAdminPrincipal } from '../constants/adminPrincipals';
+import { isNativeApp } from '../lib/native';
 
 /**
  * Post-login landing gate.
@@ -75,6 +76,7 @@ const AuthGate: React.FC = () => {
       user: supabaseUser ? { id: supabaseUser.id } : null,
       emailVerified: supabaseUser?.email_confirmed_at != null,
       freshSignup: searchParams.get('fresh') === '1',
+      native: isNativeApp(),
     });
 
     navigatedRef.current = true;

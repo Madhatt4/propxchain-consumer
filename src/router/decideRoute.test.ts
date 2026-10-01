@@ -40,4 +40,19 @@ describe('decideRoute', () => {
     const result = decideRoute({ ...baseArgs(), emailVerified: false, freshSignup: true });
     expect(result.path).toBe('/verify');
   });
+
+  it('should send a verified, signed-in user in the phone app to /app', () => {
+    const result = decideRoute({ ...baseArgs(), native: true });
+    expect(result.path).toBe('/app');
+  });
+
+  it('should still send a signed-out visitor in the phone app to /login', () => {
+    const result = decideRoute({ ...baseArgs(), user: null, native: true });
+    expect(result.path).toBe('/login');
+  });
+
+  it('should still send an unverified email in the phone app to /verify', () => {
+    const result = decideRoute({ ...baseArgs(), emailVerified: false, native: true });
+    expect(result.path).toBe('/verify');
+  });
 });
