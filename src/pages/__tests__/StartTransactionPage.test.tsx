@@ -29,52 +29,42 @@ function renderPage(): ReturnType<typeof render> {
   );
 }
 
-describe('StartTransactionPage — tier + role routing', () => {
+describe('StartTransactionPage — buying or selling', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
     mockKinds = [];
   });
 
-  it('should ask an estate agent whether they act for a seller, with no tier picker', () => {
+  it('should ask an estate agent whether they act for a seller, with no buying/selling picker', () => {
     mockKinds = ['agent'];
     renderPage();
 
     expect(screen.getByText('Are you acting for a seller?')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /continue with premium/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/are you buying or selling\?/i)).not.toBeInTheDocument();
   });
 
-  it('should keep the tier picker for developers and conveyancers', () => {
+  it('should ask everyone else buying or selling straight away, with no plan or £75 price shown', () => {
     mockKinds = ['developer', 'conveyancer'];
     renderPage();
 
-    expect(screen.getByRole('button', { name: /continue with starter/i })).toBeInTheDocument();
+    expect(screen.getByText(/are you buying or selling\?/i)).toBeInTheDocument();
+    expect(screen.getByText('Free, no platform fee')).toBeInTheDocument();
+    expect(screen.queryByText(/£75/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /premium/i })).not.toBeInTheDocument();
   });
 
-  it('should show the Buying/Selling picker when Starter is clicked even if onboardingRole is a stale buyer', () => {
-    // authStore stamps onboardingRole from account metadata on every login, so a
-    // buyer-role account arriving from the dashboard must NOT be shortcut to /join.
+  it('should not shortcut a stale buyer onboardingRole: the question is always asked', () => {
+    // authStore stamps onboardingRole from account metadata on every login.
     localStorage.setItem('onboardingRole', 'buyer');
     renderPage();
 
-    fireEvent.click(screen.getByRole('button', { name: /continue with starter/i }));
-
     expect(screen.getByText(/are you buying or selling\?/i)).toBeInTheDocument();
-    expect(mockNavigate).not.toHaveBeenCalledWith('/join');
+    expect(mockNavigate).not.toHaveBeenCalled();
   });
 
-  it('should route Premium straight to the create-transaction flow', () => {
+  it('should send a buyer to /join on the free path', () => {
     renderPage();
-
-    fireEvent.click(screen.getByRole('button', { name: /continue with premium/i }));
-
-    expect(localStorage.getItem('pendingTier')).toBe('premium');
-    expect(mockNavigate).toHaveBeenCalledWith('/create-transaction');
-  });
-
-  it('should send a Starter buyer to /join after they pick a role', () => {
-    renderPage();
-    fireEvent.click(screen.getByRole('button', { name: /continue with starter/i }));
 
     fireEvent.click(screen.getByRole('button', { name: /continue as buyer/i }));
 
@@ -83,9 +73,8 @@ describe('StartTransactionPage — tier + role routing', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/join');
   });
 
-  it('should send a Starter seller to /create-transaction after they pick a role', () => {
+  it('should send a seller to /create-transaction on the free path', () => {
     renderPage();
-    fireEvent.click(screen.getByRole('button', { name: /continue with starter/i }));
 
     fireEvent.click(screen.getByRole('button', { name: /continue as seller/i }));
 
