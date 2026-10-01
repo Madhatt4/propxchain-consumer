@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Check, Home, Key, Sparkles, ArrowLeft } from 'lucide-react';
 import AppTopBar from '@/components/navigation/AppTopBar';
+import { usePortalKinds } from '@/components/navigation/usePortalSections';
+import AgentStartGate from '@/components/estate-agent/AgentStartGate';
 
 type Tier = 'starter' | 'premium';
 type Role = 'buyer' | 'seller';
@@ -28,6 +30,7 @@ type Role = 'buyer' | 'seller';
 export default function StartTransactionPage(): JSX.Element {
   const navigate = useNavigate();
   const [tier, setTier] = useState<Tier | null>(null);
+  const isAgent = usePortalKinds().includes('agent');
 
   const handleTier = (chosen: Tier): void => {
     if (chosen === 'premium') {
@@ -53,6 +56,17 @@ export default function StartTransactionPage(): JSX.Element {
       navigate('/join');
     }
   };
+
+  // Agents skip the tier and buyer/seller pickers: the portal is free for
+  // them, and the only question is whether they are acting for a seller.
+  if (isAgent) {
+    return (
+      <div className="min-h-screen">
+        <AppTopBar title="Start a transaction" />
+        <AgentStartGate />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">
