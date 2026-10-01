@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 
 vi.mock('../../../components/auth/AuthShell', () => ({
@@ -92,6 +92,25 @@ describe('RegisterPage - role cards', () => {
     expect(await screen.findByText("I'm an estate agent")).toBeInTheDocument();
   });
 
+  it('should put seller and buyer on one level with the professions under them', () => {
+    renderAt('/register');
+
+    const people = screen.getByRole('list', { name: 'Buying or selling' });
+    const professionals = screen.getByRole('list', { name: 'For professionals' });
+
+    expect(within(people).getAllByRole('listitem')).toHaveLength(2);
+    expect(within(people).getByText("I'm selling")).toBeInTheDocument();
+    expect(within(people).getByText("I'm buying")).toBeInTheDocument();
+    expect(within(professionals).getAllByRole('listitem')).toHaveLength(3);
+    expect(within(professionals).getByText("I'm an estate agent")).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'For professionals' })).toBeInTheDocument();
+  });
+
+  it('should give every card an icon', () => {
+    renderAt('/register');
+
+    expect(document.querySelectorAll('li svg[aria-hidden="true"]')).toHaveLength(5);
+  });
   it('should skip the cards for an invite link', () => {
     renderAt('/register?invite=TX-1234-ABCD&role=buyer');
 
