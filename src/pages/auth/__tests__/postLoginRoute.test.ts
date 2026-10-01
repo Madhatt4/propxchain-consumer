@@ -25,9 +25,9 @@ describe('getPostLoginRoute', () => {
     expect(getPostLoginRoute()).toBe('/profile-setup');
   });
 
-  it('should send a solicitor to /conveyancer', () => {
+  it('should send a solicitor to the shared post-login route', () => {
     setAuth({ supabaseUser: { user_metadata: { role: 'solicitor' } } });
-    expect(getPostLoginRoute()).toBe('/conveyancer');
+    expect(getPostLoginRoute()).toBe('/post-login');
   });
 
   it('should send a non-onboarded seller to /start-transaction', () => {

@@ -45,8 +45,8 @@ describe('sectionsFor', () => {
     expect(labels(sectionsFor(['developer'])).slice(COMMON_SECTIONS.length)).toEqual(['Sites']);
   });
 
-  it('should add Matters for a conveyancer', () => {
-    expect(labels(sectionsFor(['conveyancer'])).slice(COMMON_SECTIONS.length)).toEqual(['Matters']);
+  it('should add nothing beyond the common sections for a conveyancer', () => {
+    expect(labels(sectionsFor(['conveyancer'])).slice(COMMON_SECTIONS.length)).toEqual([]);
   });
 
   it('should link each extra to its existing page', () => {
@@ -55,7 +55,6 @@ describe('sectionsFor', () => {
       Listings: '/estate-agent/listings',
       Pipeline: '/estate-agent/pipeline',
       Sites: '/builder',
-      Matters: '/conveyancer',
     });
   });
 });

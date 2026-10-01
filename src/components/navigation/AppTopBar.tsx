@@ -81,7 +81,6 @@ const MENU_ITEM =
 const ADMIN_PORTAL_LINKS: ReadonlyArray<{ label: string; to: string }> = [
   { label: 'Admin dashboard', to: '/admin' },
   { label: 'Builder portal', to: '/builder' },
-  { label: 'Conveyancer portal', to: '/conveyancer' },
   { label: 'Estate agent portal', to: '/estate-agent' },
 ];
 

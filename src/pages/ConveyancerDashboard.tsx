@@ -1,12 +1,12 @@
 /**
  * ConveyancerDashboard - Portal for conveyancers to manage transactions
- * Flow: Enter invite code -> join transaction -> view in list -> open detail
- * Four views: Code Entry, Transaction List, Transaction Detail, Registration
+ * Opened from the shared dashboard as /conveyancer?tx=<id>. Two views: the
+ * matter detail, and the on-chain profile registration a new firm sees first.
+ * Joining and listing transactions live on the shared dashboard.
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { conveyancerJoinService } from '../services/conveyancerJoin.service';
 import AppTopBar from '@/components/navigation/AppTopBar';
 import DocumentDetailModal from '../components/conveyancer/DocumentDetailModal';
 import { SharedWithYouSection } from '../components/conveyancer/SharedWithYouSection';
@@ -14,10 +14,6 @@ import { ConveyancerEnquiriesSection } from '../components/conveyancer/Conveyanc
 import { ConveyancerBuyerPackSection } from '../components/conveyancer/ConveyancerBuyerPackSection';
 import TR1Form from '../components/conveyancer/TR1Form';
 import AP1Form from '../components/conveyancer/AP1Form';
-import { ProfessionalOverviewPanel } from '../components/professional/ProfessionalOverviewPanel';
-import { getWaitingOn, sortByWaitingOn } from '../utils/matterWaitingOn';
-import { useDealStalls } from '../hooks/useDealStalls';
-import { describeStall, longestWait } from '../services/stall.service';
 import { StallLine } from '../components/transaction/flow/StallLine';
 import { icpService } from '../services/icp.service';
 import { logger } from '@/utils/logger';
@@ -52,32 +48,7 @@ interface ConveyancerDoc {
   createdAt: string;
 }
 
-type ViewState = 'list' | 'detail' | 'register' | 'add-code';
-
-/** Get localStorage key for this conveyancer's linked transaction IDs */
-function getStorageKey(): string {
-  const principal = useAuthStore.getState().principalId || 'anon';
-  return `conveyancer_txs_${principal}`;
-}
-
-/** Read linked transaction IDs from localStorage */
-function getLinkedTxIds(): string[] {
-  try {
-    const raw = localStorage.getItem(getStorageKey());
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-/** Save a new transaction ID to the linked list */
-function addLinkedTxId(txId: string): void {
-  const existing = getLinkedTxIds();
-  if (!existing.includes(txId)) {
-    existing.push(txId);
-    localStorage.setItem(getStorageKey(), JSON.stringify(existing));
-  }
-}
+type ViewState = 'detail' | 'register';
 
 /** Extract a Candid variant's key (e.g. { active: null } -> 'active'); pass strings through unchanged. */
 function variantToKey(value: unknown): string {
@@ -105,16 +76,11 @@ const REQUIRED_DOCS = [
 
 const ConveyancerDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [viewState, setViewState] = useState<ViewState>('list');
-  // Set when the conveyancer arrives via a quote-accept join code — first-run
-  // "check your firm details" banner (details are pre-filled from the CLC register).
-  const [joinedFirm, setJoinedFirm] = useState<{ firmName?: string; clcId?: string } | null>(null);
-  // Set when a stashed join code FAILS to redeem here. Previously this path was
-  // silent: the firm landed on the generic "Got a transaction code?" empty state
-  // with no idea its activation had failed (2026-07-27, card 1a5e87bc).
-  const [joinFailure, setJoinFailure] = useState<{ reason: string; retryable: boolean } | null>(null);
-  const [transactions, setTransactions] = useState<ConveyancerTransaction[]>([]);
+  // A matter is opened from the shared dashboard as /conveyancer?tx=<id>. There
+  // is no list here any more: the shared dashboard is the only transaction list.
+  const [searchParams] = useSearchParams();
+  const txId = searchParams.get('tx');
+  const [viewState, setViewState] = useState<ViewState>('detail');
   const [selectedTx, setSelectedTx] = useState<ConveyancerTransaction | null>(null);
   const [documents, setDocuments] = useState<TransactionDocument[]>([]);
   const [conveyancerDocs, setConveyancerDocs] = useState<ConveyancerDoc[]>([]);
@@ -132,11 +98,6 @@ const ConveyancerDashboard: React.FC = () => {
   const [uploadDocType, setUploadDocType] = useState<string>('');
   const [uploadLoading, setUploadLoading] = useState(false);
 
-  // Code entry state
-  const [inviteCode, setInviteCode] = useState('');
-  const [codeError, setCodeError] = useState<string | null>(null);
-  const [codeLoading, setCodeLoading] = useState(false);
-
   // Registration form state
   const [regForm, setRegForm] = useState({
     fullName: '',
@@ -147,163 +108,28 @@ const ConveyancerDashboard: React.FC = () => {
   const [regError, setRegError] = useState<string | null>(null);
   const [regSubmitting, setRegSubmitting] = useState(false);
 
-  const loadTransactions = useCallback(async (): Promise<void> => {
+  const loadTransaction = useCallback(async (id: string): Promise<ConveyancerTransaction | null> => {
     try {
-      const linkedIds = getLinkedTxIds();
-      if (linkedIds.length === 0) {
-        setTransactions([]);
-        return;
-      }
-
-      const results: ConveyancerTransaction[] = [];
-      for (const txId of linkedIds) {
-        try {
-          const tx = await icpService.getTransaction(txId);
-          if (tx) {
-            results.push({
-              id: String(tx.id),
-              propertyAddress: String(tx.propertyAddress || ''),
-              buyer: String(tx.buyer || ''),
-              seller: String(tx.seller || ''),
-              status: variantToKey(tx.status),
-              amount: Number(tx.amount || 0),
-              createdAt: Number(tx.createdAt),
-            });
-          }
-        } catch (error) {
-          logger.error(`Failed to fetch transaction ${txId}:`, error);
-        }
-      }
-      setTransactions(results);
+      const tx = await icpService.getTransaction(id);
+      if (!tx) return null;
+      return {
+        id: String(tx.id),
+        propertyAddress: String(tx.propertyAddress || ''),
+        buyer: String(tx.buyer || ''),
+        seller: String(tx.seller || ''),
+        status: variantToKey(tx.status),
+        amount: Number(tx.amount || 0),
+        createdAt: Number(tx.createdAt),
+      };
     } catch (error) {
-      logger.error('Failed to load transactions:', error);
+      logger.error(`Failed to fetch transaction ${id}:`, error);
+      return null;
     }
   }, []);
 
-  // Arrival from JoinConveyancerPage's success screen — surface the
-  // first-run banner, then strip the params so a refresh doesn't repeat it.
-  useEffect(() => {
-    if (searchParams.get('joined') === null) return;
-    setJoinedFirm({
-      firmName: searchParams.get('firm') ?? undefined,
-      clcId: searchParams.get('clc') ?? undefined,
-    });
-    setSearchParams({}, { replace: true });
-    // Run once on mount — the params only exist on arrival.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    const init = async (): Promise<void> => {
-      const authState = useAuthStore.getState();
-      const principalId = authState.principalId;
-      if (!principalId || !authState.isAuthenticated) {
-        navigate('/login');
-        return;
-      }
-
-      // Consume a pending join code (stashed by /conveyancer/join/:code when
-      // the winner signed up before their ICP principal existed). Runs before
-      // the profile check so the transaction links even if on-chain profile
-      // registration is still outstanding.
-      const pendingCode = conveyancerJoinService.readPendingJoinCode();
-      if (pendingCode) {
-        const redeem = await conveyancerJoinService.redeemJoinCode(pendingCode);
-        if (redeem.success) {
-          conveyancerJoinService.clearPendingJoinCode();
-          if (redeem.transactionId) addLinkedTxId(redeem.transactionId);
-          setJoinedFirm({ firmName: redeem.firmName, clcId: redeem.clcId });
-          setJoinFailure(null);
-        } else if (
-          redeem.error === 'invalid_code' ||
-          redeem.error === 'already_redeemed' ||
-          redeem.error === 'expired'
-        ) {
-          // Dead code — stop retrying it on every visit.
-          conveyancerJoinService.clearPendingJoinCode();
-          setJoinFailure({ reason: redeem.detail ?? redeem.error, retryable: false });
-        } else {
-          // Transient (no_principal, assignment_failed, network): keep the code
-          // stashed for the next visit — but SAY SO. Swallowing this was the
-          // 2026-07-27 defect: the firm saw the generic "Got a transaction code?"
-          // empty state and had no idea activation had failed, while the sidebar
-          // still read "ACTING AS <firm>". Firm and client both believed the
-          // instruction had gone through.
-          setJoinFailure({ reason: redeem.detail ?? redeem.error ?? 'Activation failed', retryable: true });
-        }
-      }
-
-      try {
-        await icpService.initialize();
-        const profile = await icpService.getMyProfile();
-
-        if (!profile) {
-          setIsRegistered(false);
-          setViewState('register');
-          setLoading(false);
-          return;
-        }
-
-        const userType = typeof profile.userType === 'object'
-          ? Object.keys(profile.userType)[0] || ''
-          : String(profile.userType || '');
-
-        if (!userType.toLowerCase().includes('conveyancer')) {
-          setIsRegistered(false);
-          setViewState('register');
-          setLoading(false);
-          return;
-        }
-
-        await loadTransactions();
-
-        const linked = getLinkedTxIds();
-        if (linked.length === 0) {
-          setViewState('add-code');
-        }
-      } catch (error) {
-        logger.error('ConveyancerDashboard init error:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    init();
-  }, [navigate, loadTransactions]);
-
-  const handleAddCode = async (e: React.FormEvent): Promise<void> => {
-    e.preventDefault();
-    setCodeError(null);
-    const code = inviteCode.trim().toUpperCase();
-
-    if (!/^TX-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(code)) {
-      setCodeError('Invalid code format. Expected: TX-XXXX-XXXX');
-      return;
-    }
-
-    setCodeLoading(true);
+  const loadDocuments = useCallback(async (docTxId: string): Promise<void> => {
     try {
-      const result = await icpService.joinTransactionByInviteCode(code);
-      if (!result || !result.id) {
-        setCodeError('Transaction not found. Check the code and try again.');
-        return;
-      }
-
-      addLinkedTxId(String(result.id));
-      setInviteCode('');
-      await loadTransactions();
-      setViewState('list');
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : 'Failed to join transaction';
-      setCodeError(msg);
-    } finally {
-      setCodeLoading(false);
-    }
-  };
-
-  const loadDocuments = useCallback(async (txId: string): Promise<void> => {
-    try {
-      const docs = await icpService.getDocumentsByTransaction(txId);
+      const docs = await icpService.getDocumentsByTransaction(docTxId);
       setDocuments(docs.map((d: Record<string, unknown>) => ({
         id: String(d.storageDocumentId || d.id || ''),
         docType: String(d.docType || d.type || ''),
@@ -318,12 +144,57 @@ const ConveyancerDashboard: React.FC = () => {
     }
   }, []);
 
-  const handleSelectTx = async (tx: ConveyancerTransaction): Promise<void> => {
+  /** Open the matter named in ?tx=; no matter named (or not found) -> back to the dashboard. */
+  const openMatter = useCallback(async (): Promise<void> => {
+    if (!txId) {
+      navigate('/dashboard', { replace: true });
+      return;
+    }
+    const tx = await loadTransaction(txId);
+    if (!tx) {
+      navigate('/dashboard', { replace: true });
+      return;
+    }
     setSelectedTx(tx);
     setViewState('detail');
     setConveyancerDocs(getConveyancerDocs(tx.id));
     await loadDocuments(tx.id);
-  };
+  }, [txId, navigate, loadTransaction, loadDocuments]);
+
+  useEffect(() => {
+    const init = async (): Promise<void> => {
+      const authState = useAuthStore.getState();
+      if (!authState.principalId || !authState.isAuthenticated) {
+        navigate('/login');
+        return;
+      }
+
+      try {
+        await icpService.initialize();
+        const profile = await icpService.getMyProfile();
+
+        const userType = !profile
+          ? ''
+          : typeof profile.userType === 'object'
+            ? Object.keys(profile.userType)[0] || ''
+            : String(profile.userType || '');
+
+        if (!userType.toLowerCase().includes('conveyancer')) {
+          setIsRegistered(false);
+          setViewState('register');
+          return;
+        }
+
+        await openMatter();
+      } catch (error) {
+        logger.error('ConveyancerDashboard init error:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    init();
+  }, [navigate, openMatter]);
 
   const handleAction = async (action: 'tr1' | 'exchange' | 'ap1'): Promise<void> => {
     if (!selectedTx) return;
@@ -346,7 +217,8 @@ const ConveyancerDashboard: React.FC = () => {
         const result = await icpService.recordContractExchange(selectedTx.id, principal, principal);
         if (!result.success || isWaitingForOtherSide(result.message)) alert(result.message);
       }
-      await loadTransactions();
+      const fresh = await loadTransaction(selectedTx.id);
+      if (fresh) setSelectedTx(fresh);
       await loadDocuments(selectedTx.id);
     } catch (error) {
       logger.error(`Action ${action} failed:`, error);
@@ -422,7 +294,7 @@ const ConveyancerDashboard: React.FC = () => {
         userType: 'conveyancer_transparent',
       });
       setIsRegistered(true);
-      setViewState('add-code');
+      await openMatter();
     } catch (error) {
       setRegError(error instanceof Error ? error.message : 'Registration failed');
     } finally {
@@ -466,17 +338,6 @@ const ConveyancerDashboard: React.FC = () => {
       <AppTopBar title="Conveyancer portal" />
 
       <main className="min-h-screen bg-[#FAFAF8] dark:bg-stone-900 px-6 py-10 sm:px-10 lg:px-14">
-        {/* Was a sidebar nav action; kept as a page action so replacing the
-            sidebar does not remove the only way to add a transaction. */}
-        <div className="mb-6 flex justify-end">
-          <button
-            type="button"
-            onClick={() => { setViewState('add-code'); setCodeError(null); setInviteCode(''); }}
-            className="flex h-11 items-center gap-2 rounded-lg border-none bg-[#0D9488] px-4 text-sm font-medium text-white transition-colors duration-200 ease-out hover:bg-[#0F766E]"
-          >
-            Add transaction
-          </button>
-        </div>
         {/* Hidden file input for conveyancer uploads */}
         <input
           ref={fileInputRef}
@@ -497,68 +358,6 @@ const ConveyancerDashboard: React.FC = () => {
           />
         )}
 
-        {/* Add Transaction Code */}
-        {viewState === 'add-code' && isRegistered && (
-          <CodeEntryView
-            inviteCode={inviteCode}
-            setInviteCode={setInviteCode}
-            codeError={codeError}
-            setCodeError={setCodeError}
-            codeLoading={codeLoading}
-            onSubmit={handleAddCode}
-            transactionCount={transactions.length}
-            onBackToList={() => setViewState('list')}
-          />
-        )}
-
-        {/* Activation FAILED for a stashed join code. Never fail silently here:
-            the firm has been told by email that it won the work, so an invisible
-            failure leaves it stranded on the empty state with no explanation. */}
-        {joinFailure && (viewState === 'list' || viewState === 'add-code') && (
-          <div
-            role="alert"
-            className="mb-6 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 px-4 py-3"
-          >
-            <p className="text-sm font-medium text-amber-900 dark:text-amber-300">
-              We couldn&rsquo;t finish connecting you to the transaction.
-            </p>
-            <p className="mt-1 text-xs text-amber-800 dark:text-amber-400">{joinFailure.reason}</p>
-            <p className="mt-2 text-xs text-amber-800 dark:text-amber-400">
-              {joinFailure.retryable
-                ? 'We’ll try again next time you open this page. If it keeps happening, email '
-                : 'This activation link can no longer be used. Please email '}
-              <a className="underline" href="mailto:support@propxchain.com">support@propxchain.com</a>
-              {' '}and we&rsquo;ll sort it out.
-            </p>
-          </div>
-        )}
-
-        {/* First-run banner after joining via an accepted quote */}
-        {joinedFirm && (viewState === 'list' || viewState === 'add-code') && (
-          <div className="mb-6 rounded-lg border border-teal-300 dark:border-teal-700 bg-teal-50 dark:bg-teal-900/20 px-4 py-3">
-            <p className="text-sm font-medium text-teal-800 dark:text-teal-300">
-              You&rsquo;re on the transaction{joinedFirm.firmName ? ` as ${joinedFirm.firmName}` : ''}
-              {joinedFirm.clcId ? ` (CLC ${joinedFirm.clcId})` : ''}.
-            </p>
-            <p className="mt-1 text-xs text-teal-700 dark:text-teal-400">
-              Your firm details were pre-filled from the CLC register — please check them and
-              email <a className="underline" href="mailto:support@propxchain.com">support@propxchain.com</a> if
-              anything needs correcting.
-            </p>
-          </div>
-        )}
-
-        {/* Transaction List */}
-        {viewState === 'list' && isRegistered && (
-          <TransactionListView
-            transactions={transactions}
-            onSelect={handleSelectTx}
-            onAddNew={() => { setViewState('add-code'); setCodeError(null); setInviteCode(''); }}
-            getStatusLabel={getStatusLabel}
-            getMilestoneLabel={getMilestoneLabel}
-          />
-        )}
-
         {/* Transaction Detail */}
         {viewState === 'detail' && selectedTx && (
           <TransactionDetailView
@@ -571,7 +370,7 @@ const ConveyancerDashboard: React.FC = () => {
             hasConveyancerDoc={hasConveyancerDoc}
             getStatusLabel={getStatusLabel}
             getMilestoneLabel={getMilestoneLabel}
-            onBack={() => { setViewState('list'); setSelectedTx(null); }}
+            onBack={() => navigate('/dashboard')}
             onDocClick={setSelectedDoc}
             onAction={handleAction}
             onUpload={handleUploadDoc}
@@ -699,199 +498,6 @@ const RegistrationView: React.FC<RegistrationViewProps> = ({ regForm, setRegForm
     </form>
   </div>
 );
-
-interface CodeEntryViewProps {
-  inviteCode: string;
-  setInviteCode: (v: string) => void;
-  codeError: string | null;
-  setCodeError: (v: string | null) => void;
-  codeLoading: boolean;
-  onSubmit: (e: React.FormEvent) => Promise<void>;
-  transactionCount: number;
-  onBackToList: () => void;
-}
-const CodeEntryView: React.FC<CodeEntryViewProps> = ({ inviteCode, setInviteCode, codeError, setCodeError, codeLoading, onSubmit, transactionCount, onBackToList }) => (
-  <div className="mx-auto max-w-xl">
-    <h1 className="font-[Fraunces] text-[2rem] font-semibold leading-tight tracking-tight text-[#1A1A1A] dark:text-stone-100 sm:text-[2.5rem]">
-      Got a transaction code?
-    </h1>
-    <p className="mt-3 max-w-md font-[DM_Sans] text-base text-[#6B7280] dark:text-stone-400">
-      Paste it below to pick up the matter. Buyers and sellers receive the code when they start a transaction.
-    </p>
-
-    <form onSubmit={onSubmit} className="mt-10">
-      <label htmlFor="conv-invite-code" className="block font-[DM_Sans] text-sm font-medium text-[#1A1A1A] dark:text-stone-200">
-        Transaction code
-      </label>
-      <input
-        id="conv-invite-code"
-        type="text"
-        value={inviteCode}
-        onChange={(e) => { setInviteCode(e.target.value); setCodeError(null); }}
-        placeholder="TX-XXXX-XXXX"
-        maxLength={12}
-        autoFocus
-        className="mt-2 w-full rounded-md border border-[#E5E7EB] bg-white px-4 py-4 text-center font-mono text-2xl tracking-[0.2em] text-[#1A1A1A] uppercase focus:border-[#0D9488] focus:outline-none focus:ring-1 focus:ring-[#0D9488] dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100"
-      />
-      <p className="mt-1.5 font-[DM_Sans] text-xs text-[#6B7280]">
-        Twelve characters, hyphens included.
-      </p>
-
-      {codeError && (
-        <div className="mt-4 rounded-md border border-[#DC2626]/30 bg-[#FEF2F2] p-3 font-[DM_Sans] text-sm text-[#DC2626]">
-          {codeError}
-        </div>
-      )}
-
-      <div className="mt-8 flex items-center gap-4">
-        {transactionCount > 0 && (
-          <button
-            type="button"
-            onClick={onBackToList}
-            className="font-[DM_Sans] text-sm text-[#6B7280] transition-colors hover:text-[#1A1A1A] dark:hover:text-stone-200"
-          >
-            ← My transactions ({transactionCount})
-          </button>
-        )}
-        <button
-          type="submit"
-          disabled={codeLoading || !inviteCode.trim()}
-          className="ml-auto inline-flex min-h-12 items-center justify-center rounded-md bg-[#0D9488] px-8 py-3 font-[DM_Sans] text-base font-medium text-white transition-colors hover:bg-[#0F766E] disabled:cursor-not-allowed disabled:bg-[#9CA3AF]"
-        >
-          {codeLoading ? 'Joining…' : 'Access transaction'}
-        </button>
-      </div>
-    </form>
-  </div>
-);
-
-interface TransactionListViewProps {
-  transactions: ConveyancerTransaction[];
-  onSelect: (tx: ConveyancerTransaction) => void;
-  onAddNew: () => void;
-  getStatusLabel: (s: string) => string;
-  getMilestoneLabel: (s: string) => string;
-}
-/** Small badge marking the matters whose next move is the conveyancer's. */
-const NeedsYouBadge: React.FC = () => (
-  <span className="rounded-full border border-[#D97706]/40 bg-[#FFF7ED] px-2.5 py-0.5 font-[DM_Sans] text-xs font-medium text-[#9A3412] dark:border-[#D97706]/50 dark:bg-[#D97706]/10 dark:text-[#FDBA74]">
-    Needs you
-  </span>
-);
-
-const TransactionListView: React.FC<TransactionListViewProps> = ({ transactions, onSelect, onAddNew, getStatusLabel, getMilestoneLabel }) => {
-  // The server's stalls per matter (stall attribution): the longest wait
-  // orders the desk inside each group and is shown on the row, by role.
-  const stallsByTx = useDealStalls(transactions.map((tx) => tx.id));
-  // Derived here rather than in the parent: it is presentation ordering, and
-  // the inputs (status + the conveyancer's own docs in localStorage) are free.
-  //
-  // Resolved once per matter, not per comparison: the sort comparator, the
-  // header count and the per-row badge all read the same answer, and each
-  // lookup parses JSON out of localStorage. Computing it inside the
-  // comparator would re-read the same matter O(log n) times on every render.
-  const withWaiting = transactions.map((tx) => {
-    const docs = getConveyancerDocs(tx.id);
-    return {
-      tx,
-      waitingOn: getWaitingOn(tx.status, {
-        hasTR1: docs.some((d) => d.docType === 'tr1_transfer'),
-        hasAP1: docs.some((d) => d.docType === 'ap1_application'),
-      }),
-      wait: longestWait(stallsByTx[tx.id] ?? []),
-    };
-  });
-  const ordered = sortByWaitingOn(withWaiting, (entry) => entry.waitingOn, (entry) => entry.wait?.days ?? 0);
-  const needsYouCount = withWaiting.filter((entry) => entry.waitingOn === 'you').length;
-
-  return (
-  <div className="mx-auto max-w-5xl">
-    <div className="mb-10 flex items-end justify-between gap-6">
-      <div>
-        <h1 className="font-[Fraunces] text-[2rem] font-semibold leading-tight tracking-tight text-[#1A1A1A] dark:text-stone-100 sm:text-[2.5rem]">
-          My transactions
-        </h1>
-        <p className="mt-2 font-[DM_Sans] text-base text-[#6B7280] dark:text-stone-400">
-          {transactions.length === 0
-            ? 'Nothing here yet. Add a code to pick up your first matter.'
-            : needsYouCount > 0
-              ? `${needsYouCount} of ${transactions.length} need${needsYouCount === 1 ? 's' : ''} you. Waiting on someone else below.`
-              : `${transactions.length} matter${transactions.length === 1 ? '' : 's'} on your desk — none waiting on you.`}
-        </p>
-      </div>
-      <button
-        onClick={onAddNew}
-        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-[#0D9488] px-5 py-2.5 font-[DM_Sans] text-sm font-medium text-white transition-colors hover:bg-[#0F766E]"
-      >
-        Add transaction
-      </button>
-    </div>
-
-    {/* v3 Ship 6 — aggregated overview: stats, forms progress, attention items */}
-    {transactions.length > 0 && (
-      <ProfessionalOverviewPanel
-        transactions={transactions}
-        onTransactionClick={(id) => {
-          const tx = transactions.find((t) => t.id === id);
-          if (tx) onSelect(tx);
-        }}
-      />
-    )}
-
-    {transactions.length === 0 ? (
-      <div className="mt-8 rounded-md border border-[#E5E7EB] bg-white p-16 text-center dark:border-stone-700 dark:bg-stone-800">
-        <h3 className="font-[Fraunces] text-xl font-semibold text-[#1A1A1A] dark:text-stone-100">
-          Your panel is empty.
-        </h3>
-        <p className="mx-auto mt-2 max-w-sm font-[DM_Sans] text-sm text-[#6B7280] dark:text-stone-400">
-          Once a buyer or seller invites you to their transaction, it&apos;ll appear here with everything you need to act on.
-        </p>
-        <button
-          onClick={onAddNew}
-          className="mt-8 inline-flex min-h-11 items-center justify-center rounded-md bg-[#0D9488] px-6 py-2.5 font-[DM_Sans] text-sm font-medium text-white transition-colors hover:bg-[#0F766E]"
-        >
-          Enter transaction code
-        </button>
-      </div>
-    ) : (
-      <ul className="mt-8 divide-y divide-[#E5E7EB] overflow-hidden rounded-md border border-[#E5E7EB] bg-white dark:divide-stone-700 dark:border-stone-700 dark:bg-stone-800">
-        {ordered.map(({ tx, waitingOn, wait }) => (
-          <li key={tx.id}>
-            <button
-              onClick={() => onSelect(tx)}
-              className="group flex w-full items-center justify-between gap-6 px-6 py-5 text-left transition-colors hover:bg-[#FAFAF8] dark:hover:bg-stone-900"
-            >
-              <div className="min-w-0 flex-1">
-                <h3 className="truncate font-[Fraunces] text-lg font-semibold text-[#1A1A1A] dark:text-stone-100">
-                  {tx.propertyAddress}
-                </h3>
-                <p className="mt-1 font-[DM_Sans] text-sm text-[#6B7280] dark:text-stone-400">
-                  £{tx.amount.toLocaleString()}
-                </p>
-                <p className="mt-2 font-[DM_Sans] text-xs text-[#5F8A68]">
-                  {getMilestoneLabel(tx.status)}
-                </p>
-                {wait && (
-                  <p data-testid="matter-wait" className="mt-1 font-[DM_Sans] text-xs text-[#9A3412] dark:text-[#FDBA74]">
-                    {describeStall(wait)}
-                  </p>
-                )}
-              </div>
-              <div className="flex flex-shrink-0 items-center gap-4">
-                {waitingOn === 'you' && <NeedsYouBadge />}
-                <span className="rounded-full border border-[#0D9488]/30 bg-[#CCFBF1]/30 px-3 py-1 font-[DM_Sans] text-xs font-medium text-[#0F766E]">
-                  {getStatusLabel(tx.status)}
-                </span>
-                <span className="text-[#9CA3AF] transition-colors group-hover:text-[#0D9488]">→</span>
-              </div>
-            </button>
-          </li>
-        ))}
-      </ul>
-    )}
-    </div>
-  );
-};
 
 interface TransactionDetailViewProps {
   tx: ConveyancerTransaction;

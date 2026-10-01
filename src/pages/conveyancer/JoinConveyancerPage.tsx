@@ -210,7 +210,7 @@ const JoinConveyancerPage: React.FC = () => {
               if anything needs correcting.
             </p>
             <button type="button"
-              onClick={() => navigate(`/conveyancer?joined=${encodeURIComponent(joinedTxId)}&firm=${encodeURIComponent(preview.firmName ?? '')}&clc=${encodeURIComponent(preview.clcId)}`)}
+              onClick={() => navigate(`/dashboard?joined=${encodeURIComponent(joinedTxId)}&firm=${encodeURIComponent(preview.firmName ?? '')}&clc=${encodeURIComponent(preview.clcId)}`)}
               className="mt-8 inline-flex min-h-12 items-center justify-center rounded-md bg-[#0D9488] px-8 py-3 font-[DM_Sans] text-base font-medium text-white transition-colors hover:bg-[#0F766E]">
               Open your dashboard
             </button>
