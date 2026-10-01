@@ -5,7 +5,8 @@
  * Post-login routing decision.
  *
  * Pure function: no side effects, no I/O. Everyone who is signed in and
- * verified lands on the same dashboard. A professional's own pages (agent
+ * verified lands on the same dashboard (in the phone app, its home screen at
+ * /app). A professional's own pages (agent
  * listings and pipeline, builder sites) are extra items in that dashboard's
  * side menu, not separate front doors, so there is nothing to choose between.
  */
@@ -30,6 +31,8 @@ export interface DecideRouteArgs {
   user: DecideRouteUser | null;
   emailVerified: boolean;
   freshSignup: boolean;
+  /** True inside the iOS or Android app, whose signed-in home is the phone screen. */
+  native?: boolean;
 }
 
 export interface RouteDecision {
@@ -38,7 +41,7 @@ export interface RouteDecision {
 }
 
 export function decideRoute(args: DecideRouteArgs): RouteDecision {
-  const { user, emailVerified, freshSignup } = args;
+  const { user, emailVerified, freshSignup, native = false } = args;
 
   if (!user) {
     return { path: '/login', reason: 'no authenticated user' };
@@ -50,6 +53,10 @@ export function decideRoute(args: DecideRouteArgs): RouteDecision {
 
   if (freshSignup) {
     return { path: '/onboarding', reason: 'fresh signup flow' };
+  }
+
+  if (native) {
+    return { path: '/app', reason: 'signed in: phone app home' };
   }
 
   return { path: '/dashboard', reason: 'signed in: shared dashboard' };
