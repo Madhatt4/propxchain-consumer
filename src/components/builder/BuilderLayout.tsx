@@ -12,10 +12,8 @@
 
 import { Outlet, useLocation, useParams } from 'react-router-dom';
 import PortalShell from '@/components/navigation/PortalShell';
-import type { SectionTab } from '@/components/navigation/SectionTabs';
+import { usePortalSections } from '@/components/navigation/usePortalSections';
 import { BUILDER_ROOT, siteSections } from './builderSections';
-
-const ROOT_SECTIONS: SectionTab[] = [{ label: 'Sites', to: BUILDER_ROOT, end: true }];
 
 /** The site-creation wizard has no site yet, so it keeps the root strip. */
 function isInsideSite(pathname: string, siteId: string | undefined): siteId is string {
@@ -26,7 +24,10 @@ export default function BuilderLayout(): JSX.Element {
   const { pathname } = useLocation();
   const { siteId } = useParams<{ siteId: string }>();
   const inSite = isInsideSite(pathname, siteId);
-  const sections = inSite ? siteSections(siteId) : ROOT_SECTIONS;
+  // At the portal root the menu is the shared one (Sites is the developer extra);
+  // inside a site it becomes that site's own sections.
+  const sharedSections = usePortalSections('developer');
+  const sections = inSite ? siteSections(siteId) : sharedSections;
   return (
     <PortalShell
       sections={sections}

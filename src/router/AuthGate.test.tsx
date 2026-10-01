@@ -4,11 +4,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type {
-  OrganisationMembership,
-  OrganisationType,
-} from './decideRoute';
 
 // ── mocks ─────────────────────────────────────────────────────────────────
 const mockAuthState = {
@@ -23,70 +18,26 @@ const mockAuthState = {
 vi.mock('../stores/authStore', () => ({
   useAuthStore: <T,>(selector: (s: typeof mockAuthState) => T): T =>
     selector(mockAuthState),
-  // AuthGate's admin escape hatch reads usePrincipalId() (added in the admin
-  // escape-hatch change). null → isAdminPrincipal(null) is false, so these
-  // tests exercise the normal non-admin decideRoute path.
+  // AuthGate's admin escape hatch reads usePrincipalId(). null makes
+  // isAdminPrincipal(null) false, so these tests exercise the normal path.
   usePrincipalId: (): string | null => null,
-}));
-
-type MembershipsQueryState = {
-  data: OrganisationMembership[] | undefined;
-  isLoading: boolean;
-  isFetching: boolean;
-  isError: boolean;
-  refetch: () => void;
-};
-
-let mockMembershipsState: MembershipsQueryState = {
-  data: [],
-  isLoading: false,
-  isFetching: false,
-  isError: false,
-  refetch: vi.fn(),
-};
-
-vi.mock('./useMembershipsQuery', () => ({
-  useMembershipsQuery: () => mockMembershipsState,
 }));
 
 import AuthGate from './AuthGate';
 
 // ── helpers ───────────────────────────────────────────────────────────────
-const renderAt = (initialPath: string = '/post-login') => {
-  const qc = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
-  return render(
-    <QueryClientProvider client={qc}>
-      <MemoryRouter initialEntries={[initialPath]}>
-        <Routes>
-          <Route path="/post-login" element={<AuthGate />} />
-          <Route
-            path="/dashboard"
-            element={<div data-testid="at-dashboard" />}
-          />
-          <Route
-            path="/builder"
-            element={<div data-testid="at-builder" />}
-          />
-          <Route
-            path="/role-picker"
-            element={<div data-testid="at-role-picker" />}
-          />
-        </Routes>
-      </MemoryRouter>
-    </QueryClientProvider>,
+const renderAt = (initialPath: string = '/post-login') =>
+  render(
+    <MemoryRouter initialEntries={[initialPath]}>
+      <Routes>
+        <Route path="/post-login" element={<AuthGate />} />
+        <Route path="/dashboard" element={<div data-testid="at-dashboard" />} />
+        <Route path="/verify" element={<div data-testid="at-verify" />} />
+        <Route path="/onboarding" element={<div data-testid="at-onboarding" />} />
+        <Route path="/login" element={<div data-testid="at-login" />} />
+      </Routes>
+    </MemoryRouter>,
   );
-};
-
-const membership = (
-  type: OrganisationType,
-  id = 'org-1',
-): OrganisationMembership => ({
-  organisationId: id,
-  organisationType: type,
-  role: 'admin',
-});
 
 const resetMocks = (): void => {
   mockAuthState.supabaseUser = {
@@ -96,13 +47,6 @@ const resetMocks = (): void => {
   mockAuthState.authMethod = 'supabase';
   mockAuthState.isInitialized = true;
   mockAuthState.isLoading = false;
-  mockMembershipsState = {
-    data: [],
-    isLoading: false,
-    isFetching: false,
-    isError: false,
-    refetch: vi.fn(),
-  };
 };
 
 // ── tests ─────────────────────────────────────────────────────────────────
@@ -111,18 +55,14 @@ describe('<AuthGate>', () => {
     resetMocks();
   });
 
-  it('renders a spinner while memberships are loading', () => {
-    mockMembershipsState = {
-      ...mockMembershipsState,
-      isLoading: true,
-    };
+  it('renders a spinner while auth is still loading', () => {
+    mockAuthState.isLoading = true;
     const { container } = renderAt();
     expect(container.querySelector('.animate-spin')).toBeTruthy();
     expect(screen.queryByTestId('at-dashboard')).toBeNull();
   });
 
-  it('navigates to /dashboard when the user has no memberships', async () => {
-    mockMembershipsState = { ...mockMembershipsState, data: [] };
+  it('navigates a verified user to the shared /dashboard', async () => {
     renderAt();
     await waitFor(() => {
       expect(screen.getByTestId('at-dashboard')).toBeInTheDocument();
@@ -140,37 +80,26 @@ describe('<AuthGate>', () => {
     });
   });
 
-  it('navigates to /builder when the user has a single developer membership', async () => {
-    mockMembershipsState = {
-      ...mockMembershipsState,
-      data: [membership('developer')],
-    };
+  it('sends an unverified email to /verify', async () => {
+    mockAuthState.supabaseUser = { id: 'user-1', email_confirmed_at: null };
     renderAt();
     await waitFor(() => {
-      expect(screen.getByTestId('at-builder')).toBeInTheDocument();
+      expect(screen.getByTestId('at-verify')).toBeInTheDocument();
     });
   });
 
-  it('navigates to /role-picker when the user has multiple memberships', async () => {
-    mockMembershipsState = {
-      ...mockMembershipsState,
-      data: [membership('developer'), membership('solicitor_firm', 'org-2')],
-    };
-    renderAt();
+  it('sends a fresh signup to /onboarding', async () => {
+    renderAt('/post-login?fresh=1');
     await waitFor(() => {
-      expect(screen.getByTestId('at-role-picker')).toBeInTheDocument();
+      expect(screen.getByTestId('at-onboarding')).toBeInTheDocument();
     });
   });
 
-  it('renders the error fallback when the memberships query errors', () => {
-    mockMembershipsState = {
-      ...mockMembershipsState,
-      isError: true,
-    };
+  it('sends a signed-out visitor to /login', async () => {
+    mockAuthState.supabaseUser = null;
     renderAt();
-    expect(
-      screen.getByText(/Failed to load your accounts/i),
-    ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByTestId('at-login')).toBeInTheDocument();
+    });
   });
 });

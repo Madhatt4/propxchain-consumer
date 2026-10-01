@@ -20,15 +20,7 @@ import PortalShell from '../components/navigation/PortalShell';
 import TransactionListCard from '../components/dashboard/TransactionListCard';
 import { Link2, Plus } from 'lucide-react';
 
-/** Side-menu sections for the signed-in consumer. Same order as the old sidebar. */
-const DASHBOARD_SECTIONS = [
-  { label: 'Transactions', to: '/dashboard', end: true },
-  { label: 'Analytics', to: '/dashboard/analytics' },
-  { label: 'Wallet', to: '/dashboard/my-documents' },
-  { label: 'Property logbook', to: '/dashboard/my-logbooks' },
-  { label: 'AI agents', to: '/dashboard/bot-agents' },
-  { label: 'Messages', to: '/messages' },
-];
+import { usePortalSections } from '../components/navigation/usePortalSections';
 import { logger } from '@/utils/logger';
 import { useTheme } from '@/contexts/ThemeContext';
 import { SplitPanelProvider, useSplitPanel } from '../contexts/SplitPanelContext';
@@ -65,15 +57,8 @@ const Dashboard_PremiumContent: React.FC = () => {
   const supabaseUser = useAuthStore((s) => s.supabaseUser);
   const storeProfile = useAuthStore((s) => s.userProfile);
   const { isAdmin: isAdminFromCanister } = useIsAdmin();
-
-  // Developer users with a pending org should be on /builder, not /dashboard.
-  // Exception: platform admins — they use /dashboard to test the consumer-side
-  // flow while also having a developer membership, so they must NOT be bounced.
-  useEffect(() => {
-    if (!supabaseUser?.user_metadata?.propxchain_pending_developer_org) return;
-    if (isAdminPrincipal(principalId)) return;
-    navigate('/builder', { replace: true });
-  }, [supabaseUser, navigate, principalId]);
+  // Common sections for everyone, plus an agent's, developer's or conveyancer's extras.
+  const portalSections = usePortalSections();
   const [user, setUser] = useState<{ principal: string; name?: string; email?: string; userType?: unknown } | null>(null);
 
   // Display name: ICP profile → Supabase metadata → email prefix → 'User'
@@ -665,7 +650,7 @@ const Dashboard_PremiumContent: React.FC = () => {
   return (
     <div>
       <PortalShell
-        sections={DASHBOARD_SECTIONS}
+        sections={portalSections}
         portalName="Dashboard"
         topBar={{
           title: isListView ? 'My transactions' : (selectedTransaction?.propertyAddress || 'Transaction'),

@@ -25,6 +25,10 @@ vi.mock('@/components/navigation/AppTopBar', () => ({
   ),
 }));
 vi.mock('@/components/common/BlueprintBackground', () => ({ default: () => null }));
+vi.mock('@/components/navigation/usePortalSections', async () => {
+  const { sectionsFor } = await import('@/components/navigation/portalSections');
+  return { usePortalSections: () => sectionsFor(['agent']) };
+});
 import EstateAgentLayout from '../EstateAgentLayout';
 
 function renderAt(path: string): void {

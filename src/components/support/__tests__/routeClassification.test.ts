@@ -25,7 +25,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const app = readFileSync(resolve(here, '../../../App.tsx'), 'utf8');
 
 /** Protected routes that deliberately go without help. */
-const PROTECTED_WITHOUT_HELP = ['/post-login', '/role-picker', '/onboarding', '/admin'];
+const PROTECTED_WITHOUT_HELP = ['/post-login', '/onboarding', '/admin'];
 
 interface TopLevelRoute {
   path: string;

@@ -31,7 +31,6 @@ const MAINTENANCE_MODE = !IS_REGISTRATION_OPEN;
 import RootLanding from './router/RootLanding';
 import AuthGate from './router/AuthGate';
 import NotFoundRedirect from './router/NotFoundRedirect';
-import RolePickerPage from './router/RolePickerPage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import MaintenanceNotice from './pages/auth/MaintenanceNotice';
@@ -206,8 +205,7 @@ function App() {
               {/* Public routes */}
               <Route path="/" element={<RootLanding />} />
               <Route path="/post-login" element={<ProtectedRoute><AuthGate /></ProtectedRoute>} />
-              <Route path="/role-picker" element={<ProtectedRoute><RolePickerPage /></ProtectedRoute>} />
-              <Route path="/features" element={<FeaturesPage />} />
+                            <Route path="/features" element={<FeaturesPage />} />
               <Route path="/how-it-works" element={<HowItWorksPage />} />
               {/* Prerendered + sitemapped at priority 0.95. Without these two
                   routes the catch-all bounced every human arriving from search
