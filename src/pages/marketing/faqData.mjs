@@ -106,11 +106,11 @@ export const FAQ_GROUPS = [
     items: [
       {
         q: 'Is my data safe? What actually goes on the blockchain?',
-        a: 'Milestones and document hashes — not your documents or personal details. When something important happens (a form is completed, a search lands, contracts are exchanged), PropXchain writes a timestamped event and a cryptographic fingerprint of the document to the Internet Computer. Anyone you authorise can verify the history; nobody can rewrite it. The documents themselves stay in your encrypted vault and are never published on-chain.',
+        a: 'Milestones and document hashes. When something important happens (a form is completed, a search lands, contracts are exchanged), PropXchain writes a timestamped event and a cryptographic fingerprint of the document to the Internet Computer. The documents themselves stay in your encrypted vault and are never published on-chain.',
       },
       {
         q: 'How does identity and AML verification work?',
-        a: 'Through regulated identity providers, not in-house checks. You complete the ID and anti-money-laundering verification once, the provider issues a certificate, and the result is recorded on your transaction audit trail so every party — including lenders — can rely on it without repeating the process.',
+        a: 'Through regulated identity providers, not in-house checks. You complete the ID and anti-money-laundering verification with the provider.',
       },
     ],
   },

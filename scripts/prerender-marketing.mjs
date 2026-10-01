@@ -57,7 +57,7 @@ const pages = [
   <p>Sign up using Internet Identity — passwordless, no passwords, no personal data stored centrally. Your identity is created instantly and you're straight into the dashboard.</p>
 
   <h3>2. Start your transaction</h3>
-  <p>Launch the Property Wizard. Oscar, our AI assistant, guides you through the 6-phase process. Select your property type, enter the address and details, and Oscar adapts the process to your situation.</p>
+  <p>Launch the Property Wizard. Oscar, our AI assistant, guides you through each stage. Select your property type, enter the address and details, and Oscar adapts the process to your situation.</p>
 
   <h3>3. Complete the wizard</h3>
   <p>Work through each phase with Oscar's help — property details, TA6 form, legal compliance checks and financial terms. Save progress and return anytime.</p>
@@ -205,7 +205,7 @@ const pages = [
     <li><strong>Save £2,000+ vs traditional</strong> — a typical UK sale costs £1,500–£2,500 in agent and conveyancing admin fees. PropXchain cuts the admin middleman.</li>
     <li><strong>Weeks, not months</strong> — UK conveyancing averages 20–24 weeks. PropXchain sellers complete in weeks because everyone sees the same live transaction.</li>
     <li><strong>You stay in control</strong> — order your own searches, invite your own buyer, pick your own CLC-verified conveyancer from the panel.</li>
-    <li><strong>Blockchain-backed audit trail</strong> — every milestone timestamped on the Internet Computer, verifiable by buyer, lender and regulator.</li>
+    <li><strong>Blockchain-backed audit trail</strong> — every milestone timestamped on the Internet Computer.</li>
   </ul>
 </section>
 

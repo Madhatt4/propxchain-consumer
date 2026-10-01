@@ -8,7 +8,7 @@ import MarketingShell from './marketing/MarketingShell';
 interface Feature {
   title: string;
   body: string;
-  bullets: [string, string];
+  bullets: string[];
 }
 
 const features: Feature[] = [
@@ -24,10 +24,9 @@ const features: Feature[] = [
   {
     title: 'Verifiable on-chain audit trail',
     body:
-      'Every material change — offer accepted, searches ordered, contract signed — is written to the Internet Computer as a timestamped event. Anyone you share the link with can verify the history without trusting us.',
+      'Key milestones in your transaction are written to the Internet Computer as timestamped events.',
     bullets: [
       'Tamper-evident timeline recorded on the Internet Computer',
-      'Public ledger view linkable to your buyer, lender, or solicitor',
     ],
   },
   {
@@ -40,7 +39,7 @@ const features: Feature[] = [
     ],
   },
   {
-    title: 'Six-phase guided wizard',
+    title: 'Guided wizard',
     body:
       'A single flow that walks you through property details, TA6 / TA10 forms, ID and AML, financial terms, and exchange. Save and return at any step.',
     bullets: [

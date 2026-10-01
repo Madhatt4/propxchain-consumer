@@ -122,8 +122,8 @@ export const FEATURES: Feature[] = [
   },
   {
     glyph: '🔒',
-    title: 'Your files stay on your device',
-    body: 'Only SHA-256 hashes go on-chain. Private documents never leave your control. GDPR-compliant by design.',
+    title: 'Only hashes go on-chain',
+    body: 'Only SHA-256 hashes go on-chain, never the documents themselves. GDPR-compliant by design.',
   },
   {
     glyph: '✍️',

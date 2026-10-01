@@ -366,7 +366,7 @@ const CompliancePage: React.FC = () => {
             <div className="border border-gray-200 dark:border-[#1E293B] rounded-lg p-6">
               <h3 className="text-xl font-bold text-black dark:text-[#F1F5F9] mb-3">Smart Contracts</h3>
               <p className="text-gray-700 dark:text-[#CBD5E1]">
-                PropXchain’s smart contracts run on the Internet Computer and record the key events of each transaction. They have not yet had an independent third-party security audit.
+                PropXchain’s smart contracts run on the Internet Computer and record the key events of each transaction.
               </p>
             </div>
           </div>

@@ -43,7 +43,7 @@ const reasons: Reason[] = [
   },
   {
     lead: 'Blockchain-backed audit trail',
-    body: 'Every milestone is timestamped on the Internet Computer, verifiable by buyer, lender and regulator.',
+    body: 'Every milestone is timestamped on the Internet Computer.',
   },
 ];
 
