@@ -63,7 +63,6 @@ export const NO_HELP_PREFIXES: readonly string[] = [
   '/wizard',
   // Guided flows
   '/post-login',
-  '/role-picker',
   '/onboarding',
   // Staff
   '/admin',

@@ -55,6 +55,13 @@ const RegisterPage: React.FC = () => {
   } = useAuthStore();
   const identityError = useIdentityError();
 
+  // The auth store outlives route changes: an Internet Identity popup closed on
+  // /login would otherwise greet the user here as "Channel was closed…".
+  useEffect(() => {
+    clearError();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on arrival
+  }, []);
+
   useEffect(() => {
     if (isAuthenticated && !isRegistered && regMethod !== 'ii-role') {
       navigate(inviteCode ? joinRouteFor(inviteCode) : '/dashboard');
@@ -107,6 +114,7 @@ const RegisterPage: React.FC = () => {
   };
 
   const handleChooseOnForm = (role: 'seller' | 'buyer'): void => {
+    clearError();
     setValue('role', role);
     setPickedOnCards(true);
     setRoleChosen(true);
