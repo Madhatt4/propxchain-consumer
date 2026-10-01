@@ -54,6 +54,16 @@ describe('RegisterPage - role cards', () => {
     expect(screen.queryByText('Register with email')).not.toBeInTheDocument();
   });
 
+  it('should drop a stale sign-in error on arrival and again when a role is picked', () => {
+    mockAuthState.clearError.mockClear();
+    renderAt('/register');
+    expect(mockAuthState.clearError).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByText("I'm buying"));
+
+    expect(mockAuthState.clearError).toHaveBeenCalledTimes(2);
+  });
+
   it('should write the price into every card', () => {
     renderAt('/register');
 
