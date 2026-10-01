@@ -61,7 +61,7 @@ describe('EnquiryDetail for a client', () => {
   it('shows the cached plain-English line under the question and the "tell your conveyancer" box', async () => {
     mocks.getEnquiryExplanation.mockResolvedValue({ enquiry_id: 'e1', plain_english: 'Your buyer wants to know if the loft had consent.', model: 'm', created_at: 'x' });
     renderFor({ role: 'seller', side: 'seller' } as MyParty);
-    expect(await screen.findByTestId('plain-english')).toHaveTextContent('In plain English: Your buyer wants to know if the loft had consent.');
+    await waitFor(() => expect(screen.getByTestId('plain-english')).toHaveTextContent('In plain English: Your buyer wants to know if the loft had consent.'));
     expect(mocks.explainEnquiry).not.toHaveBeenCalled();
     expect(screen.getByRole('heading', { name: 'Tell your conveyancer' })).toBeInTheDocument();
     expect(screen.getByText(/nothing goes to the other side from you/i)).toBeInTheDocument();
@@ -71,7 +71,7 @@ describe('EnquiryDetail for a client', () => {
   it('asks the platform for the line once when the cache has none, and saves what the client knows as a note', async () => {
     mocks.addEnquiryNote.mockResolvedValue({ id: 'n1', enquiry_id: 'e1', side: 'seller', body: 'The loft was done in 2015 with consent.', evidence: [], created_at: 'x', pending_confirmation: false, drafted_for_user_id: null, confirmed_at: null });
     renderFor({ role: 'seller', side: 'seller' } as MyParty);
-    expect(await screen.findByTestId('plain-english')).toHaveTextContent('Fresh line.');
+    await waitFor(() => expect(screen.getByTestId('plain-english')).toHaveTextContent('Fresh line.'));
     expect(mocks.explainEnquiry).toHaveBeenCalledWith('e1');
     fireEvent.change(screen.getByLabelText('Tell your conveyancer'), { target: { value: 'The loft was done in 2015 with consent.' } });
     fireEvent.click(screen.getByRole('button', { name: 'Send to my conveyancer' }));
