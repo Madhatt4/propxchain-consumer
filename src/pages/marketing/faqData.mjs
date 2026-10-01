@@ -43,7 +43,7 @@ export const FAQ_GROUPS = [
       },
       {
         q: 'How long does a transaction take?',
-        a: 'UK conveyancing averages 20+ weeks. PropXchain transactions routinely complete in 4–8 weeks when both sides are on the platform, because everyone sees the same live transaction — no chasing by phone, no waiting for the post.',
+        a: 'UK conveyancing averages 20+ weeks. PropXchain is built to shorten that: the title, searches and property information are gathered up front, and everyone sees the same live transaction — no chasing by phone, no waiting for the post. How long your own move takes still depends on your buyer, any chain and the conveyancers.',
       },
     ],
   },
@@ -96,7 +96,7 @@ export const FAQ_GROUPS = [
       },
       {
         q: 'How does signing work? Is an electronic signature legally valid?',
-        a: 'Exchange and completion documents are signed with qualified electronic signatures — the highest standard of e-signature under UK law, applied through a regulated signing provider. Each signature is identity-verified, and the signed contract is recorded on the blockchain audit trail.',
+        a: 'Electronic signatures are legally valid in the UK. Today, contracts are signed and exchanged by your conveyancers in the usual way, and PropXchain records that the exchange has happened on its audit trail. Signing inside PropXchain with a qualified electronic signature — the highest standard under UK law — is planned and not yet available.',
       },
     ],
   },
@@ -106,11 +106,11 @@ export const FAQ_GROUPS = [
     items: [
       {
         q: 'Is my data safe? What actually goes on the blockchain?',
-        a: 'Milestones and document hashes — not your documents or personal details. When something important happens (a form is completed, a search lands, contracts are exchanged), PropXchain writes a timestamped event and a cryptographic fingerprint of the document to the Internet Computer. Anyone you authorise can verify the history; nobody can rewrite it. The documents themselves stay in your encrypted vault and are never published on-chain.',
+        a: 'Milestones and document hashes. When something important happens (a form is completed, a search lands, contracts are exchanged), PropXchain writes a timestamped event and a cryptographic fingerprint of the document to the Internet Computer. The documents themselves stay in your encrypted vault and are never published on-chain.',
       },
       {
         q: 'How does identity and AML verification work?',
-        a: 'Through regulated identity providers, not in-house checks. You complete the ID and anti-money-laundering verification once, the provider issues a certificate, and the result is recorded on your transaction audit trail so every party — including lenders — can rely on it without repeating the process.',
+        a: 'Through regulated identity providers, not in-house checks. You complete the ID and anti-money-laundering verification with the provider.',
       },
     ],
   },

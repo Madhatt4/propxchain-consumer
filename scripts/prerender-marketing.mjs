@@ -57,10 +57,10 @@ const pages = [
   <p>Sign up using Internet Identity — passwordless, no passwords, no personal data stored centrally. Your identity is created instantly and you're straight into the dashboard.</p>
 
   <h3>2. Start your transaction</h3>
-  <p>Launch the Property Wizard. Oscar, our AI assistant, guides you through the 6-phase process. Select your property type, enter the address and details, and Oscar adapts the process to your situation.</p>
+  <p>Launch the Property Wizard. Oscar, our AI assistant, guides you through each stage. Select your property type, enter the address and details, and Oscar adapts the process to your situation.</p>
 
   <h3>3. Complete the wizard</h3>
-  <p>Work through each phase with Oscar's help — property details, TA6 form, legal compliance checks, financial terms, contract generation. Save progress and return anytime.</p>
+  <p>Work through each phase with Oscar's help — property details, TA6 form, legal compliance checks and financial terms. Save progress and return anytime.</p>
 
   <h3>4. Upload documents</h3>
   <p>Upload proof of ID, address and funds. Oscar reviews for issues instantly. Every upload is timestamped to a verifiable record.</p>
@@ -69,7 +69,7 @@ const pages = [
   <p>Oscar coordinates between buyers, sellers and solicitors automatically. Invite all stakeholders with one click. Real-time updates for everyone. No more chasing for responses.</p>
 
   <h3>6. Exchange and complete</h3>
-  <p>All parties sign digitally with qualified electronic signatures. The contract is recorded to a tamper-evident ledger.</p>
+  <p>Your conveyancers exchange contracts and complete, as they do today. The exchange is recorded on a tamper-evident ledger.</p>
 </section>
 
 <section aria-labelledby="why">
@@ -205,7 +205,7 @@ const pages = [
     <li><strong>Save £2,000+ vs traditional</strong> — a typical UK sale costs £1,500–£2,500 in agent and conveyancing admin fees. PropXchain cuts the admin middleman.</li>
     <li><strong>Weeks, not months</strong> — UK conveyancing averages 20–24 weeks. PropXchain sellers complete in weeks because everyone sees the same live transaction.</li>
     <li><strong>You stay in control</strong> — order your own searches, invite your own buyer, pick your own CLC-verified conveyancer from the panel.</li>
-    <li><strong>Blockchain-backed audit trail</strong> — every milestone timestamped on the Internet Computer, verifiable by buyer, lender and regulator.</li>
+    <li><strong>Blockchain-backed audit trail</strong> — every milestone timestamped on the Internet Computer.</li>
   </ul>
 </section>
 
@@ -217,7 +217,7 @@ const pages = [
     <li><strong>Invite your buyer</strong> — or let us match you. The buyer uses PropXchain free.</li>
     <li><strong>Order searches directly</strong> — local authority, drainage, environmental. No solicitor markup.</li>
     <li><strong>Appoint a conveyancer</strong> from the CLC-verified panel — quoted directly, never marked up.</li>
-    <li><strong>Exchange and complete</strong> with tmSign qualified electronic signatures and FCA-regulated escrow.</li>
+    <li><strong>Exchange and complete</strong> through your conveyancers. PropXchain records the exchange and never holds your money.</li>
   </ol>
 </section>
 
@@ -228,7 +228,7 @@ const pages = [
   <h3>Do I need an estate agent?</h3>
   <p>No. PropXchain is seller-led — you manage the listing, the buyer communication, and the progress. If you already have a buyer, it's the fastest, cheapest way to complete.</p>
   <h3>How long does it take to sell a house online?</h3>
-  <p>With a willing buyer and both sides using PropXchain, completions routinely happen in 4–8 weeks rather than the UK average of 20+.</p>
+  <p>The UK average is 20+ weeks. PropXchain is built to cut that by getting the title, searches and property information together before your buyer's conveyancer asks for them. How long your sale takes still depends on your buyer, any chain and the conveyancers.</p>
 </section>
 
 <p>Ready to sell your house? <a href="/register">Start your sale free</a>. Need a conveyancer first? <a href="/find-a-conveyancer">Find one here</a>.</p>

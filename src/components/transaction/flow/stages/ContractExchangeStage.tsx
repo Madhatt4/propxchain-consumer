@@ -14,8 +14,15 @@ type SigningStatus = 'upload-contract' | 'review' | 'set-date' | 'sign' | 'waiti
 export function ContractExchangeStage({ stage, journeyRole = 'seller' }: StageProps): ReactNode {
   const [contractFile, setContractFile] = useState<File | null>(null);
   const [completionDate, setCompletionDate] = useState<string>('');
-  const [hasSigned, setHasSigned] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
+
+  // There is no way to sign here yet, so this side is never signed locally.
+  // The sign button was removed because it only set local state: it
+  // looked like signing a contract and recorded nothing. It comes back with
+  // tmSign + icpService.recordPartySignature (signingRole from journeyRole);
+  // when BOTH signatures are recorded the canister flips stage.status to
+  // #completed, which drives the 'exchanged' branch via the flow-state poll.
+  const hasSigned = false;
 
   // The counterparty's signature is authoritative only from the canister.
   // Pre-completion (the only time this view renders — see the early return
@@ -50,22 +57,6 @@ export function ContractExchangeStage({ stage, journeyRole = 'seller' }: StagePr
     }
     setFileError(null);
     setContractFile(file);
-  }
-
-  function handleSign(): void {
-    setHasSigned(true);
-    // TODO(phase-5-integration): call icpService.recordPartySignature with
-    // signingRole derived from journeyRole so the canister captures this
-    // side's signature on chain. When BOTH parties' signatures are recorded,
-    // the canister flips stage.status to #completed (per the Feb 2026
-    // signature-recording fix in MEMORY.md); that real status is what drives
-    // the 'exchanged' branch above, via the flow-state poll.
-    //
-    // We deliberately do NOT fake the counterparty signing or call onComplete
-    // here. Exchange is the highest-stakes moment in the sale: the UI must
-    // never claim "Contracts Exchanged · recorded on blockchain" until the
-    // canister actually says so. Until tmSign + recordPartySignature are
-    // wired, the seller correctly sits in the honest 'waiting' state.
   }
 
   if (status === 'exchanged') {
@@ -216,17 +207,9 @@ export function ContractExchangeStage({ stage, journeyRole = 'seller' }: StagePr
       {completionDate && !hasSigned && (
         <div className="flex flex-col gap-2">
           <p className="text-xs text-gray-500 dark:text-slate-400">
-            In production, signing is handled securely via TMGroup tmSign (Qualified Electronic Signature).
+            Signing with a qualified electronic signature through tmSign is planned and not yet available.
           </p>
           <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={handleSign}
-              className="flex-1 px-4 py-2.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2"
-            >
-              <PenTool className="h-4 w-4" />
-              Sign as {roleLabel}
-            </button>
             {/* tmSign integration pending — button is disabled until the
                 TMGroup QES redirect URL is wired through the backend. Before
                 this fix the onClick opened `#` in a new tab, which showed a

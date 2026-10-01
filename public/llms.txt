@@ -41,7 +41,7 @@ PropXchain digitises the end-to-end UK conveyancing process with on-chain verifi
 
 ## Canister Architecture
 
-12 canisters deployed on IC mainnet:
+Canisters deployed on IC mainnet:
 
 - Core (`3tv4o-xiaaa-aaaaa-qedaa-cai`): Core platform services
 - Frontend (`lzpic-oaaaa-aaaaa-qcwva-cai`): React application asset canister

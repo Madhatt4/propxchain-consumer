@@ -17,7 +17,7 @@ PropXchain is an open-source blockchain property conveyancing platform for UK re
 1. [Platform Overview](#1-platform-overview)
 2. [Technology Stack](#2-technology-stack)
 3. [Authentication — Internet Identity](#3-authentication--internet-identity)
-4. [Canister Architecture (12 Canisters)](#4-canister-architecture)
+4. [Canister Architecture](#4-canister-architecture)
 5. [User Management Canister API](#5-user-management-canister-api)
 6. [Transaction Manager Canister API](#6-transaction-manager-canister-api)
 7. [Document Storage Canister API](#7-document-storage-canister-api)
@@ -62,7 +62,7 @@ Key capabilities:
 ### Backend
 - Language: Motoko (persistent actors on ICP)
 - Runtime: Internet Computer Protocol mainnet (ic0.app boundary nodes)
-- 12 canisters with stable storage for data persistence across upgrades
+- Canisters with stable storage for data persistence across upgrades
 - Inter-canister communication via async actor calls
 
 ### Frontend
@@ -73,7 +73,7 @@ Key capabilities:
 - Routing: React Router v6
 
 ### Key Libraries
-- jsPDF: PDF contract generation
+- jsPDF: PDF export (form answers, signature certificate)
 - lucide-react: Icon library
 - Web Crypto API: SHA-256 hash generation in browser
 
@@ -100,7 +100,7 @@ Authorisation is enforced by the canisters against the caller's principal, never
 
 ## 4. Canister Architecture
 
-PropXchain runs 12 canisters on ICP mainnet:
+PropXchain runs these canisters on ICP mainnet:
 
 | # | Canister | ID | Purpose | Status |
 |---|----------|----|---------|--------|

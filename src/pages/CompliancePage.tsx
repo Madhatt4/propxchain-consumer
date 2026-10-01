@@ -356,17 +356,17 @@ const CompliancePage: React.FC = () => {
             <div className="border border-gray-200 dark:border-[#1E293B] rounded-lg p-6">
               <h3 className="text-xl font-bold text-black dark:text-[#F1F5F9] mb-3">Electronic Signatures</h3>
               <p className="text-gray-700 dark:text-[#CBD5E1] mb-4">
-                Our electronic signature system complies with the UK Electronic Communications Act 2000 and eIDAS regulation.
+                Electronic signatures are legally recognised in the UK under the Electronic Communications Act 2000.
               </p>
               <p className="text-gray-700 dark:text-[#CBD5E1]">
-                Digital signatures on PropXchain are legally binding and enforceable in UK property transactions.
+                Contracts are currently signed and exchanged by your conveyancers. Signing inside PropXchain with a qualified electronic signature is planned and not yet available.
               </p>
             </div>
 
             <div className="border border-gray-200 dark:border-[#1E293B] rounded-lg p-6">
               <h3 className="text-xl font-bold text-black dark:text-[#F1F5F9] mb-3">Smart Contracts</h3>
               <p className="text-gray-700 dark:text-[#CBD5E1]">
-                All smart contracts are audited for security and compliance. Contract logic is transparent and verifiable on the blockchain.
+                PropXchain’s smart contracts run on the Internet Computer and record the key events of each transaction.
               </p>
             </div>
           </div>
