@@ -14,6 +14,8 @@ import {
 } from 'lucide-react';
 import AuthShell from '../../components/auth/AuthShell';
 import OAuthButtons from '../../components/auth/OAuthButtons';
+import RoleCards from '../../components/auth/RoleCards';
+import { REGISTRATION_ROLE_LABEL } from '../../components/auth/roleCards.config';
 
 const registerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -42,6 +44,11 @@ const RegisterPage: React.FC = () => {
   const [iiLoading, setIiLoading] = useState(false);
   const [iiRole, setIiRole] = useState<string>('seller');
   const inviteCode = searchParams.get('invite');
+  const urlRole = searchParams.get('role');
+  const urlRoleIsValid = urlRole === 'seller' || urlRole === 'buyer' || urlRole === 'solicitor';
+  // An invite or a ?role= link already says who they are, so skip the role cards.
+  const [roleChosen, setRoleChosen] = useState<boolean>(Boolean(inviteCode) || urlRoleIsValid);
+  const [pickedOnCards, setPickedOnCards] = useState(false);
 
   const {
     registerWithEmail, isLoading, error, clearError, isAuthenticated,
@@ -57,6 +64,8 @@ const RegisterPage: React.FC = () => {
   const {
     register,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors: formErrors },
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
@@ -97,6 +106,12 @@ const RegisterPage: React.FC = () => {
     navigate(inviteCode ? joinRouteFor(inviteCode) : '/dashboard');
   };
 
+  const handleChooseOnForm = (role: 'seller' | 'buyer'): void => {
+    setValue('role', role);
+    setPickedOnCards(true);
+    setRoleChosen(true);
+  };
+
   const handleBackToMethods = (): void => {
     clearError();
     setRegMethod('select');
@@ -112,7 +127,9 @@ const RegisterPage: React.FC = () => {
 
   return (
     <AuthShell topLink={{ label: 'Sign in', to: '/login' }}>
-      {regMethod === 'select' && (
+      {regMethod === 'select' && !roleChosen && <RoleCards onChooseOnForm={handleChooseOnForm} />}
+
+      {regMethod === 'select' && roleChosen && (
         <MethodSelectionView
           inviteCode={inviteCode}
           iiLoading={iiLoading}
@@ -135,6 +152,8 @@ const RegisterPage: React.FC = () => {
           onSubmit={onSubmit}
           onTogglePassword={() => setShowPassword(!showPassword)}
           onBack={handleBackToMethods}
+          roleLabel={REGISTRATION_ROLE_LABEL[watch('role')]}
+          onChangeRole={pickedOnCards ? () => { setRoleChosen(false); setRegMethod('select'); } : undefined}
         />
       )}
 
@@ -290,12 +309,15 @@ interface EmailFormProps {
   onSubmit: (data: RegisterFormData) => Promise<void>;
   onTogglePassword: () => void;
   onBack: () => void;
+  /** Set once the role is already known (cards, invite or link): shown instead of the dropdown. */
+  roleLabel: string | null;
+  onChangeRole?: () => void;
 }
 
 const EmailFormView: React.FC<EmailFormProps> = ({
   inviteCode, error, isLoading, formErrors, showPassword,
   register: formRegister, handleSubmit, onSubmit,
-  onTogglePassword, onBack,
+  onTogglePassword, onBack, roleLabel, onChangeRole,
 }) => {
   const inputBase =
     'w-full rounded-md border bg-white px-4 py-3 font-dm-sans text-base text-[#1A1A1A] focus:outline-none focus:ring-1';
@@ -405,27 +427,40 @@ const EmailFormView: React.FC<EmailFormProps> = ({
             )}
           </div>
 
-          <div>
-            <label htmlFor="role" className="block font-dm-sans text-sm font-medium text-[#1A1A1A]">
-              I am a…
-            </label>
-            <select
-              {...formRegister('role')}
-              id="role"
-              className={`mt-2 ${inputBase} ${
-                formErrors.role
-                  ? 'border-[#DC2626] focus:border-[#DC2626] focus:ring-[#DC2626]'
-                  : 'border-[#E5E7EB] focus:border-[#0D9488] focus:ring-[#0D9488]'
-              }`}
-            >
-              <option value="seller">Property seller</option>
-              <option value="buyer">Property buyer</option>
-              <option value="solicitor">Conveyancer / solicitor</option>
-            </select>
-            {formErrors.role && (
-              <p className="mt-1.5 font-dm-sans text-xs text-[#DC2626]">{formErrors.role.message}</p>
-            )}
-          </div>
+          {roleLabel && onChangeRole && (
+            <p className="font-dm-sans text-sm text-[#6B7280]" data-testid="role-locked">
+              Registering as {roleLabel}.{' '}
+              <button type="button" onClick={onChangeRole} className="font-medium text-[#0D9488] hover:underline">
+                Change
+              </button>
+              <input type="hidden" {...formRegister('role')} />
+            </p>
+          )}
+
+          {!(roleLabel && onChangeRole) && (
+            <div>
+              <label htmlFor="role" className="block font-dm-sans text-sm font-medium text-[#1A1A1A]">
+                I am a…
+              </label>
+              <select
+                {...formRegister('role')}
+                id="role"
+                className={`mt-2 ${inputBase} ${
+                  formErrors.role
+                    ? 'border-[#DC2626] focus:border-[#DC2626] focus:ring-[#DC2626]'
+                    : 'border-[#E5E7EB] focus:border-[#0D9488] focus:ring-[#0D9488]'
+                }`}
+              >
+                <option value="seller">Property seller</option>
+                <option value="buyer">Property buyer</option>
+                <option value="solicitor">Conveyancer / solicitor</option>
+              </select>
+              {formErrors.role && (
+                <p className="mt-1.5 font-dm-sans text-xs text-[#DC2626]">{formErrors.role.message}</p>
+              )}
+            </div>
+  
+          )}
 
           <button
             type="submit"
