@@ -14,6 +14,11 @@ vi.mock('@/components/navigation/AppTopBar', () => ({
   default: () => null,
 }));
 
+let mockKinds: string[] = [];
+vi.mock('@/components/navigation/usePortalSections', () => ({
+  usePortalKinds: () => mockKinds,
+}));
+
 import StartTransactionPage from '../StartTransactionPage';
 
 function renderPage(): ReturnType<typeof render> {
@@ -28,6 +33,22 @@ describe('StartTransactionPage — tier + role routing', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+    mockKinds = [];
+  });
+
+  it('should ask an estate agent whether they act for a seller, with no tier picker', () => {
+    mockKinds = ['agent'];
+    renderPage();
+
+    expect(screen.getByText('Are you acting for a seller?')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /continue with premium/i })).not.toBeInTheDocument();
+  });
+
+  it('should keep the tier picker for developers and conveyancers', () => {
+    mockKinds = ['developer', 'conveyancer'];
+    renderPage();
+
+    expect(screen.getByRole('button', { name: /continue with starter/i })).toBeInTheDocument();
   });
 
   it('should show the Buying/Selling picker when Starter is clicked even if onboardingRole is a stale buyer', () => {
