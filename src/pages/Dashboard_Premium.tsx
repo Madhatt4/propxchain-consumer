@@ -30,6 +30,8 @@ import { getNewDocumentCount } from '@/utils/documentAcknowledgment';
 import { isAdminPrincipal } from '@/constants/adminPrincipals';
 import { useActiveTransactionStore } from '../stores/activeTransactionStore';
 import { useAuthStore, usePrincipalId, useIsAuthenticated } from '../stores/authStore';
+import { usePortalKinds } from '@/components/navigation/usePortalSections';
+import PendingJoinBanners from '@/components/conveyancer/PendingJoinBanners';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { getRightmoveData, syncListingFromChain } from '@/utils/rightmoveStorage';
 import NextStepCard from '@/components/common/NextStepCard';
@@ -51,6 +53,8 @@ type ViewMode = 'list' | 'detail';
  */
 const Dashboard_PremiumContent: React.FC = () => {
   const navigate = useNavigate();
+  const kinds = usePortalKinds();
+  const isConveyancer = kinds.includes('conveyancer') && !kinds.includes('agent');
   const location = useLocation();
   const principalId = usePrincipalId();
   const isAuthenticated = useIsAuthenticated();
@@ -404,7 +408,8 @@ const Dashboard_PremiumContent: React.FC = () => {
   // Handle transaction card click — navigate straight to the flow page
   // (archives the in-dashboard Seller Dashboard detail view)
   const handleTransactionClick = async (tx: Transaction) => {
-    navigate(`/transaction/${tx.id}/flow`);
+    // Conveyancers work a matter in their own screen; everyone else opens the flow.
+    navigate(isConveyancer ? `/conveyancer?tx=${encodeURIComponent(tx.id)}` : `/transaction/${tx.id}/flow`);
   };
 
   // Helper function to load documents (can be called to refresh)
@@ -693,6 +698,7 @@ const Dashboard_PremiumContent: React.FC = () => {
         {/* LIST VIEW - All Transactions */}
         {isListView && (
           <section className="flex flex-col gap-6">
+            <PendingJoinBanners onJoined={() => { void refreshTransactions(); }} />
             {/* TOOLBAR — role filters on the left, the two transaction actions
                 on the right. Replaces the sidebar's transaction buttons. */}
             <div className="flex flex-wrap items-center justify-between gap-4">

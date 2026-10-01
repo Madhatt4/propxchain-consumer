@@ -41,7 +41,6 @@ export function getPostLoginRoute(fromPath?: string): string {
   // choose a role + mobile before any dashboard.
   if (authState.authMethod === 'supabase' && !role) return '/profile-setup';
 
-  if (role === 'solicitor') return '/conveyancer';
 
   const onboarded = authState.supabaseUser?.user_metadata?.propxchain_onboarded === true
     || localStorage.getItem('onboardingComplete') === 'true';

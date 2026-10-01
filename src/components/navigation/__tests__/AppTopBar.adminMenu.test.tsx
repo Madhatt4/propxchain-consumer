@@ -43,7 +43,7 @@ describe('AppTopBar admin menu', () => {
     openMenu(true);
 
     const labels = screen.getAllByRole('menuitem').map((el) => el.textContent);
-    expect(labels.slice(-5)).toEqual(['Admin dashboard', 'Builder portal', 'Conveyancer portal', 'Estate agent portal', 'Log out']);
+    expect(labels.slice(-4)).toEqual(['Admin dashboard', 'Builder portal', 'Estate agent portal', 'Log out']);
 
     fireEvent.click(screen.getByRole('menuitem', { name: /estate agent portal/i }));
     expect(mockNavigate).toHaveBeenCalledWith('/estate-agent');

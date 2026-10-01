@@ -16,31 +16,13 @@ import {
   User,
   Bot,
   Wallet,
-  Scale,
   BookOpen,
 } from 'lucide-react';
 import { useThemeClasses } from '../../hooks/useThemeClasses';
 import { ThemeToggleWithLabel } from '@/components/common/ThemeToggle';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { useAuthStore } from '@/stores/authStore';
-import { safeJsonParse } from '@/utils/safeJsonParse';
 import { Logo } from '@/components/brand/Logo';
-
-/** Mirror of PremiumSidebar's conveyancer gate: show the portal when the cached
- *  profile's userType is a conveyancer. Reads the same localStorage key. */
-function isConveyancerUser(): boolean {
-  try {
-    const cachedProfile = localStorage.getItem('userProfile');
-    if (!cachedProfile) return false;
-    const profile = safeJsonParse<{ userType?: string | Record<string, unknown> }>(cachedProfile, {});
-    const userType = typeof profile.userType === 'object'
-      ? Object.keys(profile.userType)[0] || ''
-      : String(profile.userType || '');
-    return userType.toLowerCase().includes('conveyancer');
-  } catch {
-    return false;
-  }
-}
 
 interface MobileNavMenuProps {
   isOpen: boolean;
@@ -108,9 +90,6 @@ const MobileNavMenu: React.FC<MobileNavMenuProps> = ({ isOpen, onClose }) => {
     { label: 'AI Agents', path: '/dashboard/bot-agents', id: 'bot-agents', icon: Bot },
     { label: 'PropXchain Wallet', path: '/dashboard/my-documents', id: 'wallet', icon: Wallet },
     { label: 'Property logbook', path: '/dashboard/my-logbooks', id: 'logbook', icon: BookOpen },
-    ...(isConveyancerUser()
-      ? [{ label: 'Conveyancer Portal', path: '/conveyancer', id: 'conveyancer', icon: Scale }]
-      : []),
     ...(isAdmin ? [{ label: 'Admin Dashboard', path: '/admin', id: 'admin', icon: Shield }] : []),
   ];
 
