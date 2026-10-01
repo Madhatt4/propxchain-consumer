@@ -9,6 +9,8 @@
     "dev": "vite",
     "build": "vite build && node scripts/prerender-marketing.mjs && node scripts/prerender-legacy-redirects.mjs && node scripts/generate-sitemap.mjs && node scripts/generate-agent-skills-index.mjs",
     "build:linux": "NODE_OPTIONS='--max-old-space-size=4096' vite build && node scripts/prerender-marketing.mjs && node scripts/prerender-legacy-redirects.mjs && node scripts/generate-sitemap.mjs",
+    "build:mobile": "vite build --outDir dist-mobile && node scripts/prune-mobile-bundle.mjs",
+    "cap:sync": "pnpm build:mobile && cap sync",
     "preview": "vite preview",
     "_comment_lint": "RATCHET, re-measured 2026-07-30 after the icp.service burn-down (376 -> 330). Only ever lower this number: each cleanup PR drops it, so any NEW warning fails CI immediately while the existing debt sits visibly. 216 of the 330 are @typescript-eslint/no-explicit-any, 24 of those still in icp.service.ts (mostly Promise<any> return types that need named result interfaces). Restore 0 once they are gone.",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 311",
@@ -22,6 +24,9 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/core": "^8.5.2",
+    "@capacitor/ios": "^8.5.2",
     "@dfinity/agent": "^1.4.0",
     "@dfinity/candid": "^3.4.3",
     "@dfinity/vetkeys": "0.4.0",
@@ -66,6 +71,7 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.5.2",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.1",
     "@types/geojson": "^7946.0.16",
