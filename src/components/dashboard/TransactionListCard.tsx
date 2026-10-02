@@ -13,6 +13,7 @@ import {
   Clock,
   DoorOpen,
   MoreVertical,
+  Scale,
   SquarePen,
   Trash2,
 } from 'lucide-react';
@@ -79,6 +80,8 @@ interface TransactionListCardProps {
   listing: PropertyListing | null;
   onOpen: () => void;
   onEdit: () => void;
+  /** Admin-only: open this transaction on the conveyancer matter screen. */
+  onViewAsConveyancer?: () => void;
   /** Delete for the seller (creator), Leave for a buyer who joined by invite. */
   onRemove: () => void;
 }
@@ -110,6 +113,7 @@ export const TransactionListCard: React.FC<TransactionListCardProps> = ({
   listing,
   onOpen,
   onEdit,
+  onViewAsConveyancer,
   onRemove,
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -258,6 +262,24 @@ export const TransactionListCard: React.FC<TransactionListCardProps> = ({
                   </span>
                 </div>
                 <div className="h-px bg-[var(--border-light)]" />
+                {onViewAsConveyancer && (
+                  <>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-[var(--text-main)] transition-colors duration-150 ease-out hover:bg-[var(--bg-section)]"
+                      onClick={(event) => {
+                        stop(event);
+                        setIsMenuOpen(false);
+                        onViewAsConveyancer();
+                      }}
+                    >
+                      <Scale size={16} strokeWidth={2} />
+                      <span>View as conveyancer</span>
+                    </button>
+                    <div className="h-px bg-[var(--border-light)]" />
+                  </>
+                )}
                 <button
                   type="button"
                   role="menuitem"

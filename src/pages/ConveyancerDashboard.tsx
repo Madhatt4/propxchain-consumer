@@ -19,6 +19,7 @@ import { icpService } from '../services/icp.service';
 import { logger } from '@/utils/logger';
 import { isWaitingForOtherSide } from '@/utils/twoSidedSteps';
 import { useAuthStore } from '../stores/authStore';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { TRANSACTION_STATUS_LABEL, isTransactionStatus, type TransactionStatus } from '@/types/transactionStatus';
 
 interface ConveyancerTransaction {
@@ -80,6 +81,8 @@ const ConveyancerDashboard: React.FC = () => {
   // is no list here any more: the shared dashboard is the only transaction list.
   const [searchParams] = useSearchParams();
   const txId = searchParams.get('tx');
+  // Admins review any matter from the dashboard card menu; they hold no conveyancer profile.
+  const { isAdmin, isLoading: adminLoading } = useIsAdmin();
   const [viewState, setViewState] = useState<ViewState>('detail');
   const [selectedTx, setSelectedTx] = useState<ConveyancerTransaction | null>(null);
   const [documents, setDocuments] = useState<TransactionDocument[]>([]);
@@ -162,10 +165,23 @@ const ConveyancerDashboard: React.FC = () => {
   }, [txId, navigate, loadTransaction, loadDocuments]);
 
   useEffect(() => {
+    if (adminLoading) return;
     const init = async (): Promise<void> => {
       const authState = useAuthStore.getState();
       if (!authState.principalId || !authState.isAuthenticated) {
         navigate('/login');
+        return;
+      }
+
+      if (isAdmin) {
+        try {
+          await icpService.initialize();
+          await openMatter();
+        } catch (error) {
+          logger.error('ConveyancerDashboard admin init error:', error);
+        } finally {
+          setLoading(false);
+        }
         return;
       }
 
@@ -194,7 +210,7 @@ const ConveyancerDashboard: React.FC = () => {
     };
 
     init();
-  }, [navigate, openMatter]);
+  }, [navigate, openMatter, isAdmin, adminLoading]);
 
   const handleAction = async (action: 'tr1' | 'exchange' | 'ap1'): Promise<void> => {
     if (!selectedTx) return;
