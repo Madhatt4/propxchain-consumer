@@ -8,6 +8,9 @@ project(':aparajita-capacitor-biometric-auth').projectDir = new File('../node_mo
 include ':aparajita-capacitor-secure-storage'
 project(':aparajita-capacitor-secure-storage').projectDir = new File('../node_modules/.pnpm/@aparajita+capacitor-secure-storage@8.0.1/node_modules/@aparajita/capacitor-secure-storage/android')
 
+include ':capacitor-firebase-messaging'
+project(':capacitor-firebase-messaging').projectDir = new File('../node_modules/.pnpm/@capacitor-firebase+messagi_1863fb939ade5a0884b5e49270dbefa5/node_modules/@capacitor-firebase/messaging/android')
+
 include ':capacitor-app'
 project(':capacitor-app').projectDir = new File('../node_modules/.pnpm/@capacitor+app@8.1.1_@capacitor+core@8.5.2/node_modules/@capacitor/app/android')
 
