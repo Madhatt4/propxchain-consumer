@@ -66,5 +66,11 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>PropXchain uses the camera so you can photograph a document to add to your transaction.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>PropXchain lets you choose a photo of a document from your library to add to your transaction.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>PropXchain only saves a photo to your library if you ask it to.</string>
 </dict>
 </plist>
