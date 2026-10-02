@@ -1,11 +1,9 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { icpService } from '../services/icp.service';
 import { useAuthStore } from '../stores/authStore';
-import { useSubscription } from './useSubscription';
 import { logger } from '@/utils/logger';
 import {
   getStagesForJourney,
-  PROPXCHAIN_FEE_PENCE,
 } from '../utils/stageConfig';
 import type { StageConfig, JourneyRole, StageStatus } from '../types/stage.types';
 import type { ServiceProvider, ProviderSelection } from '../types/provider.types';
@@ -43,10 +41,6 @@ interface UseTransactionFlowReturn {
   rateProvider: (stageId: string, rating: number, comment?: string) => void;
   completeStage: (stageId: string) => void;
   totalCostPence: number;
-  /** The PropXchain fee already included in totalCostPence — £75 (7500p) for
-   *  premium tiers, £0 for the free Starter tier. Breakdown UIs read this so
-   *  the fee line is gated identically to the running total. */
-  propxchainFeePence: number;
   expandedStageIds: string[];
   toggleStage: (stageId: string) => void;
   /** Stage ids currently in edit mode (re-opened after completion). */
@@ -473,19 +467,13 @@ export function useTransactionFlow(
     return map;
   }, [flowState.providerSelections]);
 
-  // The free Starter tier carries no £75 PropXchain fee — it only applies to
-  // premium tiers. Gating it here keeps a single source of truth that both the
-  // running-total number and the cost-breakdown line items read from.
-  const { isPremium } = useSubscription();
-  const propxchainFeePence = isPremium ? PROPXCHAIN_FEE_PENCE : 0;
-
   const totalCostPence = useMemo(() => {
-    let sum = propxchainFeePence;
+    let sum = 0;
     for (const selection of providerSelections.values()) {
       sum += selection.costPence;
     }
     return sum;
-  }, [providerSelections, propxchainFeePence]);
+  }, [providerSelections]);
 
   // Derive audit-event-shaped objects from local completion state so
   // PhaseIndicator / PhaseChecklist can advance even when the chain write
@@ -737,7 +725,6 @@ export function useTransactionFlow(
     rateProvider,
     completeStage,
     totalCostPence,
-    propxchainFeePence,
     expandedStageIds: flowState.expandedStageIds,
     toggleStage,
     editingStageIds: flowState.editingStageIds,

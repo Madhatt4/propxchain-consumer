@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useTransactionFlow } from '../../hooks/useTransactionFlow';
-import { useSubscription } from '../../hooks/useSubscription';
 
 import type { ServiceProvider } from '../../types/provider.types';
 
@@ -55,25 +54,10 @@ vi.mock('@/utils/logger', () => ({
   logger: { info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn() },
 }));
 
-// Mock useSubscription — the hook reads `isPremium` to decide whether the £75
-// PropXchain fee applies. Default to premium so the fee-inclusive total assertion
-// holds; the Starter-tier test overrides this per-case.
-vi.mock('../../hooks/useSubscription', () => ({
-  useSubscription: vi.fn(() => ({ isPremium: true })),
-}));
-
-/** Set the mocked subscription tier for the next render(s). */
-function setPremium(isPremium: boolean): void {
-  vi.mocked(useSubscription).mockReturnValue(
-    { isPremium } as unknown as ReturnType<typeof useSubscription>,
-  );
-}
-
 describe('useTransactionFlow', () => {
   beforeEach(() => {
     localStorage.clear();
     vi.clearAllMocks();
-    setPremium(true); // default tier for each test; Starter cases override
     mockGetTransactionProgress.mockResolvedValue(null);
     mockGetTransaction.mockResolvedValue(null);
     mockGetFlowState.mockResolvedValue(null);
@@ -127,19 +111,8 @@ describe('useTransactionFlow', () => {
     const provider = makeProvider({ id: 'search-provider', priceInPence: 250 });
     act(() => result.current.selectProvider('seller-2', provider));
     expect(result.current.providerSelections.get('seller-2')?.providerId).toBe('search-provider');
-    expect(result.current.totalCostPence).toBe(250 + 7500); // provider + PropXchain fee (premium)
-    expect(result.current.propxchainFeePence).toBe(7500);
-  });
-
-  it('should exclude the £75 PropXchain fee from the total on the free Starter tier', async () => {
-    setPremium(false);
-    const { result } = renderHook(() => useTransactionFlow('tx-123'));
-    await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
-    const provider = makeProvider({ id: 'search-provider', priceInPence: 250 });
-    act(() => result.current.selectProvider('seller-2', provider));
-    // Starter is free — the running total is provider cost only, no £75.
+    // The platform is free: the running total is provider cost only.
     expect(result.current.totalCostPence).toBe(250);
-    expect(result.current.propxchainFeePence).toBe(0);
   });
 
   it('should expand and collapse stages (multi-expand)', async () => {

@@ -16,9 +16,6 @@ interface TopBarProps {
   buyerName: string | null;
   stages: StageConfig[];
   totalCostPence: number;
-  /** PropXchain fee included in totalCostPence — 0 on the free Starter tier,
-   *  which hides the fee line from the cost breakdown. */
-  propxchainFeePence: number;
   providerSelections: Map<string, ProviderSelection>;
   /** First image from the imported listing — used as the topbar thumbnail
    *  in place of the 🏠 emoji when available. */
@@ -37,10 +34,9 @@ function getInitial(name: string): string {
   return name.charAt(0).toUpperCase();
 }
 
-function CostBreakdown({ stages, providerSelections, propxchainFeePence }: {
+function CostBreakdown({ stages, providerSelections }: {
   stages: StageConfig[];
   providerSelections: Map<string, ProviderSelection>;
-  propxchainFeePence: number;
 }): ReactElement {
   const stagesWithCosts = stages.filter(s => s.hasProviderMarketplace);
 
@@ -57,12 +53,6 @@ function CostBreakdown({ stages, providerSelections, propxchainFeePence }: {
           </div>
         );
       })}
-      {propxchainFeePence > 0 && (
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-500 dark:text-slate-400">PropXchain fee</span>
-          <span className="text-xs text-gray-700 dark:text-slate-300 font-medium">{formatPence(propxchainFeePence)}</span>
-        </div>
-      )}
     </div>
   );
 }
@@ -75,7 +65,6 @@ export function TopBar({
   buyerName,
   stages,
   totalCostPence,
-  propxchainFeePence,
   providerSelections,
   thumbnailUrl,
 }: TopBarProps): ReactElement {
@@ -180,7 +169,7 @@ export function TopBar({
         {/* Expanded Cost Breakdown */}
         {isExpanded && (
           <div className="px-5 pb-3 lg:px-7">
-            <CostBreakdown stages={stages} providerSelections={providerSelections} propxchainFeePence={propxchainFeePence} />
+            <CostBreakdown stages={stages} providerSelections={providerSelections} />
           </div>
         )}
       </div>

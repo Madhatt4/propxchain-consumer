@@ -1,6 +1,5 @@
 import type { StageConfig, JourneyRole } from '../types/stage.types';
 
-export const PROPXCHAIN_FEE_PENCE = 7500;
 
 // Status is omitted here — it is derived at runtime based on transaction state,
 // provider selections, and localStorage (for buyer stages beyond buyer-1/buyer-3 in Phase 1).

@@ -26,7 +26,6 @@ describe('TopBar — section nav slot', () => {
           buyerName={null}
           stages={[]}
           totalCostPence={0}
-          propxchainFeePence={0}
           providerSelections={new Map()}
         />
       </MemoryRouter>,
@@ -46,7 +45,6 @@ describe('TopBar — section nav slot', () => {
           buyerName={null}
           stages={[]}
           totalCostPence={0}
-          propxchainFeePence={0}
           providerSelections={new Map()}
         />
       </MemoryRouter>,

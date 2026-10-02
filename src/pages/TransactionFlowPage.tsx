@@ -475,7 +475,6 @@ export default function TransactionFlowPage(): ReactElement {
     rateProvider,
     completeStage: rawCompleteStage,
     totalCostPence,
-    propxchainFeePence,
     editingStageIds,
     setStageEditing,
     isLoading,
@@ -637,7 +636,6 @@ export default function TransactionFlowPage(): ReactElement {
         }
         stages={stages}
         totalCostPence={totalCostPence}
-        propxchainFeePence={propxchainFeePence}
         providerSelections={providerSelections}
         thumbnailUrl={propertyListing?.images?.[0]?.url}
       />
@@ -888,7 +886,6 @@ export default function TransactionFlowPage(): ReactElement {
 
       <CostFooterMobile
         totalCostPence={totalCostPence}
-        propxchainFeePence={propxchainFeePence}
         providerSelections={providerSelections}
       />
 

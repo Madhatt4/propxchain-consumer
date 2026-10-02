@@ -7,9 +7,6 @@ import { useAnimatedCounter } from '../../../hooks/useAnimatedCounter';
 
 interface CostFooterMobileProps {
   totalCostPence: number;
-  /** PropXchain fee included in totalCostPence — 0 on the free Starter tier,
-   *  which hides the fee line from the expanded breakdown. */
-  propxchainFeePence: number;
   providerSelections: Map<string, ProviderSelection>;
 }
 
@@ -28,7 +25,7 @@ function stageLabel(stageId: string): string {
   return STAGE_TITLES[stageId] ?? stageId;
 }
 
-export function CostFooterMobile({ totalCostPence, propxchainFeePence, providerSelections }: CostFooterMobileProps): ReactElement {
+export function CostFooterMobile({ totalCostPence, providerSelections }: CostFooterMobileProps): ReactElement {
   const [isExpanded, setIsExpanded] = useState(false);
   const animatedTotal = useAnimatedCounter(totalCostPence);
 
@@ -42,12 +39,6 @@ export function CostFooterMobile({ totalCostPence, propxchainFeePence, providerS
               <span className="text-xs text-gray-700 dark:text-slate-300">{formatPence(sel.costPence)}</span>
             </div>
           ))}
-          {propxchainFeePence > 0 && (
-            <div className="flex justify-between">
-              <span className="text-xs text-gray-500 dark:text-slate-400">PropXchain fee</span>
-              <span className="text-xs text-gray-700 dark:text-slate-300">{formatPence(propxchainFeePence)}</span>
-            </div>
-          )}
         </div>
       )}
       <div className="flex items-center justify-between px-4 py-3">

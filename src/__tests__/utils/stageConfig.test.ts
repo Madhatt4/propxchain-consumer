@@ -3,7 +3,6 @@ import {
   getSellerStages,
   getBuyerStages,
   getStagesForJourney,
-  PROPXCHAIN_FEE_PENCE,
   MILESTONE_TO_STAGE_ID,
 } from '../../utils/stageConfig';
 
@@ -80,12 +79,6 @@ describe('parallel stages', () => {
 
     expect(seller2?.prerequisiteStageIds).not.toContain('seller-3');
     expect(seller3?.prerequisiteStageIds).not.toContain('seller-2');
-  });
-});
-
-describe('PROPXCHAIN_FEE_PENCE', () => {
-  it('should equal 7500', () => {
-    expect(PROPXCHAIN_FEE_PENCE).toBe(7500);
   });
 });
 

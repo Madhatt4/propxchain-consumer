@@ -14,7 +14,6 @@ import {
 } from '@/services/landRegistryService';
 import RightmoveImport from './RightmoveImport';
 import type { RightmovePropertyListing } from '@/types/rightmove.types';
-import { useIsAdmin } from '@/hooks/useIsAdmin';
 
 interface PropertyDetails {
   address: string;
@@ -50,19 +49,6 @@ const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({ onSubmit 
 
   // Tier picked on the previous page (StartTransactionPage). Captured once at
   // mount; defaults to 'starter' because Starter is the safer default — the
-  // Premium-only pricing copy must never show to a user who didn't pick
-  // Premium.
-  const [tier] = useState<'starter' | 'premium'>(() =>
-    typeof window !== 'undefined' && localStorage.getItem('pendingTier') === 'premium'
-      ? 'premium'
-      : 'starter'
-  );
-
-  // Admins (canister-authoritative — see useIsAdmin) see the full feature
-  // surface regardless of which tier they picked, so they can QA every
-  // variant without switching accounts.
-  const { isAdmin } = useIsAdmin();
-  const showPremiumDetails = tier === 'premium' || isAdmin;
 
   // Land Registry search state
   const [priceHistory, setPriceHistory] = useState<PricePaidRecord[]>([]);
@@ -565,44 +551,15 @@ const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({ onSubmit 
                 </p>
               </div>
 
-              {/* Cost Breakdown — Premium users see the full breakdown;
-                  admins see it too (regardless of tier) for QA review. */}
-              {showPremiumDetails ? (
-                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 rounded-lg p-4">
-                  <h4 className="text-sm font-semibold text-amber-900 dark:text-amber-200 mb-3">PropXchain Cost Breakdown</h4>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-amber-800 dark:text-amber-300">AI co-pilot (Premium, optional)</span>
-                      <span className="font-semibold text-amber-900 dark:text-amber-200">£75</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-amber-800 dark:text-amber-300">Property searches</span>
-                      <span className="font-medium text-amber-700 dark:text-amber-300">£50–450</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-amber-800 dark:text-amber-300">Conveyancer (reserved acts)</span>
-                      <span className="font-medium text-amber-700 dark:text-amber-300">Quote per transaction</span>
-                    </div>
-                    <div className="border-t border-amber-300 dark:border-amber-700/50 pt-2 mt-2 flex justify-between">
-                      <span className="font-semibold text-amber-900 dark:text-amber-200">Estimated total</span>
-                      <span className="font-bold text-amber-900 dark:text-amber-200">£325–425 + conveyancer quote</span>
-                    </div>
-                  </div>
-                  <p className="text-xs text-amber-700 dark:text-amber-300 mt-3">
-                    No hidden fees. Every price is shown before you pay. Your conveyancer is paid directly; searches are bought through PropXchain.
-                  </p>
-                </div>
-              ) : (
-                <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700/50 rounded-lg p-4">
-                  <h4 className="text-sm font-semibold text-emerald-900 dark:text-emerald-200 mb-2">Starter — no platform fee</h4>
-                  <p className="text-sm text-emerald-800 dark:text-emerald-300">
-                    Your transaction is created free. You pay only for what you use: £50–450 for
-                    searches (bought through PropXchain), £7 per HM Land Registry title pull (it
-                    names the registered owner), and your conveyancer's own quote. The optional £75
-                    AI co-pilot reads your title and search results for you.
-                  </p>
-                </div>
-              )}
+              {/* The platform is free: only searches and title pulls are paid, each shown before you pay. */}
+              <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700/50 rounded-lg p-4">
+                <h4 className="text-sm font-semibold text-emerald-900 dark:text-emerald-200 mb-2">Free, no platform fee</h4>
+                <p className="text-sm text-emerald-800 dark:text-emerald-300">
+                  Your transaction is created free. You pay only for what you use: £50–450 for
+                  searches (bought through PropXchain), £7 per HM Land Registry title pull (it
+                  names the registered owner), and your conveyancer's own quote.
+                </p>
+              </div>
 
               {/* Who is on the title */}
               <div>
@@ -713,34 +670,6 @@ const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({ onSubmit 
           )}
         </form>
       </div>
-
-      {/*
-       * "What happens next?" copy lives in the wrapping page
-       * (CreateTransactionPage), not here. Keeping a single source of truth
-       * for that copy avoids the previous tier-mismatch bug where this
-       * component hard-coded Premium copy regardless of the picked tier.
-       *
-       * Admins see an extra Premium-flow preview card below so they can QA
-       * the £75 payment path without switching accounts. End users never
-       * see this card.
-       */}
-      {isAdmin && (
-        <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700/50">
-          <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-200 mb-2">
-            Admin preview · Premium flow
-          </h4>
-          <p className="text-xs text-blue-700 dark:text-blue-300 mb-2">
-            What a Premium user would see after this step. Hidden from non-admin accounts.
-          </p>
-          <ul className="text-sm text-blue-800 dark:text-blue-300 space-y-1">
-            <li>• You&apos;ll be taken to a secure payment page (£75 one-time fee)</li>
-            <li>• After payment, your transaction is created on the blockchain</li>
-            <li>• Share the invite code with the buyer to join your transaction</li>
-            <li>• Complete your TA6 and TA10 property information forms</li>
-            <li>• All data is stored securely on the blockchain</li>
-          </ul>
-        </div>
-      )}
     </div>
   );
 };
