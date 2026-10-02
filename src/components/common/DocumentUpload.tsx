@@ -19,6 +19,7 @@ import OscarVerificationBadge, {
   type OscarVerificationStatus
 } from './OscarVerificationBadge';
 import OscarAnalysisPanel from './OscarAnalysisPanel';
+import ScanButton from './ScanButton';
 
 interface DocumentUploadProps {
   transactionId?: string;
@@ -1182,6 +1183,11 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
           </div>
         )}
       </div>
+
+      <ScanButton
+        onFile={(file) => void processFile(file)}
+        disabled={disabled || uploadState.isUploading}
+      />
 
       {/* Oscar Analysis Panel */}
       {oscarState.showPanel && oscarState.result && (
