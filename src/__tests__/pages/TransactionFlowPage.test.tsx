@@ -43,7 +43,6 @@ vi.mock('../../hooks/useTransactionFlow', () => ({
     rateProvider: vi.fn(),
     completeStage: vi.fn(),
     totalCostPence: 7500,
-    propxchainFeePence: 7500,
     expandedStageIds: [],
     toggleStage: vi.fn(),
     editingStageIds: [],
