@@ -107,12 +107,12 @@ export async function generateSignedContractPDF(
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(139, 0, 0);
-  doc.text('LEGALLY BINDING AGREEMENT', pageWidth / 2, yPosition, { align: 'center' });
+  doc.text('SIGNED EXCHANGE RECORD', pageWidth / 2, yPosition, { align: 'center' });
   yPosition += 8;
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(0);
-  doc.text('All parties have digitally signed this contract on the blockchain', pageWidth / 2, yPosition, { align: 'center' });
+  doc.text('All parties have digitally signed this record on the blockchain', pageWidth / 2, yPosition, { align: 'center' });
 
   addFooter();
 

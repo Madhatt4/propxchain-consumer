@@ -132,7 +132,7 @@ const SellerTab: React.FC<SellerTabProps> = ({
           <ul className={`space-y-2 text-sm ${themeClasses.textSecondary}`}>
             <li>1. Your signature is captured and a cryptographic hash is generated</li>
             <li>2. The hash is recorded on the Internet Computer blockchain</li>
-            <li>3. Once both seller and buyer sign, the exchange is legally binding</li>
+            <li>3. Once both seller and buyer sign, the signatures are kept as a permanent record for your conveyancers</li>
             <li>4. Your conveyancer then confirms funds before completion</li>
           </ul>
         </div>
