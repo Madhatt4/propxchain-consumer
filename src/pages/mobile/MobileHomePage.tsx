@@ -6,6 +6,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import NextStepCard from '@/components/common/NextStepCard';
 import FaceIdToggle from '@/components/mobile/FaceIdToggle';
+import PushPrompt from '@/components/mobile/PushPrompt';
 import { TRANSACTION_STATUS_LABEL, toTransactionStatus } from '@/types/transactionStatus';
 import { useMobileTransactions } from './useMobileTransactions';
 
@@ -114,6 +115,7 @@ const MobileHomePage: React.FC = () => {
               </Link>
             </article>
           ))}
+        <PushPrompt />
         <FaceIdToggle />
       </main>
 
