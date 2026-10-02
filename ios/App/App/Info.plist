@@ -72,5 +72,7 @@
 	<string>PropXchain lets you choose a photo of a document from your library to add to your transaction.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>PropXchain only saves a photo to your library if you ask it to.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>PropXchain uses Face ID to unlock the app so only you can open your transactions.</string>
 </dict>
 </plist>

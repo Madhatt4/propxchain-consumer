@@ -30,6 +30,7 @@ const MAINTENANCE_MODE = !IS_REGISTRATION_OPEN;
 // Eager load landing and auth pages for fast initial load
 import RootLanding from './router/RootLanding';
 import AuthGate from './router/AuthGate';
+import BiometricGate from './components/mobile/BiometricGate';
 import NotFoundRedirect from './router/NotFoundRedirect';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
@@ -189,6 +190,7 @@ function App() {
           />
           <Router>
             <AnalyticsTracker />
+            <BiometricGate />
             {/* One mount for every dashboard route — the widget gates itself on
                 the path, because this repo has no dashboard layout to hang it off.
                 Its own boundary, because it is a SIBLING of the routes' one: a
