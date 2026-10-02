@@ -37,6 +37,8 @@ export interface Recipient {
   email?: string;
   /** E.164 mobile, e.g. +447700900123 — required for SMS delivery. */
   mobile?: string;
+  /** Auth user id, used to find the person's own registered phones for push. */
+  userId?: string;
 }
 
 export interface InAppNotification {
@@ -53,7 +55,7 @@ export interface NarrationOutputs {
 }
 
 export interface ChannelResult {
-  channel: 'in_app' | 'email' | 'sms';
+  channel: 'in_app' | 'email' | 'sms' | 'push';
   status: 'sent' | 'skipped' | 'error' | 'returned_to_client';
   detail?: string;
 }

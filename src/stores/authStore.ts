@@ -8,6 +8,7 @@ import { AuthClient, Principal } from '@propxchain/core-client';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { icpService } from '../services/icp.service';
 import { supabaseAuthService } from '../services/supabase.auth.service';
+import { removeDevicePushToken } from '../services/devicePushToken.service';
 import { clearDealStorage } from '@/utils/clearDealStorage';
 import { logger } from '@/utils/logger';
 
@@ -550,6 +551,10 @@ export const useAuthStore = create<AuthState>()(
           clearInterval(delegationExpiryInterval);
           delegationExpiryInterval = null;
         }
+
+        // Phone app: stop push to this phone BEFORE the session goes, because
+        // removing the server copy needs the signed-in session. No-op on the web.
+        await removeDevicePushToken().catch(() => undefined);
 
         try {
           if (authMethod === 'supabase') {
