@@ -8,6 +8,7 @@
  *
  *   SMS  → Twilio.  Set: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM_NUMBER
  *   Email→ Resend.  Set: RESEND_API_KEY, RESEND_FROM   (swap provider if you prefer)
+ *   Push ->FCM.   Set: FCM_SERVICE_ACCOUNT_JSON  (see push.ts)
  *   In-app→ returned to the client to render in the existing notifications feed.
  *
  * SECURITY (audit 2026-07-25, finding #2): the `recipient` passed in here is
@@ -16,7 +17,9 @@
  * own verified sending domain and Twilio number.
  */
 
+import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 import type { ChannelResult, NarrationOutputs, Recipient } from './types.ts';
+import { sendPush } from './push.ts';
 
 /**
  * Build the delivery recipient from a Supabase auth user record only.
@@ -29,11 +32,15 @@ import type { ChannelResult, NarrationOutputs, Recipient } from './types.ts';
  * is no end-user session there).
  */
 export function recipientFromUser(user: {
+  id?: string | null;
   email?: string | null;
   phone?: string | null;
   user_metadata?: Record<string, unknown> | null;
 }): Recipient {
   const out: Recipient = {};
+  if (typeof user.id === 'string' && user.id) {
+    out.userId = user.id;
+  }
   if (typeof user.email === 'string' && user.email.trim()) {
     out.email = user.email.trim();
   }
@@ -101,7 +108,11 @@ export async function sendEmail(to: string, subject: string, body: string): Prom
  * sent here if the authenticated user has those contact details on file and the
  * provider keys are present.
  */
-export async function deliverNarration(outputs: NarrationOutputs, recipient: Recipient): Promise<ChannelResult[]> {
+export async function deliverNarration(
+  outputs: NarrationOutputs,
+  recipient: Recipient,
+  push?: { admin: SupabaseClient; txId?: string },
+): Promise<ChannelResult[]> {
   const results: ChannelResult[] = [
     { channel: 'in_app', status: outputs.notification ? 'returned_to_client' : 'skipped', detail: outputs.notification ? undefined : 'no notification.json produced' },
   ];
@@ -117,6 +128,12 @@ export async function deliverNarration(outputs: NarrationOutputs, recipient: Rec
     results.push(await sendSms(recipient.mobile, outputs.sms));
   } else {
     results.push({ channel: 'sms', status: 'skipped', detail: 'no sms text or no recipient.mobile' });
+  }
+
+  if (outputs.notification && recipient.userId && push) {
+    results.push(await sendPush(push.admin, recipient.userId, push.txId));
+  } else {
+    results.push({ channel: 'push', status: 'skipped', detail: 'no notification or no recipient.userId' });
   }
   return results;
 }

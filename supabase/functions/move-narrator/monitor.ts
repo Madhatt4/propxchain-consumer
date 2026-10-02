@@ -137,6 +137,7 @@ export async function filterPremiumRoster(
 interface Recipient {
   email?: string;
   mobile?: string;
+  userId?: string;
 }
 
 async function recipientForParty(svc: SupabaseClient, userId: string): Promise<Recipient | null> {
@@ -192,7 +193,7 @@ async function pollAndDeliver(
   });
 
   const outputs = await fetchNarrationOutputs(agent.apiKey, sessionId);
-  const results = await deliverNarration(outputs, recipient);
+  const results = await deliverNarration(outputs, recipient, { admin: svc, txId: request.txId });
   await emitTelemetry(svc, {
     transactionId: request.txId,
     eventType: 'narrator_delivered',

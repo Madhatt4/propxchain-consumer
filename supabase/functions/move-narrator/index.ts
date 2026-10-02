@@ -271,7 +271,10 @@ serve(async (req: Request): Promise<Response> => {
       case 'deliver': {
         const outputs = await fetchNarrationOutputs(apiKey, request.sessionId);
         // Recipient comes from the verified session, never the request body.
-        const results = await deliverNarration(outputs, recipientFromUser(user));
+        const results = await deliverNarration(outputs, recipientFromUser(user), {
+          admin: adminClient,
+          txId: await verifiedTxId(adminClient, request.sessionId, request.txId),
+        });
         // See the 'status' case above for why the recorded value wins.
         const txId = await verifiedTxId(adminClient, request.sessionId, request.txId);
         if (txId) {
