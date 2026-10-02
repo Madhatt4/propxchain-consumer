@@ -61,6 +61,8 @@ const Dashboard_PremiumContent: React.FC = () => {
   const supabaseUser = useAuthStore((s) => s.supabaseUser);
   const storeProfile = useAuthStore((s) => s.userProfile);
   const { isAdmin: isAdminFromCanister } = useIsAdmin();
+  // Admins can open any transaction on the conveyancer matter screen (card menu).
+  const isAdminUser = isAdminPrincipal(principalId) || isAdminFromCanister;
   // Common sections for everyone, plus an agent's, developer's or conveyancer's extras.
   const portalSections = usePortalSections();
   const [user, setUser] = useState<{ principal: string; name?: string; email?: string; userType?: unknown } | null>(null);
@@ -763,6 +765,7 @@ const Dashboard_PremiumContent: React.FC = () => {
                       typeLabel={formatTransactionType(tx.transactionType)}
                       listing={getRightmoveData(String(tx.id))}
                       onOpen={() => handleTransactionClick(tx)}
+                      onViewAsConveyancer={isAdminUser ? () => navigate(`/conveyancer?tx=${encodeURIComponent(tx.id)}`) : undefined}
                       onEdit={() => {
                         setSelectedTransaction(tx);
                         setEditPostcode(getStoredPostcode(tx.id) || tx.postcode || '');
