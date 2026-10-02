@@ -1,4 +1,6 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { isNativeApp } from './native';
+import { secureSessionStorage } from './secureSessionStorage';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -11,6 +13,8 @@ export const supabase: SupabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON
   auth: {
     autoRefreshToken: true,
     persistSession: true,
+    // In the phone app the session lives in the Keychain / Keystore, not localStorage.
+    ...(isNativeApp() ? { storage: secureSessionStorage } : {}),
     detectSessionInUrl: true,
     // Security scan M6: under the default implicit flow supabase-js accepted a
     // session from #access_token in ANY URL, so a crafted link could sign a
