@@ -14,6 +14,8 @@ export interface BotConnectionInfo {
   name: string;
   addedBy: string;
   addedAt: bigint;
+  /** The human who approved the bot. Null on records from before owner attribution. */
+  ownerPrincipal: string | null;
 }
 
 function principalToString(p: unknown): string {
@@ -21,6 +23,12 @@ function principalToString(p: unknown): string {
     return (p as Principal).toText();
   }
   return String(p);
+}
+
+/** Candid `opt principal` arrives as `[]` or `[principal]`. */
+function optPrincipalToString(v: unknown): string | null {
+  if (Array.isArray(v)) return v.length > 0 ? principalToString(v[0]) : null;
+  return v ? principalToString(v) : null;
 }
 
 export const botConnectionService = {
@@ -58,6 +66,7 @@ export const botConnectionService = {
         name: b.name as string,
         addedBy: principalToString(b.addedBy),
         addedAt: b.addedAt as bigint,
+        ownerPrincipal: optPrincipalToString(b.ownerPrincipal),
       };
     });
   },

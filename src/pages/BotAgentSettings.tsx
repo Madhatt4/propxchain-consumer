@@ -26,6 +26,7 @@ import {
   botConnectionService,
   type BotConnectionInfo,
 } from '../services/botConnection.service';
+import { canRemoveBot } from '../services/botOwnership';
 import AgentActivityPanel from '../components/agent/AgentActivityPanel';
 
 // ─── Types ────────────────────────────────────────────────────────────────
@@ -253,7 +254,7 @@ const BotAgentSettings: React.FC = () => {
                               <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Connected {formatBotDate(bot.addedAt)}</p>
                             </div>
                           </div>
-                          {bot.addedBy === user.principal && (
+                          {canRemoveBot(bot, user.principal) && (
                             <Button
                               variant="outline" size="sm"
                               onClick={() => void handleDisconnect(group.transaction.id, bot.principal)}

@@ -29,6 +29,7 @@ import { ConveyancerQuotesStage } from '../components/transaction/flow/stages/Co
 import { SurveyPanel } from '../components/providers/SurveyPanel';
 import { SurveyReferralStatusCard } from '../components/providers/SurveyReferralStatusCard';
 import { BuyerInviteCard } from '../components/transaction/flow/BuyerInviteCard';
+import BotPanelCard from '../components/transaction/BotPanelCard';
 import NextStepCard from '../components/common/NextStepCard';
 import { StallLine } from '../components/transaction/flow/StallLine';
 import { MandateBanners } from '../components/transaction/flow/MandateBanners';
@@ -834,6 +835,10 @@ export default function TransactionFlowPage(): ReactElement {
                 <RestorePill label="invite code" onClick={inviteDismiss.restore} />
               )
             )}
+
+            {/* AI assistants connected to this deal, with Remove for the
+                bots this user owns. Hidden when none are connected. */}
+            {id && <BotPanelCard transactionId={id} />}
 
             {/* Help panel (shown when ? is clicked) */}
             {helpStageId && (
