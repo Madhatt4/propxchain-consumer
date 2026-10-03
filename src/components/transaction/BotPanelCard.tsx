@@ -95,7 +95,7 @@ const BotPanelCard: React.FC<BotPanelCardProps> = ({ transactionId }) => {
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-stone-900 dark:text-stone-100 break-words font-['DM_Sans']">{bot.name}</p>
                   <p className="text-xs text-stone-500 dark:text-stone-400 font-['DM_Sans']">
-                    {bot.ownerPrincipal && bot.ownerPrincipal === me ? 'Owner: you' : 'Owner: someone else'}
+                    {!bot.ownerPrincipal ? 'Owner: not recorded' : bot.ownerPrincipal === me ? 'Owner: you' : 'Owner: someone else'}
                     {' · joined '}
                     {formatJoined(bot.addedAt)}
                   </p>

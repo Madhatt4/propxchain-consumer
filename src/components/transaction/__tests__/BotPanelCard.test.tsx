@@ -41,6 +41,13 @@ describe('BotPanelCard', () => {
     expect(screen.getByText(/only its owner can remove it/i)).toBeTruthy();
   });
 
+  it('lets a participant remove an old record that has no owner, and says so', async () => {
+    getTransactionBots.mockResolvedValue([{ ...ownBot, ownerPrincipal: null }]);
+    render(<BotPanelCard transactionId="tx1" />);
+    await screen.findByText(/owner: not recorded/i);
+    expect(screen.getAllByRole('button', { name: /^remove$/i })).toHaveLength(1);
+  });
+
   it('asks for confirmation, then disconnects and reloads', async () => {
     getTransactionBots.mockResolvedValueOnce([ownBot]).mockResolvedValueOnce([]);
     disconnectBot.mockResolvedValue(undefined);
