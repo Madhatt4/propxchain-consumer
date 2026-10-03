@@ -125,7 +125,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
           <p>{'\u2713'} Recorded on the Internet Computer blockchain</p>
           <p>{'\u2713'} PropXchain pays all blockchain fees - no wallet required</p>
           <p>{'\u2713'} Signatures are cryptographically secured and immutable</p>
-          <p>{'\u2713'} Once all parties sign, the exchange is legally binding</p>
+          <p>{'\u2713'} Once all parties sign, the signatures are kept as a permanent record for your conveyancers</p>
           <p>{'\u2713'} Contract hash provides proof of the exact terms agreed</p>
         </div>
       </div>

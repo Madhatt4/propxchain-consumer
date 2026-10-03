@@ -127,7 +127,7 @@ const SignatureModal: React.FC<SignatureModalProps> = ({
             </p>
             <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">
               By signing below, you agree to the terms and conditions of this property exchange contract.
-              Your signature will be recorded on the Internet Computer blockchain and is legally binding.
+              Your signature will be recorded on the Internet Computer blockchain as a permanent record. Your conveyancer confirms when contracts have exchanged.
             </p>
           </div>
 
