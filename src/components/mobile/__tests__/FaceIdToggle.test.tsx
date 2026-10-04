@@ -50,4 +50,14 @@ describe('FaceIdToggle', () => {
     await waitFor(() => expect(m.setLockEnabled).toHaveBeenCalledWith(false));
     expect(sw.getAttribute('aria-checked')).toBe('false');
   });
+
+  it('rolls the switch back when saving the setting fails', async () => {
+    m.setLockEnabled.mockRejectedValue(new Error('keychain write failed'));
+    render(<FaceIdToggle />);
+    const sw = await screen.findByRole('switch', { name: /face id lock/i });
+    expect(sw.getAttribute('aria-checked')).toBe('true');
+    fireEvent.click(sw);
+    await waitFor(() => expect(m.setLockEnabled).toHaveBeenCalledWith(false));
+    await waitFor(() => expect(sw.getAttribute('aria-checked')).toBe('true'));
+  });
 });

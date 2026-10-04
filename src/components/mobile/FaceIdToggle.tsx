@@ -24,7 +24,12 @@ export default function FaceIdToggle(): JSX.Element | null {
   const toggle = async () => {
     const next = !enabled;
     setEnabled(next);
-    await setLockEnabled(next);
+    try {
+      await setLockEnabled(next);
+    } catch {
+      // Saving failed: show the setting that is actually stored.
+      setEnabled(!next);
+    }
   };
 
   return (
