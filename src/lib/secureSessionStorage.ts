@@ -21,7 +21,11 @@ function init(): Promise<void> {
     ready = (async () => {
       await SecureStorage.setKeyPrefix('propxchain_');
       await SecureStorage.setSynchronize(false);
-    })();
+    })().catch((err: unknown) => {
+      // Do not cache a rejected init: let the next call try again.
+      ready = null;
+      throw err;
+    });
   }
   return ready;
 }
