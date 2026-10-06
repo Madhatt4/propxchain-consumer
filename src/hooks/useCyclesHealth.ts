@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { icpService } from '../services/icp.service';
-import { supabase } from '../lib/supabase';
-import { logger } from '@/utils/logger';
 import {
   computeBurnRate,
   getCanisterHealth,
@@ -40,31 +38,6 @@ async function fetchLiveBalances(): Promise<LiveBalance[]> {
       cycles: v.cycles,
       error: v.error,
     }));
-}
-
-// Persist measurements via the SECURITY DEFINER RPC in the devops_board schema.
-// Failures are logged but never thrown — UI must update even if write fails.
-async function persistMeasurements(balances: LiveBalance[]): Promise<void> {
-  await Promise.all(
-    balances.map(async (b) => {
-      const balanceCycles = Number(b.cycles);
-      const balanceT = balanceCycles / 1_000_000_000_000;
-      const { error } = await supabase
-        .schema('devops_board')
-        .rpc('record_cycle_balance', {
-          p_canister_name: b.canisterName,
-          p_canister_id: b.canisterId,
-          p_balance_cycles: balanceCycles,
-          p_balance_t: balanceT,
-        });
-      if (error) {
-        logger.warn('record_cycle_balance failed', {
-          canister: b.canisterName,
-          message: error.message,
-        });
-      }
-    }),
-  );
 }
 
 // Patches an existing list with live measurements: appends a fresh point to
@@ -136,6 +109,10 @@ export function useCyclesHealth(): UseCyclesHealthReturn {
     }
   }, []);
 
+  // Live refresh is display-only. History rows are written solely by the
+  // monorepo's daily cycles-monitor cron (service_role): the 2026-08-22
+  // lockdown migration revoked record_cycle_balance from authenticated, so a
+  // browser write-back would be refused (42501) on every click.
   const liveRefresh = useCallback(async (): Promise<void> => {
     setError(null);
     setLoading(true);
@@ -145,10 +122,6 @@ export function useCyclesHealth(): UseCyclesHealthReturn {
       const measuredAt = new Date();
       setList((prev) => applyLiveBalances(prev, balances, measuredAt));
       setLastRefreshed(measuredAt);
-      // Fire-and-forget persistence — UI is already updated above.
-      void persistMeasurements(balances).catch((err) => {
-        logger.warn('persistMeasurements failed', { message: String(err) });
-      });
     } catch (err) {
       if (!isMountedRef.current) return;
       setError(err instanceof Error ? err.message : 'Failed to query canisters');

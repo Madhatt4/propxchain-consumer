@@ -252,7 +252,7 @@ export const CanistersTable: React.FC<CanistersTableProps> = ({
               onClick={() => { void liveRefresh(); }}
               disabled={tsLoading}
               className="gap-1"
-              title="Query each canister's getCycles() and persist a fresh measurement"
+              title="Query each canister's getCycles() now — history is recorded by the daily cron"
             >
               <RefreshCw className={cn('h-3 w-3', tsLoading && 'animate-spin')} />
               Refresh
