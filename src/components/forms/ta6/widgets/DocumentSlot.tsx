@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Paperclip } from 'lucide-react';
 
 import { PromptHeader } from './PromptHeader';
@@ -38,10 +38,14 @@ const AttachedControls: React.FC<AttachedControlsProps> = ({
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [advisory, setAdvisory] = useState<string | null>(null);
+  // Which pick the pending advisory belongs to: a late answer about an
+  // earlier file must not overwrite the line for the file now attached.
+  const pickSeq = useRef(0);
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
     const file = e.target.files?.[0];
     if (!file || !onUpload) return;
+    const seq = ++pickSeq.current;
     setIsUploading(true);
     setUploadError(null);
     setAdvisory(null);
@@ -49,7 +53,12 @@ const AttachedControls: React.FC<AttachedControlsProps> = ({
       const upload = await onUpload(file);
       onUploaded(upload.documentId);
       // Advisory only: it lands after the id and a failure shows nothing.
-      upload.advisory.then(setAdvisory, () => setAdvisory(null));
+      upload.advisory.then(
+        (line) => {
+          if (pickSeq.current === seq) setAdvisory(line);
+        },
+        () => undefined,
+      );
     } catch (err) {
       setUploadError(err instanceof Error ? err.message : 'Upload failed');
     } finally {

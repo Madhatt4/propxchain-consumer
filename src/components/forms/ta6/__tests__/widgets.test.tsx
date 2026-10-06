@@ -249,6 +249,40 @@ describe('DocumentSlot', () => {
     expect(screen.queryByText(/Reads as|conveyancer will check/)).not.toBeInTheDocument();
   });
 
+  it('should ignore a late advisory from an earlier upload once a newer file is picked', async () => {
+    // Arrange: file A's advisory settles after file B's.
+    let resolveA: (line: string | null) => void = () => {};
+    const advisoryA = new Promise<string | null>((resolve) => {
+      resolveA = resolve;
+    });
+    const onUpload = vi
+      .fn()
+      .mockResolvedValueOnce({ documentId: '1', advisory: advisoryA })
+      .mockResolvedValueOnce({ documentId: '2', advisory: Promise.resolve('Reads as a lease.') });
+    render(
+      <DocumentSlot
+        refCode="4.2"
+        prompt={prompt}
+        value={{ status: 'attached', documentId: null }}
+        onChange={() => {}}
+        onUpload={onUpload}
+      />,
+    );
+    const input = screen.getByLabelText('4.2 attachment');
+
+    // Act
+    fireEvent.change(input, { target: { files: [new File(['a'], 'a.pdf')] } });
+    await waitFor(() => expect(screen.queryByText('Uploading...')).not.toBeInTheDocument());
+    fireEvent.change(input, { target: { files: [new File(['b'], 'b.pdf')] } });
+    await waitFor(() => expect(screen.getByText('Reads as a lease.')).toBeInTheDocument());
+    resolveA('Reads as an Energy Performance Certificate.');
+
+    // Assert: B's line survives A's late answer.
+    await waitFor(() => expect(onUpload).toHaveBeenCalledTimes(2));
+    expect(screen.getByText('Reads as a lease.')).toBeInTheDocument();
+    expect(screen.queryByText('Reads as an Energy Performance Certificate.')).not.toBeInTheDocument();
+  });
+
   it('should surface an upload failure inline without changing the value', async () => {
     // Arrange
     const onChange = vi.fn();
