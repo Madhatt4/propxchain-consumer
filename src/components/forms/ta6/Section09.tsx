@@ -14,7 +14,7 @@ import { SECTION_09_PROMPTS } from '../../../lib/ta6-prompts/section09';
 import { ArrangementEditor, MoneyField, RightsEditor } from './Section09Rows';
 import { PromptHeader } from './widgets/PromptHeader';
 import { ResponseField } from './widgets/ResponseField';
-import type { TA6SectionProps } from './section-props';
+import type { TA6SectionProps, TA6UploadFile } from './section-props';
 import type { TA6PromptEntry } from './widgets/types';
 import type { TA6ResponseValue, TA6Right, TA6Section9Rights } from '../../../types/ta6.types';
 
@@ -96,7 +96,7 @@ interface ArrangementBlockProps {
   value: TA6Section9Rights;
   patch: (partial: Partial<TA6Section9Rights>) => void;
   readOnly: boolean;
-  uploadFile?: (file: File) => Promise<string>;
+  uploadFile?: TA6UploadFile;
 }
 
 /** 9.9 — the arrangement record is optional on-chain: add / remove block. */

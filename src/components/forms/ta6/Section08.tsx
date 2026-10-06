@@ -14,7 +14,7 @@ import { AnswerButtons } from './widgets/AnswerButtons';
 import { DocumentSlot } from './widgets/DocumentSlot';
 import { PromptHeader } from './widgets/PromptHeader';
 import { ResponseField } from './widgets/ResponseField';
-import type { TA6SectionProps } from './section-props';
+import type { TA6SectionProps, TA6UploadFile } from './section-props';
 import type { TA6PromptEntry } from './widgets/types';
 import type { TA6Section8Environmental } from '../../../types/ta6.types';
 
@@ -25,7 +25,7 @@ interface BlockProps {
   value: TA6Section8Environmental;
   patch: (partial: Partial<TA6Section8Environmental>) => void;
   readOnly: boolean;
-  uploadFile?: (file: File) => Promise<string>;
+  uploadFile?: TA6UploadFile;
 }
 
 /** 8.3 radon test + 8.3a/8.3b follow-ups, then standalone 8.4. */

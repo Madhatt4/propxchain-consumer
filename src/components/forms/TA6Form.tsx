@@ -24,6 +24,7 @@ import { StepAnomalyFlag } from './ta6/StepAnomalyFlag';
 import type { StepAnomaly } from './ta6/StepAnomalyFlag';
 import { StepperNav } from './ta6/StepperNav';
 import type { StepperStep } from './ta6/StepperNav';
+import type { TA6UploadFile } from './ta6/section-props';
 import { SectionCard } from './ta6/widgets/SectionCard';
 import { TA6_SECTION_TITLES, TA6_STEP_COUNT, isSectionComplete, stepForRef } from './ta6/sectionMeta';
 import { TA6_OFFICIAL_FORM_URL } from '../../lib/ta6-prompts/types';
@@ -49,7 +50,7 @@ export interface TA6FormProps {
   hasAcknowledged?: boolean;
   onAcknowledge?: () => Promise<void>;
   /** Resolves a picked file to a document_storage documentId (DocumentSlots). */
-  uploadFile?: (file: File) => Promise<string>;
+  uploadFile?: TA6UploadFile;
   /** Server-side cross-reference anomalies keyed to question refs. */
   anomalies?: StepAnomaly[];
   /** 1-based section to open on. A "Check my answers" flag links to the

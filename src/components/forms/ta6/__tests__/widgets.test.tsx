@@ -176,7 +176,7 @@ describe('DocumentSlot', () => {
   it('should run onUpload and store the resolved documentId when a file is picked', async () => {
     // Arrange
     const onChange = vi.fn();
-    const onUpload = vi.fn().mockResolvedValue('99');
+    const onUpload = vi.fn().mockResolvedValue({ documentId: '99', advisory: Promise.resolve(null) });
     render(
       <DocumentSlot
         refCode="4.2"
@@ -196,6 +196,57 @@ describe('DocumentSlot', () => {
       expect(onChange).toHaveBeenCalledWith({ status: 'attached', documentId: '99' }),
     );
     expect(onUpload).toHaveBeenCalledWith(file);
+  });
+
+  it('should show the advisory line once the classification resolves', async () => {
+    // Arrange
+    const onUpload = vi.fn().mockResolvedValue({
+      documentId: '99',
+      advisory: Promise.resolve('Reads as an Energy Performance Certificate.'),
+    });
+    render(
+      <DocumentSlot
+        refCode="4.2"
+        prompt={prompt}
+        value={{ status: 'attached', documentId: null }}
+        onChange={() => {}}
+        onUpload={onUpload}
+      />,
+    );
+    const file = new File(['pdf-bytes'], 'epc.pdf', { type: 'application/pdf' });
+
+    // Act
+    fireEvent.change(screen.getByLabelText('4.2 attachment'), { target: { files: [file] } });
+
+    // Assert
+    await waitFor(() =>
+      expect(screen.getByText('Reads as an Energy Performance Certificate.')).toBeInTheDocument(),
+    );
+  });
+
+  it('should show nothing extra when the advisory is null', async () => {
+    // Arrange
+    const onChange = vi.fn();
+    const onUpload = vi.fn().mockResolvedValue({ documentId: '99', advisory: Promise.resolve(null) });
+    render(
+      <DocumentSlot
+        refCode="4.2"
+        prompt={prompt}
+        value={{ status: 'attached', documentId: null }}
+        onChange={onChange}
+        onUpload={onUpload}
+      />,
+    );
+    const file = new File(['pdf-bytes'], 'epc.pdf', { type: 'application/pdf' });
+
+    // Act
+    fireEvent.change(screen.getByLabelText('4.2 attachment'), { target: { files: [file] } });
+
+    // Assert
+    await waitFor(() =>
+      expect(onChange).toHaveBeenCalledWith({ status: 'attached', documentId: '99' }),
+    );
+    expect(screen.queryByText(/Reads as|conveyancer will check/)).not.toBeInTheDocument();
   });
 
   it('should surface an upload failure inline without changing the value', async () => {

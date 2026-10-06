@@ -12,6 +12,7 @@ import { SECTION_13_PROMPTS } from '../../../lib/ta6-prompts/section13';
 import { emptyDocument } from '../../../types/ta6.defaults';
 import type { TA6PromptEntry } from './widgets/types';
 import type { TA6Occupier } from '../../../types/ta6.types';
+import type { TA6UploadFile } from './section-props';
 
 const prompt = (ref: string): TA6PromptEntry | undefined =>
   SECTION_13_PROMPTS.find((entry) => entry.ref === ref);
@@ -42,7 +43,7 @@ interface OccupierRowProps {
   onRemove: () => void;
   canRemove: boolean;
   readOnly: boolean;
-  uploadFile?: (file: File) => Promise<string>;
+  uploadFile?: TA6UploadFile;
 }
 
 const OccupierRow: React.FC<OccupierRowProps> = ({
@@ -109,7 +110,7 @@ export interface Section13OccupiersProps {
   occupiers: TA6Occupier[];
   onChange: (next: TA6Occupier[]) => void;
   readOnly: boolean;
-  uploadFile?: (file: File) => Promise<string>;
+  uploadFile?: TA6UploadFile;
 }
 
 export const Section13Occupiers: React.FC<Section13OccupiersProps> = ({

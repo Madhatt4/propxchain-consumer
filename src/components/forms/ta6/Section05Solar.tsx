@@ -8,6 +8,7 @@ import { SECTION_05_PROMPTS } from '../../../lib/ta6-prompts/section05';
 import { emptyDocument } from '../../../types/ta6.types';
 import type { TA6PromptEntry } from './widgets/types';
 import type { TA6SolarPower } from '../../../types/ta6.types';
+import type { TA6UploadFile } from './section-props';
 
 function promptFor(ref: string): TA6PromptEntry | undefined {
   return SECTION_05_PROMPTS.find((p) => p.ref === ref);
@@ -42,7 +43,7 @@ interface SolarDetailsProps {
   value: TA6SolarPower;
   onChange: (next: TA6SolarPower) => void;
   readOnly: boolean;
-  uploadFile?: (file: File) => Promise<string>;
+  uploadFile?: TA6UploadFile;
 }
 
 const SolarDetails: React.FC<SolarDetailsProps> = ({ value, onChange, readOnly, uploadFile }) => (
@@ -107,7 +108,7 @@ export interface Section05SolarProps {
   value: TA6SolarPower | null;
   onChange: (next: TA6SolarPower | null) => void;
   readOnly: boolean;
-  uploadFile?: (file: File) => Promise<string>;
+  uploadFile?: TA6UploadFile;
 }
 
 /**

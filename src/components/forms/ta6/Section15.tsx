@@ -13,7 +13,7 @@ import { DocumentSlot } from './widgets/DocumentSlot';
 import { PromptHeader } from './widgets/PromptHeader';
 import { SECTION_15_PROMPTS } from '../../../lib/ta6-prompts/section15';
 import { emptyDocument } from '../../../types/ta6.defaults';
-import type { TA6SectionProps } from './section-props';
+import type { TA6SectionProps, TA6UploadFile } from './section-props';
 import type { TA6PromptEntry } from './widgets/types';
 import type { TA6DocumentValue, TA6Section15AdditionalInfo } from '../../../types/ta6.types';
 
@@ -57,7 +57,7 @@ interface ConsentRowProps {
   onRemove: () => void;
   canRemove: boolean;
   readOnly: boolean;
-  uploadFile?: (file: File) => Promise<string>;
+  uploadFile?: TA6UploadFile;
 }
 
 const ConsentRow: React.FC<ConsentRowProps> = ({
@@ -97,7 +97,7 @@ interface ConsentListProps {
   documents: TA6DocumentValue[];
   onChange: (next: TA6DocumentValue[]) => void;
   readOnly: boolean;
-  uploadFile?: (file: File) => Promise<string>;
+  uploadFile?: TA6UploadFile;
 }
 
 const ConsentList: React.FC<ConsentListProps> = ({

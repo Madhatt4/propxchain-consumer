@@ -6,12 +6,13 @@ import { PromptHeader } from './widgets/PromptHeader';
 import { SECTION_05_PROMPTS } from '../../../lib/ta6-prompts/section05';
 import { emptyDocument } from '../../../types/ta6.types';
 import type { TA6DocumentValue } from '../../../types/ta6.types';
+import type { TA6UploadFile } from './section-props';
 
 export interface Section05DocumentsProps {
   value: TA6DocumentValue[];
   onChange: (next: TA6DocumentValue[]) => void;
   readOnly: boolean;
-  uploadFile?: (file: File) => Promise<string>;
+  uploadFile?: TA6UploadFile;
 }
 
 // Ghost row shown when no documents exist yet — same defaults the Add button
