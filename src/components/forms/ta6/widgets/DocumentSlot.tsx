@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Paperclip } from 'lucide-react';
 
 import { PromptHeader } from './PromptHeader';
 import { SegmentedButtons } from './SegmentedButtons';
 import { DOCUMENT_STATUS_LABELS, DOCUMENT_STATUS_OPTIONS } from './types';
 import type { TA6PromptEntry, TA6DocumentStatusChoice } from './types';
+import type { TA6Upload } from './ta6Uploader';
 import type { TA6DocumentValue } from '../../../../types/ta6.types';
 
 export interface DocumentSlotProps {
@@ -15,15 +16,15 @@ export interface DocumentSlotProps {
   value: TA6DocumentValue;
   onChange: (value: TA6DocumentValue) => void;
   readOnly?: boolean;
-  /** Resolves a picked file to a document_storage documentId — wire via makeTa6Uploader. */
-  onUpload?: (file: File) => Promise<string>;
+  /** Resolves a picked file to its documentId plus an advisory line — wire via makeTa6Uploader. */
+  onUpload?: (file: File) => Promise<TA6Upload>;
 }
 
 interface AttachedControlsProps {
   refCode: string;
   documentId: string | null;
   readOnly: boolean;
-  onUpload?: (file: File) => Promise<string>;
+  onUpload?: (file: File) => Promise<TA6Upload>;
   onUploaded: (documentId: string) => void;
 }
 
@@ -36,14 +37,28 @@ const AttachedControls: React.FC<AttachedControlsProps> = ({
 }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [advisory, setAdvisory] = useState<string | null>(null);
+  // Which pick the pending advisory belongs to: a late answer about an
+  // earlier file must not overwrite the line for the file now attached.
+  const pickSeq = useRef(0);
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
     const file = e.target.files?.[0];
     if (!file || !onUpload) return;
+    const seq = ++pickSeq.current;
     setIsUploading(true);
     setUploadError(null);
+    setAdvisory(null);
     try {
-      onUploaded(await onUpload(file));
+      const upload = await onUpload(file);
+      onUploaded(upload.documentId);
+      // Advisory only: it lands after the id and a failure shows nothing.
+      upload.advisory.then(
+        (line) => {
+          if (pickSeq.current === seq) setAdvisory(line);
+        },
+        () => undefined,
+      );
     } catch (err) {
       setUploadError(err instanceof Error ? err.message : 'Upload failed');
     } finally {
@@ -72,6 +87,9 @@ const AttachedControls: React.FC<AttachedControlsProps> = ({
         <span className="text-sm font-medium text-teal-600 dark:text-teal-400">Uploading...</span>
       )}
       {uploadError && <span className="text-sm text-red-600">{uploadError}</span>}
+      {advisory && (
+        <span className="basis-full text-xs text-gray-500 dark:text-slate-400">{advisory}</span>
+      )}
     </div>
   );
 };

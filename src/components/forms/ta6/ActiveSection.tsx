@@ -20,13 +20,14 @@ import { Section13 } from './Section13';
 import { Section14 } from './Section14';
 import { Section15 } from './Section15';
 import type { TA6PropertyInformation } from '../../../types/ta6.types';
+import type { TA6UploadFile } from './section-props';
 
 export interface ActiveSectionProps {
   step: number;
   form: TA6PropertyInformation;
   onChange: (next: TA6PropertyInformation) => void;
   readOnly: boolean;
-  uploadFile?: (file: File) => Promise<string>;
+  uploadFile?: TA6UploadFile;
 }
 
 export function ActiveSection({

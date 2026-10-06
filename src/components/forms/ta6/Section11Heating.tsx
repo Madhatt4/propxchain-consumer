@@ -11,6 +11,7 @@ import { SECTION_11_PROMPTS } from '../../../lib/ta6-prompts/section11';
 import { emptyDocument } from '../../../types/ta6.types';
 import type { TA6PromptEntry } from './widgets/types';
 import type { TA6HeatingSystem, TA6HeatingType } from '../../../types/ta6.types';
+import type { TA6UploadFile } from './section-props';
 
 function promptFor(ref: string): TA6PromptEntry | undefined {
   return SECTION_11_PROMPTS.find((p) => p.ref === ref);
@@ -54,7 +55,7 @@ interface RowProps {
   onRemove: () => void;
   canRemove: boolean;
   readOnly: boolean;
-  uploadFile?: (file: File) => Promise<string>;
+  uploadFile?: TA6UploadFile;
 }
 
 const HeatingTypeSelect: React.FC<Omit<RowProps, 'onRemove' | 'canRemove' | 'uploadFile'>> = ({
@@ -160,7 +161,7 @@ export interface HeatingSystemsEditorProps {
   systems: TA6HeatingSystem[];
   onChange: (next: TA6HeatingSystem[]) => void;
   readOnly: boolean;
-  uploadFile?: (file: File) => Promise<string>;
+  uploadFile?: TA6UploadFile;
 }
 
 /** TA6 §11.4 array editor — one record per heating/hot-water system. */

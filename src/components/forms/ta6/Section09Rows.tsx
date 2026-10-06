@@ -9,6 +9,7 @@ import { DocumentSlot } from './widgets/DocumentSlot';
 import { TextField, OptionalTextField } from './widgets/TextFields';
 import type { TA6PromptEntry } from './widgets/types';
 import type { TA6Arrangement, TA6Right } from '../../../types/ta6.types';
+import type { TA6UploadFile } from './section-props';
 
 const TEXTAREA_CLASSES =
   'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 ' +
@@ -176,7 +177,7 @@ export interface ArrangementEditorProps {
   value: TA6Arrangement;
   onChange: (next: TA6Arrangement) => void;
   readOnly: boolean;
-  uploadFile?: (file: File) => Promise<string>;
+  uploadFile?: TA6UploadFile;
   /** '9.9.doc' prompt entry for the agreement document slot. */
   documentPrompt: TA6PromptEntry | undefined;
 }

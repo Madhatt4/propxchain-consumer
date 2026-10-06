@@ -5,6 +5,7 @@ import { DocumentSlot } from './widgets/DocumentSlot';
 import { PromptHeader } from './widgets/PromptHeader';
 import type { TA6PromptEntry } from './widgets/types';
 import type { TA6WarrantyItem } from '../../../types/ta6.types';
+import type { TA6UploadFile } from './section-props';
 
 export interface Section06WarrantyRowProps {
   /** Question ref for the row, e.g. '6.1.roofing'; the slot uses `<ref>.doc`. */
@@ -14,7 +15,7 @@ export interface Section06WarrantyRowProps {
   value: TA6WarrantyItem;
   onChange: (next: TA6WarrantyItem) => void;
   readOnly: boolean;
-  uploadFile?: (file: File) => Promise<string>;
+  uploadFile?: TA6UploadFile;
 }
 
 /**

@@ -14,6 +14,7 @@
 
 import { supabase } from '../../../../lib/supabase';
 import { onChainFileName, storageObjectName } from '../../../../lib/onChainDocument';
+import { classifyDocument, describeClassification } from '../../../../services/docClassify.service';
 import { icpService } from '../../../../services/icp.service';
 import { generateFileHash } from '../../../../utils/hashGenerator';
 
@@ -22,21 +23,39 @@ export const TA6_ATTACHMENT_DOC_TYPE = 'ta6_attachment';
 const STORAGE_BUCKET: string =
   import.meta.env.VITE_HMLR_DOCUMENTS_BUCKET ?? 'propxchain-documents';
 
+/** What DocumentSlot gets back from an upload. */
+export interface TA6Upload {
+  /** The document_storage documentId (stringified Nat) that TA6DocumentValue.documentId stores. */
+  documentId: string;
+  /**
+   * The quiet advisory line about what was uploaded, settled after the id so
+   * "Document attached" never waits on it. Null when classification is
+   * unavailable; the slot then shows nothing extra.
+   */
+  advisory: Promise<string | null>;
+}
+
 /**
  * Build the DocumentSlot onUpload handler for one transaction. Throws with a
  * user-facing message on session, upload, or canister failure — DocumentSlot
  * surfaces the message inline.
  */
-export function makeTa6Uploader(transactionId: string): (file: File) => Promise<string> {
-  return async (file: File): Promise<string> => {
+export function makeTa6Uploader(transactionId: string): (file: File) => Promise<TA6Upload> {
+  return async (file: File): Promise<TA6Upload> => {
     const contentType = file.type || 'application/octet-stream';
     await requireSession();
     const fileHash = await generateFileHash(file);
-    const storageLocation = await uploadBytes(file, transactionId, fileHash, contentType);
+    const path = await uploadBytes(file, transactionId, fileHash, contentType);
+    const storageLocation = `supabase://${STORAGE_BUCKET}/${path}`;
     const documentId = await registerProof(file, fileHash, contentType, storageLocation, transactionId);
     icpService.emitDocumentUploadedEvent(transactionId, TA6_ATTACHMENT_DOC_TYPE, fileHash);
-    return documentId;
+    return { documentId, advisory: advise(transactionId, path) };
   };
+}
+
+async function advise(transactionId: string, path: string): Promise<string | null> {
+  const result = await classifyDocument(transactionId, path);
+  return result ? describeClassification(result) : null;
 }
 
 // Bucket RLS needs a Supabase session — fail with a clear message, not a raw
@@ -69,7 +88,7 @@ async function uploadBytes(
   if (error) {
     throw new Error(`Secure upload failed: ${error.message}`);
   }
-  return `supabase://${STORAGE_BUCKET}/${path}`;
+  return path;
 }
 
 async function registerProof(
