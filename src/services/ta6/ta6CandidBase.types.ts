@@ -26,6 +26,34 @@ export type CandidTA6Document =
   | { Attached: bigint }
   | { ToFollow: null };
 
+export type CandidAlterationDocumentKind =
+  | { PlanningPermission: null }
+  | { BuildingRegsApproval: null }
+  | { BuildingRegsCompletion: null }
+  | { CompetentPersonCertificate: null }
+  | { ListedBuildingConsent: null }
+  | { ConservationAreaConsent: null }
+  | { Other: null };
+
+export type CandidAlterationKind =
+  | { WindowsPost2002: null }
+  | { Conservatory: null }
+  | { Extension: null }
+  | { LoftConversion: null }
+  | { GarageConversion: null }
+  | { InternalWallsRemoved: null }
+  | { ChangeOfUse: null }
+  | { StructuralRoofWorks: null }
+  | { Other: null };
+
+/** One §5.2 row: what it is, what "other" means, which 5.1 tick it covers, the slot. */
+export interface CandidAlterationDocument {
+  kindDetails: CandidOpt<string>;
+  kind: CandidOpt<CandidAlterationDocumentKind>;
+  document: CandidTA6Document;
+  relatesTo: CandidOpt<CandidAlterationKind>;
+}
+
 export type CandidJurisdiction = { Wales: null } | { England: null };
 
 export type CandidSellerRole =

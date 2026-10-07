@@ -1,12 +1,12 @@
 // TA6 6th-edition section tree — the 15 section interfaces plus their
-// section-specific supporting records. Field names mirror the candid schema
-// exactly; see ta6.types.ts for conversion conventions and authoritative
-// sources. Split from ta6.types.ts to respect the 300-line file cap.
+// section-specific supporting records. Field names mirror the candid schema;
+// ta6.types.ts has the conversion conventions. Split out for the 300-line cap.
 
 import type {
   TA6AnswerValue,
   TA6ResponseValue,
   TA6DocumentValue,
+  TA6AlterationDocument,
   TA6SellerRole,
   TA6BoundaryOwnership,
   TA6ParkingType,
@@ -109,7 +109,7 @@ export interface TA6SolarPower {
 
 export interface TA6Section5Alterations {
   q5_1Alterations: TA6AlterationTypes;
-  q5_2Documents: TA6DocumentValue[]; // consents for ticked alterations
+  q5_2Documents: TA6AlterationDocument[];
   q5_3NonResidentialUse: TA6ResponseValue;
   q5_4Breaches: TA6ResponseValue;
   q5_5UnresolvedIssues: TA6ResponseValue;

@@ -21,7 +21,7 @@ import {
   TA6_SECTION_TITLES,
   ansRow,
   docRow,
-  docsSummary,
+  alterationDocsSummary,
   humanizeKebab,
   rawRow,
   respRow,
@@ -127,7 +127,7 @@ export function section5(f: TA6PropertyInformation): PdfSection {
   const s = f.section5;
   const rows: PdfRow[] = [
     textRow(P, '5.1', alterationSummary(s.q5_1Alterations)),
-    rawRow(P, '5.2', docsSummary(s.q5_2Documents)),
+    rawRow(P, '5.2', alterationDocsSummary(s.q5_2Documents)),
     respRow(P, '5.3', s.q5_3NonResidentialUse),
     respRow(P, '5.4', s.q5_4Breaches),
     respRow(P, '5.5', s.q5_5UnresolvedIssues),

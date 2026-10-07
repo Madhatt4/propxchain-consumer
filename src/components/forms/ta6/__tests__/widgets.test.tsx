@@ -176,7 +176,11 @@ describe('DocumentSlot', () => {
   it('should run onUpload and store the resolved documentId when a file is picked', async () => {
     // Arrange
     const onChange = vi.fn();
-    const onUpload = vi.fn().mockResolvedValue({ documentId: '99', advisory: Promise.resolve(null) });
+    const onUpload = vi.fn().mockResolvedValue({
+      documentId: '99',
+      advisory: Promise.resolve(null),
+      classification: Promise.resolve(null),
+    });
     render(
       <DocumentSlot
         refCode="4.2"
@@ -203,6 +207,7 @@ describe('DocumentSlot', () => {
     const onUpload = vi.fn().mockResolvedValue({
       documentId: '99',
       advisory: Promise.resolve('Reads as an Energy Performance Certificate.'),
+      classification: Promise.resolve(null),
     });
     render(
       <DocumentSlot
@@ -227,7 +232,11 @@ describe('DocumentSlot', () => {
   it('should show nothing extra when the advisory is null', async () => {
     // Arrange
     const onChange = vi.fn();
-    const onUpload = vi.fn().mockResolvedValue({ documentId: '99', advisory: Promise.resolve(null) });
+    const onUpload = vi.fn().mockResolvedValue({
+      documentId: '99',
+      advisory: Promise.resolve(null),
+      classification: Promise.resolve(null),
+    });
     render(
       <DocumentSlot
         refCode="4.2"
@@ -257,8 +266,12 @@ describe('DocumentSlot', () => {
     });
     const onUpload = vi
       .fn()
-      .mockResolvedValueOnce({ documentId: '1', advisory: advisoryA })
-      .mockResolvedValueOnce({ documentId: '2', advisory: Promise.resolve('Reads as a lease.') });
+      .mockResolvedValueOnce({ documentId: '1', advisory: advisoryA, classification: Promise.resolve(null) })
+      .mockResolvedValueOnce({
+        documentId: '2',
+        advisory: Promise.resolve('Reads as a lease.'),
+        classification: Promise.resolve(null),
+      });
     render(
       <DocumentSlot
         refCode="4.2"
@@ -281,6 +294,34 @@ describe('DocumentSlot', () => {
     await waitFor(() => expect(onUpload).toHaveBeenCalledTimes(2));
     expect(screen.getByText('Reads as a lease.')).toBeInTheDocument();
     expect(screen.queryByText('Reads as an Energy Performance Certificate.')).not.toBeInTheDocument();
+  });
+
+  it('should hand the settled classification to onClassified', async () => {
+    // Arrange
+    const classification = { docType: 'epc', confidence: 0.97, inDate: true, matchesProperty: 0.9, unreadable: false };
+    const onClassified = vi.fn();
+    const onUpload = vi.fn().mockResolvedValue({
+      documentId: '99',
+      advisory: Promise.resolve('Reads as an Energy Performance Certificate.'),
+      classification: Promise.resolve(classification),
+    });
+    render(
+      <DocumentSlot
+        refCode="4.2"
+        prompt={prompt}
+        value={{ status: 'attached', documentId: null }}
+        onChange={() => {}}
+        onUpload={onUpload}
+        onClassified={onClassified}
+      />,
+    );
+    const file = new File(['pdf-bytes'], 'epc.pdf', { type: 'application/pdf' });
+
+    // Act
+    fireEvent.change(screen.getByLabelText('4.2 attachment'), { target: { files: [file] } });
+
+    // Assert
+    await waitFor(() => expect(onClassified).toHaveBeenCalledWith(classification));
   });
 
   it('should surface an upload failure inline without changing the value', async () => {

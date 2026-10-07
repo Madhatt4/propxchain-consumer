@@ -15,6 +15,7 @@
 import { supabase } from '../../../../lib/supabase';
 import { onChainFileName, storageObjectName } from '../../../../lib/onChainDocument';
 import { classifyDocument, describeClassification } from '../../../../services/docClassify.service';
+import type { DocClassification } from '../../../../services/docClassify.service';
 import { icpService } from '../../../../services/icp.service';
 import { generateFileHash } from '../../../../utils/hashGenerator';
 
@@ -33,6 +34,8 @@ export interface TA6Upload {
    * unavailable; the slot then shows nothing extra.
    */
   advisory: Promise<string | null>;
+  /** The classification behind the line, for a slot that can act on it (5.2 prefills its kind). */
+  classification: Promise<DocClassification | null>;
 }
 
 /**
@@ -49,13 +52,11 @@ export function makeTa6Uploader(transactionId: string): (file: File) => Promise<
     const storageLocation = `supabase://${STORAGE_BUCKET}/${path}`;
     const documentId = await registerProof(file, fileHash, contentType, storageLocation, transactionId);
     icpService.emitDocumentUploadedEvent(transactionId, TA6_ATTACHMENT_DOC_TYPE, fileHash);
-    return { documentId, advisory: advise(transactionId, path) };
+    // classifyDocument never rejects: every failure is a null.
+    const classification = classifyDocument(transactionId, path);
+    const advisory = classification.then((c) => (c ? describeClassification(c) : null));
+    return { documentId, advisory, classification };
   };
-}
-
-async function advise(transactionId: string, path: string): Promise<string | null> {
-  const result = await classifyDocument(transactionId, path);
-  return result ? describeClassification(result) : null;
 }
 
 // Bucket RLS needs a Supabase session — fail with a clear message, not a raw

@@ -6,6 +6,7 @@ import { SegmentedButtons } from './SegmentedButtons';
 import { DOCUMENT_STATUS_LABELS, DOCUMENT_STATUS_OPTIONS } from './types';
 import type { TA6PromptEntry, TA6DocumentStatusChoice } from './types';
 import type { TA6Upload } from './ta6Uploader';
+import type { DocClassification } from '../../../../services/docClassify.service';
 import type { TA6DocumentValue } from '../../../../types/ta6.types';
 
 export interface DocumentSlotProps {
@@ -18,6 +19,8 @@ export interface DocumentSlotProps {
   readOnly?: boolean;
   /** Resolves a picked file to its documentId plus an advisory line — wire via makeTa6Uploader. */
   onUpload?: (file: File) => Promise<TA6Upload>;
+  /** What the upload was classified as, once known. Advisory: never called for a failed classification. */
+  onClassified?: (classification: DocClassification) => void;
 }
 
 interface AttachedControlsProps {
@@ -26,6 +29,7 @@ interface AttachedControlsProps {
   readOnly: boolean;
   onUpload?: (file: File) => Promise<TA6Upload>;
   onUploaded: (documentId: string) => void;
+  onClassified?: (classification: DocClassification) => void;
 }
 
 const AttachedControls: React.FC<AttachedControlsProps> = ({
@@ -34,6 +38,7 @@ const AttachedControls: React.FC<AttachedControlsProps> = ({
   readOnly,
   onUpload,
   onUploaded,
+  onClassified,
 }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -41,6 +46,10 @@ const AttachedControls: React.FC<AttachedControlsProps> = ({
   // Which pick the pending advisory belongs to: a late answer about an
   // earlier file must not overwrite the line for the file now attached.
   const pickSeq = useRef(0);
+  // The classification lands a render or two after the id, so the callbacks
+  // captured at pick time would see the row as it was before the id landed.
+  const latest = useRef({ onUploaded, onClassified });
+  latest.current = { onUploaded, onClassified };
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
     const file = e.target.files?.[0];
@@ -51,11 +60,17 @@ const AttachedControls: React.FC<AttachedControlsProps> = ({
     setAdvisory(null);
     try {
       const upload = await onUpload(file);
-      onUploaded(upload.documentId);
+      latest.current.onUploaded(upload.documentId);
       // Advisory only: it lands after the id and a failure shows nothing.
       upload.advisory.then(
         (line) => {
           if (pickSeq.current === seq) setAdvisory(line);
+        },
+        () => undefined,
+      );
+      upload.classification.then(
+        (classification) => {
+          if (classification && pickSeq.current === seq) latest.current.onClassified?.(classification);
         },
         () => undefined,
       );
@@ -106,6 +121,7 @@ export const DocumentSlot: React.FC<DocumentSlotProps> = ({
   onChange,
   readOnly = false,
   onUpload,
+  onClassified,
 }) => {
   const handleStatus = (status: TA6DocumentStatusChoice): void => {
     onChange(
@@ -133,6 +149,7 @@ export const DocumentSlot: React.FC<DocumentSlotProps> = ({
           readOnly={readOnly}
           onUpload={onUpload}
           onUploaded={(documentId) => onChange({ status: 'attached', documentId })}
+          onClassified={onClassified}
         />
       )}
     </div>

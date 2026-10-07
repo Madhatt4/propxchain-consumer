@@ -1,12 +1,35 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 
 import { Section05 } from '../Section05';
 import { emptyTA6Form } from '../../../../types/ta6.types';
-import type { TA6Section5Alterations } from '../../../../types/ta6.types';
+import type {
+  TA6AlterationDocument,
+  TA6DocumentValue,
+  TA6Section5Alterations,
+} from '../../../../types/ta6.types';
+import type { DocClassification } from '../../../../services/docClassify.service';
 
 function emptySection5(): TA6Section5Alterations {
   return emptyTA6Form().section5;
+}
+
+/** A 5.2 row with nothing chosen yet, around the given slot. */
+function row(document: TA6DocumentValue, extra: Partial<TA6AlterationDocument> = {}): TA6AlterationDocument {
+  return { kind: null, kindDetails: null, relatesTo: null, document, ...extra };
+}
+
+function classified(docType: string, confidence = 0.9): DocClassification {
+  return { docType, confidence, inDate: null, matchesProperty: null, unreadable: false };
+}
+
+/** An uploadFile stub whose classification settles with the given answer. */
+function uploader(classification: DocClassification | null) {
+  return vi.fn().mockResolvedValue({
+    documentId: '9',
+    advisory: Promise.resolve(null),
+    classification: Promise.resolve(classification),
+  });
 }
 
 describe('Section05', () => {
@@ -61,7 +84,7 @@ describe('Section05', () => {
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange).toHaveBeenCalledWith({
       ...value,
-      q5_2Documents: [{ status: 'to-follow', documentId: null }],
+      q5_2Documents: [row({ status: 'to-follow', documentId: null })],
     });
   });
 
@@ -77,7 +100,7 @@ describe('Section05', () => {
     // Assert
     expect(onChange).toHaveBeenCalledWith({
       ...value,
-      q5_2Documents: [{ status: 'not-answered', documentId: null }],
+      q5_2Documents: [row({ status: 'not-answered', documentId: null })],
     });
   });
 
@@ -87,8 +110,8 @@ describe('Section05', () => {
     const value: TA6Section5Alterations = {
       ...emptySection5(),
       q5_2Documents: [
-        { status: 'to-follow', documentId: null },
-        { status: 'attached', documentId: '7' },
+        row({ status: 'to-follow', documentId: null }),
+        row({ status: 'attached', documentId: '7' }),
       ],
     };
     render(<Section05 value={value} onChange={onChange} readOnly={false} />);
@@ -99,7 +122,7 @@ describe('Section05', () => {
     // Assert — only the second row survives
     expect(onChange).toHaveBeenCalledWith({
       ...value,
-      q5_2Documents: [{ status: 'attached', documentId: '7' }],
+      q5_2Documents: [row({ status: 'attached', documentId: '7' })],
     });
   });
 
@@ -173,11 +196,138 @@ describe('Section05', () => {
     });
   });
 
+  it('should offer a kind selector on each 5.2 row and write the chosen kind', () => {
+    // Arrange
+    const onChange = vi.fn();
+    const value: TA6Section5Alterations = {
+      ...emptySection5(),
+      q5_2Documents: [row({ status: 'to-follow', documentId: null })],
+    };
+    render(<Section05 value={value} onChange={onChange} readOnly={false} />);
+
+    // Act
+    fireEvent.change(screen.getByRole('combobox', { name: '5.2.1 document kind' }), {
+      target: { value: 'planning-permission' },
+    });
+
+    // Assert
+    expect(onChange).toHaveBeenCalledWith({
+      ...value,
+      q5_2Documents: [row({ status: 'to-follow', documentId: null }, { kind: 'planning-permission' })],
+    });
+  });
+
+  it('should list only the changes ticked in 5.1 as what a 5.2 row relates to', () => {
+    // Arrange
+    const value: TA6Section5Alterations = {
+      ...emptySection5(),
+      q5_1Alterations: { ...emptySection5().q5_1Alterations, extension: true, conservatory: true },
+      q5_2Documents: [row({ status: 'to-follow', documentId: null })],
+    };
+    render(<Section05 value={value} onChange={() => {}} readOnly={false} />);
+
+    // Act
+    const options = within(screen.getByRole('combobox', { name: '5.2.1 relates to' })).getAllByRole('option');
+
+    // Assert — a blank, then exactly the two ticked changes
+    expect(options.map((o) => o.textContent)).toEqual(['Not linked to a change', 'Conservatory', 'Extension']);
+  });
+
+  it('should ask what the other paperwork is only when the kind is other', () => {
+    // Arrange
+    const value: TA6Section5Alterations = {
+      ...emptySection5(),
+      q5_2Documents: [
+        row({ status: 'to-follow', documentId: null }, { kind: 'other' }),
+        row({ status: 'to-follow', documentId: null }, { kind: 'planning-permission' }),
+      ],
+    };
+
+    // Act
+    render(<Section05 value={value} onChange={() => {}} readOnly={false} />);
+
+    // Assert
+    expect(screen.getByRole('textbox', { name: '5.2.1 other paperwork details' })).toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: '5.2.2 other paperwork details' })).not.toBeInTheDocument();
+  });
+
+  it('should prefill a blank kind from a confident upload classification', async () => {
+    // Arrange
+    const onChange = vi.fn();
+    const value: TA6Section5Alterations = {
+      ...emptySection5(),
+      q5_2Documents: [row({ status: 'attached', documentId: null })],
+    };
+    render(
+      <Section05 value={value} onChange={onChange} readOnly={false} uploadFile={uploader(classified('planning_permission'))} />,
+    );
+
+    // Act
+    fireEvent.change(screen.getByLabelText('5.2.1 attachment'), {
+      target: { files: [new File(['pdf'], 'decision-notice.pdf', { type: 'application/pdf' })] },
+    });
+
+    // Assert — the id lands first, then the kind
+    await waitFor(() =>
+      expect(onChange).toHaveBeenCalledWith(
+        expect.objectContaining({
+          q5_2Documents: [expect.objectContaining({ kind: 'planning-permission' })],
+        }),
+      ),
+    );
+  });
+
+  it('should leave a kind the seller already chose alone whatever the classification says', async () => {
+    // Arrange
+    const onChange = vi.fn();
+    const value: TA6Section5Alterations = {
+      ...emptySection5(),
+      q5_2Documents: [row({ status: 'attached', documentId: null }, { kind: 'listed-building-consent' })],
+    };
+    render(
+      <Section05 value={value} onChange={onChange} readOnly={false} uploadFile={uploader(classified('planning_permission'))} />,
+    );
+
+    // Act
+    fireEvent.change(screen.getByLabelText('5.2.1 attachment'), {
+      target: { files: [new File(['pdf'], 'decision-notice.pdf', { type: 'application/pdf' })] },
+    });
+
+    // Assert — the upload writes the id once; nothing rewrites the kind
+    await waitFor(() => expect(onChange).toHaveBeenCalledTimes(1));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0][0].q5_2Documents[0].kind).toBe('listed-building-consent');
+  });
+
+  it('should not prefill from a classification below the confidence threshold', async () => {
+    // Arrange
+    const onChange = vi.fn();
+    const value: TA6Section5Alterations = {
+      ...emptySection5(),
+      q5_2Documents: [row({ status: 'attached', documentId: null })],
+    };
+    render(
+      <Section05 value={value} onChange={onChange} readOnly={false} uploadFile={uploader(classified('planning_permission', 0.4))} />,
+    );
+
+    // Act
+    fireEvent.change(screen.getByLabelText('5.2.1 attachment'), {
+      target: { files: [new File(['pdf'], 'maybe.pdf', { type: 'application/pdf' })] },
+    });
+
+    // Assert
+    await waitFor(() => expect(onChange).toHaveBeenCalledTimes(1));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0][0].q5_2Documents[0].kind).toBeNull();
+  });
+
   it('should hide the add and remove row controls when readOnly', () => {
     // Arrange
     const value: TA6Section5Alterations = {
       ...emptySection5(),
-      q5_2Documents: [{ status: 'to-follow', documentId: null }],
+      q5_2Documents: [row({ status: 'to-follow', documentId: null })],
     };
 
     // Act

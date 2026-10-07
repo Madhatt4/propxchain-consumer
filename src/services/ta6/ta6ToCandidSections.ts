@@ -3,6 +3,7 @@
 // come from ta6CandidPrimitives.ts; variant tables from ta6CandidVariants.ts.
 
 import {
+  toCandidAlterationDocument,
   toCandidAnswer,
   toCandidDocument,
   toCandidOpt,
@@ -96,7 +97,7 @@ export function toCandidSection5(s: UI.TA6Section5Alterations): C.CandidSection5
       other: a.other,
       otherDetails: toCandidOpt(a.otherDetails),
     },
-    q5_2Documents: s.q5_2Documents.map(toCandidDocument),
+    q5_2Documents: s.q5_2Documents.map(toCandidAlterationDocument),
     q5_3NonResidentialUse: toCandidResponse(s.q5_3NonResidentialUse),
     q5_4Breaches: toCandidResponse(s.q5_4Breaches),
     q5_5UnresolvedIssues: toCandidResponse(s.q5_5UnresolvedIssues),

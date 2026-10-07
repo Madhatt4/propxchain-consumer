@@ -3,6 +3,7 @@
 // file cap). Leaf conversions come from ta6CandidPrimitives.ts.
 
 import {
+  fromCandidAlterationDocument,
   fromCandidAnswer,
   fromCandidDocument,
   fromCandidOpt,
@@ -100,7 +101,7 @@ export function fromCandidSection5(s: C.CandidSection5Alterations): UI.TA6Sectio
       other: a.other,
       otherDetails: fromCandidOpt(a.otherDetails),
     },
-    q5_2Documents: s.q5_2Documents.map(fromCandidDocument),
+    q5_2Documents: s.q5_2Documents.map(fromCandidAlterationDocument),
     q5_3NonResidentialUse: fromCandidResponse(s.q5_3NonResidentialUse),
     q5_4Breaches: fromCandidResponse(s.q5_4Breaches),
     q5_5UnresolvedIssues: fromCandidResponse(s.q5_5UnresolvedIssues),

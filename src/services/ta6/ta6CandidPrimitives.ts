@@ -5,6 +5,10 @@
 //   '' details <-> empty optional (the UI keeps '' for "no details")
 
 import {
+  ALTERATION_DOCUMENT_KIND_FROM_TAG,
+  ALTERATION_DOCUMENT_KIND_TO_CANDID,
+  ALTERATION_KIND_FROM_TAG,
+  ALTERATION_KIND_TO_CANDID,
   ANSWER_TO_CANDID,
   ANSWER_FROM_TAG,
   DOCUMENT_STATUS_TO_CANDID,
@@ -13,6 +17,7 @@ import {
 } from './ta6CandidVariants';
 
 import type {
+  TA6AlterationDocument,
   TA6AnswerValue,
   TA6DocumentStatus,
   TA6DocumentValue,
@@ -21,6 +26,7 @@ import type {
   TA6WarrantyItem,
 } from '../../types/ta6.types';
 import type {
+  CandidAlterationDocument,
   CandidOpt,
   CandidRight,
   CandidTA6Answer,
@@ -68,6 +74,15 @@ export function toCandidDocument(value: TA6DocumentValue): CandidTA6Document {
   return DOCUMENT_STATUS_TO_CANDID[value.status];
 }
 
+export function toCandidAlterationDocument(value: TA6AlterationDocument): CandidAlterationDocument {
+  return {
+    kind: toCandidOptMap(value.kind, (k) => ALTERATION_DOCUMENT_KIND_TO_CANDID[k]),
+    kindDetails: toCandidOpt(value.kindDetails),
+    relatesTo: toCandidOptMap(value.relatesTo, (k) => ALTERATION_KIND_TO_CANDID[k]),
+    document: toCandidDocument(value.document),
+  };
+}
+
 export function toCandidWarranty(value: TA6WarrantyItem): CandidWarrantyItem {
   return { present: toCandidAnswer(value.present), document: toCandidDocument(value.document) };
 }
@@ -111,6 +126,15 @@ export function fromCandidDocument(value: CandidTA6Document): TA6DocumentValue {
   }
   const status: TA6DocumentStatus = DOCUMENT_STATUS_FROM_TAG[candidVariantTag(value)];
   return { status, documentId: null };
+}
+
+export function fromCandidAlterationDocument(value: CandidAlterationDocument): TA6AlterationDocument {
+  return {
+    kind: fromCandidOptMap(value.kind, (v) => ALTERATION_DOCUMENT_KIND_FROM_TAG[candidVariantTag(v)]),
+    kindDetails: fromCandidOpt(value.kindDetails),
+    relatesTo: fromCandidOptMap(value.relatesTo, (v) => ALTERATION_KIND_FROM_TAG[candidVariantTag(v)]),
+    document: fromCandidDocument(value.document),
+  };
 }
 
 export function fromCandidWarranty(value: CandidWarrantyItem): TA6WarrantyItem {

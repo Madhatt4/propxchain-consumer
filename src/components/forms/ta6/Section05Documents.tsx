@@ -1,32 +1,35 @@
 import React from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 
-import { DocumentSlot } from './widgets/DocumentSlot';
+import { Section05DocumentRow } from './Section05DocumentRow';
 import { PromptHeader } from './widgets/PromptHeader';
 import { SECTION_05_PROMPTS } from '../../../lib/ta6-prompts/section05';
-import { emptyDocument } from '../../../types/ta6.types';
-import type { TA6DocumentValue } from '../../../types/ta6.types';
+import { emptyAlterationDocument } from '../../../types/ta6.types';
+import type { TA6AlterationDocument, TA6AlterationTypes } from '../../../types/ta6.types';
 import type { TA6UploadFile } from './section-props';
 
 export interface Section05DocumentsProps {
-  value: TA6DocumentValue[];
-  onChange: (next: TA6DocumentValue[]) => void;
+  value: TA6AlterationDocument[];
+  onChange: (next: TA6AlterationDocument[]) => void;
+  /** The 5.1 tick-set each row may point at. */
+  alterations: TA6AlterationTypes;
   readOnly: boolean;
   uploadFile?: TA6UploadFile;
 }
 
 // Ghost row shown when no documents exist yet — same defaults the Add button
 // appends. It joins the form value only on the first interaction.
-const EMPTY_DOCUMENT_ROW: TA6DocumentValue = emptyDocument();
+const EMPTY_DOCUMENT_ROW: TA6AlterationDocument = emptyAlterationDocument();
 
 /**
- * §5.2 consent/permission paperwork for the alterations ticked in 5.1 —
- * a variable-length list of document slots with add/remove row controls.
- * Rows are positional (5.2.1, 5.2.2, ...); the on-chain shape is [TA6Document].
+ * §5.2 paperwork for the alterations ticked in 5.1 — a variable-length list
+ * of rows (what it is, which change, the slot) with add/remove controls.
+ * Rows are positional (5.2.1, 5.2.2, ...); the on-chain shape is [AlterationDocument].
  */
 export const Section05Documents: React.FC<Section05DocumentsProps> = ({
   value,
   onChange,
+  alterations,
   readOnly,
   uploadFile,
 }) => {
@@ -34,7 +37,7 @@ export const Section05Documents: React.FC<Section05DocumentsProps> = ({
   // stays [] until the user interacts (setRow writes through the ghost).
   const displayRows = value.length > 0 ? value : readOnly ? [] : [EMPTY_DOCUMENT_ROW];
 
-  const setRow = (index: number) => (next: TA6DocumentValue): void => {
+  const setRow = (index: number) => (next: TA6AlterationDocument): void => {
     const base = value.length > 0 ? value : [EMPTY_DOCUMENT_ROW];
     onChange(base.map((doc, i) => (i === index ? next : doc)));
   };
@@ -50,13 +53,13 @@ export const Section05Documents: React.FC<Section05DocumentsProps> = ({
         // Rows carry no identity of their own — position IS the identity here.
         <div key={index} className="flex items-start gap-3 p-3 border border-gray-200 rounded-md">
           <div className="flex-1">
-            <DocumentSlot
-              refCode={`5.2.${index + 1}`}
-              prompt={undefined}
+            <Section05DocumentRow
+              index={index}
               value={doc}
+              alterations={alterations}
               onChange={setRow(index)}
               readOnly={readOnly}
-              onUpload={uploadFile}
+              uploadFile={uploadFile}
             />
           </div>
           {!readOnly && value.length > 0 && (
@@ -74,7 +77,7 @@ export const Section05Documents: React.FC<Section05DocumentsProps> = ({
       {!readOnly && (
         <button
           type="button"
-          onClick={() => onChange([...value, emptyDocument()])}
+          onClick={() => onChange([...value, emptyAlterationDocument()])}
           className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-600 border border-blue-200 rounded-md hover:bg-blue-50 transition-colors"
         >
           <Plus className="w-4 h-4" aria-hidden="true" />
