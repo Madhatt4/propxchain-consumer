@@ -165,41 +165,42 @@ const PartnersPage: React.FC = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
               </div>
-              <h3 className="text-2xl font-bold text-black dark:text-[#F1F5F9] mb-4">Referral Partners</h3>
+              <h3 className="text-2xl font-bold text-black dark:text-[#F1F5F9] mb-4">Agents and Brokers</h3>
               <p className="text-gray-700 dark:text-[#CBD5E1] mb-4">
-                Earn commissions by referring clients to PropXchain. Perfect for consultants, advisors, and industry professionals.
+                Introduce your clients to PropXchain and follow their sale without chasing. PropXchain pays no referral
+                commissions and takes no referral fees: no money changes hands either way.
               </p>
               <ul className="space-y-2 text-gray-700 dark:text-[#CBD5E1] mb-6">
                 <li className="flex items-start">
                   <svg className="w-5 h-5 text-black dark:text-[#F1F5F9] mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  Competitive commission structure
+                  Buyers use PropXchain free
                 </li>
                 <li className="flex items-start">
                   <svg className="w-5 h-5 text-black dark:text-[#F1F5F9] mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  Marketing materials provided
+                  Estate agents get their own account
                 </li>
                 <li className="flex items-start">
                   <svg className="w-5 h-5 text-black dark:text-[#F1F5F9] mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  Partner dashboard & tracking
+                  Everyone works from the same live transaction
                 </li>
                 <li className="flex items-start">
                   <svg className="w-5 h-5 text-black dark:text-[#F1F5F9] mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  Monthly payouts
+                  No referral fees, paid or taken
                 </li>
               </ul>
               <button
                 onClick={() => document.getElementById('partner-form')?.scrollIntoView({ behavior: 'smooth' })}
                 className="px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 dark:ring-1 dark:ring-[#334155] font-medium"
               >
-                Join Referral Program
+                Get in Touch
               </button>
             </div>
 
@@ -316,9 +317,10 @@ const PartnersPage: React.FC = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold text-black dark:text-[#F1F5F9] mb-2">Revenue Opportunity</h3>
+              <h3 className="text-xl font-bold text-black dark:text-[#F1F5F9] mb-2">Fewer Chasing Calls</h3>
               <p className="text-gray-700 dark:text-[#CBD5E1]">
-                Competitive commissions, revenue sharing, and co-selling opportunities with growing customer base.
+                The title, searches, forms and progress sit in one shared view, so partners and their clients can see
+                where a sale has got to.
               </p>
             </div>
 
@@ -421,7 +423,7 @@ const PartnersPage: React.FC = () => {
               >
                 <option value="">Select partnership type...</option>
                 <option value="technology">Technology Integration</option>
-                <option value="referral">Referral Program</option>
+                <option value="referral">Agent or Broker Introductions</option>
                 <option value="lawfirm">Law Firm Partnership</option>
                 <option value="proptech">PropTech Collaboration</option>
                 <option value="other">Other</option>
