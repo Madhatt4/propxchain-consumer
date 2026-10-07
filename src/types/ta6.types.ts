@@ -187,6 +187,7 @@ export interface TA6PropertyInformation {
 
 // Section interfaces + section-specific supporting records.
 export * from './ta6.sections';
+export * from './ta6.alterationDocument';
 
 // Compatibility re-exports — existing code imports these from ta6.types.
 export {
@@ -194,5 +195,6 @@ export {
   emptyTA6Form,
   emptyResponse,
   emptyDocument,
+  emptyAlterationDocument,
   calculateTA6Completion,
 } from './ta6.defaults';

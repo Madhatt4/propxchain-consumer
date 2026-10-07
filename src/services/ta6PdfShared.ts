@@ -15,7 +15,12 @@ import { TA6_OFFICIAL_FORM_URL } from '../lib/ta6-prompts/types';
 
 import type { PdfSection } from './pdfPrimitives';
 import type { TA6PromptEntry } from '../lib/ta6-prompts/types';
+import {
+  TA6_ALTERATION_DOCUMENT_KIND_LABELS,
+  TA6_ALTERATION_KIND_LABELS,
+} from '../types/ta6.alterationDocument';
 import type {
+  TA6AlterationDocument,
   TA6AnswerValue,
   TA6DocumentStatus,
   TA6DocumentValue,
@@ -94,6 +99,23 @@ export function formatPence(pence: number | null | undefined): string {
 export function docsSummary(docs: TA6DocumentValue[]): string {
   if (docs.length === 0) return 'none';
   return docs.map((d) => documentLabel(d)).join('; ');
+}
+
+/** "Planning permission for the extension: attached (doc #12)". */
+export function alterationDocumentLabel(row: TA6AlterationDocument): string {
+  const what =
+    row.kind === null
+      ? 'Paperwork (kind not stated)'
+      : row.kind === 'other' && row.kindDetails
+        ? `Other paperwork (${row.kindDetails})`
+        : TA6_ALTERATION_DOCUMENT_KIND_LABELS[row.kind];
+  const link = row.relatesTo === null ? '' : ` for the ${TA6_ALTERATION_KIND_LABELS[row.relatesTo].toLowerCase()}`;
+  return `${what}${link}: ${documentLabel(row.document)}`;
+}
+
+export function alterationDocsSummary(rows: TA6AlterationDocument[]): string {
+  if (rows.length === 0) return 'none';
+  return rows.map(alterationDocumentLabel).join('; ');
 }
 
 // ============================================

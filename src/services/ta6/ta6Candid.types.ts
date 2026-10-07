@@ -9,6 +9,7 @@ import type {
   CandidOpt,
   CandidTA6Answer,
   CandidTA6Document,
+  CandidAlterationDocument,
   CandidTA6Response,
   CandidJurisdiction,
   CandidSellerRole,
@@ -108,7 +109,7 @@ export interface CandidSection5Alterations {
   q5_3NonResidentialUse: CandidTA6Response;
   q5_8ConservationArea: CandidTA6Response;
   q5_9TreePreservationOrder: CandidTA6Response;
-  q5_2Documents: CandidTA6Document[];
+  q5_2Documents: CandidAlterationDocument[];
   q5_4Breaches: CandidTA6Response;
   q5_5UnresolvedIssues: CandidTA6Response;
   q5_1Alterations: CandidAlterationTypes;

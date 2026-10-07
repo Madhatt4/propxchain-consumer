@@ -3,6 +3,8 @@
 // them (keyed by the candid variant tag), so the two directions cannot drift.
 
 import type {
+  TA6AlterationDocumentKind,
+  TA6AlterationKind,
   TA6AnswerValue,
   TA6BoundaryOwnership,
   TA6DischargeType,
@@ -14,6 +16,8 @@ import type {
   TA6SewerageSource,
 } from '../../types/ta6.types';
 import type {
+  CandidAlterationDocumentKind,
+  CandidAlterationKind,
   CandidBoundaryOwnership,
   CandidDischargeType,
   CandidHeatingType,
@@ -115,6 +119,28 @@ export const DISCHARGE_TO_CANDID: Record<TA6DischargeType, CandidDischargeType> 
   'surface-water': { SurfaceWater: null },
 };
 
+export const ALTERATION_DOCUMENT_KIND_TO_CANDID: Record<TA6AlterationDocumentKind, CandidAlterationDocumentKind> = {
+  'planning-permission': { PlanningPermission: null },
+  'building-regs-approval': { BuildingRegsApproval: null },
+  'building-regs-completion': { BuildingRegsCompletion: null },
+  'competent-person-certificate': { CompetentPersonCertificate: null },
+  'listed-building-consent': { ListedBuildingConsent: null },
+  'conservation-area-consent': { ConservationAreaConsent: null },
+  other: { Other: null },
+};
+
+export const ALTERATION_KIND_TO_CANDID: Record<TA6AlterationKind, CandidAlterationKind> = {
+  'windows-post-2002': { WindowsPost2002: null },
+  conservatory: { Conservatory: null },
+  extension: { Extension: null },
+  'loft-conversion': { LoftConversion: null },
+  'garage-conversion': { GarageConversion: null },
+  'internal-walls-removed': { InternalWallsRemoved: null },
+  'change-of-use': { ChangeOfUse: null },
+  'structural-roof-works': { StructuralRoofWorks: null },
+  other: { Other: null },
+};
+
 // ---------- Inverse (candid tag -> UI), derived ----------
 
 export const ANSWER_FROM_TAG = inverseByTag(ANSWER_TO_CANDID);
@@ -126,6 +152,8 @@ export const PARKING_FROM_TAG = inverseByTag(PARKING_TO_CANDID);
 export const HEATING_FROM_TAG = inverseByTag(HEATING_TO_CANDID);
 export const SEWERAGE_FROM_TAG = inverseByTag(SEWERAGE_TO_CANDID);
 export const DISCHARGE_FROM_TAG = inverseByTag(DISCHARGE_TO_CANDID);
+export const ALTERATION_DOCUMENT_KIND_FROM_TAG = inverseByTag(ALTERATION_DOCUMENT_KIND_TO_CANDID);
+export const ALTERATION_KIND_FROM_TAG = inverseByTag(ALTERATION_KIND_TO_CANDID);
 
 // Anomaly severity has no UI table pair (read-only), so it is declared inline.
 export const SEVERITY_FROM_TAG: Record<string, 'info' | 'warning' | 'conflict'> = {

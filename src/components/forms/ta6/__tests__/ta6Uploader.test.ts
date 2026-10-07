@@ -66,6 +66,13 @@ describe('makeTa6Uploader', () => {
 
     expect(result.documentId).toBe('7');
     expect(await result.advisory).toBe('Reads as an Energy Performance Certificate.');
+    expect(await result.classification).toEqual({
+      docType: 'epc',
+      confidence: 0.97,
+      inDate: true,
+      matchesProperty: 0.9,
+      unreadable: false,
+    });
   });
 
   it('should classify the object at the bucket-relative path it uploaded to', async () => {
@@ -89,6 +96,7 @@ describe('makeTa6Uploader', () => {
 
     expect(result.documentId).toBe('7');
     expect(await result.advisory).toBeNull();
+    expect(await result.classification).toBeNull();
   });
 
   it('should still reject the upload when the proof is refused, without classifying', async () => {

@@ -44,7 +44,10 @@ function populateEarlySections(form: TA6PropertyInformation): void {
   };
   form.section2.q2_1Features = [{ position: 'left', ownership: 'shared' }];
   form.section2.q2_3MovedOrAltered = { answer: 'yes', details: 'Rear fence replaced 2019' };
-  form.section5.q5_2Documents = [{ status: 'attached', documentId: '42' }];
+  form.section5.q5_2Documents = [
+    { kind: 'planning-permission', kindDetails: null, relatesTo: 'extension', document: { status: 'attached', documentId: '42' } },
+    { kind: 'other', kindDetails: 'Party wall award', relatesTo: null, document: { status: 'to-follow', documentId: null } },
+  ];
   form.section6.q6_1NewHomeWarranty = {
     present: 'yes', document: { status: 'to-follow', documentId: null },
   };
@@ -153,7 +156,13 @@ describe('icpService TA6 6th-edition canister wrappers', () => {
       const candid = await captureCandid(makeFixture());
 
       expect(candid.jurisdiction).toEqual({ Wales: null });
-      expect(candid.section5.q5_2Documents[0]).toEqual({ Attached: BigInt(42) });
+      expect(candid.section5.q5_2Documents[0]).toEqual({
+        kind: [{ PlanningPermission: null }],
+        kindDetails: [],
+        relatesTo: [{ Extension: null }],
+        document: { Attached: BigInt(42) },
+      });
+      expect(candid.section5.q5_2Documents[1].kindDetails).toEqual(['Party wall award']);
       expect(candid.section9.q9_2Amount).toEqual([BigInt(12550)]);
       expect(candid.section10.q10_1Arrangements).toEqual([{ Driveway: null }, { OnRoad: null }]);
       expect(candid.section13.q13_7Occupiers[0].age).toEqual([BigInt(17)]);

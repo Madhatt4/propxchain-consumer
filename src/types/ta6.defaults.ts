@@ -7,6 +7,7 @@
 // TA6ResponseValue / TA6AnswerValue slots) with answer !== 'not-answered'.
 // Document slots and free-text fields deliberately do NOT count.
 
+import type { TA6AlterationDocument } from './ta6.alterationDocument';
 import type {
   TA6AnswerValue,
   TA6DocumentValue,
@@ -29,7 +30,7 @@ import type {
 
 // Mirrors the canister constant (transaction_manager main.mo). The canister
 // stamps this on write (ADR 0007); the client sends it for transparency only.
-export const TA6_FORM_VERSION = 'v6_2025_09_01';
+export const TA6_FORM_VERSION = 'v6_2026_10_06';
 
 export function emptyResponse(): TA6ResponseValue {
   return { answer: 'not-answered', details: '' };
@@ -37,6 +38,11 @@ export function emptyResponse(): TA6ResponseValue {
 
 export function emptyDocument(): TA6DocumentValue {
   return { status: 'not-answered', documentId: null };
+}
+
+/** A 5.2 row with nothing chosen yet around a draft slot. */
+export function emptyAlterationDocument(): TA6AlterationDocument {
+  return { kind: null, kindDetails: null, relatesTo: null, document: emptyDocument() };
 }
 
 function emptyWarranty(): TA6WarrantyItem {

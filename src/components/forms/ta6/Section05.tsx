@@ -74,6 +74,7 @@ export const Section05: React.FC<TA6SectionProps<TA6Section5Alterations>> = ({
       <Section05Documents
         value={value.q5_2Documents}
         onChange={(q5_2Documents) => onChange({ ...value, q5_2Documents })}
+        alterations={value.q5_1Alterations}
         readOnly={readOnly}
         uploadFile={uploadFile}
       />
