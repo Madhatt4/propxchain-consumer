@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import TmGroupQuoteSummary from '../TmGroupQuoteSummary';
+import { fireEvent, render, screen } from '@testing-library/react';
+import TmGroupQuoteSummary, { TMGROUP_SUPPLIER_TERMS_URL } from '../TmGroupQuoteSummary';
 
 const BASE = {
   quote: null,
@@ -80,5 +80,59 @@ describe('TmGroupQuoteSummary refresh', () => {
 
     rerender(<TmGroupQuoteSummary {...BASE} isQuoting={false} quote={PARTIAL} hasUnpricedLines />);
     expect(screen.queryByRole('button', { name: /Refresh quote/ })).toBeNull();
+  });
+});
+
+describe('TmGroupQuoteSummary supplier terms', () => {
+  // The tmGroup reseller agreement (cl. 5.1.1) requires every customer to agree to
+  // tmGroup's supplier terms before the purchase contract forms.
+  const COMPLETE = {
+    success: true as const,
+    isComplete: true,
+    unpricedProductTypes: [],
+    lines: [],
+    grossPence: 48000,
+  };
+  const READY = { ...BASE, isQuoting: false, quote: COMPLETE, orderable: true, canOrder: true, totalPence: 48000 };
+
+  it('should keep Order searches disabled until the supplier terms are ticked', () => {
+    const onOrder = vi.fn();
+    render(<TmGroupQuoteSummary {...READY} onOrder={onOrder} />);
+
+    const order = screen.getByRole('button', { name: /Order searches/ });
+    expect(order).toBeDisabled();
+
+    fireEvent.click(screen.getByRole('checkbox'));
+    expect(order).toBeEnabled();
+
+    fireEvent.click(order);
+    expect(onOrder).toHaveBeenCalledTimes(1);
+  });
+
+  it('should disable Order searches again when the terms are unticked', () => {
+    render(<TmGroupQuoteSummary {...READY} />);
+    const box = screen.getByRole('checkbox');
+
+    fireEvent.click(box);
+    fireEvent.click(box);
+
+    expect(screen.getByRole('button', { name: /Order searches/ })).toBeDisabled();
+  });
+
+  it('should keep Order searches disabled with the terms ticked when the quote is not orderable', () => {
+    render(<TmGroupQuoteSummary {...READY} orderable={false} />);
+
+    fireEvent.click(screen.getByRole('checkbox'));
+
+    expect(screen.getByRole('button', { name: /Order searches/ })).toBeDisabled();
+  });
+
+  it('should link to the tmGroup supplier terms in a new tab', () => {
+    render(<TmGroupQuoteSummary {...READY} />);
+
+    const link = screen.getByRole('link', { name: /tmGroup supplier terms/ });
+    expect(link).toHaveAttribute('href', TMGROUP_SUPPLIER_TERMS_URL);
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));
   });
 });

@@ -7,11 +7,22 @@
  * the "may we charge for this?" question has exactly one answer in one place.
  */
 
+import { useState } from 'react';
+
 import { RefreshCw } from 'lucide-react';
 
 import { describeQuoteFailure, pence } from './tmGroupCardHelpers';
 
 import type { TmGroupQuote } from '../../services/tmgroup.service';
+
+/**
+ * tmGroup's supplier terms. The tmGroup reseller agreement (cl. 5.1.1 and the
+ * "Applicable Terms" definition) requires every customer to be made aware of and
+ * agree to these BEFORE the purchase contract forms, and cl. 9.16 licenses linking
+ * to them. So the order button stays disabled until the box is ticked.
+ */
+export const TMGROUP_SUPPLIER_TERMS_URL =
+  'https://www.tmgroup.co.uk/terms-conditions/suppliers-terms-conditions/';
 
 interface TmGroupQuoteSummaryProps {
   quote: TmGroupQuote | null;
@@ -54,6 +65,8 @@ export default function TmGroupQuoteSummary({
 }: TmGroupQuoteSummaryProps): JSX.Element {
   const total = totalPence;
   const disbursement = disbursementPence;
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const canSubmit = orderable && !isQuoting && !isOrdering && canOrder && termsAccepted;
 
   return (
     <>
@@ -141,13 +154,34 @@ export default function TmGroupQuoteSummary({
           is precisely what Marc hit on 2026-08-16: the card showed a price, the
           click returned "We could not price searches for this property". A stale
           quote must never be clickable. */}
+      <label className="flex items-start gap-2 text-xs text-gray-700 dark:text-gray-300">
+        <input
+          type="checkbox"
+          checked={termsAccepted}
+          onChange={(e) => setTermsAccepted(e.target.checked)}
+          className="mt-0.5 h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+        />
+        <span>
+          I agree to the{' '}
+          <a
+            href={TMGROUP_SUPPLIER_TERMS_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium text-teal-700 underline hover:text-teal-800 dark:text-teal-300"
+          >
+            tmGroup supplier terms
+          </a>{' '}
+          that apply to these searches.
+        </span>
+      </label>
+
       <button
         type="button"
-        disabled={!orderable || isQuoting || isOrdering || !canOrder}
+        disabled={!canSubmit}
         onClick={onOrder}
         className={[
           'w-full rounded-lg px-4 py-3 text-sm font-semibold transition-colors',
-          orderable && !isQuoting && !isOrdering && canOrder
+          canSubmit
             ? 'bg-teal-600 text-white hover:bg-teal-700'
             : 'cursor-not-allowed bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400',
         ].join(' ')}
