@@ -94,15 +94,9 @@ const TransactionDashboardPage: React.FC = () => {
 
         // Initialize ICP service and get user's transactions
         await icpService.initialize();
-        const allTxs = await icpService.getAllTransactions();
-
-        // Filter transactions where user is involved (buyer, seller, creator, or in accessList)
-        const userTxs = allTxs.filter(tx =>
-          tx.buyer === principalId ||
-          tx.seller === principalId ||
-          tx.createdBy === principalId ||
-          tx.accessList?.includes(principalId)
-        );
+        // getMyTransactions() filters server-side by caller (buyer, seller, creator or
+        // accessList) — getAllTransactions is admin-only and returns [] for everyone else.
+        const userTxs = await icpService.getMyTransactions();
 
         setTransactions(userTxs);
 

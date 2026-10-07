@@ -2795,6 +2795,9 @@ class ICPService {
    * fetching every transaction and filtering client-side.
    */
   async getMyTransactions(): Promise<any[]> {
+    // Bind the actor to the authenticated identity first — an anonymous actor
+    // would make the canister filter by the anonymous principal → empty list.
+    await this.initAuth();
     if (!this.transactionManagerActor) await this.initialize();
     return wrapReadCall(async () => {
       try {

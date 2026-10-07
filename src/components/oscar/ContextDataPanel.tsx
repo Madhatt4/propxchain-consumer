@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { X, Home, FileText, Mail, ChevronRight, Loader2 } from 'lucide-react';
 import { icpService } from '../../services/icp.service';
 import { logger } from '@/utils/logger';
-import { getStorePrincipalId } from '@/stores/authStore';
 
 interface ConversationContext {
   type?: 'transaction' | 'document' | 'message';
@@ -45,15 +44,8 @@ const ContextDataPanel: React.FC<ContextDataPanelProps> = ({
     try {
       if (context.type === 'transaction') {
         await icpService.initialize();
-        const allTxs = await icpService.getAllTransactions();
-        const principalId = getStorePrincipalId();
-
-        // Filter to user's transactions
-        const userTxs = allTxs.filter((tx: any) =>
-          tx.buyer === principalId ||
-          tx.seller === principalId ||
-          tx.createdBy === principalId
-        );
+        // getMyTransactions() filters server-side by caller (getAllTransactions is admin-only)
+        const userTxs = await icpService.getMyTransactions();
         setTransactions(userTxs);
       }
       // TODO: Add document and message loading in future phases

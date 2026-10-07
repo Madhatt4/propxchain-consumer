@@ -51,15 +51,9 @@ const StakeholdersPage: React.FC = () => {
       try {
         // Load user's transactions from canister
         await icpService.initialize();
-        const allTransactions = await icpService.getAllTransactions();
-
-        // Filter transactions where user is involved (including via invite code)
-        const userTransactions = allTransactions.filter(tx =>
-          tx.buyer === principalId ||
-          tx.seller === principalId ||
-          tx.createdBy === principalId ||
-          tx.accessList?.includes(principalId)
-        );
+        // getMyTransactions() filters server-side by caller (including via invite code) —
+        // getAllTransactions is admin-only and returns [] for everyone else.
+        const userTransactions = await icpService.getMyTransactions();
 
         logger.info('StakeholdersPage: User transactions:', userTransactions);
         setTransactions(userTransactions);

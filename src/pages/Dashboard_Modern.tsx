@@ -160,19 +160,10 @@ const DashboardModern: React.FC = () => {
         return;
       }
 
-      // Get all transactions from canister
-      const allTxs = await icpService.getAllTransactions();
-      logger.info(`Loaded ${allTxs.length} transactions from canister`);
-
-      // Filter transactions where user is involved (buyer, seller, creator, or in accessList)
-      const userTxs = allTxs.filter(tx =>
-        tx.buyer === principalId ||
-        tx.seller === principalId ||
-        tx.createdBy === principalId ||
-        tx.accessList?.includes(principalId)
-      );
-
-      logger.info(`Filtered to ${userTxs.length} user transactions`);
+      // getMyTransactions() filters server-side by caller (buyer, seller, creator or
+      // accessList) — getAllTransactions is admin-only and returns [] for everyone else.
+      const userTxs = await icpService.getMyTransactions();
+      logger.info(`Loaded ${userTxs.length} user transactions from canister`);
 
       if (userTxs && userTxs.length > 0) {
         logger.info('Setting transactions state with:', userTxs);

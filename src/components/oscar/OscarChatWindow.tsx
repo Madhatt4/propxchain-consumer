@@ -91,15 +91,8 @@ const OscarChatWindow: React.FC<OscarChatWindowProps> = ({
         return [];
       }
 
-      // Get all transactions and filter for the current user
-      const allTxs = await icpService.getAllTransactions();
-
-      // Filter transactions where user is buyer, seller, or creator
-      const userTxs = allTxs.filter((tx: any) =>
-        tx.buyer?.toString() === principalId ||
-        tx.seller?.toString() === principalId ||
-        tx.createdBy?.toString() === principalId
-      );
+      // getMyTransactions() filters server-side by caller (getAllTransactions is admin-only)
+      const userTxs = await icpService.getMyTransactions();
 
       // Convert to TransactionSummaryInput format
       const summaries: TransactionSummaryInput[] = userTxs.map((tx: any) => {
