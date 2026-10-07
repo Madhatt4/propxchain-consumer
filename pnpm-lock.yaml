@@ -158,9 +158,6 @@ importers:
       tailwind-merge:
         specifier: ^3.4.0
         version: 3.5.0
-      tailwindcss-animate:
-        specifier: ^1.0.7
-        version: 1.0.7(tailwindcss@3.4.19)
       three:
         specifier: ^0.183.2
         version: 0.183.2
@@ -231,6 +228,9 @@ importers:
       tailwindcss:
         specifier: ^3.4.1
         version: 3.4.19
+      tailwindcss-animate:
+        specifier: ^1.0.7
+        version: 1.0.7(tailwindcss@3.4.19)
       terser:
         specifier: ^5.44.1
         version: 5.46.1
