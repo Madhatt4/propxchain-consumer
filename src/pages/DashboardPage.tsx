@@ -42,23 +42,10 @@ const DashboardPage: React.FC = () => {
     try {
       // Load transactions from blockchain
       const { icpService } = await import('../services/icp.service');
-      const allTransactions = await icpService.getAllTransactions();
-      const userId = currentUser.principal || currentUser.id; // Use principal for ICP auth
-
-      // Ensure allTransactions is an array
-      if (Array.isArray(allTransactions)) {
-        // Filter for user's transactions (includes buyers who joined via invite code)
-        const userTransactions = allTransactions.filter((tx: Transaction) =>
-          tx.createdBy === userId ||
-          tx.seller === userId ||
-          tx.buyer === userId ||
-          (tx.accessList && tx.accessList.includes(userId))
-        );
-        setTransactions(userTransactions);
-      } else {
-        logger.warn('Blockchain returned non-array:', allTransactions);
-        setTransactions([]);
-      }
+      // getMyTransactions() filters server-side by caller (includes buyers who joined via
+      // invite code) — getAllTransactions is admin-only and returns [] for everyone else.
+      const userTransactions = await icpService.getMyTransactions();
+      setTransactions(userTransactions as Transaction[]);
       setLastUpdate(Date.now());
     } catch (error) {
       logger.error('Error loading transactions from blockchain:', error);

@@ -30,17 +30,9 @@ const PropertiesPage: React.FC = () => {
       try {
         // Load transactions from blockchain
         const { icpService } = await import('../services/icp.service');
-        const allTransactions = await icpService.getAllTransactions();
-        const userId = currentUser.principal || currentUser.id; // Use principal for ICP auth
-
-        const userTransactions = Array.isArray(allTransactions)
-          ? allTransactions.filter((tx: any) =>
-              tx.createdBy === userId ||
-              tx.seller === userId ||
-              tx.buyer === userId ||
-              tx.accessList?.includes(userId)
-            )
-          : [];
+        // getMyTransactions() filters server-side by caller — getAllTransactions is
+        // admin-only and returns [] for everyone else.
+        const userTransactions = await icpService.getMyTransactions();
 
         setTransactions(userTransactions);
 

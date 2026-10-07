@@ -46,17 +46,10 @@ const QuickAccessPanel: React.FC<QuickAccessPanelProps> = ({
       }
 
       // Fetch counts in parallel
-      const [allTransactions] = await Promise.all([
-        icpService.getAllTransactions().catch(() => []),
+      // getMyTransactions() filters server-side by caller (getAllTransactions is admin-only)
+      const [userTransactions] = await Promise.all([
+        icpService.getMyTransactions().catch(() => []),
       ]);
-
-      // Filter transactions for current user
-      const userTransactions = allTransactions.filter(
-        (tx: any) =>
-          tx.buyer === principalId ||
-          tx.seller === principalId ||
-          tx.createdBy === principalId
-      );
 
       // TODO: Fetch actual document and message counts
       // For now, we'll use placeholder counts
