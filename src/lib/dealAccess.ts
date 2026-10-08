@@ -15,9 +15,10 @@
  */
 
 /**
- * Which side of the deal the viewer is on. `other` is anyone on the deal who
- * is neither the seller nor the buyer: an estate agent, a delegate, a bot.
- * The matrix puts them on the seller's side of the work.
+ * Which side of the deal the viewer is on. A delegate (an agent with a live
+ * mandate) takes the side of the party they act for. `other` is anyone else
+ * on the deal: an estate agent without a mandate, a bot, a delegate acting
+ * for both sides. The matrix puts them on the seller's side of the work.
  */
 export type DealSide = 'seller' | 'buyer' | 'other';
 
@@ -89,7 +90,9 @@ export const DEAL_ACCESS: Readonly<Record<DealItem, Row>> = {
   searches: row('view', 'act', 'view'),
 
   buyerInvite: row('act', 'hidden', 'act'),
-  deleteDeal: row('act', 'hidden', 'act'),
+  // Only the seller deletes (round 2, 2026-10-08); everyone else leaves.
+  // The canister enforces the same rule in deleteTransaction.
+  deleteDeal: row('act', 'hidden', 'hidden'),
 };
 
 /** Stage ids from utils/stageConfig.ts, plus the Stage 0 sales pack tab (SALES_PACK_TAB_ID). */
@@ -149,6 +152,8 @@ export interface DealParties {
   sellers?: readonly string[];
   /** Extra principals from the multi-party `buyers` list. */
   buyers?: readonly string[];
+  /** Live delegations as [party, delegate] principals (canister getDelegates). */
+  delegates?: ReadonlyArray<readonly [string, string]>;
 }
 
 /**
@@ -157,11 +162,32 @@ export interface DealParties {
  */
 export function dealSideOf(parties: DealParties, principal: string | null | undefined): DealSide {
   if (!principal) return 'other';
+  const own = partySideOf(parties, principal);
+  if (own !== 'other') return own;
+  // A delegate takes the side of the party they act for (round 2,
+  // 2026-10-08), unless they act for both sides.
+  const sides = new Set(
+    (parties.delegates ?? [])
+      .filter(([, delegate]) => delegate === principal)
+      .map(([party]) => partySideOf(parties, party))
+      .filter((side) => side !== 'other'),
+  );
+  return sides.size === 1 ? [...sides][0] : 'other';
+}
+
+function partySideOf(parties: DealParties, principal: string): DealSide {
   const { seller, buyer, sellers = [], buyers = [] } = parties;
   if (principal === seller || sellers.includes(principal)) return 'seller';
   const hasBuyer = Boolean(buyer) && buyer !== seller;
   if ((hasBuyer && principal === buyer) || buyers.includes(principal)) return 'buyer';
   return 'other';
+}
+
+/** Principal pairs from the canister's getDelegates ([party, delegate]). */
+export function delegatePairsOf(
+  pairs: ReadonlyArray<readonly [{ toString(): string }, { toString(): string }]> | undefined | null,
+): Array<[string, string]> {
+  return (pairs ?? []).map(([party, delegate]) => [party.toString(), delegate.toString()]);
 }
 
 /** Principals from the canister's optional party list (`[] | [Party[]]`). */

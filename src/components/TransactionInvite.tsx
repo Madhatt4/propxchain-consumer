@@ -395,8 +395,12 @@ const TransactionInvite: React.FC<TransactionInviteProps> = ({ onJoinSuccess, on
         }
 
         // Record my role + side off-chain for the Transaction Wallet roster (best-effort).
+        // A buyer's row comes from the chain, which has just made them the buyer:
+        // the role table only takes a self-written buyer row on an emailed invite.
         const myPrincipal = getStorePrincipalId();
-        if (myPrincipal) {
+        if (selectedRole === 'buyer') {
+          void partyRoleService.recordRoleFromChain(String(foundTransaction.id));
+        } else if (myPrincipal) {
           const partyRole = PARTY_ROLE_BY_JOIN_ROLE[selectedRole];
           const side =
             partyRole === 'buyer' || partyRole === 'seller' ? partyRole : inviteContext?.side ?? null;

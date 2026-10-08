@@ -52,6 +52,7 @@ import { getStorePrincipalId, getStoreIsAuthenticated } from '../stores/authStor
 // Session management for secure auth state
 import { SessionManager } from '../utils/sessionManager';
 import { logger } from '@/utils/logger';
+import { delegatePairsOf } from '@/lib/dealAccess';
 import { onChainFileName } from '@/lib/onChainDocument';
 
 // Canister IDs for IC mainnet (from canister_ids.json)
@@ -1582,6 +1583,21 @@ class ICPService {
       const result = await this.txActor.getTransaction(txId);
       return result[0] || null;
     });
+  }
+
+  /**
+   * Live delegations on a deal as [party, delegate] principals: an agent
+   * acting for the seller or buyer under a mandate. Empty on any failure, so
+   * a delegate falls back to the least-privileged side.
+   */
+  async getDelegates(transactionId: string): Promise<Array<[string, string]>> {
+    try {
+      if (!this.transactionManagerActor) await this.initialize();
+      return delegatePairsOf(await this.txActor.getDelegates(transactionId));
+    } catch (err) {
+      logger.warn('[ICP] getDelegates failed:', err);
+      return [];
+    }
   }
 
   /**

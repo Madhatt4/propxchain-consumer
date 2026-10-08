@@ -13,13 +13,17 @@ import { usePrincipalId } from '@/stores/authStore';
 import { dealSideOf, principalsOf, type DealParties, type DealSide } from '@/lib/dealAccess';
 
 async function loadParties(transactionId: string): Promise<DealParties | null> {
-  const tx = await icpService.getTransaction(transactionId);
+  const [tx, delegates] = await Promise.all([
+    icpService.getTransaction(transactionId),
+    icpService.getDelegates(transactionId),
+  ]);
   if (!tx) return null;
   return {
     seller: tx.seller?.toString(),
     buyer: tx.buyer?.toString(),
     sellers: principalsOf(tx.sellers),
     buyers: principalsOf(tx.buyers),
+    delegates,
   };
 }
 

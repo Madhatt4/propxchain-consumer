@@ -10,6 +10,7 @@ import {
   accessForId,
   canAct,
   dealSideOf,
+  delegatePairsOf,
   principalsOf,
 } from '../dealAccess';
 import { TRANSACTION_TABS } from '@/components/transaction/tabs/transactionTabs.config';
@@ -40,6 +41,16 @@ describe('dealSideOf', () => {
   it('gives a signed-out viewer nothing to act on', () => {
     expect(dealSideOf(parties, null)).toBe('other');
   });
+
+  it("puts a delegate on their client's side", () => {
+    expect(dealSideOf({ ...parties, delegates: [['S', 'AGENT']] }, 'AGENT')).toBe('seller');
+    expect(dealSideOf({ ...parties, delegates: [['B', 'AGENT']] }, 'AGENT')).toBe('buyer');
+  });
+
+  it('keeps a delegate for both sides, or for nobody on the deal, on the other side', () => {
+    expect(dealSideOf({ ...parties, delegates: [['S', 'AGENT'], ['B', 'AGENT']] }, 'AGENT')).toBe('other');
+    expect(dealSideOf({ ...parties, delegates: [['GONE', 'AGENT']] }, 'AGENT')).toBe('other');
+  });
 });
 
 describe('the access map', () => {
@@ -65,7 +76,13 @@ describe('the access map', () => {
     }
   });
 
-  it('leaves ids it does not know unlocked', () => {
+  it('lets only the seller delete the deal', () => {
+    expect(canAct('deleteDeal', 'seller')).toBe(true);
+    expect(accessFor('deleteDeal', 'buyer')).toBe('hidden');
+    expect(accessFor('deleteDeal', 'other')).toBe('hidden');
+  });
+
+    it('leaves ids it does not know unlocked', () => {
     expect(accessForId('overview', 'buyer')).toBe('act');
     expect(accessForId('sales-pack-0', 'buyer')).toBe('view');
   });
@@ -74,6 +91,14 @@ describe('the access map', () => {
     for (const row of Object.values(DEAL_ACCESS)) {
       expect(Object.keys(row).sort()).toEqual(['buyer', 'other', 'seller']);
     }
+  });
+});
+
+describe('delegatePairsOf', () => {
+  it('turns principal pairs into text', () => {
+    const p = (t: string) => ({ toString: () => t });
+    expect(delegatePairsOf([[p('S'), p('A')]])).toEqual([['S', 'A']]);
+    expect(delegatePairsOf(undefined)).toEqual([]);
   });
 });
 
