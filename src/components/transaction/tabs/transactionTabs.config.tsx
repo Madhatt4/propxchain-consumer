@@ -36,6 +36,12 @@ export interface TransactionTabProps extends TransactionTabContext {
   /** True when the user's tier is below this tab's minTier (show a teaser). */
   locked: boolean;
   requiredTier: SubscriptionTier;
+  /**
+   * True when the viewer may see this section but not change it
+   * (lib/dealAccess level `view`). Sections that gate their own controls by
+   * the viewer's party role read it; the shell frames the rest.
+   */
+  readOnly?: boolean;
 }
 
 export interface TransactionTabDef {

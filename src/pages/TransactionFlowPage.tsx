@@ -2,7 +2,7 @@
 // Copyright (C) 2025 PropXchain Ltd
 
 import { useRef, useState, useEffect, useMemo } from 'react';
-import type { ReactElement } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 import { useAuthStore } from '../stores/authStore';
 // Note: React.ReactElement used in BuyerSideStagePlaceholder return type below
 // is provided via the ReactElement named import.
@@ -79,6 +79,8 @@ import type { Tenure } from '../types/listing.types';
 import type { StructuredAddress } from '../services/pafAddress';
 import type { StageConfig, JourneyRole } from '../types/stage.types';
 import { resolveNextStepDestination } from '../utils/nextStepDestination';
+import { accessFor, accessForId, canAct } from '@/lib/dealAccess';
+import { ViewOnlyFrame } from '@/components/transaction/ViewOnlyFrame';
 import type { ServiceProvider, ProviderSelection } from '../types/provider.types';
 
 /** Stage IDs that are not rendered as stage cards (displayed as sidebar components instead) */
@@ -467,6 +469,7 @@ export default function TransactionFlowPage(): ReactElement {
   const {
     transaction,
     userRole,
+    dealSide,
     stages,
     otherPartyStages,
     activeJourney,
@@ -579,6 +582,16 @@ export default function TransactionFlowPage(): ReactElement {
 
   const activeStage = visibleStages.find((s) => s.id === resolvedStageId) ?? null;
 
+  // The stage's level for this viewer (lib/dealAccess). The stage card's own
+  // header carries its done / not done state, so `status` and `hidden` show
+  // that header with nothing inside; `view` shows everything, switched off.
+  const activeStageLevel = activeStage ? accessForId(activeStage.id, dealSide) : 'act';
+  const withStageAccess = (content: ReactNode): ReactNode => {
+    if (activeStageLevel === 'act') return content;
+    if (activeStageLevel === 'view') return <ViewOnlyFrame side={dealSide}>{content}</ViewOnlyFrame>;
+    return null;
+  };
+
   const selectStage = (stageId: string): void => {
     setActiveStageId(stageId);
     setDetailOpen(true);
@@ -652,6 +665,7 @@ export default function TransactionFlowPage(): ReactElement {
         )}
 
         <TransactionTabs
+          dealSide={dealSide}
           context={{
             transactionId: id ?? '',
             uprn,
@@ -743,6 +757,7 @@ export default function TransactionFlowPage(): ReactElement {
                   locked={false}
                   requiredTier="starter"
                   onGoToStage={selectStage}
+                  readOnly={!canAct('salesPack', dealSide)}
                 />
               ) : resolvedStageId === BUYER_SIDE_TAB_ID ? (
                 <BuyerSideStagePlaceholder stageNumber={4} />
@@ -757,7 +772,7 @@ export default function TransactionFlowPage(): ReactElement {
                       onToggle={() => setDetailOpen((open) => !open)}
                       onHelpClick={setHelpStageId}
                       isEditing={editingStageIds.includes(activeStage.id)}
-                      onEditClick={EDITABLE_STAGE_IDS.has(activeStage.id)
+                      onEditClick={EDITABLE_STAGE_IDS.has(activeStage.id) && activeStageLevel === 'act'
                         ? (sid) => {
                             if (PROVIDER_EDIT_STAGE_IDS.has(sid)) {
                               // Provider swaps cancel the existing quote
@@ -770,7 +785,7 @@ export default function TransactionFlowPage(): ReactElement {
                         : undefined}
                     >
                       {detailOpen &&
-                        renderStageContent(activeStage.id, {
+                        withStageAccess(renderStageContent(activeStage.id, {
                           stage: activeStage,
                           onSelectProvider: selectProvider,
                           onClearProvider: clearProvider,
@@ -810,7 +825,7 @@ export default function TransactionFlowPage(): ReactElement {
                           onCancelEdit: (sid) => setStageEditing(sid, false),
                           onAfterEdit: bumpInvalidationKey,
                           viewerRole: userRole,
-                        })}
+                        }))}
                     </StageCard>
                   </div>
                 )
@@ -824,7 +839,7 @@ export default function TransactionFlowPage(): ReactElement {
                 (which only appears after Stage 1 done) so the code is visible
                 from the moment the transaction is created. Dismissible —
                 restore pill renders in place when hidden. */}
-            {activeJourney === 'seller' && (
+            {activeJourney === 'seller' && accessFor('buyerInvite', dealSide) !== 'hidden' && (
               inviteDismiss.dismissedTag === null ? (
                 <BuyerInviteCard
                   inviteCode={inviteCode}

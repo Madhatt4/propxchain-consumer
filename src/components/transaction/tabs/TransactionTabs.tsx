@@ -30,9 +30,21 @@ import {
   TRANSACTION_TABS,
   type TransactionTabContext,
 } from './transactionTabs.config';
+import { accessForId, type DealSide } from '@/lib/dealAccess';
+import { ViewOnlyFrame } from '../ViewOnlyFrame';
+
+/**
+ * Sections that already gate their own controls by the viewer's party role
+ * (Buyer Pack, Enquiries, Searches sign-off) or by `readOnly` (Property), and
+ * still have things a view-only reader needs to click: they get `readOnly`
+ * but no disabling frame.
+ */
+const SELF_GATED_SECTIONS = new Set(['property', 'buyer-pack', 'enquiries', 'searches']);
 
 interface TransactionTabsProps {
   context: TransactionTabContext;
+  /** The viewer's side on the deal; each section's level comes from lib/dealAccess. */
+  dealSide: DealSide;
   /** Main-column content for the 'overview' section (active stage detail). */
   overview: React.ReactNode;
   /** Rendered full-content-width above the main/cards split, overview only
@@ -58,6 +70,7 @@ function useIsDesktop(): boolean {
 
 export function TransactionTabs({
   context,
+  dealSide,
   overview,
   overviewTop,
   sidebar,
@@ -110,13 +123,20 @@ export function TransactionTabs({
           <div role="tabpanel" className="w-full min-w-0 flex-1">
             {active.kind === 'overview'
               ? overview
-              : active.Component && (
-                  <active.Component
-                    {...context}
-                    locked={!isUnlocked(active.minTier)}
-                    requiredTier={active.minTier}
-                  />
-                )}
+              : active.Component && (() => {
+                  const readOnly = accessForId(active.id, dealSide) === 'view';
+                  const section = (
+                    <active.Component
+                      {...context}
+                      locked={!isUnlocked(active.minTier)}
+                      requiredTier={active.minTier}
+                      readOnly={readOnly}
+                    />
+                  );
+                  return readOnly && !SELF_GATED_SECTIONS.has(active.id)
+                    ? <ViewOnlyFrame side={dealSide}>{section}</ViewOnlyFrame>
+                    : section;
+                })()}
           </div>
 
           {/* Below xl the cards fall under the section content, which stays the

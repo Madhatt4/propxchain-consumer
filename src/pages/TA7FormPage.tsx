@@ -21,6 +21,8 @@ import type { TA7LeaseholdInformation } from '@/types/ta7.types';
 import type { PropertyListing } from '@/types/listing.types';
 import { getRightmoveData, storeRightmoveData, syncListingFromChain } from '@/utils/rightmoveStorage';
 import { listingFromTa7 } from '@/services/taFormsPrefill';
+import { useDealSide } from '@/hooks/useDealSide';
+import { canAct } from '@/lib/dealAccess';
 
 interface TA7PageLocationState {
   propertyAddress?: string;
@@ -40,7 +42,11 @@ export default function TA7FormPage(): ReactElement {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [listing, setListing] = useState<PropertyListing | null>(() => getRightmoveData(id));
 
-  const readOnly = state.readOnly ?? false;
+  // Only the seller's side fills these forms (lib/dealAccess
+  // `propertyForms`); anyone else gets the read-only form, however they
+  // arrived. Navigation state can ask for read-only, never for edit.
+  const dealSide = useDealSide(id);
+  const readOnly = (state.readOnly ?? false) || (dealSide !== null && !canAct('propertyForms', dealSide));
   const flowPath = `/transaction/${id}/flow`;
 
   useEffect(() => {
@@ -94,7 +100,7 @@ export default function TA7FormPage(): ReactElement {
         backLabel="Back to transaction"
       />
       <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
-        {loading ? (
+        {loading || dealSide === null ? (
           <div className="py-24 text-center text-sm text-gray-500 dark:text-slate-400">
             Loading TA7 form…
           </div>

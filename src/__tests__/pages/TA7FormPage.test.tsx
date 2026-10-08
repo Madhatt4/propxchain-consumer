@@ -9,6 +9,9 @@ import TA7FormPage from '../../pages/TA7FormPage';
 const mockGetTA7 = vi.fn();
 const mockUpdateTA7 = vi.fn();
 
+const mockDealSide = vi.fn<() => string | null>(() => 'seller');
+vi.mock('@/hooks/useDealSide', () => ({ useDealSide: () => mockDealSide() }));
+
 vi.mock('@/services/icp.service', () => ({
   icpService: {
     getTA7: (...args: unknown[]) => mockGetTA7(...args),

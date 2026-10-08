@@ -21,7 +21,7 @@ vi.mock('@/hooks/useSubscription', () => ({
 function renderTabs(entry = '/t', transactionId = 'tx-1'): void {
   render(
     <MemoryRouter initialEntries={[entry]}>
-      <TransactionTabs context={{ transactionId }} overview={<p>Active stage detail</p>} />
+      <TransactionTabs context={{ transactionId }} dealSide="seller" overview={<p>Active stage detail</p>} />
     </MemoryRouter>,
   );
 }

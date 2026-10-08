@@ -8,6 +8,7 @@ import {
 import type { StageConfig, JourneyRole, StageStatus } from '../types/stage.types';
 import type { ServiceProvider, ProviderSelection } from '../types/provider.types';
 import type { TransactionFlowState } from '../types/flow.types';
+import { dealSideOf, principalsOf, type DealSide } from '@/lib/dealAccess';
 
 interface TransactionData {
   id: string;
@@ -18,6 +19,9 @@ interface TransactionData {
   postcode?: string;
   milestones: Array<{ name: string; status: string; order: number }>;
   parties: Array<{ principal: string; role: string }>;
+  /** Principals from the multi-party lists, beyond the single seller/buyer slots. */
+  sellers?: string[];
+  buyers?: string[];
 }
 
 /** On-chain portion of flow state (shared across devices/users) */
@@ -29,6 +33,8 @@ interface ChainFlowState {
 interface UseTransactionFlowReturn {
   transaction: TransactionData | null;
   userRole: JourneyRole;
+  /** The viewer's side on the deal; drives the access map in lib/dealAccess. */
+  dealSide: DealSide;
   stages: StageConfig[];
   otherPartyStages: StageConfig[];
   activeJourney: JourneyRole;
@@ -204,11 +210,16 @@ function deriveUserRole(
   transaction: TransactionData | null,
   principalId: string | null,
 ): JourneyRole {
+  // Before the deal loads, default to seller. Afterwards only the buyer gets
+  // the buyer journey; the seller and anyone acting with them (agent,
+  // delegate, bot) work the seller journey, under lib/dealAccess limits.
   if (!transaction || !principalId) return 'seller';
-  // When seller === buyer (no real buyer yet), default to seller
-  if (transaction.seller === transaction.buyer) return 'seller';
-  if (transaction.buyer === principalId) return 'buyer';
-  return 'seller';
+  return deriveDealSide(transaction, principalId) === 'buyer' ? 'buyer' : 'seller';
+}
+
+function deriveDealSide(transaction: TransactionData | null, principalId: string | null): DealSide {
+  if (!transaction) return 'other';
+  return dealSideOf(transaction, principalId);
 }
 
 function buildCompletedStageIds(
@@ -365,6 +376,8 @@ export function useTransactionFlow(
             postcode: fullTx?.postcode,
             milestones: (progress as TransactionData | null)?.milestones ?? [],
             parties: (progress as TransactionData | null)?.parties ?? [],
+            sellers: principalsOf(fullTx?.sellers),
+            buyers: principalsOf(fullTx?.buyers),
           };
           setTransaction(txData);
 
@@ -379,14 +392,15 @@ export function useTransactionFlow(
             ...((chainState?.providerSelections ?? {}) as Record<string, ProviderSelection>),
           };
           // Derive the journey from the user's role in the transaction.
-          // Honour an explicit user toggle (userPreferredJourney) if one is
-          // set; otherwise always re-derive on every mount. This effect
-          // depends on principalId, so the moment the Zustand store
-          // hydrates the real principal we re-run and flip a buyer that
-          // had landed on the 'seller' default into the buyer view.
+          // This effect depends on principalId, so the moment the Zustand
+          // store hydrates the real principal we re-run and flip a buyer
+          // that had landed on the 'seller' default into the buyer view.
           const userRole = deriveUserRole(txData, principalId ?? null);
           const merged: TransactionFlowState = {
-            activeJourney: local.userPreferredJourney ?? userRole,
+            // A real principal always gets their own journey (see
+            // activeJourney below); the stored preference only fills the
+            // gap before the principal hydrates.
+            activeJourney: principalId ? userRole : (local.userPreferredJourney ?? userRole),
             userPreferredJourney: local.userPreferredJourney,
             expandedStageIds: local.expandedStageIds,
             completedStages: mergedCompletedStages,
@@ -438,7 +452,15 @@ export function useTransactionFlow(
     [transaction, principalId],
   );
 
-  const activeJourney = flowState.activeJourney;
+  const dealSide = useMemo(
+    () => deriveDealSide(transaction, principalId ?? null),
+    [transaction, principalId],
+  );
+
+  // Once the deal has loaded, the journey is the viewer's own and nothing
+  // else: a stored preference (or a hand-edited localStorage entry) can't
+  // put a buyer into the seller's journey, or the reverse.
+  const activeJourney = transaction && principalId ? userRole : flowState.activeJourney;
 
   const completedIds = useMemo(
     () => buildCompletedStageIds(transaction, flowState),
@@ -715,6 +737,7 @@ export function useTransactionFlow(
   return {
     transaction,
     userRole,
+    dealSide,
     stages,
     otherPartyStages,
     activeJourney,
