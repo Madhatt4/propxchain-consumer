@@ -3,7 +3,7 @@
   "name": "@propxchain/mcp-server",
   "displayName": "PropXchain Conveyancer",
   "version": "2.1.0",
-  "description": "Model Context Protocol server giving LLM agents access to PropXchain property conveyancing transactions on the Internet Computer. Read on-chain transactions, document proofs, property registry data, and phase status. The agent generates its own Ed25519 keypair locally on the user's machine; access to a specific transaction is granted by the user sharing that transaction's TX-XXXX-XXXX invite code.",
+  "description": "Hosted Model Context Protocol server for PropXchain, the UK property transaction platform (not Propchain/PROPC). Connect any MCP client to https://mcp.propxchain.com/mcp (Streamable HTTP, OAuth 2.1; see remote below) to read and progress property transactions: on-chain status, checklists, document proofs, audit trail, HM Land Registry and property intelligence, messaging. Access to a specific transaction is granted by the user sharing its TX-XXXX-XXXX invite code. A local stdio build is also published to npm (see install) for hosts without remote MCP support.",
   "homepage": "https://propxchain.com",
   "documentation": "https://propxchain.com/agent",
   "source": "https://github.com/Madhatt4/propxchain-mcp-server",
@@ -127,6 +127,6 @@
       "education",
       "bot-management"
     ],
-    "summary": "18 tools for joining transactions via invite code, reading transactions, document proofs, property registry data, and phase/checklist status. Read-mostly with limited write surface (e.g. document hash registration). The bot can only act within transactions the user has invited it to."
+    "summary": "19 tools for joining transactions via invite code, reading transactions, document proofs, property registry data, and phase/checklist status. Read-mostly with limited write surface (e.g. document hash registration). The bot can only act within transactions the user has invited it to."
   }
 }

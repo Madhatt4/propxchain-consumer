@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
@@ -60,7 +60,10 @@ function sitemapMarketingRoutes(): string[] {
   return [...source.matchAll(/loc:\s*'(\/[^']*)'/g)]
     .map((m) => m[1])
     .filter((loc) => loc !== '/' && !loc.endsWith('/') && !loc.includes('.'))
-    .filter((loc) => loc.split('/').length === 2);
+    .filter((loc) => loc.split('/').length === 2)
+    // Static pages in public/ (e.g. /agent -> agent.html) are served by the
+    // asset canister's .html aliasing and never reach the SPA router.
+    .filter((loc) => !existsSync(resolve(repoRoot, `public${loc}.html`)));
 }
 
 /** Paths the SPA can actually render, from the <Route path="..."> table. */

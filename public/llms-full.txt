@@ -1,13 +1,13 @@
 # PropXchain — Comprehensive AI Agent Documentation
 
-> Version: 1.0.0 | Updated: 2026-02-07 | License: AGPL-3.0-or-later
+> Updated: 2026-10-08
 
-PropXchain is an open-source blockchain property conveyancing platform for UK residential and commercial transactions, built on the Internet Computer Protocol (ICP). It digitalizes the entire process from seller preparation through to HM Land Registry registration, with GDPR-compliant hash-only document storage and on-chain verification.
+PropXchain (PropXchain Ltd, UK Companies House 17018978) is a UK platform for selling or buying a home. It coordinates the conveyancing process on one shared record for seller, buyer, conveyancer and estate agent, built on the Internet Computer Protocol (ICP), with GDPR-compliant hash-only document storage and on-chain verification. It is not Propchain (PROPC), the unrelated crypto token: PropXchain has no token or coin.
 
-- Production: https://propxchain.com
+- Production: https://propxchain.com (pre-launch, open for waitlist sign-ups)
 - Canister URL: https://lzpic-oaaaa-aaaaa-qcwva-cai.icp0.io/
-- MCP Server (planned): mcp.propxchain.com
-- Repository: https://github.com/PropXchain/propxchain-dapp
+- MCP server (live): https://mcp.propxchain.com/mcp — add it as a custom connector in any MCP client; see section 19
+- Web app source: https://github.com/Madhatt4/propxchain-consumer
 - llms.txt: https://propxchain.com/llms.txt
 
 ---
@@ -32,7 +32,7 @@ PropXchain is an open-source blockchain property conveyancing platform for UK re
 16. [UK Conveyancing Process — 6 Phases](#16-uk-conveyancing-process--6-phases)
 17. [Document Types Catalog](#17-document-types-catalog)
 18. [Hash-Only Document Architecture (GDPR)](#18-hash-only-document-architecture-gdpr)
-19. [MCP Tool Specifications — 12 Tools](#19-mcp-tool-specifications--12-tools)
+19. [MCP Server — 19 Tools](#19-mcp-server--19-tools)
 20. [Pricing Model](#20-pricing-model)
 21. [Frontend Architecture](#21-frontend-architecture)
 22. [Error Handling Patterns](#22-error-handling-patterns)
@@ -1610,73 +1610,102 @@ Each document has two IDs:
 
 ---
 
-## 19. MCP Tool Specifications — 12 Tools
+## 19. MCP Server — 19 Tools
 
-PropXchain plans an MCP (Model Context Protocol) server at mcp.propxchain.com enabling AI agents to interact with the platform programmatically.
+PropXchain runs a live, hosted MCP (Model Context Protocol) server. Any MCP client can connect to it.
 
-### Read-Only Tools (6)
+- URL: https://mcp.propxchain.com/mcp
+- Transport: Streamable HTTP
+- Auth: OAuth 2.1 (authorization code + PKCE S256, Client ID Metadata Documents, public client). An unauthenticated call returns 401 with `WWW-Authenticate: Bearer resource_metadata="https://mcp.propxchain.com/.well-known/oauth-protected-resource/mcp"`; the authorization server is https://auth.propxchain.com. Full flow: https://propxchain.com/auth.md
+- claude.ai / Claude Desktop: Settings, Connectors, Add custom connector, paste the URL, leave client ID and secret blank.
+- Claude Code: `claude mcp add --transport http propxchain https://mcp.propxchain.com/mcp`
+- Local alternative: `npm install -g @propxchain/mcp-server` (stdio, generates its own Ed25519 keypair). Source: https://github.com/Madhatt4/propxchain-mcp-server
+- Access model: the user approves the connection with their PropXchain email and a one-time code, then shares a transaction invite code (TX-XXXX-XXXX). The connection only sees transactions it has joined. Money and legal steps still stop at a human consent checkpoint; the assistant cannot move funds or sign for the user.
+- Human guide: https://propxchain.com/agent · Server card: https://propxchain.com/.well-known/mcp.json
+
+### Joining and access
+
+#### propxchain_join_transaction_as_bot
+Join a transaction as the user's assistant using the invite code they share. Idempotent; any party can revoke it from the transaction's bot panel.
+- Input: { inviteCode: "TX-XXXX-XXXX", botName }
+
+#### propxchain_join_transaction
+Join a transaction as a party.
+- Input: { inviteCode }
+
+#### propxchain_list_my_transactions
+List the transactions this connection has been given access to.
+- Input: {}
+
+#### propxchain_list_connected_bots
+List the assistants connected to a transaction, who added them and when.
+- Input: { transactionId }
+
+### Reading a transaction
 
 #### propxchain_search_transactions
-Search transactions by address, postcode, status, or party.
-- Input: { query: string, filters?: { status?, postcode?, dateRange? } }
-- Output: Array of transaction summaries
+Search your transactions by address, postcode, status or free text.
+- Input: { query?, postcode?, status?, limit? }
 
 #### propxchain_get_transaction
-Get full transaction details by ID.
-- Input: { transactionId: string }
-- Output: Complete Transaction object with all fields
+Full transaction details: parties, financials, status.
+- Input: { transactionId }
 
 #### propxchain_get_status
-Get transaction status and progress percentage.
-- Input: { transactionId: string }
-- Output: { status, completionPercentage, blockingParties, readyToExchange }
+Current phase, milestones, progress percentage and blocking parties.
+- Input: { transactionId }
 
-#### propxchain_get_property_intel
-Get property intelligence from Land Registry data.
-- Input: { postcode: string } or { titleNumber: string }
-- Output: Property details, price history, ownership info
+#### propxchain_next_step
+The highest-priority blocker, ranked options to resolve it, and urgency. Same recommendation as the dashboard card.
+- Input: { transactionId }
 
-#### propxchain_verify_document
-Verify a document hash against on-chain record.
-- Input: { documentId: number, fileHash: string }
-- Output: { verified: boolean, onChainHash, uploadedBy, uploadedAt }
-
-#### propxchain_list_documents
-List all documents for a transaction.
-- Input: { transactionId: string }
-- Output: Array of DocumentProof objects
-
-### Action Tools (6)
+#### propxchain_get_transaction_chain
+Linked transactions in a property chain.
+- Input: { transactionId }
 
 #### propxchain_get_checklist
-Get conveyancing checklist for a transaction with completion status.
-- Input: { transactionId: string, role: string }
-- Output: Checklist items with done/pending status
+Per-party document checklist and who is blocking progress.
+- Input: { transactionId }
 
-#### propxchain_explain_process
-Explain a conveyancing concept or process step.
-- Input: { topic: string, context?: string }
-- Output: Plain-language explanation with PropXchain-specific guidance
+#### propxchain_get_audit_trail
+Tamper-evident audit trail, verified against the Internet Computer root key (certificate, Merkle witness, recomputed hash chain).
+- Input: { transactionId, limit? }
 
-#### propxchain_create_transaction
-Create a new property transaction.
-- Input: { propertyAddress, postcode, titleNumber, amount, propertyType, mode, ... }
-- Output: { transactionId, inviteCode }
+### Documents (hash-only, GDPR compliant)
+
+#### propxchain_list_documents
+Registered documents with type, upload time and verification status.
+- Input: { transactionId }
 
 #### propxchain_upload_document
-Register a document hash on-chain.
-- Input: { transactionId, fileName, fileHash, fileSize, contentType, docType }
-- Output: { documentId, registered: true }
+Register a document proof on-chain. Only the SHA-256 hash and metadata are stored.
+- Input: { transactionId, fileName, contentType, docType, fileContent | fileHash+fileSize }
+
+#### propxchain_verify_document
+Check a document hash against the on-chain record.
+- Input: { documentId, expectedHash }
 
 #### propxchain_update_checklist
-Update checklist item status.
-- Input: { transactionId, checklistItemId, completed: boolean }
-- Output: Updated checklist item
+Mark a required document as provided on your checklist.
+- Input: { transactionId, documentId }
+
+### Creating, intelligence, guidance and messages
+
+#### propxchain_create_transaction
+Create a transaction; returns its ID and invite code.
+- Input: { propertyAddress, postcode, propertyType, amount, completionDate, ... }
+
+#### propxchain_get_property_intel
+Flood risk, heritage, planning and Land Registry price paid data for a UK postcode.
+- Input: { postcode, includeFloodRisk?, includeHeritage?, includePlanning?, includePrices? }
+
+#### propxchain_explain_process
+Plain-English explanation of a conveyancing step (overview, phase1-6, exchange, completion, sdlt, searches, ta6, ta7, ta10, freehold_vs_leasehold, chain, gazumping, mortgage).
+- Input: { topic }
 
 #### propxchain_send_message
-Send a message to a transaction party.
-- Input: { transactionId, recipientPrincipal, message }
-- Output: { messageId, sent: true }
+Draft a message to the other parties for the owner to read and send.
+- Input: { transactionId, message, recipient? }
 
 ---
 

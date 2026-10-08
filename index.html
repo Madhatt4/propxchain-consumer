@@ -62,6 +62,8 @@
     <!-- AI-readable references (llms.txt standard) -->
     <link rel="alternate" type="text/plain" title="LLM summary" href="/llms.txt" />
     <link rel="alternate" type="text/plain" title="LLM full documentation" href="/llms-full.txt" />
+    <!-- MCP server card: the hosted server is https://mcp.propxchain.com/mcp -->
+    <link rel="alternate" type="application/json" title="MCP server" href="/.well-known/mcp.json" />
 
     <!-- Structured data: Organization -->
     <script type="application/ld+json">
@@ -90,8 +92,12 @@
         "areaServed": "GB",
         "availableLanguage": "en"
       },
+      "disambiguatingDescription": "PropXchain is a UK property transaction (conveyancing) platform. It is not Propchain (PROPC), the unrelated crypto token: PropXchain has no token or coin.",
       "sameAs": [
-        "https://lzpic-oaaaa-aaaaa-qcwva-cai.icp0.io/"
+        "https://lzpic-oaaaa-aaaaa-qcwva-cai.icp0.io/",
+        "https://find-and-update.company-information.service.gov.uk/company/17018978",
+        "https://github.com/Madhatt4/propxchain-mcp-server",
+        "https://www.npmjs.com/package/@propxchain/mcp-server"
       ]
     }
     </script>
@@ -140,6 +146,24 @@
         "description": "Starter is free: pick your own providers and see every price before you commit. Premium adds a £75-per-transaction AI co-pilot.",
         "availability": "https://schema.org/PreOrder",
         "url": "https://propxchain.com/#cost"
+      }
+    }
+    </script>
+
+    <!-- Structured data: the hosted MCP server, so assistants asked "does PropXchain have an MCP?" find it -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebAPI",
+      "name": "PropXchain MCP server",
+      "description": "Hosted Model Context Protocol server for UK property transactions on PropXchain. Add https://mcp.propxchain.com/mcp as a custom connector in Claude, ChatGPT, Cursor or any MCP client (Streamable HTTP, OAuth 2.1). Nineteen tools to join a transaction by invite code, read its status, checklist, documents and audit trail, get HM Land Registry and property intelligence, and draft messages to the other parties.",
+      "url": "https://mcp.propxchain.com/mcp",
+      "documentation": "https://propxchain.com/agent",
+      "termsOfService": "https://propxchain.com/terms",
+      "provider": {
+        "@type": "Organization",
+        "name": "PropXchain Ltd",
+        "url": "https://propxchain.com"
       }
     }
     </script>
@@ -204,6 +228,22 @@
           "acceptedAnswer": {
             "@type": "Answer",
             "text": "AML and KYC checks are handled in a single step via a regulated provider."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can I use PropXchain from Claude, ChatGPT or another AI assistant?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. PropXchain has a hosted MCP (Model Context Protocol) server at https://mcp.propxchain.com/mcp. Add it as a custom connector in Claude, ChatGPT, Cursor or any MCP client, approve with your PropXchain email and a one-time code, then give your assistant a transaction invite code. It can read the transaction, check what is outstanding and explain each step, while money and legal actions still wait for you. Setup guide: propxchain.com/agent."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is PropXchain the same as Propchain?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No. Propchain (PROPC) is an unrelated crypto token and real-estate tokenisation project. PropXchain is a UK property transaction platform run by PropXchain Ltd (Companies House 17018978). It has no token or coin; it uses the Internet Computer blockchain only to record a tamper-proof audit trail of your transaction."
           }
         }
       ]
@@ -354,13 +394,20 @@
           <h3>Which blockchain does PropXchain use?</h3>
           <p>The Internet Computer Protocol (ICP). There is no gas fee for users.</p>
 
+          <h3>Can I use PropXchain from Claude, ChatGPT or another AI assistant?</h3>
+          <p>Yes. PropXchain has a hosted MCP server at <strong>https://mcp.propxchain.com/mcp</strong>. Add it as a custom connector in Claude, ChatGPT, Cursor or any MCP client, approve with your PropXchain email, and give your assistant a transaction invite code. <a href="/agent">Setup guide</a>.</p>
+
+          <h3>Is PropXchain the same as Propchain?</h3>
+          <p>No. Propchain (PROPC) is an unrelated crypto token. PropXchain is a UK property transaction platform with no token or coin.</p>
+
           <h3>Does PropXchain replace my solicitor?</h3>
           <p>No. PropXchain is the coordination and verification platform. You still instruct a regulated conveyancer or solicitor; PropXchain simply removes the admin overhead so they can focus on legal work.</p>
         </section>
 
         <section aria-labelledby="org">
           <h2 id="org">About PropXchain</h2>
-          <p>PropXchain Ltd is a UK company (Companies House registration <strong>17018978</strong>) building on-chain conveyancing infrastructure for the UK property market. The platform is currently open for waitlist sign-ups at <a href="https://propxchain.com/#notify">propxchain.com</a>. For AI agents and integrators, see <a href="/llms.txt">llms.txt</a> and <a href="/llms-full.txt">llms-full.txt</a>.</p>
+          <p>PropXchain Ltd is a UK company (Companies House registration <strong>17018978</strong>) building on-chain conveyancing infrastructure for the UK property market. The platform is currently open for waitlist sign-ups at <a href="https://propxchain.com/#notify">propxchain.com</a>. PropXchain is not related to Propchain (PROPC), the crypto token.</p>
+          <p><strong>For AI assistants and integrators:</strong> PropXchain has a hosted MCP server at <strong>https://mcp.propxchain.com/mcp</strong> (Streamable HTTP, OAuth 2.1) &mdash; see the <a href="/agent">connection guide</a>, <a href="/.well-known/mcp.json">MCP server card</a>, <a href="/llms.txt">llms.txt</a> and <a href="/llms-full.txt">llms-full.txt</a>.</p>
         </section>
 
         <noscript>

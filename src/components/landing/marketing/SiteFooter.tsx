@@ -42,6 +42,8 @@ export function SiteFooter({ onScrollTo }: SiteFooterProps): JSX.Element {
             </a>
           ))}
           <Link to="/resources" className={linkCls} style={linkStyle}>Help &amp; Support</Link>
+          {/* Plain anchor: /agent is a static page outside the SPA */}
+          <a href="/agent" className={linkCls} style={linkStyle}>Use with AI (MCP)</a>
           <Link to="/privacy" className={linkCls} style={linkStyle}>Privacy</Link>
           <Link to="/terms" className={linkCls} style={linkStyle}>Terms</Link>
         </div>

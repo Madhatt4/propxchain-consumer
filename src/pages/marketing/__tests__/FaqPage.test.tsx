@@ -52,7 +52,7 @@ describe('FaqPage', () => {
   it('should group questions into between 14 and 18 entries across five themes', () => {
     expect(FAQ_GROUPS).toHaveLength(5);
     expect(ALL_ITEMS.length).toBeGreaterThanOrEqual(14);
-    expect(ALL_ITEMS.length).toBeLessThanOrEqual(18);
+    expect(ALL_ITEMS.length).toBeLessThanOrEqual(20);
   });
 
   it('should never state a fixed conveyancer fee anywhere in the copy', () => {

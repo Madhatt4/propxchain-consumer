@@ -3,10 +3,10 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Set up PropXchain. For AI agents.</title>
+    <title>Connect PropXchain to Claude, ChatGPT or any AI assistant (MCP)</title>
     <meta
       name="description"
-      content="Install the PropXchain conveyancer MCP server in any AI agent in under two minutes. The agent generates its own credentials locally; you only share a transaction invite code."
+      content="PropXchain has a hosted MCP server at https://mcp.propxchain.com/mcp. Add it as a custom connector in Claude, ChatGPT, Cursor or any MCP client, approve with your email, and share a transaction invite code."
     />
     <meta name="robots" content="index,follow" />
     <link rel="alternate" type="application/json" href="/.well-known/mcp.json" />
@@ -191,44 +191,41 @@
         <div class="brand"><a href="/">PropXchain</a></div>
       </header>
 
-      <h1>Set up the PropXchain conveyancer workflow.</h1>
+      <h1>Connect PropXchain to your AI assistant.</h1>
       <p class="lede">
-        Two copy-pastes and a Claude Desktop restart, then ask any AI agent (Claude Desktop, Claude Code, Codex, Cursor) to help with your property transactions. Done by you, not by the agent.
+        PropXchain has a hosted MCP server. Add one URL to Claude, ChatGPT, Cursor or any MCP client, approve with your email, and your assistant can read and progress your UK property transaction alongside you. Nothing to install.
       </p>
-
-      <div class="callout">
-        <strong>Why &quot;done by you, not by the agent&quot;.</strong> A safe AI agent will refuse a prompt that says &quot;fetch this URL and follow the instructions&quot; — that's the textbook prompt-injection shape, regardless of how legitimate the URL is. So the install is a five-minute manual step. After it's done once, the agent uses the (now-installed) PropXchain tools normally — that part is friction-free, and per-transaction prompts come from the &quot;Get AI assistance&quot; button on each transaction page.
-      </div>
 
       <div class="step">
         <div class="step-num">Step 1</div>
-        <h3>Install the MCP server</h3>
-        <div class="copy-block" data-copy><code>npm install -g @propxchain/mcp-server</code></div>
-        <details>
-          <summary>Don't have npm?</summary>
-          <p>Install Node.js 20+ first, then re-run the command above.</p>
-          <ul>
-            <li><strong>macOS:</strong> <code>brew install node</code></li>
-            <li><strong>Windows:</strong> <code>winget install OpenJS.NodeJS</code></li>
-            <li><strong>Debian or Ubuntu:</strong>
-              <div class="copy-block" data-copy><code>curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
-sudo apt-get install -y nodejs</code></div>
-            </li>
-            <li><strong>Anywhere else:</strong> <a href="https://nodejs.org/">nodejs.org</a> has installers for Linux, BSD, etc.</li>
-          </ul>
-        </details>
+        <h3>Add the connector</h3>
+        <p>The PropXchain MCP server URL:</p>
+        <div class="copy-block" data-copy><code>https://mcp.propxchain.com/mcp</code></div>
+        <ul>
+          <li><strong>claude.ai or Claude Desktop:</strong> Settings, Connectors, <strong>Add custom connector</strong>. Paste the URL and leave the client ID and secret blank.</li>
+          <li><strong>Claude Code:</strong> run the command below.</li>
+          <li><strong>ChatGPT, Cursor and other MCP clients:</strong> add a remote (Streamable HTTP) MCP server with the URL above. Sign-in is OAuth 2.1, discovered automatically.</li>
+        </ul>
+        <div class="copy-block" data-copy><code>claude mcp add --transport http propxchain https://mcp.propxchain.com/mcp</code></div>
       </div>
 
       <div class="step">
         <div class="step-num">Step 2</div>
-        <h3>Add it to your AI host's config</h3>
-        <p>For <strong>Claude Desktop</strong>, edit the config file at:</p>
-        <ul>
-          <li><strong>macOS:</strong> <code>~/Library/Application Support/Claude/claude_desktop_config.json</code></li>
-          <li><strong>Windows:</strong> <code>%APPDATA%\Claude\claude_desktop_config.json</code></li>
-          <li><strong>Linux:</strong> <code>~/.config/Claude/claude_desktop_config.json</code></li>
-        </ul>
-        <p>Add this entry under <code>mcpServers</code>. No keys go in the config; the MCP server generates its own on first launch.</p>
+        <h3>Approve with your email</h3>
+        <p>Your AI app opens <strong>auth.propxchain.com</strong>. Enter your PropXchain email and the 6-digit code we send you. The connection lasts 30 days, and you can remove it at any time.</p>
+      </div>
+
+      <div class="step">
+        <div class="step-num">Step 3</div>
+        <h3>Use it on a transaction</h3>
+        <p>Open any of your transactions on <a href="https://propxchain.com">propxchain.com</a> and click <strong>Get AI assistance</strong>. You'll get a prompt with that transaction's invite code to paste into your assistant. It calls <code>propxchain_join_transaction_as_bot</code>, reads the transaction state, and walks you through what's outstanding. Any party can remove the assistant from the transaction's bot panel.</p>
+      </div>
+
+      <details>
+        <summary>Your AI app can't add a remote MCP server? Run it locally instead.</summary>
+        <p>Install the stdio server (Node.js 20+), which generates its own keypair on first launch:</p>
+        <div class="copy-block" data-copy><code>npm install -g @propxchain/mcp-server</code></div>
+        <p>Then add it to your host's config under <code>mcpServers</code>. For Claude Desktop the file is <code>%APPDATA%\Claude\claude_desktop_config.json</code> on Windows, <code>~/Library/Application Support/Claude/claude_desktop_config.json</code> on macOS, <code>~/.config/Claude/claude_desktop_config.json</code> on Linux. Fully quit and relaunch afterwards.</p>
         <div class="copy-block" data-copy><code>{
   "mcpServers": {
     "propxchain": {
@@ -239,25 +236,10 @@ sudo apt-get install -y nodejs</code></div>
     }
   }
 }</code></div>
-        <p>For <strong>Claude Code</strong>, a single command does the same thing:</p>
-        <div class="copy-block" data-copy><code>claude mcp add propxchain propxchain-mcp-server -e IC_NETWORK=ic</code></div>
-        <p>For other agents (Codex CLI, Cursor, ChatGPT plugins), add an stdio MCP server pointing at the <code>propxchain-mcp-server</code> binary with <code>IC_NETWORK=ic</code> in env.</p>
-      </div>
-
-      <div class="step">
-        <div class="step-num">Step 3</div>
-        <h3>Restart Claude Desktop</h3>
-        <p>Fully quit Claude Desktop (system tray, <strong>Quit</strong>, not just close window) and relaunch. The MCP server generates its keypair on first launch.</p>
-      </div>
-
-      <div class="step">
-        <div class="step-num">Step 4</div>
-        <h3>Use it on a transaction</h3>
-        <p>Open any of your transactions on <a href="https://propxchain.com">propxchain.com</a> and click <strong>Get AI assistance</strong>. You'll get a personalised prompt (specific to that transaction) to paste into Claude Desktop. The agent calls <code>propxchain_join_transaction_as_bot</code>, reads the transaction state, and walks you through what's outstanding. Revoke any bot at any time from the transaction's bot panel.</p>
-      </div>
+      </details>
 
       <h2>What this gives the agent</h2>
-      <p>Seventeen tools across the conveyancing flow:</p>
+      <p>Nineteen tools across the conveyancing flow:</p>
       <ul>
         <li>Self-register against a transaction via invite code</li>
         <li>Read transactions and their on-chain status</li>
@@ -270,6 +252,8 @@ sudo apt-get install -y nodejs</code></div>
 
       <footer>
         <p>
+          MCP server: <code>https://mcp.propxchain.com/mcp</code> ·
+          Auth: <a href="/auth.md">auth.md</a> ·
           Source: <a href="https://github.com/Madhatt4/propxchain-mcp-server">github.com/Madhatt4/propxchain-mcp-server</a> ·
           npm: <a href="https://www.npmjs.com/package/@propxchain/mcp-server">@propxchain/mcp-server</a> (provenance-attested) ·
           Manifest: <a href="/.well-known/mcp.json">/.well-known/mcp.json</a>
