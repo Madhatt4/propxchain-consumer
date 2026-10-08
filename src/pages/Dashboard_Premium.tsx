@@ -589,6 +589,13 @@ const Dashboard_PremiumContent: React.FC = () => {
       const { icpService } = await import('../services/icp.service');
       await icpService.initialize();
       await icpService.leaveTransaction(leaveTargetTransaction.id);
+      // A buyer leaving a developer plot's deal frees the plot with them.
+      // Best-effort: the developer can still release it from their plot list.
+      if (String(leaveTargetTransaction.mode) === 'development') {
+        const { releaseMyPlot } = await import('../services/plotClaim.service');
+        await releaseMyPlot(String(leaveTargetTransaction.id)).catch((err: unknown) =>
+          logger.warn('[Dashboard] releasing the plot after leaving failed', err));
+      }
       setShowLeaveConfirmModal(false);
       setLeaveTargetTransaction(null);
       if (selectedTransaction?.id === leaveTargetTransaction.id) {

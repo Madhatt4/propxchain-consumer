@@ -63,3 +63,16 @@ export async function claimPlot(code: string, transactionId: string): Promise<st
 
   return plotId;
 }
+
+/**
+ * Free the plot a buyer claimed, once they have left the deal it made
+ * (migration 20261008_release_my_plot). Only their own reservation; null when
+ * there was nothing of theirs left to release.
+ */
+export async function releaseMyPlot(transactionId: string): Promise<string | null> {
+  const { data, error } = await supabase.rpc('release_my_plot', { p_transaction_id: transactionId });
+  if (error) {
+    throw new Error(`Could not release this plot: ${error.message}`);
+  }
+  return (data as string | null) ?? null;
+}
