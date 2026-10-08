@@ -22,6 +22,8 @@ interface TransactionData {
   /** Principals from the multi-party lists, beyond the single seller/buyer slots. */
   sellers?: string[];
   buyers?: string[];
+  /** Live delegations as [party, delegate]: a delegate takes their client's side. */
+  delegates?: Array<[string, string]>;
 }
 
 /** On-chain portion of flow state (shared across devices/users) */
@@ -361,10 +363,11 @@ export function useTransactionFlow(
     async function fetchTransaction(): Promise<void> {
       try {
         setIsLoading(true);
-        const [progress, fullTx, chainState] = await Promise.all([
+        const [progress, fullTx, chainState, delegates] = await Promise.all([
           icpService.getTransactionProgress(transactionId).catch(() => null),
           icpService.getTransaction(transactionId).catch(() => null),
           icpService.getFlowState(transactionId).catch(() => null),
+          icpService.getDelegates(transactionId),
         ]);
         if (!cancelled) {
           const txData: TransactionData = {
@@ -378,6 +381,7 @@ export function useTransactionFlow(
             parties: (progress as TransactionData | null)?.parties ?? [],
             sellers: principalsOf(fullTx?.sellers),
             buyers: principalsOf(fullTx?.buyers),
+            delegates,
           };
           setTransaction(txData);
 

@@ -106,10 +106,12 @@ const Dashboard_PremiumContent: React.FC = () => {
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [showInviteForSolicitor, setShowInviteForSolicitor] = useState(false);
 
-  // Determine user's role in a given transaction
+  // Determine user's role in a given transaction. The seller slot decides it,
+  // not who created the deal: a buyer who started a new-build plot deal is
+  // still the buyer, and only the seller may delete (lib/dealAccess deleteDeal).
   const getUserRole = (tx: Transaction): 'buyer' | 'seller' => {
     const pid = principalId || '';
-    if (tx.seller === pid || tx.createdBy === pid) {
+    if (tx.seller === pid) {
       return 'seller';
     }
     return 'buyer';
@@ -772,9 +774,8 @@ const Dashboard_PremiumContent: React.FC = () => {
                         setShowPropertyEditModal(true);
                       }}
                       onRemove={() => {
-                        // Sellers created the transaction, so they delete it.
-                        // Buyers joined by invite — the canister rejects a
-                        // delete from them, so they leave instead.
+                        // Only the seller deletes; everyone else leaves. The
+                        // canister rejects a delete from anyone else.
                         if (role === 'seller') {
                           setDeleteTargetTransaction(tx);
                           setDeleteError(null);

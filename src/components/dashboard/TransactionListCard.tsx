@@ -82,7 +82,7 @@ interface TransactionListCardProps {
   onEdit: () => void;
   /** Admin-only: open this transaction on the conveyancer matter screen. */
   onViewAsConveyancer?: () => void;
-  /** Delete for the seller (creator), Leave for a buyer who joined by invite. */
+  /** Delete for the seller, Leave for everyone else on the deal. */
   onRemove: () => void;
 }
 

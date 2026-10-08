@@ -27,6 +27,7 @@ function makeProvider(overrides: Partial<ServiceProvider> = {}): ServiceProvider
 const mockGetTransactionProgress = vi.fn().mockResolvedValue(null);
 const mockGetTransaction = vi.fn().mockResolvedValue(null);
 const mockGetFlowState = vi.fn().mockResolvedValue(null);
+const mockGetDelegates = vi.fn().mockResolvedValue([]);
 const mockSetFlowState = vi.fn().mockResolvedValue(undefined);
 const mockLogEvent = vi.fn().mockResolvedValue({ ok: BigInt(1) });
 vi.mock('../../services/icp.service', () => ({
@@ -34,6 +35,7 @@ vi.mock('../../services/icp.service', () => ({
     getTransactionProgress: (...args: unknown[]) => mockGetTransactionProgress(...args),
     getTransaction: (...args: unknown[]) => mockGetTransaction(...args),
     getFlowState: (...args: unknown[]) => mockGetFlowState(...args),
+    getDelegates: (...args: unknown[]) => mockGetDelegates(...args),
     setFlowState: (...args: unknown[]) => mockSetFlowState(...args),
     ledgerManager: {
       logEvent: (...args: unknown[]) => mockLogEvent(...args),
@@ -115,6 +117,18 @@ describe('useTransactionFlow', () => {
     await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.dealSide).toBe('other');
     expect(result.current.activeJourney).toBe('seller');
+  });
+
+  it("should give the buyer's delegate the buyer journey", async () => {
+    mockGetTransaction.mockResolvedValue({
+      seller: { toString: () => 'seller-principal' },
+      buyer: { toString: () => 'buyer-principal' },
+    });
+    mockGetDelegates.mockResolvedValueOnce([['buyer-principal', 'test-principal']]);
+    const { result } = renderHook(() => useTransactionFlow('tx-123'));
+    await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.dealSide).toBe('buyer');
+    expect(result.current.activeJourney).toBe('buyer');
   });
 
   it('should return 7 stages for seller journey', async () => {
