@@ -40,7 +40,7 @@ vi.mock('@/services/web2-document.service', () => ({
   },
 }));
 
-function renderTab(onGoToStage?: (stageId: string) => void): void {
+function renderTab(onGoToStage?: (stageId: string) => void, readOnly?: boolean): void {
   render(
     <MemoryRouter>
       <SalesPackTab
@@ -48,6 +48,7 @@ function renderTab(onGoToStage?: (stageId: string) => void): void {
         locked={false}
         requiredTier="starter"
         onGoToStage={onGoToStage}
+        readOnly={readOnly}
       />
     </MemoryRouter>,
   );
@@ -92,6 +93,23 @@ describe('SalesPackTab', () => {
   it('should offer the extra-documents slot', () => {
     renderTab();
     expect(screen.getByRole('button', { name: 'Add a document' })).toBeInTheDocument();
+  });
+});
+
+// The buyer sees the pack, but only the seller's side acts on it
+// (lib/dealAccess `salesPack`).
+describe('SalesPackTab for the buyer', () => {
+  it('should show the items and progress but no way to change them', () => {
+    const open = { ...readiness, items: readiness.items.map((i) => ({ ...i, done: false })) };
+    vi.mocked(usePackReadiness).mockReturnValueOnce({ readiness: open, isLoading: false });
+    renderTab(vi.fn(), true);
+    expect(screen.getByText('Material information complete')).toBeInTheDocument();
+    expect(screen.getByRole('progressbar', { name: 'Sales pack readiness' })).toBeInTheDocument();
+    expect(screen.getByRole('note')).toHaveTextContent('View only');
+    expect(screen.queryByRole('button', { name: 'Complete in Stage 1' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Share from wallet' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Add a document' })).toBeNull();
+    expect(screen.queryByRole('combobox')).toBeNull();
   });
 });
 

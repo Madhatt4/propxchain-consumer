@@ -20,12 +20,16 @@ import { usePackReadiness } from '@/hooks/usePackReadiness';
 import { web2DocumentService, type StoredDocument } from '@/services/web2-document.service';
 import { ID_DOC_KIND, PACK_DOC_KINDS, isPackDocument, packDocLabel } from '@/lib/packDocKinds';
 import { PackShareCard } from './PackShareCard';
+import { viewOnlyNote } from '../ViewOnlyFrame';
 import type { TransactionTabProps } from './transactionTabs.config';
 
 const ACCEPTED_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
 const MAX_BYTES = 10 * 1024 * 1024;
 
-function ExtraDocumentsSlot({ transactionId }: { transactionId: string }): JSX.Element {
+function ExtraDocumentsSlot({
+  transactionId,
+  readOnly,
+}: { transactionId: string; readOnly: boolean }): JSX.Element {
   const [docs, setDocs] = useState<StoredDocument[]>([]);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -77,9 +81,13 @@ function ExtraDocumentsSlot({ transactionId }: { transactionId: string }): JSX.E
     <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-slate-700/60 dark:bg-white/[0.03]">
       <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Other documents</p>
       <p className="mt-0.5 text-xs text-gray-600 dark:text-gray-400">
-        Anything else a buyer should see — floor plan, FENSA or gas certificates,
-        warranties. Stored on this device for now; hashed for the audit trail.
+        {readOnly
+          ? 'Anything else the seller has added — floor plan, FENSA or gas certificates, warranties.'
+          : 'Anything else a buyer should see — floor plan, FENSA or gas certificates, warranties. Stored on this device for now; hashed for the audit trail.'}
       </p>
+      {readOnly && docs.length === 0 && (
+        <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">Nothing added yet.</p>
+      )}
       {docs.length > 0 && (
         <ul className="mt-3 space-y-1.5">
           {docs.map((d) => (
@@ -91,6 +99,7 @@ function ExtraDocumentsSlot({ transactionId }: { transactionId: string }): JSX.E
           ))}
         </ul>
       )}
+      {!readOnly && (
       <div className="mt-3 flex flex-wrap items-center gap-3">
         <label htmlFor={kindId} className="sr-only">Document type</label>
         <select
@@ -130,6 +139,8 @@ function ExtraDocumentsSlot({ transactionId }: { transactionId: string }): JSX.E
         )}
         {notice && <p className="text-xs text-gray-600 dark:text-gray-400">{notice}</p>}
       </div>
+      )}
+      {!readOnly && (
       <input
         ref={inputRef}
         type="file"
@@ -141,6 +152,7 @@ function ExtraDocumentsSlot({ transactionId }: { transactionId: string }): JSX.E
           e.target.value = '';
         }}
       />
+      )}
     </div>
   );
 }
@@ -154,6 +166,11 @@ const ROW_ACTION =
 interface SalesPackTabExtraProps {
   /** Jump to a flow stage — wired by the flow page; absent elsewhere. */
   onGoToStage?: (stageId: string) => void;
+  /**
+   * The buyer sees the pack but only the seller's side acts on it
+   * (lib/dealAccess `salesPack`): no uploads, no row actions, no share link.
+   */
+  readOnly?: boolean;
 }
 
 /**
@@ -186,6 +203,7 @@ function RowAction({
 export function SalesPackTab({
   transactionId,
   onGoToStage,
+  readOnly = false,
 }: TransactionTabProps & SalesPackTabExtraProps): JSX.Element {
   const { readiness, isLoading } = usePackReadiness(transactionId);
 
@@ -203,8 +221,13 @@ export function SalesPackTab({
         </div>
         <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
           The upfront information a buyer&apos;s side will ask for, gathered
-          before they have to ask. Each item completes from its stage above.
+          before they have to ask.{readOnly ? '' : ' Each item completes from its stage above.'}
         </p>
+        {readOnly && (
+          <p role="note" className="mt-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+            {viewOnlyNote('buyer')}
+          </p>
+        )}
 
         {readiness && (
           <div
@@ -263,7 +286,7 @@ export function SalesPackTab({
                   {item.label}
                 </span>
                 <span className="sr-only">{item.done ? 'done' : 'not done'}</span>
-                {!item.done && (
+                {!item.done && !readOnly && (
                   <RowAction itemId={item.id} transactionId={transactionId} onGoToStage={onGoToStage} />
                 )}
               </li>
@@ -272,9 +295,9 @@ export function SalesPackTab({
         )}
       </div>
 
-      <ExtraDocumentsSlot transactionId={transactionId} />
+      <ExtraDocumentsSlot transactionId={transactionId} readOnly={readOnly} />
 
-      <PackShareCard transactionId={transactionId} />
+      {!readOnly && <PackShareCard transactionId={transactionId} />}
     </div>
   );
 }

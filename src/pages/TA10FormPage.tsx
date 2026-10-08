@@ -18,6 +18,8 @@ import { recordOnBehalf } from '@/services/onBehalf';
 import { logger } from '@/utils/logger';
 import TA10Form from '@/components/forms/TA10Form';
 import type { TA10FittingsAndContents } from '@/types/ta10.types';
+import { useDealSide } from '@/hooks/useDealSide';
+import { canAct } from '@/lib/dealAccess';
 
 interface TA10PageLocationState {
   propertyAddress?: string;
@@ -33,7 +35,11 @@ export default function TA10FormPage(): ReactElement {
   const [initialData, setInitialData] = useState<TA10FittingsAndContents | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  const readOnly = state.readOnly ?? false;
+  // Only the seller's side fills these forms (lib/dealAccess
+  // `propertyForms`); anyone else gets the read-only form, however they
+  // arrived. Navigation state can ask for read-only, never for edit.
+  const dealSide = useDealSide(id);
+  const readOnly = (state.readOnly ?? false) || (dealSide !== null && !canAct('propertyForms', dealSide));
   const flowPath = `/transaction/${id}/flow`;
 
   useEffect(() => {
@@ -73,7 +79,7 @@ export default function TA10FormPage(): ReactElement {
         backLabel="Back to transaction"
       />
       <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
-        {loading ? (
+        {loading || dealSide === null ? (
           <div className="py-24 text-center text-sm text-gray-500 dark:text-slate-400">
             Loading TA10 form…
           </div>

@@ -28,6 +28,8 @@ import { stepForSectionName } from '@/components/forms/ta6/sectionMeta';
 import { makeTa6Uploader } from '@/components/forms/ta6/widgets/ta6Uploader';
 import { calculateTA6Completion } from '@/types/ta6.types';
 import type { TA6PropertyInformation } from '@/types/ta6.types';
+import { useDealSide } from '@/hooks/useDealSide';
+import { canAct } from '@/lib/dealAccess';
 
 interface TA6PageLocationState {
   postcode?: string | null;
@@ -47,7 +49,11 @@ export default function TA6FormPage(): ReactElement {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [listing, setListing] = useState<PropertyListing | null>(() => getRightmoveData(id));
 
-  const readOnly = state.readOnly ?? false;
+  // Only the seller's side fills these forms (lib/dealAccess
+  // `propertyForms`); anyone else gets the read-only form, however they
+  // arrived. Navigation state can ask for read-only, never for edit.
+  const dealSide = useDealSide(id);
+  const readOnly = (state.readOnly ?? false) || (dealSide !== null && !canAct('propertyForms', dealSide));
   const flowPath = `/transaction/${id}/flow`;
   // `?section=section8_environment` opens the stepper there. It rides in the
   // URL rather than in navigation state so the link survives a reload and can
@@ -136,7 +142,7 @@ export default function TA6FormPage(): ReactElement {
           </div>
         )}
 
-        {loading ? (
+        {loading || dealSide === null ? (
           <div className="py-24 text-center text-sm text-gray-500 dark:text-slate-400">
             Loading TA6 form…
           </div>

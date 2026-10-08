@@ -86,6 +86,37 @@ describe('useTransactionFlow', () => {
     expect(stored.activeJourney).toBe('buyer');
   });
 
+  // Access lock (lib/dealAccess): once the deal loads, the journey is the
+  // viewer's own. A stored or hand-edited preference can't move a buyer
+  // into the seller's journey.
+  it('should keep the buyer in the buyer journey whatever localStorage says', async () => {
+    localStorage.setItem(
+      'txflow:tx-123:test-principal',
+      JSON.stringify({ activeJourney: 'seller', userPreferredJourney: 'seller' }),
+    );
+    mockGetTransaction.mockResolvedValue({
+      seller: { toString: () => 'seller-principal' },
+      buyer: { toString: () => 'test-principal' },
+    });
+    const { result } = renderHook(() => useTransactionFlow('tx-123'));
+    await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.dealSide).toBe('buyer');
+    expect(result.current.activeJourney).toBe('buyer');
+    act(() => result.current.setActiveJourney('seller'));
+    expect(result.current.activeJourney).toBe('buyer');
+  });
+
+  it('should put an agent on the deal into the seller journey as the other side', async () => {
+    mockGetTransaction.mockResolvedValue({
+      seller: { toString: () => 'seller-principal' },
+      buyer: { toString: () => 'buyer-principal' },
+    });
+    const { result } = renderHook(() => useTransactionFlow('tx-123'));
+    await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.dealSide).toBe('other');
+    expect(result.current.activeJourney).toBe('seller');
+  });
+
   it('should return 7 stages for seller journey', async () => {
     const { result } = renderHook(() => useTransactionFlow('tx-123'));
     await vi.waitFor(() => expect(result.current.isLoading).toBe(false));

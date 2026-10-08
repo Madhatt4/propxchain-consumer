@@ -13,6 +13,9 @@ const mockHasAcked = vi.fn();
 const mockUpdateTA6 = vi.fn();
 const mockAcknowledge = vi.fn();
 
+const mockDealSide = vi.fn<() => string | null>(() => 'seller');
+vi.mock('@/hooks/useDealSide', () => ({ useDealSide: () => mockDealSide() }));
+
 vi.mock('@/services/icp.service', () => ({
   icpService: {
     getTA6: (...args: unknown[]) => mockGetTA6(...args),
@@ -60,6 +63,7 @@ function renderPage(): void {
 describe('TA6FormPage', () => {
   beforeEach(() => {
     lastFormProps = null;
+    mockDealSide.mockReset().mockReturnValue('seller');
     mockGetTA6.mockReset().mockResolvedValue(null);
     mockHasAcked.mockReset().mockResolvedValue(false);
     mockUpdateTA6.mockReset().mockResolvedValue(undefined);
@@ -100,5 +104,31 @@ describe('TA6FormPage', () => {
     await waitFor(() => expect(screen.getByTestId('ta6-form-stub')).toBeInTheDocument());
 
     expect(screen.queryByText(/All sections answered and saved/i)).not.toBeInTheDocument();
+  });
+
+  // Typing the form URL must not give the buyer an editable TA6.
+  it('should open read-only for the buyer, with no upload or acknowledgment', async () => {
+    mockDealSide.mockReturnValue('buyer');
+    renderPage();
+
+    await waitFor(() => expect(screen.getByTestId('ta6-form-stub')).toBeInTheDocument());
+    expect(lastFormProps?.readOnly).toBe(true);
+    expect(lastFormProps?.uploadFile).toBeUndefined();
+    expect(lastFormProps?.onAcknowledge).toBeUndefined();
+  });
+
+  it("should wait for the viewer's side before showing the form", () => {
+    mockDealSide.mockReturnValue(null);
+    renderPage();
+
+    expect(screen.queryByTestId('ta6-form-stub')).not.toBeInTheDocument();
+  });
+
+  it('should keep the form editable for an agent working the seller side', async () => {
+    mockDealSide.mockReturnValue('other');
+    renderPage();
+
+    await waitFor(() => expect(screen.getByTestId('ta6-form-stub')).toBeInTheDocument());
+    expect(lastFormProps?.readOnly).toBe(false);
   });
 });

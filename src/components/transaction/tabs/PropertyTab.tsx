@@ -18,18 +18,20 @@ import type { TransactionTabProps } from './transactionTabs.config';
  * show an explicit empty state; otherwise the card handles full postcodes (full
  * intel) and outcode-only postcodes (its own completion prompt).
  */
-export function PropertyTab({ transactionId, postcode, propertyAddress, uprn }: TransactionTabProps): JSX.Element {
+export function PropertyTab({ transactionId, postcode, propertyAddress, uprn, readOnly }: TransactionTabProps): JSX.Element {
   const hasPostcode = Boolean(postcode && postcode.trim());
   const queryClient = useQueryClient();
 
   // What this tab learns for free feeds the sales pack: the report's EPC
   // certificate goes onto the listing, and the readiness meter re-reads it.
+  // The listing is the seller's, so only a viewer who can act here writes it.
   const handleReport = useCallback(
     (report: PropertyIntelligenceReport): void => {
+      if (readOnly) return;
       if (!applyReportEpcToListing(transactionId, report.epc)) return;
       void queryClient.invalidateQueries({ queryKey: ['salesPack', 'readiness', transactionId] });
     },
-    [transactionId, queryClient],
+    [transactionId, queryClient, readOnly],
   );
 
   if (!hasPostcode) {
