@@ -45,3 +45,21 @@ describe('agent discovery surfaces', () => {
     expect(html).toContain(`"url": "${MCP_URL}"`)
   })
 })
+
+describe('homepage crawler summary', () => {
+  // Fetch tools hand a model only the first few KB of a page, so the MCP
+  // pointer must sit in the meta description and right under the h1, not
+  // only in the FAQ and About sections at the bottom.
+  it('names the MCP endpoint in the meta description', () => {
+    const meta = read('index.html').match(/<meta name="description" content="([^"]*)"/)?.[1] ?? ''
+    expect(meta).toContain('mcp.propxchain.com/mcp')
+    expect(meta).toContain('Propchain')
+  })
+
+  it('names the MCP endpoint in the first paragraph after the h1', () => {
+    const html = read('index.html')
+    const afterH1 = html.slice(html.indexOf('<main id="seo-fallback"'))
+    const firstSection = afterH1.slice(0, afterH1.indexOf('<section'))
+    expect(firstSection).toContain(MCP_URL)
+  })
+})
