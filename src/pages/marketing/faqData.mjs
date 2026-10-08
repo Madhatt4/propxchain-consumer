@@ -38,6 +38,14 @@ export const FAQ_GROUPS = [
         a: 'Anyone selling or buying residential property in England and Wales, plus the conveyancers and small housebuilders who work with them. Sellers run the transaction, buyers follow along free, and CLC-verified conveyancers handle the legal work. Properties in Scotland and Northern Ireland are not supported yet, as they use different land registration systems.',
       },
       {
+        q: 'Is PropXchain the same as Propchain?',
+        a: 'No. Propchain (PROPC) is an unrelated crypto token and real-estate tokenisation project. PropXchain is a UK property transaction platform run by PropXchain Ltd (Companies House 17018978). It has no token or coin; it uses the Internet Computer blockchain only to record a tamper-proof audit trail of your transaction.',
+      },
+      {
+        q: 'Can I use PropXchain from Claude, ChatGPT or another AI assistant?',
+        a: 'Yes. PropXchain has a hosted MCP (Model Context Protocol) server at https://mcp.propxchain.com/mcp. Add it as a custom connector in Claude, ChatGPT, Cursor or any MCP client, approve with your PropXchain email and a one-time code, then give your assistant a transaction invite code. It can read the transaction, check what is outstanding and explain each step, while money and legal actions still wait for you. Setup guide: propxchain.com/agent.',
+      },
+      {
         q: 'How do I sign in? Do I need a password?',
         a: 'Two options: a standard email account, or Internet Identity — passwordless sign-in built into the Internet Computer. Internet Identity uses your device biometrics or a security key, so there is no password to remember and no password database to breach. Either way you get the same dashboard.',
       },

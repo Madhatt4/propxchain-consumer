@@ -21,7 +21,7 @@ const SITE = 'https://propxchain.com';
 // (scripts/prerender-marketing.mjs + prerender-resources.mjs) and the static
 // public/ pages (news, llms).
 const routes = [
-  { loc: '/', lastmod: '2026-06-22', changefreq: 'weekly', priority: '1.0' },
+  { loc: '/', lastmod: '2026-10-08', changefreq: 'weekly', priority: '1.0' },
   { loc: '/how-it-works', lastmod: '2026-06-13', changefreq: 'monthly', priority: '0.9' },
   { loc: '/features', lastmod: '2026-06-13', changefreq: 'monthly', priority: '0.9' },
   { loc: '/pricing', lastmod: '2026-06-13', changefreq: 'monthly', priority: '0.9' },
@@ -29,7 +29,7 @@ const routes = [
   { loc: '/find-a-conveyancer', lastmod: '2026-06-13', changefreq: 'weekly', priority: '0.95' },
   { loc: '/news/', lastmod: '2026-06-12', changefreq: 'weekly', priority: '0.8' },
   { loc: '/news/opda-sandbox-hackathons', lastmod: '2026-06-12', changefreq: 'monthly', priority: '0.8' },
-  { loc: '/faq', lastmod: '2026-06-12', changefreq: 'monthly', priority: '0.8' },
+  { loc: '/faq', lastmod: '2026-10-08', changefreq: 'monthly', priority: '0.8' },
   { loc: '/resources', lastmod: '2026-09-04', changefreq: 'weekly', priority: '0.8' },
   { loc: '/resources/getting-started', lastmod: '2026-09-04', changefreq: 'monthly', priority: '0.8' },
   { loc: '/resources/selling', lastmod: '2026-09-01', changefreq: 'monthly', priority: '0.8' },
@@ -44,8 +44,9 @@ const routes = [
   { loc: '/resources/searches-and-legal/property-searches-explained', lastmod: '2026-09-27', changefreq: 'monthly', priority: '0.8' },
   { loc: '/resources/getting-started/how-to-sign-in', lastmod: '2026-09-04', changefreq: 'monthly', priority: '0.8' },
   { loc: '/about', lastmod: '2026-06-13', changefreq: 'monthly', priority: '0.7' },
-  { loc: '/llms.txt', lastmod: '2026-06-22', changefreq: 'weekly', priority: '0.5' },
-  { loc: '/llms-full.txt', lastmod: '2026-06-22', changefreq: 'weekly', priority: '0.5' },
+  { loc: '/agent', lastmod: '2026-10-08', changefreq: 'monthly', priority: '0.7' },
+  { loc: '/llms.txt', lastmod: '2026-10-08', changefreq: 'weekly', priority: '0.5' },
+  { loc: '/llms-full.txt', lastmod: '2026-10-08', changefreq: 'weekly', priority: '0.5' },
 ];
 
 const body = routes

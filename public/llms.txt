@@ -1,27 +1,33 @@
 # PropXchain
 
-> Open-source blockchain property conveyancing platform for UK property transactions, built on the Internet Computer Protocol (ICP). Free to start for buyers and sellers: pick your own providers and see every price before you commit, with no platform fee. An optional GBP 75 per-transaction AI co-pilot reads your HM Land Registry title and search results in plain English and tailors your conveyancer quote.
+> PropXchain (propxchain.com, PropXchain Ltd, UK Companies House 17018978) is a UK online platform for selling or buying a home. It coordinates the conveyancing process on one shared record, so the seller, buyer, conveyancer and estate agent see the same live view of the transaction. Starting is free with no platform fee; an optional GBP 75 per-transaction AI co-pilot reads your HM Land Registry title and search results in plain English and tailors your conveyancer quote. PropXchain has a live, hosted MCP server at https://mcp.propxchain.com/mcp that any MCP client (claude.ai, Claude Desktop, Claude Code, ChatGPT, Cursor) can add as a custom connector.
 
-PropXchain digitises the end-to-end UK conveyancing process with on-chain verification, GDPR-compliant document management (hash-only storage -- files never touch the blockchain), and integrated property intelligence. Authentication is handled by Internet Identity (no passwords). The platform supports 18 user role types across buyers, sellers, solicitors, conveyancers, estate agents, mortgage brokers, and platform admins.
+Not to be confused with Propchain (PROPC), an unrelated crypto token and real-estate tokenisation project. PropXchain has no token, no coin and no ICO; it records SHA-256 hashes of transaction milestones on the Internet Computer (ICP) blockchain, and users pay no gas fees.
 
 - Production: https://propxchain.com
-- Canister URL: https://lzpic-oaaaa-aaaaa-qcwva-cai.icp0.io/
+- Status: pre-launch, open for waitlist sign-ups at https://propxchain.com/#notify
+- Contact: info@propxchain.com
+
+## Connect an AI assistant (MCP)
+
+PropXchain is MCP-native. Every transaction a user can see in the web app can also be read and progressed by their AI assistant through the Model Context Protocol.
+
+- MCP server URL: https://mcp.propxchain.com/mcp (Streamable HTTP, OAuth 2.1)
+- claude.ai or Claude Desktop: Settings, Connectors, Add custom connector, paste the URL above, leave client ID and secret blank. Approve with your PropXchain email and the 6-digit code sent to it.
+- Claude Code: `claude mcp add --transport http propxchain https://mcp.propxchain.com/mcp`
+- Other MCP clients: add a remote (Streamable HTTP) server with the URL above. The client discovers the authorization server from the 401 challenge (RFC 9728 protected resource metadata, RFC 8414 authorization server metadata, PKCE S256, Client ID Metadata Documents).
+- Access is per transaction: the user gives the assistant a TX-XXXX-XXXX invite code and it calls `propxchain_join_transaction_as_bot`. Any party can remove the assistant from the transaction's bot panel. Money and legal steps still stop at a human consent checkpoint.
+- Tools (19): propxchain_join_transaction_as_bot, propxchain_join_transaction, propxchain_list_my_transactions, propxchain_search_transactions, propxchain_get_transaction, propxchain_get_status, propxchain_next_step, propxchain_get_transaction_chain, propxchain_create_transaction, propxchain_get_checklist, propxchain_update_checklist, propxchain_list_documents, propxchain_upload_document, propxchain_verify_document, propxchain_get_audit_trail, propxchain_get_property_intel, propxchain_explain_process, propxchain_send_message, propxchain_list_connected_bots
+- [Human setup guide](https://propxchain.com/agent): Step-by-step connection guide with copy-paste prompts
+- [Agent authorization (auth.md)](https://propxchain.com/auth.md): OAuth 2.1 discovery, tokens and errors
+- [MCP manifest](https://propxchain.com/.well-known/mcp.json): Machine-readable server card
+- [Agent catalog](https://propxchain.com/.well-known/ai-catalog.json): Agentic Resource Discovery manifest (MCP server, A2A card, agent skills)
+- [Local stdio server](https://www.npmjs.com/package/@propxchain/mcp-server): `npm install -g @propxchain/mcp-server` for hosts without remote MCP support; source at https://github.com/Madhatt4/propxchain-mcp-server
 
 ## Docs
 
-- [API Reference](https://propxchain.com/docs/api): Canister Candid interfaces and REST endpoints
-- [Architecture Overview](https://propxchain.com/docs/architecture): System design, canister topology, data flow
-- [User Guide](https://propxchain.com/docs/guide): Getting started for buyers, sellers, and solicitors
-- [Conveyancing Guide](https://propxchain.com/docs/conveyancing): UK conveyancing workflow on PropXchain
-- [Full Documentation](https://propxchain.com/llms-full.txt): Extended AI-readable reference
-
-## Bot Integration
-
-- [Set up the MCP server](https://propxchain.com/agent): Step-by-step install guide for AI agents (Claude Desktop, Claude Code, Codex, Cursor) with copy-paste prompts. The agent generates its own keypair locally; the user shares only a TX-XXXX-XXXX invite code to grant access.
-- [MCP manifest](https://propxchain.com/.well-known/mcp.json): Machine-readable install + config manifest for autonomous agents
-- [npm package](https://www.npmjs.com/package/@propxchain/mcp-server): `npm install -g @propxchain/mcp-server`
-- [Bot management](https://propxchain.com/dashboard/bot-agents): View bots active on your transactions; revoke per-transaction access. Bots self-register via the agent prompt above; this UI is read + revoke only.
-- [Candid Interfaces](https://propxchain.com/docs/candid): ICP canister interface definitions
+- [Full Documentation](https://propxchain.com/llms-full.txt): Extended AI-readable reference (canister APIs, lifecycle, roles, MCP tools)
+- [Resources](https://propxchain.com/resources): Plain-English guides for buyers and sellers
 
 ## Key Features
 
@@ -68,5 +74,6 @@ Canisters deployed on IC mainnet:
 
 ## Optional
 
-- Source code: https://github.com/propxchain/propxchain-dapp
-- Contact: hello@propxchain.com
+- Web app source: https://github.com/Madhatt4/propxchain-consumer
+- MCP server source: https://github.com/Madhatt4/propxchain-mcp-server
+- Contact: info@propxchain.com
