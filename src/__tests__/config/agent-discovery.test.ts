@@ -63,3 +63,28 @@ describe('homepage crawler summary', () => {
     expect(firstSection).toContain(MCP_URL)
   })
 })
+
+// Search engines (Bing flags it as an SEO issue) want every meta description
+// between 25 and 160 characters, including the per-route ones the prerender
+// script swaps in.
+describe('meta description length', () => {
+  const metaDescription = (html: string) =>
+    html.match(/<meta\s+name="description"\s+content="([^"]*)"/)?.[1]
+
+  it.each(['index.html', 'public/agent.html'])('%s is 25-160 characters', (file) => {
+    const meta = metaDescription(read(file)) ?? ''
+    expect(meta.length).toBeGreaterThanOrEqual(25)
+    expect(meta.length).toBeLessThanOrEqual(160)
+  })
+
+  it('every prerendered marketing route is 25-160 characters', () => {
+    const descriptions = [...read('scripts/prerender-marketing.mjs').matchAll(/description: '([^']*)'/g)].map(
+      (m) => m[1],
+    )
+    expect(descriptions.length).toBeGreaterThan(5)
+    for (const d of descriptions) {
+      expect(d.length, d).toBeGreaterThanOrEqual(25)
+      expect(d.length, d).toBeLessThanOrEqual(160)
+    }
+  })
+})

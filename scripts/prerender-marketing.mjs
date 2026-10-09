@@ -45,7 +45,7 @@ const pages = [
   {
     route: 'how-it-works',
     title: 'How PropXchain Works — Six-Step Conveyancing Guide',
-    description: 'From account creation to completion in six steps: Internet Identity sign-up, property wizard, document upload, multi-party collaboration, digital exchange, and completion — every step recorded to a tamper-evident ledger.',
+    description: 'Six steps from sign-up to completion: property wizard, document upload, multi-party collaboration and digital exchange, each step on a tamper-evident record.',
     main: `<main id="seo-fallback" role="main" aria-label="How PropXchain works — summary">
 <p class="muted">Loading PropXchain…</p>
 <h1>How PropXchain works for you</h1>
@@ -88,7 +88,7 @@ const pages = [
   {
     route: 'features',
     title: 'PropXchain Features — the shared transaction platform',
-    description: 'Everything you need for modern UK conveyancing: Oscar AI assistant, Internet Identity auth, a verifiable transaction record, document checks, guided form completion, and multi-party collaboration.',
+    description: 'Modern UK conveyancing: Oscar AI assistant, Internet Identity sign-in, a verifiable transaction record, document checks and multi-party collaboration.',
     main: `<main id="seo-fallback" role="main" aria-label="PropXchain features — summary">
 <p class="muted">Loading PropXchain…</p>
 <h1>Everything you need for modern conveyancing</h1>
@@ -128,7 +128,7 @@ const pages = [
   {
     route: 'pricing',
     title: 'PropXchain Pricing — Free to Start, £75 AI Co-pilot Optional',
-    description: 'Start your UK property sale free — no platform fee. Pick your own providers and see every price before you commit. Add the optional £75 AI co-pilot to read your title and searches in plain English and tailor your conveyancer quote.',
+    description: 'Start your UK property sale free, with no platform fee. See every price before you commit and add the optional £75 AI co-pilot to read your title and searches.',
     main: `<main id="seo-fallback" role="main" aria-label="PropXchain pricing — summary">
 <p class="muted">Loading PropXchain…</p>
 <h1>Start free. Add AI when you want it.</h1>
@@ -192,7 +192,7 @@ const pages = [
   {
     route: 'sell-my-house',
     title: 'Sell My House Online — Free to Start, No Estate Agent | PropXchain',
-    description: 'Sell your house online free — no platform fee, no estate agent markup. See every price up front, add the optional £75 AI co-pilot, complete in weeks. Start your sale in two minutes.',
+    description: 'Sell your house online free: no platform fee, no estate agent markup. See every price up front, add the optional £75 AI co-pilot, and start in two minutes.',
     main: `<main id="seo-fallback" role="main" aria-label="Sell my house online with PropXchain — summary">
 <p class="muted">Loading PropXchain…</p>
 <h1>Sell your house online — free to start</h1>
@@ -237,7 +237,7 @@ const pages = [
   {
     route: 'find-a-conveyancer',
     title: 'Find a Conveyancer Online — Quoted Direct, CLC Verified | PropXchain',
-    description: 'Find an online conveyancer for your UK property purchase or sale. CLC-verified firms quote you directly on your actual transaction — no markup, no hidden costs, no endless phone calls.',
+    description: 'Find an online conveyancer for your UK purchase or sale. CLC-verified firms quote directly on your actual transaction, with no markup or hidden costs.',
     main: `<main id="seo-fallback" role="main" aria-label="Find a conveyancer with PropXchain — summary">
 <p class="muted">Loading PropXchain…</p>
 <h1>Find a conveyancer — quoted on your actual transaction</h1>
@@ -289,7 +289,7 @@ const pages = [
   {
     route: 'about',
     title: 'About PropXchain — the live property transaction platform',
-    description: 'PropXchain is the online platform for buying and selling homes in England and Wales — every step of the transaction in one live view, with a verifiable record of each milestone. Built by PropXchain Ltd, Sandy, Bedfordshire.',
+    description: 'PropXchain is the online platform for buying and selling homes in England and Wales, every step in one live view. Built by PropXchain Ltd, Sandy, Bedfordshire.',
     main: `<main id="seo-fallback" role="main" aria-label="About PropXchain — summary">
 <p class="muted">Loading PropXchain…</p>
 <h1>A clearer way to move home</h1>
@@ -357,7 +357,7 @@ const pages = [
   {
     route: 'faq',
     title: 'PropXchain FAQ — Pricing, Conveyancers, Security & What Gets Recorded',
-    description: 'Answers to the most common PropXchain questions: free Starter tier, the optional £75 AI co-pilot, search costs, CLC-verified conveyancers, e-signing, AML checks, and what actually gets recorded.',
+    description: 'Common PropXchain questions: the free Starter tier, the optional £75 AI co-pilot, search costs, CLC-verified conveyancers, e-signing and AML checks.',
     jsonLd: buildFaqJsonLd(),
     main: faqMain,
   },
