@@ -18,6 +18,7 @@ import { LandRegistryAddress, LAND_REGISTRY_URLS } from '../services/landRegistr
 import { getPartyCountsForTransaction, getRequiredDocumentsForRole } from '../constants/documentTypes';
 import PortalShell from '../components/navigation/PortalShell';
 import TransactionListCard from '../components/dashboard/TransactionListCard';
+import { isSellerParty, removeActionFor } from '../lib/dealRemoval';
 import { Link2, Plus } from 'lucide-react';
 
 import { usePortalSections } from '../components/navigation/usePortalSections';
@@ -106,16 +107,10 @@ const Dashboard_PremiumContent: React.FC = () => {
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [showInviteForSolicitor, setShowInviteForSolicitor] = useState(false);
 
-  // Determine user's role in a given transaction. The seller slot decides it,
-  // not who created the deal: a buyer who started a new-build plot deal is
-  // still the buyer, and only the seller may delete (lib/dealAccess deleteDeal).
-  const getUserRole = (tx: Transaction): 'buyer' | 'seller' => {
-    const pid = principalId || '';
-    if (tx.seller === pid) {
-      return 'seller';
-    }
-    return 'buyer';
-  };
+  // Seller slot or sellers list decides it, not who created the deal: a buyer
+  // who started a new-build plot deal is still the buyer (lib/dealRemoval).
+  const getUserRole = (tx: Transaction): 'buyer' | 'seller' =>
+    isSellerParty(tx, principalId) ? 'seller' : 'buyer';
 
   // Property edit modal state
   const [showPropertyEditModal, setShowPropertyEditModal] = useState(false);
@@ -780,10 +775,11 @@ const Dashboard_PremiumContent: React.FC = () => {
                         setEditPostcode(getStoredPostcode(tx.id) || tx.postcode || '');
                         setShowPropertyEditModal(true);
                       }}
+                      removeAction={removeActionFor(tx, principalId)}
                       onRemove={() => {
-                        // Only the seller deletes; everyone else leaves. The
-                        // canister rejects a delete from anyone else.
-                        if (role === 'seller') {
+                        // Mirrors the canister: a seller party deletes, other
+                        // parties leave, a non-party creator is offered neither.
+                        if (removeActionFor(tx, principalId) === 'delete') {
                           setDeleteTargetTransaction(tx);
                           setDeleteError(null);
                           setShowDeleteConfirmModal(true);

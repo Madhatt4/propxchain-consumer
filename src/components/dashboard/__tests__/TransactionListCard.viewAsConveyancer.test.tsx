@@ -19,6 +19,7 @@ const baseProps = {
   listing: null,
   onOpen: vi.fn(),
   onEdit: vi.fn(),
+  removeAction: 'delete' as const,
   onRemove: vi.fn(),
 };
 

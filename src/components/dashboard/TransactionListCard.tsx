@@ -17,6 +17,7 @@ import {
   SquarePen,
   Trash2,
 } from 'lucide-react';
+import type { RemoveAction } from '@/lib/dealRemoval';
 import type { PropertyListing } from '@/types/listing.types';
 import { isTransactionStatus, type TransactionStatus } from '@/types/transactionStatus';
 
@@ -82,7 +83,8 @@ interface TransactionListCardProps {
   onEdit: () => void;
   /** Admin-only: open this transaction on the conveyancer matter screen. */
   onViewAsConveyancer?: () => void;
-  /** Delete for the seller, Leave for everyone else on the deal. */
+  /** Which removal the canister accepts from this viewer; 'none' hides the item. */
+  removeAction: RemoveAction;
   onRemove: () => void;
 }
 
@@ -114,6 +116,7 @@ export const TransactionListCard: React.FC<TransactionListCardProps> = ({
   onOpen,
   onEdit,
   onViewAsConveyancer,
+  removeAction,
   onRemove,
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -280,6 +283,7 @@ export const TransactionListCard: React.FC<TransactionListCardProps> = ({
                     <div className="h-px bg-[var(--border-light)]" />
                   </>
                 )}
+                {removeAction !== 'none' && (
                 <button
                   type="button"
                   role="menuitem"
@@ -290,9 +294,10 @@ export const TransactionListCard: React.FC<TransactionListCardProps> = ({
                     onRemove();
                   }}
                 >
-                  {role === 'seller' ? <Trash2 size={16} strokeWidth={2} /> : <DoorOpen size={16} strokeWidth={2} />}
-                  <span>{role === 'seller' ? 'Delete transaction' : 'Leave transaction'}</span>
+                  {removeAction === 'delete' ? <Trash2 size={16} strokeWidth={2} /> : <DoorOpen size={16} strokeWidth={2} />}
+                  <span>{removeAction === 'delete' ? 'Delete transaction' : 'Leave transaction'}</span>
                 </button>
+                )}
               </div>
             )}
           </div>
