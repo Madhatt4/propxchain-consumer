@@ -476,6 +476,22 @@ jobs:
           fi
           echo "All 3 URLs serve the freshly-deployed entry ✓"
 
+      # Tell Bing / Yandex / Seznam (IndexNow) the site changed, so AI search
+      # (ChatGPT search, Copilot) picks up llms.txt, /agent and the homepage
+      # without waiting for a recrawl. The key file is public/853aaf740c9c0c1724c9278fc3709141.txt.
+      # Best effort: a ping failure never fails the deploy.
+      - name: Ping IndexNow with the sitemap URLs
+        if: success()
+        continue-on-error: true
+        working-directory: deploy
+        env:
+          INDEXNOW_KEY: 853aaf740c9c0c1724c9278fc3709141 # gitleaks:allow (public by design: IndexNow verifies it at the keyLocation URL)
+        run: |
+          URLS=$(grep -oE '<loc>[^<]+' dist/sitemap.xml | sed 's/<loc>//' | jq -R . | jq -s .)
+          jq -n --argjson urls "$URLS" --arg key "$INDEXNOW_KEY" '{host:"propxchain.com",key:$key,keyLocation:("https://propxchain.com/"+$key+".txt"),urlList:$urls}' \
+            | curl -sS -o /dev/null -w "IndexNow HTTP %{http_code}\n" -X POST https://api.indexnow.org/indexnow \
+                -H 'Content-Type: application/json; charset=utf-8' --data-binary @-
+
       - name: Deploy summary
         if: success()
         working-directory: deploy
