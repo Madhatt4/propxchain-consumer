@@ -90,8 +90,9 @@ export const DEAL_ACCESS: Readonly<Record<DealItem, Row>> = {
   searches: row('view', 'act', 'view'),
 
   buyerInvite: row('act', 'hidden', 'act'),
-  // Only the seller deletes (round 2, 2026-10-08); everyone else leaves.
-  // The canister enforces the same rule in deleteTransaction.
+  // Only the seller deletes (round 2, 2026-10-08); everyone else leaves,
+  // except a creator who is not a party, who keeps the deal. The canister
+  // enforces the same rule; the dashboard reads it through lib/dealRemoval.
   deleteDeal: row('act', 'hidden', 'hidden'),
 };
 

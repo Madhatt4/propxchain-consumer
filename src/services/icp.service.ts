@@ -54,6 +54,7 @@ import { SessionManager } from '../utils/sessionManager';
 import { logger } from '@/utils/logger';
 import { delegatePairsOf } from '@/lib/dealAccess';
 import { onChainFileName } from '@/lib/onChainDocument';
+import { normalizeParty } from '../types/multiParty.types';
 
 // Canister IDs for IC mainnet (from canister_ids.json)
 const CANISTER_IDS = {
@@ -1846,6 +1847,10 @@ class ICPService {
           createdAt: Number(tx.createdAt),
           previousOwner: tx.previousOwner,
           createdBy: tx.createdBy?.toString?.() ?? '',
+          // Multi-party lists (`opt vec TransactionParty`, so `[] | [[...]]`).
+          // The dashboard needs `sellers` to match the canister's isSellerParty.
+          sellers: (tx.sellers?.[0] ?? []).map(normalizeParty),
+          buyers: (tx.buyers?.[0] ?? []).map(normalizeParty),
           accessList: tx.accessList?.map((p: unknown) => (typeof p === 'string' ? p : String(p ?? ''))) || [],
           inviteCode: tx.inviteCode,
           chainedTransactions: tx.chainedTransactions || [],
@@ -3777,7 +3782,6 @@ class ICPService {
     }
 
     // Normalize the party data from canister response
-    const { normalizeParty } = await import('../types/multiParty.types');
     return normalizeParty(result.ok);
   }
 
@@ -3846,7 +3850,6 @@ class ICPService {
       throw new Error(result.err);
     }
 
-    const { normalizeParty } = await import('../types/multiParty.types');
     return normalizeParty(result.ok);
   }
 
@@ -3867,7 +3870,6 @@ class ICPService {
       throw new Error(result.err);
     }
 
-    const { normalizeParty } = await import('../types/multiParty.types');
     const data = result.ok;
 
     // Normalize all parties in the response
@@ -3908,7 +3910,6 @@ class ICPService {
       throw new Error(result.err);
     }
 
-    const { normalizeParty } = await import('../types/multiParty.types');
     return {
       buyers: (result.ok.buyers || []).map(normalizeParty),
       sellers: (result.ok.sellers || []).map(normalizeParty),
