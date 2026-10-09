@@ -4,6 +4,7 @@ import { FileText, Check, Upload, PenLine, Pencil } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { icpService } from '@/services/icp.service';
 import { web2DocumentService } from '@/services/web2-document.service';
+import { CompletedFormRejectedError, uploadCompletedForm } from '@/services/completedFormUpload.service';
 import { sha256Hex } from '@/utils/fileHash';
 import { logger } from '@/utils/logger';
 import type { StageConfig } from '../../../../types/stage.types';
@@ -156,6 +157,9 @@ export function PropertyInfoStage({ stage, onComplete, transactionId, postcode, 
     if (!transactionId) return;
     setUploading(formId);
     try {
+      // Bucket + classification first: a file that is confidently not this
+      // form is refused here and nothing below runs.
+      const { verdict, reason } = await uploadCompletedForm(file, transactionId, formId);
       const hash = await sha256Hex(file);
       await web2DocumentService.uploadDocument(file, transactionId, formId);
       await icpService.recordFormUpload(transactionId, formId, hash, file.name);
@@ -164,10 +168,18 @@ export function PropertyInfoStage({ stage, onComplete, transactionId, postcode, 
         [formId]: { method: 'uploaded', detail: file.name },
       }));
       if (isEditing) setEditedInSession((s) => new Set(s).add(formId));
-      toast({ title: `${formId.toUpperCase()} uploaded`, description: file.name });
+      toast({
+        title: `${formId.toUpperCase()} uploaded`,
+        description: verdict === 'unverified' ? `${file.name}. ${reason} Your conveyancer will check it.` : file.name,
+      });
     } catch (err) {
+      const rejected = err instanceof CompletedFormRejectedError;
       const msg = err instanceof Error ? err.message : 'Upload failed';
-      toast({ title: 'Upload failed', description: msg, variant: 'destructive' });
+      toast({
+        title: rejected ? `Not saved as your ${formId.toUpperCase()}` : 'Upload failed',
+        description: rejected ? `${msg} Nothing was saved.` : msg,
+        variant: 'destructive',
+      });
     } finally {
       setUploading(null);
     }

@@ -33,15 +33,16 @@ export async function uploadTA6Document(
   const contentType = file.type || 'application/octet-stream';
   await requireSession();
   const fileHash = await generateFileHash(file);
-  const storageLocation = await uploadBytes(file, transactionId, fileHash, contentType);
-  const documentId = await registerProof(file, fileHash, contentType, storageLocation, transactionId, docType);
+  const path = await uploadFormBytes(file, transactionId, 'ta6', fileHash, contentType);
+  const storageLocation = `supabase://${STORAGE_BUCKET}/${path}`;
+  const documentId = await registerFormProof(file, fileHash, contentType, storageLocation, transactionId, docType);
   icpService.emitDocumentUploadedEvent(transactionId, docType, fileHash);
   return documentId;
 }
 
 // Bucket RLS needs a Supabase session — fail with a clear message, not a raw
 // RLS error (same guard as ta6Uploader / fundingDocument.service).
-async function requireSession(): Promise<void> {
+export async function requireSession(): Promise<void> {
   const { data, error } = await supabase.auth.getSession();
   if (error) {
     throw new Error(`Could not read your session: ${error.message}`);
@@ -53,14 +54,20 @@ async function requireSession(): Promise<void> {
   }
 }
 
-async function uploadBytes(
+/**
+ * Bytes to the shared bucket under `transactions/<tx>/<folder>/`, returning
+ * the bucket-relative path (what doc-classify and the storageLocation use).
+ * The whole `transactions/` prefix is one storage fence, so any folder works.
+ */
+export async function uploadFormBytes(
   file: File,
   transactionId: string,
+  folder: string,
   fileHash: string,
   contentType: string,
 ): Promise<string> {
   // The path becomes the on-chain storageLocation, so no filename in it.
-  const path = `transactions/${transactionId}/ta6/${storageObjectName(fileHash, file.name)}`;
+  const path = `transactions/${transactionId}/${folder}/${storageObjectName(fileHash, file.name)}`;
 
   const { error } = await supabase.storage
     .from(STORAGE_BUCKET)
@@ -69,10 +76,10 @@ async function uploadBytes(
   if (error) {
     throw new Error(`Secure upload failed: ${error.message}`);
   }
-  return `supabase://${STORAGE_BUCKET}/${path}`;
+  return path;
 }
 
-async function registerProof(
+export async function registerFormProof(
   file: File,
   fileHash: string,
   contentType: string,

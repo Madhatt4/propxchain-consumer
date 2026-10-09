@@ -9,7 +9,7 @@
  * canister hydration only ran for a completed stage or in edit mode.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { PropertyInfoStage } from '../../../../components/transaction/flow/stages/PropertyInfoStage';
 import type { StageConfig } from '../../../../types/stage.types';
@@ -17,16 +17,23 @@ import type { StageConfig } from '../../../../types/stage.types';
 const mockGetTA6 = vi.fn();
 const mockGetTA10 = vi.fn();
 const mockGetTA7 = vi.fn();
+const mockRecordFormUpload = vi.fn();
+const mockUploadCompletedForm = vi.fn();
 vi.mock('@/services/icp.service', () => ({
   icpService: {
     getTA6: (...a: unknown[]) => mockGetTA6(...a),
     getTA10: (...a: unknown[]) => mockGetTA10(...a),
     getTA7: (...a: unknown[]) => mockGetTA7(...a),
-    recordFormUpload: vi.fn(),
+    recordFormUpload: (...a: unknown[]) => mockRecordFormUpload(...a),
     ledgerManager: { logEvent: vi.fn() },
   },
 }));
 vi.mock('@/services/web2-document.service', () => ({ web2DocumentService: { uploadDocument: vi.fn() } }));
+vi.mock('@/services/completedFormUpload.service', () => ({
+  CompletedFormRejectedError: class CompletedFormRejectedError extends Error {},
+  uploadCompletedForm: (...a: unknown[]) => mockUploadCompletedForm(...a),
+}));
+vi.mock('@/utils/fileHash', () => ({ sha256Hex: async () => 'hash-of-file' }));
 vi.mock('@/hooks/use-toast', () => ({ useToast: () => ({ toast: vi.fn() }) }));
 vi.mock('../../../../components/explainer/ExplainerModal', () => ({ default: () => null }));
 vi.mock('../../../../components/explainer/ExplainerCard', () => ({ default: () => null }));
@@ -90,5 +97,57 @@ describe('PropertyInfoStage hydration', () => {
     await waitFor(() => expect(mockGetTA10).toHaveBeenCalled());
     expect(screen.queryByText(/Filled online/)).not.toBeInTheDocument();
     expect(screen.getAllByText('Fill form online')).toHaveLength(2);
+  });
+});
+
+describe('PropertyInfoStage completed-form upload', () => {
+  const pdf = new File(['pdf'], 'my-ta6.pdf', { type: 'application/pdf' });
+
+  beforeEach(() => {
+    mockGetTA6.mockReset().mockResolvedValue(null);
+    mockGetTA10.mockReset().mockResolvedValue(null);
+    mockGetTA7.mockReset().mockResolvedValue(null);
+    mockRecordFormUpload.mockReset().mockResolvedValue(undefined);
+    mockUploadCompletedForm.mockReset();
+  });
+
+  it('should record an accepted upload on chain and show it as uploaded', async () => {
+    mockUploadCompletedForm.mockResolvedValue({ documentId: '7', verdict: 'accepted', reason: null });
+    renderStage();
+
+    fireEvent.change(screen.getByLabelText('Upload TA6 Property Information Form'), { target: { files: [pdf] } });
+
+    await waitFor(() => expect(screen.getByText('Uploaded: my-ta6.pdf')).toBeInTheDocument());
+    expect(mockUploadCompletedForm).toHaveBeenCalledWith(pdf, 'tx_1', 'ta6');
+    expect(mockRecordFormUpload).toHaveBeenCalledWith('tx_1', 'ta6', 'hash-of-file', 'my-ta6.pdf');
+  });
+
+  it('should record nothing and leave the form unticked when the upload is rejected', async () => {
+    const { CompletedFormRejectedError } = await import('@/services/completedFormUpload.service');
+    mockUploadCompletedForm.mockRejectedValue(
+      new CompletedFormRejectedError('This reads as an Energy Performance Certificate, not a completed TA6 form.'),
+    );
+    renderStage();
+
+    fireEvent.change(screen.getByLabelText('Upload TA6 Property Information Form'), { target: { files: [pdf] } });
+
+    await waitFor(() => expect(mockUploadCompletedForm).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.getByLabelText('Upload TA6 Property Information Form')).not.toBeDisabled());
+    expect(mockRecordFormUpload).not.toHaveBeenCalled();
+    expect(screen.queryByText(/Uploaded: my-ta6.pdf/)).not.toBeInTheDocument();
+  });
+
+  it('should still record an upload the classifier could not verify', async () => {
+    mockUploadCompletedForm.mockResolvedValue({
+      documentId: '7',
+      verdict: 'unverified',
+      reason: "We couldn't read the text in this file.",
+    });
+    renderStage();
+
+    fireEvent.change(screen.getByLabelText('Upload TA6 Property Information Form'), { target: { files: [pdf] } });
+
+    await waitFor(() => expect(screen.getByText('Uploaded: my-ta6.pdf')).toBeInTheDocument());
+    expect(mockRecordFormUpload).toHaveBeenCalledTimes(1);
   });
 });

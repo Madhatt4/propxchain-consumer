@@ -20,6 +20,7 @@ vi.mock('../../lib/supabase', () => ({
 import {
   classifyDocument,
   describeClassification,
+  docTypeLabel,
   type DocClassification,
 } from '../docClassify.service';
 
@@ -109,6 +110,18 @@ describe('docClassify.service', () => {
       expect(describeClassification({ ...EPC, matchesProperty: null, inDate: null })).toBe(
         'Reads as an Energy Performance Certificate.',
       );
+    });
+
+    it('should name a completed Law Society form', () => {
+      expect(describeClassification({ ...EPC, docType: 'ta6_form' })).toBe('Reads as a completed TA6 form.');
+      expect(describeClassification({ ...EPC, docType: 'ta10_form' })).toBe('Reads as a completed TA10 form.');
+      expect(describeClassification({ ...EPC, docType: 'ta7_form' })).toBe('Reads as a completed TA7 form.');
+    });
+
+    it('should expose the label with its article for other copy to reuse', () => {
+      expect(docTypeLabel('epc')).toBe('an Energy Performance Certificate');
+      expect(docTypeLabel('ta6_form')).toBe('a completed TA6 form');
+      expect(docTypeLabel('warranty_scheme')).toBe('a warranty scheme');
     });
 
     it('should fall back to a plain label for a type it has no wording for', () => {

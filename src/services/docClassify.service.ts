@@ -61,6 +61,9 @@ const DOC_TYPE_LABELS: Readonly<Record<string, string>> = {
   lease: 'a lease',
   id_document: 'an identity document',
   bank_statement: 'a bank statement',
+  ta6_form: 'a completed TA6 form',
+  ta10_form: 'a completed TA10 form',
+  ta7_form: 'a completed TA7 form',
 };
 
 function isClassification(value: unknown): value is DocClassification {
@@ -96,8 +99,8 @@ export async function classifyDocument(
   }
 }
 
-/** `warranty_scheme` reads as "a warranty scheme" when the key has no wording of its own. */
-function label(docType: string): string {
+/** The kind with its article, e.g. "an Energy Performance Certificate"; `warranty_scheme` reads as "a warranty scheme" when the key has no wording of its own. */
+export function docTypeLabel(docType: string): string {
   return DOC_TYPE_LABELS[docType] ?? `a ${docType.replace(/_/g, ' ')}`;
 }
 
@@ -106,7 +109,7 @@ export function describeClassification(result: DocClassification): string {
   if (result.unreadable) return UNREADABLE_LINE;
   if (result.docType === 'other' || result.confidence < DOC_TYPE_CONFIDENCE_AT) return UNSURE_LINE;
 
-  const parts = [`Reads as ${label(result.docType)}.`];
+  const parts = [`Reads as ${docTypeLabel(result.docType)}.`];
   if (result.matchesProperty !== null && result.matchesProperty < MATCHES_PROPERTY_AT) {
     parts.push('It may not be for this property.');
   }
