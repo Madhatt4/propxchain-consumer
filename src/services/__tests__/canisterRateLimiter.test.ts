@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2025 PropXchain Ltd
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   CanisterRateLimiter,
   wrapReadCall,
@@ -12,17 +12,38 @@ import {
 } from '../canisterRateLimiter';
 import { RequestPriority } from '../../utils/requestQueue';
 
-// Helper to wait for a specific time
-const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+// Helper to wait for a specific time (on the fake clock — see beforeEach)
+const wait = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
+
+/**
+ * Drive every pending timer (rate-limit waits, retry backoff, simulated work)
+ * to completion on the fake clock, then hand back the original promise.
+ * The no-op catch only marks a rejection as handled while timers run; the
+ * caller still sees it when awaiting the returned promise.
+ */
+async function settle<T>(promise: Promise<T>): Promise<T> {
+  promise.catch(() => undefined);
+  await vi.runAllTimersAsync();
+  return promise;
+}
 
 describe('CanisterRateLimiter Integration Tests', () => {
   let rateLimiter: CanisterRateLimiter;
 
   beforeEach(() => {
+    // The token bucket refills from Date.now() while waits use setTimeout.
+    // On real clocks those two drift by a millisecond or so, which made the
+    // "wait exactly until the next token" path fail intermittently in CI.
+    // Faking both keeps them in lockstep, so every timing assertion is exact.
+    vi.useFakeTimers();
     // Get a fresh instance for each test
     rateLimiter = CanisterRateLimiter.getInstance();
     rateLimiter.resetRateLimits();
     rateLimiter.resetStats();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   describe('Rate Limiting Kicks In After Threshold', () => {
@@ -69,12 +90,12 @@ describe('CanisterRateLimiter Integration Tests', () => {
         rateLimiter.call(mockFn, { operationType: 'read' })
       ]);
 
-      // Wait for processing
-      await wait(100);
+      // Let 100 ms pass: refill (1/s) adds 0.1 tokens, not enough to round up
+      await vi.advanceTimersByTimeAsync(100);
 
-      // Check status after calls - should have consumed tokens
+      // Exactly 3 tokens consumed
       const afterStatus = rateLimiter.getRateLimitStatus('read');
-      expect(afterStatus?.availableTokens).toBeLessThan(10);
+      expect(afterStatus?.availableTokens).toBe(7);
     });
 
     it('should enforce different limits for read vs write operations', async () => {
@@ -105,20 +126,15 @@ describe('CanisterRateLimiter Integration Tests', () => {
         rateLimiter.call(mockFn, { operationType: 'write' })
       ]);
 
-      // Wait for processing to complete
-      await wait(100);
-
       const depletedStatus = rateLimiter.getRateLimitStatus('write');
-      // Due to queue processing, might not be exactly 0
-      expect(depletedStatus?.availableTokens).toBeLessThan(3);
+      expect(depletedStatus?.availableTokens).toBe(0);
 
-      // Wait for tokens to refill (write refill rate is 0.167/sec)
-      // After ~6 seconds should have at least 1 token back
-      await wait(6000);
+      // Write refill rate is 0.167/sec, so 6 seconds brings back one token
+      await vi.advanceTimersByTimeAsync(6000);
 
       const refilledStatus = rateLimiter.getRateLimitStatus('write');
-      expect(refilledStatus?.availableTokens).toBeGreaterThan(depletedStatus?.availableTokens || 0);
-    }, 10000); // 10 second timeout
+      expect(refilledStatus?.availableTokens).toBe(1);
+    });
   });
 
   describe('Request Deduplication Works', () => {
@@ -130,7 +146,7 @@ describe('CanisterRateLimiter Integration Tests', () => {
       const getProof = (id: number): Promise<string> =>
         rateLimiter.call(async () => fakeCanister(id), { operationType: 'read' });
 
-      const results = await Promise.all([getProof(1), getProof(2), getProof(3)]);
+      const results = await settle(Promise.all([getProof(1), getProof(2), getProof(3)]));
 
       expect(results).toEqual(['proof-for-1', 'proof-for-2', 'proof-for-3']);
       expect(rateLimiter.getStats().deduplicationHits).toBe(0);
@@ -163,7 +179,7 @@ describe('CanisterRateLimiter Integration Tests', () => {
         );
       }
 
-      const results = await Promise.all(promises);
+      const results = await settle(Promise.all(promises));
 
       // All should return same result
       expect(results).toHaveLength(5);
@@ -242,8 +258,8 @@ describe('CanisterRateLimiter Integration Tests', () => {
         cacheKey: 'sequential-key'
       });
 
-      // Wait for cache to clear
-      await wait(10);
+      // Let the cache-clear microtasks and any timers run
+      await vi.advanceTimersByTimeAsync(10);
 
       // Second call with same key after first completes
       await rateLimiter.call(mockFn, {
@@ -270,18 +286,18 @@ describe('CanisterRateLimiter Integration Tests', () => {
         return 'success-after-retry';
       });
 
-      const result = await rateLimiter.call(mockFn, {
+      const result = await settle(rateLimiter.call(mockFn, {
         operationType: 'read',
         retryConfig: {
           maxRetries: 3,
           baseDelayMs: 100,
           maxDelayMs: 500
         }
-      });
+      }));
 
       expect(result).toBe('success-after-retry');
       expect(mockFn).toHaveBeenCalledTimes(2);
-    }, 10000);
+    });
 
     it('should emit retry events', async () => {
       let callCount = 0;
@@ -297,10 +313,10 @@ describe('CanisterRateLimiter Integration Tests', () => {
       const eventListener = vi.fn();
       rateLimiter.addEventListener(eventListener);
 
-      await rateLimiter.call(mockFn, {
+      await settle(rateLimiter.call(mockFn, {
         operationType: 'read',
         retryConfig: { maxRetries: 2, baseDelayMs: 100 }
-      });
+      }));
 
       // Check for retry events
       const retryEvents = eventListener.mock.calls
@@ -308,7 +324,7 @@ describe('CanisterRateLimiter Integration Tests', () => {
         .filter(event => event.event === RateLimitEvent.RETRY_ATTEMPT);
 
       expect(retryEvents.length).toBeGreaterThan(0);
-    }, 10000);
+    });
 
     it('should detect ICP-specific rate limit errors', async () => {
       const eventListener = vi.fn();
@@ -323,10 +339,10 @@ describe('CanisterRateLimiter Integration Tests', () => {
         return 'success';
       });
 
-      await rateLimiter.call(mockFn, {
+      await settle(rateLimiter.call(mockFn, {
         operationType: 'read',
         retryConfig: { maxRetries: 2, baseDelayMs: 100 }
-      });
+      }));
 
       // Check that retry detected it as rate limit error
       const retryEvents = eventListener.mock.calls
@@ -335,7 +351,7 @@ describe('CanisterRateLimiter Integration Tests', () => {
 
       expect(retryEvents.length).toBeGreaterThan(0);
       expect(retryEvents[0].details?.isRateLimitError).toBe(true);
-    }, 10000);
+    });
 
     it('should fail after max retries are exhausted', async () => {
       const mockFn = vi.fn(async () => {
@@ -344,42 +360,62 @@ describe('CanisterRateLimiter Integration Tests', () => {
       });
 
       await expect(
-        rateLimiter.call(mockFn, {
+        settle(rateLimiter.call(mockFn, {
           operationType: 'read',
           retryConfig: { maxRetries: 2, baseDelayMs: 50 }
-        })
+        }))
       ).rejects.toThrow('Network error');
 
       // Should have tried 3 times (initial + 2 retries)
       expect(mockFn).toHaveBeenCalledTimes(3);
-    }, 10000);
+    });
   });
 
   describe('User-Friendly Error Messages', () => {
     it('should provide clear error when rate limit is exceeded', async () => {
+      const mockFn = vi.fn(async () => 'success');
+
+      // 10 reads drain the burst; reads 11 and 12 both wait for the next
+      // token. Only one token refills in that wait, so read 12 must fail.
+      const outcomes = Array.from({ length: 12 }, () =>
+        rateLimiter.call(mockFn, { operationType: 'read' })
+      );
+
+      const results = await settle(Promise.allSettled(outcomes));
+
+      const rejected = results.filter(
+        (r): r is PromiseRejectedResult => r.status === 'rejected'
+      );
+      expect(rejected).toHaveLength(1);
+      expect((rejected[0].reason as Error).message).toBe(
+        'Request rate limit exceeded. Please wait before retrying.'
+      );
+      expect(mockFn).toHaveBeenCalledTimes(11);
+    });
+
+    it('should report wait details when a call is rate limited', async () => {
       const eventListener = vi.fn();
       rateLimiter.addEventListener(eventListener);
 
       const mockFn = vi.fn(async () => 'success');
 
-      // Exhaust all read tokens
-      const promises = [];
-      for (let i = 0; i < 11; i++) {
-        promises.push(rateLimiter.call(mockFn, { operationType: 'read' }));
-      }
+      // 11th read exceeds the burst of 10, waits one refill interval, then runs
+      const promises = Array.from({ length: 11 }, () =>
+        rateLimiter.call(mockFn, { operationType: 'read' })
+      );
 
-      await Promise.all(promises);
+      const results = await settle(Promise.all(promises));
+      expect(results).toHaveLength(11);
 
-      // Check for rate limit event with helpful details
       const rateLimitEvents = eventListener.mock.calls
         .map(call => call[0] as RateLimitEventData)
         .filter(event => event.event === RateLimitEvent.RATE_LIMITED);
 
-      if (rateLimitEvents.length > 0) {
-        expect(rateLimitEvents[0].operationType).toBe('read');
-        expect(rateLimitEvents[0].details?.availableTokens).toBeDefined();
-        expect(rateLimitEvents[0].details?.timeUntilNextToken).toBeDefined();
-      }
+      expect(rateLimitEvents).toHaveLength(1);
+      expect(rateLimitEvents[0].operationType).toBe('read');
+      expect(rateLimitEvents[0].details?.availableTokens).toBe(0);
+      // Read refill is 1 token/sec, so the next token is exactly 1000 ms away
+      expect(rateLimitEvents[0].details?.timeUntilNextToken).toBe(1000);
     });
 
     it('should include operation type in failure events', async () => {
@@ -665,16 +701,12 @@ describe('CanisterRateLimiter Integration Tests', () => {
       expect(readFn).toHaveBeenCalledTimes(3);
       expect(writeFn).toHaveBeenCalledTimes(2);
 
-      // Wait for processing
-      await wait(100);
-
       // Both operation types should have independent rate limits
       const readStatus = rateLimiter.getRateLimitStatus('read');
       const writeStatus = rateLimiter.getRateLimitStatus('write');
 
-      // Tokens consumed, but exact count may vary due to timing
-      expect(readStatus?.availableTokens).toBeLessThan(10);
-      expect(writeStatus?.availableTokens).toBeLessThan(3);
+      expect(readStatus?.availableTokens).toBe(7);
+      expect(writeStatus?.availableTokens).toBe(1);
     });
 
     it('should recover gracefully from errors with retry', async () => {
@@ -690,13 +722,13 @@ describe('CanisterRateLimiter Integration Tests', () => {
         return 'recovered';
       });
 
-      const result = await rateLimiter.call(mockFn, {
+      const result = await settle(rateLimiter.call(mockFn, {
         operationType: 'write',
         retryConfig: { maxRetries: 2, baseDelayMs: 100 }
-      });
+      }));
 
       expect(result).toBe('recovered');
       expect(mockFn).toHaveBeenCalledTimes(2);
-    }, 10000);
+    });
   });
 });
