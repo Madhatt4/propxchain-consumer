@@ -397,10 +397,12 @@ const TransactionInvite: React.FC<TransactionInviteProps> = ({ onJoinSuccess, on
         // Record my role + side off-chain for the Transaction Wallet roster (best-effort).
         // A buyer's row comes from the chain, which has just made them the buyer:
         // the role table only takes a self-written buyer row on an emailed invite.
+        // A seller goes through the chain too: on an agent-led deal the agent
+        // holds the seller slot, and the seller the agent invited takes it over
+        // there (record-party-role). Any other seller falls back to their invite.
         const myPrincipal = getStorePrincipalId();
-        if (selectedRole === 'buyer') {
-          void partyRoleService.recordRoleFromChain(String(foundTransaction.id));
-        } else if (myPrincipal) {
+        const recordMine = (): void => {
+          if (!myPrincipal) return;
           const partyRole = PARTY_ROLE_BY_JOIN_ROLE[selectedRole];
           const side =
             partyRole === 'buyer' || partyRole === 'seller' ? partyRole : inviteContext?.side ?? null;
@@ -411,6 +413,15 @@ const TransactionInvite: React.FC<TransactionInviteProps> = ({ onJoinSuccess, on
             side,
             invitedBy: inviteContext?.invitedBy ?? null,
           });
+        };
+        if (selectedRole === 'buyer') {
+          void partyRoleService.recordRoleFromChain(String(foundTransaction.id));
+        } else if (selectedRole === 'seller') {
+          void partyRoleService.recordRoleFromChain(String(foundTransaction.id)).then((outcome) => {
+            if (!outcome.ok) recordMine();
+          });
+        } else {
+          recordMine();
         }
 
         // Fetch and store listing if URL was passed via invite link

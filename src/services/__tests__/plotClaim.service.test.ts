@@ -6,7 +6,7 @@ vi.mock('@/lib/supabase', () => ({ supabase: { rpc: (...a: unknown[]) => rpc(...
 vi.mock('@/services/icp.service', () => ({ icpService: { ledgerManager: { logEvent } } }));
 vi.mock('@/utils/logger', () => ({ logger: { warn: vi.fn(), error: vi.fn(), info: vi.fn() } }));
 
-import { checkPlotClaim, claimPlot, plotClaimBlockedReason } from '../plotClaim.service';
+import { checkPlotClaim, claimPlot, plotClaimBlockedReason, releaseMyPlot } from '../plotClaim.service';
 
 describe('plotClaim.service', () => {
   beforeEach(() => {
@@ -47,5 +47,20 @@ describe('plotClaim.service', () => {
 
     await expect(claimPlot('TX-ABCD-EFGH', 'tx_42')).rejects.toThrow(/not available to you/);
     expect(logEvent).not.toHaveBeenCalled();
+  });
+
+  it("should release the leaving buyer's own plot through the server", async () => {
+    rpc.mockResolvedValue({ data: 'plot-uuid', error: null });
+
+    expect(await releaseMyPlot('tx_42')).toBe('plot-uuid');
+    expect(rpc).toHaveBeenCalledWith('release_my_plot', { p_transaction_id: 'tx_42' });
+  });
+
+  it('should report nothing to release as null and a server error as a throw', async () => {
+    rpc.mockResolvedValue({ data: null, error: null });
+    expect(await releaseMyPlot('tx_42')).toBeNull();
+
+    rpc.mockResolvedValue({ data: null, error: { message: 'boom' } });
+    await expect(releaseMyPlot('tx_42')).rejects.toThrow(/Could not release this plot: boom/);
   });
 });
