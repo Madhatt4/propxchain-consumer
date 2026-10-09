@@ -147,36 +147,45 @@ export function formatTransactionStatus(status: unknown): string {
 }
 
 /**
- * Parties from the raw transaction record. `sellers` / `buyers` are
- * `opt vec TransactionParty`, so they arrive wrapped (`[[party, ...]]`); reading
- * them as bare arrays made each "party" the inner array and the page showed
- * "Party — unknown". When neither list is filled in, fall back to the seller
- * and buyer slots; a buyer slot holding the seller is the no-buyer-yet
- * placeholder and is left out.
+ * Parties from the raw transaction record. The `seller` / `buyer` slots are
+ * the source of truth; the `sellers` / `buyers` lists are written once at
+ * creation and are not kept in step with the slots (a fresh deal lists its
+ * creator as primary buyer, and a seller handover leaves that entry behind),
+ * so they only add names and joint parties here. Both lists are
+ * `opt vec TransactionParty` and arrive wrapped one level deeper (`[[...]]`).
+ *
+ * A buyer slot holding the seller is the no-buyer-yet placeholder and is left
+ * out. On an agent-led deal the agent holds the seller slot until the invited
+ * seller signs in, so that row says "Estate agent".
  */
 export function extractParties(tx: Record<string, unknown>): AuditParty[] {
-  const list = (value: unknown): unknown[] => {
+  const list = (value: unknown): Record<string, unknown>[] => {
     const inner = unwrapOpt<unknown>(value);
-    return Array.isArray(inner) ? inner : [];
+    return Array.isArray(inner) ? (inner as Record<string, unknown>[]) : [];
   };
-  const listed = [...list(tx.sellers), ...list(tx.buyers)].map((raw) => {
-    const party = raw as Record<string, unknown>;
-    const roleKey = variantKey(party.role);
-    const name = typeof party.name === 'string' && party.name.trim() ? party.name.trim() : null;
-    return {
-      role: (roleKey && PARTY_ROLE_LABELS[roleKey]) ?? 'Party',
-      name,
-      principal: principalText(party.principal),
-    };
-  });
-  if (listed.length > 0) return listed;
+  const listed = [...list(tx.sellers), ...list(tx.buyers)].map((party) => ({
+    roleKey: variantKey(party.role),
+    name: typeof party.name === 'string' && party.name.trim() ? party.name.trim() : null,
+    principal: principalText(party.principal),
+  }));
+  const nameOf = (principal: string) => listed.find((p) => p.principal === principal && p.name)?.name ?? null;
 
-  const slots: AuditParty[] = [];
+  const parties: AuditParty[] = [];
   const seller = tx.seller != null ? principalText(tx.seller) : null;
   const buyer = tx.buyer != null ? principalText(tx.buyer) : null;
-  if (seller) slots.push({ role: 'Seller', name: null, principal: seller });
-  if (buyer && buyer !== seller) slots.push({ role: 'Buyer', name: null, principal: buyer });
-  return slots;
+  const createdBy = tx.createdBy != null ? principalText(tx.createdBy) : null;
+  if (seller) {
+    const agentHolds = variantKey(tx.mode) === 'agent' && seller === createdBy;
+    parties.push({ role: agentHolds ? 'Estate agent' : 'Seller', name: nameOf(seller), principal: seller });
+  }
+  if (buyer && buyer !== seller) parties.push({ role: 'Buyer', name: nameOf(buyer), principal: buyer });
+
+  for (const p of listed) {
+    if (p.roleKey !== 'secondary_seller' && p.roleKey !== 'secondary_buyer') continue;
+    if (parties.some((q) => q.principal === p.principal)) continue;
+    parties.push({ role: PARTY_ROLE_LABELS[p.roleKey], name: p.name, principal: p.principal });
+  }
+  return parties;
 }
 
 // ============================================
