@@ -10,7 +10,7 @@ import DocumentInventory from './DocumentInventory';
 import HmlrRegisterCard from './HmlrRegisterCard';
 import ChainPositionCard from './ChainPositionCard';
 import EfficiencyCard from './EfficiencyCard';
-import type { AuditReport } from '../../services/transactionAudit';
+import { formatTransactionStatus, type AuditReport } from '../../services/transactionAudit';
 
 interface BlockchainTabProps {
   report: AuditReport;
@@ -64,7 +64,7 @@ const TransactionSummary: React.FC<{ report: AuditReport }> = ({ report }) => {
                 {String(tx.propertyAddress ?? 'Address not available')}
               </p>
               <p className={`text-xs ${theme.textTertiary}`}>
-                {String(tx.status ?? 'Unknown status')}
+                {formatTransactionStatus(tx.status)}
               </p>
             </div>
           </div>
@@ -81,11 +81,10 @@ const TransactionSummary: React.FC<{ report: AuditReport }> = ({ report }) => {
           <div className="space-y-1">
             {report.parties.map((party, idx) => (
               <p key={idx} className={`text-sm ${theme.textSecondary}`}>
-                <span className="capitalize">{String(party.role ?? 'Party')}</span>
+                <span>{party.role}</span>
+                {party.name && <span>{' — '}{party.name}</span>}
                 {' — '}
-                <span className="font-geist-mono text-xs">
-                  {String(party.principal ?? 'unknown')}
-                </span>
+                <span className="font-geist-mono text-xs break-all">{party.principal}</span>
               </p>
             ))}
           </div>

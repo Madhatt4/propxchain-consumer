@@ -156,8 +156,8 @@ const AuditPdfRenderer = forwardRef<HTMLDivElement, AuditPdfRendererProps>(
         <h2 style={STYLES.heading}>Party Principals</h2>
         {report.parties.map((p, i) => (
           <p key={i} style={{ fontSize: '12px' }}>
-            <strong>{String(p.role ?? 'Party')}:</strong>{' '}
-            <span style={STYLES.mono}>{String(p.principal ?? 'N/A')}</span>
+            <strong>{p.role}{p.name ? ` (${p.name})` : ''}:</strong>{' '}
+            <span style={STYLES.mono}>{p.principal}</span>
           </p>
         ))}
 
