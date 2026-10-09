@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type {
   AuditEvent,
 } from '../transactionAudit';
-import { fetchAuditReport, groupEventsIntoMilestones } from '../transactionAudit';
+import { extractParties, fetchAuditReport, formatTransactionStatus, groupEventsIntoMilestones } from '../transactionAudit';
 import { icpService } from '../icp.service';
 
 // ============================================
@@ -94,10 +94,11 @@ function setupSupabaseMock(tableData: Record<string, unknown[]>): void {
 function setupCanisterDefaults(): void {
   mockGetTransaction.mockResolvedValue([{
     id: TX_ID,
-    status: 'in_progress',
+    status: { active: null },
     propertyAddress: '43 High Street, Sandy',
-    buyers: [{ principalId: 'buyer-1' }],
-    sellers: [{ principalId: 'seller-1' }],
+    // `opt vec TransactionParty`: wrapped once more than it looks.
+    sellers: [[{ role: { primary_seller: null }, name: 'Sam Seller', principal: { toText: () => 'seller-1' } }]],
+    buyers: [[{ role: { primary_buyer: null }, name: '', principal: { toText: () => 'buyer-1' } }]],
     landRegistryIntegration: { titleNumber: 'HD123456' },
   }]);
   mockGetHmlrFetch.mockResolvedValue({ ok: [] });
@@ -224,8 +225,11 @@ describe('fetchAuditReport', () => {
     const report = await fetchAuditReport(TX_ID);
 
     expect(report.transaction?.propertyAddress).toBe('43 High Street, Sandy');
-    expect(report.transaction?.status).toBe('in_progress');
-    expect(report.parties).toHaveLength(2);
+    expect(report.transaction?.status).toEqual({ active: null });
+    expect(report.parties).toEqual([
+      { role: 'Seller', name: 'Sam Seller', principal: 'seller-1' },
+      { role: 'Buyer', name: null, principal: 'buyer-1' },
+    ]);
     expect((report.landRegistry as { titleNumber?: string })?.titleNumber).toBe('HD123456');
   });
 
@@ -629,5 +633,52 @@ describe('groupEventsIntoMilestones', () => {
         expect(milestones[0].name).not.toBe('Other');
       },
     );
+  });
+});
+
+describe('extractParties', () => {
+  const p = (text: string) => ({ toText: () => text });
+
+  it('falls back to the seller and buyer slots when the party lists are empty', () => {
+    expect(extractParties({ sellers: [], buyers: [[]], seller: p('s'), buyer: p('b') })).toEqual([
+      { role: 'Seller', name: null, principal: 's' },
+      { role: 'Buyer', name: null, principal: 'b' },
+    ]);
+  });
+
+  it('leaves out the buyer slot while it holds the seller (no buyer yet)', () => {
+    expect(extractParties({ sellers: [], buyers: [], seller: p('s'), buyer: p('s') })).toEqual([
+      { role: 'Seller', name: null, principal: 's' },
+    ]);
+  });
+
+  it('labels joint parties', () => {
+    const parties = extractParties({
+      sellers: [[{ role: { secondary_seller: null }, name: 'Jo', principal: p('j') }]],
+      buyers: [],
+    });
+    expect(parties).toEqual([{ role: 'Joint seller', name: 'Jo', principal: 'j' }]);
+  });
+});
+
+describe('formatTransactionStatus', () => {
+  it('reads the Candid variant key', () => {
+    expect(formatTransactionStatus({ land_registry_registered: null })).toBe('Land registry registered');
+    expect(formatTransactionStatus({ active: null })).toBe('Active');
+  });
+
+  it('passes strings through and handles a missing status', () => {
+    expect(formatTransactionStatus('exchanged')).toBe('Exchanged');
+    expect(formatTransactionStatus(undefined)).toBe('Unknown status');
+  });
+});
+
+describe('seller handover milestone', () => {
+  it('groups seller_handed_over under Seller Joined, after Property Listed', () => {
+    const ev = (eventType: string, t: number) => ({
+      eventId: String(t), transactionId: 'tx_1', eventType, timestamp: t, caller: 'c', details: '', metadata: null,
+    });
+    const milestones = groupEventsIntoMilestones([ev('seller_handed_over', 2), ev('transaction_created', 1)] as never);
+    expect(milestones.map(m => m.name)).toEqual(['Property Listed', 'Seller Joined']);
   });
 });

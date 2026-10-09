@@ -85,7 +85,7 @@ export interface AuditReport {
   };
   transaction: Record<string, unknown> | null;
   property: Record<string, unknown> | null;
-  parties: Record<string, unknown>[];
+  parties: AuditParty[];
   documents: DocumentAuditEntry[];
   verifications: Record<string, unknown>[];
   blockchainEventLog: AuditEvent[];
@@ -103,6 +103,83 @@ export interface AuditReport {
 }
 
 // ============================================
+// PARTIES + STATUS (raw Candid shapes)
+// ============================================
+
+export interface AuditParty {
+  role: string;
+  name: string | null;
+  principal: string;
+}
+
+const PARTY_ROLE_LABELS: Record<string, string> = {
+  primary_seller: 'Seller',
+  secondary_seller: 'Joint seller',
+  primary_buyer: 'Buyer',
+  secondary_buyer: 'Joint buyer',
+};
+
+/** Candid `opt T` decodes to `[] | [T]`; anything else is passed through. */
+function unwrapOpt<T>(value: unknown): T | null {
+  if (Array.isArray(value)) return (value[0] as T | undefined) ?? null;
+  return (value as T | null | undefined) ?? null;
+}
+
+/** First key of a Candid variant (`{ active: null }` → 'active'); strings pass through. */
+function variantKey(value: unknown): string | null {
+  if (typeof value === 'string') return value;
+  if (value && typeof value === 'object') return Object.keys(value)[0] ?? null;
+  return null;
+}
+
+function principalText(value: unknown): string {
+  if (typeof value === 'string') return value;
+  const p = value as { toText?: () => string } | null | undefined;
+  return typeof p?.toText === 'function' ? p.toText() : String(value ?? 'unknown');
+}
+
+/** `{ land_registry_registered: null }` → 'Land registry registered'. */
+export function formatTransactionStatus(status: unknown): string {
+  const key = variantKey(status);
+  if (!key) return 'Unknown status';
+  const words = key.replace(/_/g, ' ');
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+/**
+ * Parties from the raw transaction record. `sellers` / `buyers` are
+ * `opt vec TransactionParty`, so they arrive wrapped (`[[party, ...]]`); reading
+ * them as bare arrays made each "party" the inner array and the page showed
+ * "Party — unknown". When neither list is filled in, fall back to the seller
+ * and buyer slots; a buyer slot holding the seller is the no-buyer-yet
+ * placeholder and is left out.
+ */
+export function extractParties(tx: Record<string, unknown>): AuditParty[] {
+  const list = (value: unknown): unknown[] => {
+    const inner = unwrapOpt<unknown>(value);
+    return Array.isArray(inner) ? inner : [];
+  };
+  const listed = [...list(tx.sellers), ...list(tx.buyers)].map((raw) => {
+    const party = raw as Record<string, unknown>;
+    const roleKey = variantKey(party.role);
+    const name = typeof party.name === 'string' && party.name.trim() ? party.name.trim() : null;
+    return {
+      role: (roleKey && PARTY_ROLE_LABELS[roleKey]) ?? 'Party',
+      name,
+      principal: principalText(party.principal),
+    };
+  });
+  if (listed.length > 0) return listed;
+
+  const slots: AuditParty[] = [];
+  const seller = tx.seller != null ? principalText(tx.seller) : null;
+  const buyer = tx.buyer != null ? principalText(tx.buyer) : null;
+  if (seller) slots.push({ role: 'Seller', name: null, principal: seller });
+  if (buyer && buyer !== seller) slots.push({ role: 'Buyer', name: null, principal: buyer });
+  return slots;
+}
+
+// ============================================
 // MILESTONE GROUPING
 // ============================================
 
@@ -115,6 +192,8 @@ export interface Milestone {
 const MILESTONE_MAP: Record<string, string> = {
   // Seller setup + progress
   transaction_created: 'Property Listed',
+  // An agent-led deal's invited seller signed in and took the seller slot.
+  seller_handed_over: 'Seller Joined',
   // Stage-1 title pull — deliberately NOT the terminal 'Land Registry'
   // milestone (that's the AP1 submission at completion); mapping it there
   // would render a freshly-listed transaction as journey-complete.
@@ -157,7 +236,7 @@ const MILESTONE_MAP: Record<string, string> = {
 };
 
 const MILESTONE_ORDER = [
-  'Property Listed', 'Title Register Fetched', 'Searches Ordered', 'Searches Signed Off', 'Seller Forms Complete',
+  'Property Listed', 'Seller Joined', 'Title Register Fetched', 'Searches Ordered', 'Searches Signed Off', 'Seller Forms Complete',
   'Buyer Joined', 'Buyer Onboarded', 'Mortgage Confirmed',
   'Survey Complete', 'Seller Pack Reviewed',
   'Quotes Requested', 'Quotes Received', 'Providers Selected',
@@ -354,7 +433,7 @@ export async function fetchAuditReport(transactionId: string): Promise<AuditRepo
   // Extract transaction data
   let transaction: Record<string, unknown> | null = null;
   let landRegistry: Record<string, unknown> | null = null;
-  let parties: Record<string, unknown>[] = [];
+  let parties: AuditParty[] = [];
   canisterAvailability['transaction_manager'] = txResult.status === 'fulfilled';
 
   // The raw actor returns Candid `opt Transaction` as `[] | [tx]` — unwrap
@@ -369,10 +448,7 @@ export async function fetchAuditReport(transactionId: string): Promise<AuditRepo
     if (tx.landRegistryIntegration) {
       landRegistry = tx.landRegistryIntegration as Record<string, unknown>;
     }
-    // Extract party info from buyers/sellers arrays
-    const buyers = (tx.buyers as unknown[]) ?? [];
-    const sellers = (tx.sellers as unknown[]) ?? [];
-    parties = [...buyers, ...sellers].map(p => p as Record<string, unknown>);
+    parties = extractParties(tx);
   } else if (txResult.status === 'rejected') {
     errors['transaction_manager'] = String(txResult.reason);
   }
