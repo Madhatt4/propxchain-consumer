@@ -96,6 +96,8 @@ function setupCanisterDefaults(): void {
     id: TX_ID,
     status: { active: null },
     propertyAddress: '43 High Street, Sandy',
+    seller: { toText: () => 'seller-1' },
+    buyer: { toText: () => 'buyer-1' },
     // `opt vec TransactionParty`: wrapped once more than it looks.
     sellers: [[{ role: { primary_seller: null }, name: 'Sam Seller', principal: { toText: () => 'seller-1' } }]],
     buyers: [[{ role: { primary_buyer: null }, name: '', principal: { toText: () => 'buyer-1' } }]],
@@ -638,26 +640,47 @@ describe('groupEventsIntoMilestones', () => {
 
 describe('extractParties', () => {
   const p = (text: string) => ({ toText: () => text });
+  const entry = (role: string, principal: string, name = '') => ({ role: { [role]: null }, name, principal: p(principal) });
 
-  it('falls back to the seller and buyer slots when the party lists are empty', () => {
-    expect(extractParties({ sellers: [], buyers: [[]], seller: p('s'), buyer: p('b') })).toEqual([
-      { role: 'Seller', name: null, principal: 's' },
+  it('reads the seller and buyer slots, with names from the lists', () => {
+    expect(extractParties({
+      seller: p('s'), buyer: p('b'),
+      sellers: [[entry('primary_seller', 's', 'Sam')]], buyers: [[entry('primary_buyer', 'b')]],
+    })).toEqual([
+      { role: 'Seller', name: 'Sam', principal: 's' },
       { role: 'Buyer', name: null, principal: 'b' },
     ]);
   });
 
   it('leaves out the buyer slot while it holds the seller (no buyer yet)', () => {
-    expect(extractParties({ sellers: [], buyers: [], seller: p('s'), buyer: p('s') })).toEqual([
+    expect(extractParties({ seller: p('s'), buyer: p('s'), sellers: [], buyers: [] })).toEqual([
       { role: 'Seller', name: null, principal: 's' },
     ]);
   });
 
-  it('labels joint parties', () => {
-    const parties = extractParties({
-      sellers: [[{ role: { secondary_seller: null }, name: 'Jo', principal: p('j') }]],
-      buyers: [],
-    });
-    expect(parties).toEqual([{ role: 'Joint seller', name: 'Jo', principal: 'j' }]);
+  // Regression: after a seller handover the buyers list still names the agent
+  // as primary buyer; the slots say there is no buyer.
+  it('ignores a stale primary buyer left in the list after a handover', () => {
+    expect(extractParties({
+      mode: 'agent', createdBy: p('agent'), seller: p('seller'), buyer: p('seller'),
+      sellers: [[entry('primary_seller', 'seller')]], buyers: [[entry('primary_buyer', 'agent')]],
+    })).toEqual([{ role: 'Seller', name: null, principal: 'seller' }]);
+  });
+
+  it('labels the agent while they still hold the seller slot', () => {
+    expect(extractParties({ mode: 'agent', createdBy: p('agent'), seller: p('agent'), buyer: p('agent') })).toEqual([
+      { role: 'Estate agent', name: null, principal: 'agent' },
+    ]);
+  });
+
+  it('adds joint parties from the lists', () => {
+    expect(extractParties({
+      seller: p('s'), buyer: p('s'),
+      sellers: [[entry('primary_seller', 's'), entry('secondary_seller', 'j', 'Jo')]], buyers: [],
+    })).toEqual([
+      { role: 'Seller', name: null, principal: 's' },
+      { role: 'Joint seller', name: 'Jo', principal: 'j' },
+    ]);
   });
 });
 
