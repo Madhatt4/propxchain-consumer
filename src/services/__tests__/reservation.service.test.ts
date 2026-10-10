@@ -9,8 +9,9 @@ interface Call {
   filters: Array<[string, unknown]>;
 }
 
-const { calls, snapshotError, plotCode } = vi.hoisted(() => ({
+const { calls, snapshotError, plotCode, emailResult } = vi.hoisted(() => ({
   calls: [] as Call[],
+  emailResult: { value: { data: { ok: true } as unknown, error: null as unknown } },
   snapshotError: { value: null as null | { message: string } },
   plotCode: { value: 'TX-ABCD-EFGH' as string | null },
 }));
@@ -40,10 +41,13 @@ const rpc = vi.fn(async (fn: string, args: unknown) => {
   return { data: 'snapshot-1', error: snapshotError.value };
 });
 
+const invoke = vi.fn(async (_fn: string, _opts: unknown) => emailResult.value);
+
 vi.mock('@/lib/supabase', () => ({
   supabase: {
     from: (table: string) => builder(table),
     rpc: (fn: string, args: unknown) => rpc(fn, args),
+    functions: { invoke: (fn: string, opts: unknown) => invoke(fn, opts) },
     auth: { getUser: async () => ({ data: { user: { id: 'dev-1' } } }) },
   },
 }));
@@ -72,6 +76,8 @@ describe('reservationService.reservePlot rollback', () => {
     calls.length = 0;
     snapshotError.value = null;
     plotCode.value = 'TX-ABCD-EFGH';
+    emailResult.value = { data: { ok: true }, error: null };
+    invoke.mockClear();
   });
 
   it('should return the plot to available when the snapshot step fails', async () => {
@@ -100,6 +106,22 @@ describe('reservationService.reservePlot rollback', () => {
     expect(rpc).toHaveBeenCalledWith('snapshot_plot_reservation', { p_plot_id: 'plot-1' });
     const hold = calls.find((c) => c.table === 'plots' && c.op === 'update');
     expect(hold?.payload).toEqual({ reservation_status: 'pending', reserved_for_email: 'buyer@example.com' });
+    expect(rollbacks()).toHaveLength(0);
+  });
+
+  it('should email the buyer, naming only the plot and their name', async () => {
+    const result = await reservationService.reservePlot(INPUT, vi.fn());
+
+    expect(result.emailSent).toBe(true);
+    expect(invoke).toHaveBeenCalledWith('send-plot-invite', { body: { plot_id: 'plot-1', buyer_name: 'B' } });
+  });
+
+  it('should keep the hold and hand back the code when the email fails', async () => {
+    emailResult.value = { data: null, error: { message: 'Edge Function returned a non-2xx status code' } };
+
+    const result = await reservationService.reservePlot(INPUT, vi.fn());
+
+    expect(result).toEqual({ inviteCode: 'TX-ABCD-EFGH', emailSent: false });
     expect(rollbacks()).toHaveLength(0);
   });
 });

@@ -35,7 +35,7 @@ const STEP_LABELS: Record<number, string> = {
   1: 'Creating reservation',
   2: 'Recording on chain',
   3: 'Saving snapshot',
-  4: 'Invite code ready',
+  4: 'Emailing the buyer',
 };
 
 function StepIcon({ status }: { status: StepState['status'] }): JSX.Element {
@@ -93,6 +93,7 @@ function ProgressContent({
   phase,
   inviteCode,
   existingInviteCode,
+  emailedTo,
   onRetry,
   onClose,
   onDone,
@@ -101,6 +102,8 @@ function ProgressContent({
   phase: ModalPhase;
   inviteCode: string | null;
   existingInviteCode?: string | null;
+  /** The buyer's email when the invite email went; null when it didn't. */
+  emailedTo: string | null;
   onRetry: () => void;
   onClose: () => void;
   onDone: () => void;
@@ -118,7 +121,10 @@ function ProgressContent({
             {inviteCode ?? existingInviteCode}
           </p>
           <p className="mt-2 font-[DM_Sans] text-xs text-[var(--text-secondary)]">
-            The buyer enters this on the Join screen, signed in with the email
+            {emailedTo
+              ? `We've emailed this code to ${emailedTo}. `
+              : "The email to the buyer didn't send, so please pass this code on yourself. "}
+            The buyer enters it on the Join screen, signed in with the email
             you reserved it for. No one else can claim the plot while it is held.
           </p>
         </div>
@@ -178,6 +184,7 @@ export default function ReservePlotModal({
   const [phase, setPhase] = useState<ModalPhase>('form');
   const [steps, setSteps] = useState<Record<number, StepState>>(initialSteps);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
+  const [emailedTo, setEmailedTo] = useState<string | null>(null);
   const [lastInput, setLastInput] = useState<{
     buyerName: string;
     buyerEmail: string;
@@ -188,6 +195,7 @@ export default function ReservePlotModal({
       setPhase('progress');
       setSteps(initialSteps());
       setInviteCode(null);
+      setEmailedTo(null);
       setLastInput({ buyerName, buyerEmail });
 
       const handleProgress = (p: ReservationProgress): void => {
@@ -203,6 +211,7 @@ export default function ReservePlotModal({
           handleProgress,
         );
         setInviteCode(result.inviteCode);
+        setEmailedTo(result.emailSent ? buyerEmail.trim().toLowerCase() : null);
         setPhase('success');
       } catch {
         setPhase('failed');
@@ -274,6 +283,7 @@ export default function ReservePlotModal({
               phase={phase}
               inviteCode={inviteCode}
               existingInviteCode={existingInviteCode}
+              emailedTo={emailedTo}
               onRetry={handleRetry}
               onClose={handleClose}
               onDone={handleDone}
