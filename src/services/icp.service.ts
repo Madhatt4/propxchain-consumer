@@ -4561,6 +4561,19 @@ class ICPService {
       if ('err' in result) throw new Error(result.err);
     });
   }
+
+  /**
+   * Withdraw a form PDF upload made by mistake: clears the per-party uploaded
+   * flag and records `<form>_upload_withdrawn`. The bytes and the storage
+   * proof are removed separately (completedFormUpload.service).
+   */
+  async unrecordFormUpload(txId: string, formType: 'ta6' | 'ta10' | 'ta7'): Promise<void> {
+    return wrapWriteCall(async () => {
+      if (!this.transactionManagerActor) await this.initialize();
+      const result = await this.txActor.unrecordFormUpload(txId, formType);
+      if ('err' in result) throw new Error(result.err);
+    });
+  }
 }
 
 // Export singleton instance

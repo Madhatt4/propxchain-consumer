@@ -21,6 +21,7 @@ import { classifyDocument, DOC_TYPE_CONFIDENCE_AT, docTypeLabel } from './docCla
 import { icpService } from './icp.service';
 import { generateFileHash } from '../utils/hashGenerator';
 import { supabase } from '../lib/supabase';
+import { logger } from '../utils/logger';
 import type { DocClassification } from './docClassify.service';
 
 export type CompletedFormId = 'ta6' | 'ta10' | 'ta7';
@@ -95,9 +96,74 @@ export async function uploadCompletedForm(
     throw new CompletedFormRejectedError(judgement.reason ?? 'This does not look like the right form.');
   }
 
-  const docType = `${formId}_canonical_upload`;
+  const docType = canonicalUploadDocType(formId);
   const storageLocation = `supabase://${STORAGE_BUCKET}/${path}`;
   const documentId = await registerFormProof(file, fileHash, contentType, storageLocation, transactionId, docType);
   icpService.emitDocumentUploadedEvent(transactionId, docType, fileHash);
   return { documentId, ...judgement };
+}
+
+/** document_storage docType under which the stage card registers a completed form PDF. */
+export function canonicalUploadDocType(formId: CompletedFormId): string {
+  return `${formId}_canonical_upload`;
+}
+
+/** The fields of an icpService.getDocumentsByTransaction row this needs. */
+interface StoredDocumentRow {
+  id: string;
+  type: string;
+  storageLocation: string;
+}
+
+const SUPABASE_LOCATION = /^supabase:\/\/([^/]+)\/(.+)$/;
+
+/** `doc_<nat>` is how getDocumentsByTransaction names a document_storage row. */
+function storageIdOf(row: StoredDocumentRow): number | null {
+  const n = Number(String(row.id).replace(/^doc_/, ''));
+  return Number.isFinite(n) ? n : null;
+}
+
+/** Best effort: the proof is already gone, so a bucket object left behind is clutter, not a record. */
+async function removeBytes(storageLocation: string): Promise<void> {
+  const match = SUPABASE_LOCATION.exec(storageLocation);
+  if (!match) return;
+  const { error } = await supabase.storage.from(match[1]).remove([match[2]]);
+  if (error) logger.warn('Completed form bytes not removed:', error.message);
+}
+
+export interface WithdrawnCompletedForm {
+  /** How many stored PDFs were removed before the flag was cleared. */
+  removed: number;
+}
+
+/**
+ * Take back a completed-form PDF uploaded by mistake. In order: every
+ * document_storage proof registered for this form on the transaction is
+ * deleted (the canister refuses anyone but the uploader or an admin), its
+ * bytes are removed from the bucket, and only then is the transaction told
+ * the upload no longer stands. A proof that will not delete stops the
+ * withdrawal before the flag changes, so the form never reads as removed
+ * while its PDF is still on record. A form filled in online is untouched.
+ */
+export async function withdrawCompletedForm(
+  transactionId: string,
+  formId: CompletedFormId,
+): Promise<WithdrawnCompletedForm> {
+  const wanted = canonicalUploadDocType(formId);
+  const rows = ((await icpService.getDocumentsByTransaction(transactionId)) as StoredDocumentRow[]).filter(
+    (row) => row.type === wanted,
+  );
+
+  let removed = 0;
+  for (const row of rows) {
+    const storageId = storageIdOf(row);
+    if (storageId === null) throw new Error('Could not identify the stored PDF to remove.');
+    const deleted = await icpService.deleteStorageDocument(storageId);
+    if (!deleted) throw new Error('The stored PDF could not be removed. Please try again.');
+    await removeBytes(row.storageLocation);
+    removed += 1;
+  }
+
+  await icpService.unrecordFormUpload(transactionId, formId);
+  return { removed };
 }
