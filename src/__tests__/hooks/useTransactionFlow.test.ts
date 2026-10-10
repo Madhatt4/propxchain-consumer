@@ -101,8 +101,10 @@ describe('useTransactionFlow', () => {
     expect(result.current.stages[0].status).toBe('active');
     // seller-2: prereqs removed in Task 1 → active (was locked before)
     expect(result.current.stages[1].status).toBe('active');
-    // seller-3: still has prereq ['seller-1'] which is not yet completed → locked
-    expect(result.current.stages[2].status).toBe('locked');
+    // seller-3: no prereqs → active, even though seller-1 is not yet completed
+    expect(result.current.stages[2].status).toBe('active');
+    // seller-6: prereq ['seller-5'] not completed → locked
+    expect(result.current.stages[5].status).toBe('locked');
   });
 
   it('should track provider selection in localStorage', async () => {

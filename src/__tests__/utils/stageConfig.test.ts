@@ -80,6 +80,11 @@ describe('parallel stages', () => {
     expect(seller2?.prerequisiteStageIds).not.toContain('seller-3');
     expect(seller3?.prerequisiteStageIds).not.toContain('seller-2');
   });
+
+  it('seller-3 (Property Info Forms) should be open from the start, not gated on List Property', () => {
+    const seller3 = getSellerStages().find((s) => s.id === 'seller-3');
+    expect(seller3?.prerequisiteStageIds).toEqual([]);
+  });
 });
 
 describe('getStagesForJourney', () => {
