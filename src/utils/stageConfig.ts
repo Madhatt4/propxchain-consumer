@@ -36,7 +36,10 @@ export function getSellerStages(): StageConfigTemplate[] {
       title: 'Property Info Forms',
       description: 'Complete TA6, TA10, and other required property information forms.',
       journeyRole: 'seller',
-      prerequisiteStageIds: ['seller-1'],
+      // The seller can fill in the forms from the moment the deal exists; the
+      // address and postcode are set at creation. Gating on seller-1 locked the
+      // forms whenever List Property still needed action (e.g. no title number).
+      prerequisiteStageIds: [],
       hasProviderMarketplace: false,
       serviceMode: 'mock',
     },
