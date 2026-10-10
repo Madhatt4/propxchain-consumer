@@ -42,6 +42,7 @@ vi.mock('../../../../services/docClassify.service', async (importOriginal) => {
 });
 
 import { makeTa6Uploader } from '../widgets/ta6Uploader';
+import type { DocScanContext } from '../../../../services/docClassify.service';
 
 const file = new File(['pdf-bytes'], 'epc.pdf', { type: 'application/pdf' });
 
@@ -85,7 +86,40 @@ describe('makeTa6Uploader', () => {
       file,
       expect.anything(),
     );
-    expect(mockClassify).toHaveBeenCalledWith('tx_1', 'transactions/tx_1/ta6/abcdef123456.pdf');
+    expect(mockClassify).toHaveBeenCalledWith('tx_1', 'transactions/tx_1/ta6/abcdef123456.pdf', undefined);
+  });
+
+  it('should send the slot context with the classification and return its findings', async () => {
+    const context: DocScanContext = { section: '5.2', kind: 'planning-permission', relatesTo: 'extension', ticked: ['extension'] };
+    const finding = { key: 'planning_lapsed', label: 'Permission looks lapsed', probability: 1 };
+    mockClassify.mockResolvedValue({ docType: 'planning_permission', confidence: 0.9, inDate: null, matchesProperty: 0.9, unreadable: false, findings: [finding] });
+    const upload = makeTa6Uploader('tx_1');
+
+    const result = await upload(file, context);
+
+    expect(mockClassify).toHaveBeenCalledWith('tx_1', 'transactions/tx_1/ta6/abcdef123456.pdf', context);
+    expect(await result.findings).toEqual([finding]);
+  });
+
+  it('should resolve findings to null when no context was sent or the scan was unavailable', async () => {
+    const upload = makeTa6Uploader('tx_1');
+    expect(await (await upload(file)).findings).toBeNull();
+
+    mockClassify.mockResolvedValue(null);
+    expect(await (await upload(file)).findings).toBeNull();
+  });
+
+  it('should re-scan the same object with a new context without uploading again', async () => {
+    const upload = makeTa6Uploader('tx_1');
+    const result = await upload(file, { section: '6.1', warrantyType: 'roofing' });
+    mockUpload.mockClear();
+    mockClassify.mockResolvedValue({ docType: 'other', confidence: 0.2, inDate: null, matchesProperty: 0.9, unreadable: false, findings: [] });
+
+    const found = await result.rescan?.({ section: '6.1', warrantyType: 'damp-proofing' });
+
+    expect(mockUpload).not.toHaveBeenCalled();
+    expect(mockClassify).toHaveBeenLastCalledWith('tx_1', 'transactions/tx_1/ta6/abcdef123456.pdf', { section: '6.1', warrantyType: 'damp-proofing' });
+    expect(found).toEqual([]);
   });
 
   it('should resolve the advisory to null when classification is unavailable', async () => {

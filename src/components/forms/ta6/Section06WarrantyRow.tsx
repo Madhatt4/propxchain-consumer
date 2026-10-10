@@ -4,6 +4,8 @@ import { AnswerButtons } from './widgets/AnswerButtons';
 import { DocumentSlot } from './widgets/DocumentSlot';
 import { PromptHeader } from './widgets/PromptHeader';
 import type { TA6PromptEntry } from './widgets/types';
+import { isWarrantyType } from '../../../services/docClassify.service';
+import type { DocScanContext } from '../../../services/docClassify.service';
 import type { TA6WarrantyItem } from '../../../types/ta6.types';
 import type { TA6UploadFile } from './section-props';
 
@@ -33,6 +35,12 @@ export const Section06WarrantyRow: React.FC<Section06WarrantyRowProps> = ({
   uploadFile,
 }) => {
   const showDocument = value.present === 'yes' || value.document.status !== 'not-answered';
+  // The ref suffix IS the warranty type ('6.1.roofing' -> 'roofing'), the
+  // same closed vocabulary the function validates against.
+  const warrantyType = refBase.slice(refBase.lastIndexOf('.') + 1);
+  const scanContext: DocScanContext | undefined = isWarrantyType(warrantyType)
+    ? { section: '6.1', warrantyType }
+    : undefined;
 
   return (
     <div className="py-4 first:pt-0 last:pb-0 space-y-2">
@@ -52,6 +60,7 @@ export const Section06WarrantyRow: React.FC<Section06WarrantyRowProps> = ({
             onChange={(document) => onChange({ ...value, document })}
             readOnly={readOnly}
             onUpload={uploadFile}
+            scanContext={scanContext}
           />
         </div>
       )}

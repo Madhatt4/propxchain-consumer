@@ -15,8 +15,74 @@
  */
 import { supabase } from '../lib/supabase';
 import { logger } from '../utils/logger';
+import type { TA6AlterationDocumentKind, TA6AlterationKind } from '../types/ta6.alterationDocument';
 
 const FUNCTION_NAME = 'doc-classify';
+
+/** The 6.1 checklist, as the function's closed vocabulary spells it (the `6.1.<type>` ref suffixes). */
+export const TA6_WARRANTY_TYPES = [
+  'new-home-warranty',
+  'damp-proofing',
+  'timber-treatment',
+  'roofing',
+  'electrical-work',
+  'windows-doors',
+  'central-heating',
+  'underpinning',
+  'other',
+] as const;
+export type TA6WarrantyType = (typeof TA6_WARRANTY_TYPES)[number];
+
+export const WARRANTY_TYPE_LABELS: Readonly<Record<TA6WarrantyType, string>> = {
+  'new-home-warranty': 'New home warranty',
+  'damp-proofing': 'Damp proofing',
+  'timber-treatment': 'Timber treatment',
+  roofing: 'Roofing',
+  'electrical-work': 'Electrical work',
+  'windows-doors': 'Windows and doors',
+  'central-heating': 'Central heating',
+  underpinning: 'Underpinning',
+  other: 'Other work',
+};
+
+export function isWarrantyType(value: string): value is TA6WarrantyType {
+  return (TA6_WARRANTY_TYPES as readonly string[]).includes(value);
+}
+
+/**
+ * Which TA6 slot an upload sits in and what the form already says about it.
+ * Sent with the upload so the function runs the consents scan in the same
+ * Jev call; absent for every other slot, which then behaves as before.
+ */
+export type DocScanContext =
+  | {
+      section: '5.2';
+      kind: TA6AlterationDocumentKind | null;
+      relatesTo: TA6AlterationKind | null;
+      /** The 5.1 changes ticked, for a row the seller has not linked yet. */
+      ticked: TA6AlterationKind[];
+    }
+  | { section: '6.1'; warrantyType: TA6WarrantyType };
+
+export type DocFindingKey =
+  | 'unrelated_to_change'
+  | 'not_a_grant'
+  | 'conditions_outstanding'
+  | 'approval_not_completion'
+  | 'planning_lapsed'
+  | 'not_about_property'
+  | 'wrong_warranty_type'
+  | 'installer_promise_only'
+  | 'not_transferable'
+  | 'warranty_expired';
+
+/** One thing the consents scan found worth saying, already at or above the function's bar. */
+export interface DocFinding {
+  key: DocFindingKey | string;
+  label: string;
+  /** 0..1, the probability the problem is present. */
+  probability: number;
+}
 
 /** The `doc-classify` 200 body. `docType` is one of the function's option keys, `other` when unsure. */
 export interface DocClassification {
@@ -29,6 +95,12 @@ export interface DocClassification {
   matchesProperty: number | null;
   /** True for an image or image-only PDF: no text, so nothing was asked. */
   unreadable: boolean;
+  /**
+   * The consents scan's findings. Present only when a `DocScanContext` was
+   * sent: the list (possibly empty) for a readable document, null when it
+   * could not be read. Absent for every other upload.
+   */
+  findings?: DocFinding[] | null;
 }
 
 /**
@@ -83,10 +155,11 @@ function isClassification(value: unknown): value is DocClassification {
 export async function classifyDocument(
   transactionId: string,
   storagePath: string,
+  context?: DocScanContext,
 ): Promise<DocClassification | null> {
   try {
     const { data, error } = await supabase.functions.invoke(FUNCTION_NAME, {
-      body: { transactionId, storagePath },
+      body: context ? { transactionId, storagePath, context } : { transactionId, storagePath },
     });
     if (error) {
       logger.warn('Document classification unavailable:', error);

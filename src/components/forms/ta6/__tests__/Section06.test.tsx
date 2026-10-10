@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 
 import { Section06 } from '../Section06';
 import { emptyTA6Form } from '../../../../types/ta6.types';
@@ -20,6 +20,30 @@ const WARRANTY_REFS = [
 function emptySection6(): TA6Section6Guarantees {
   return emptyTA6Form().section6;
 }
+
+describe('Section06 consents context', () => {
+  it('should upload a 6.1 certificate with the warranty type of its row', async () => {
+    // Arrange
+    const uploadFile = vi.fn().mockResolvedValue({
+      documentId: '9',
+      advisory: Promise.resolve(null),
+      classification: Promise.resolve(null),
+      findings: Promise.resolve([]),
+    });
+    const value: TA6Section6Guarantees = {
+      ...emptySection6(),
+      q6_1Roofing: { present: 'yes', document: { status: 'attached', documentId: null } },
+    };
+    render(<Section06 value={value} onChange={() => {}} readOnly={false} uploadFile={uploadFile} />);
+    const file = new File(['pdf'], 'roof-guarantee.pdf', { type: 'application/pdf' });
+
+    // Act
+    fireEvent.change(screen.getByLabelText('6.1.roofing.doc attachment'), { target: { files: [file] } });
+
+    // Assert
+    await waitFor(() => expect(uploadFile).toHaveBeenCalledWith(file, { section: '6.1', warrantyType: 'roofing' }));
+  });
+});
 
 describe('Section06', () => {
   it('should render one checklist row per 6.1 warranty type plus 6.2 and 6.3', () => {
