@@ -27,6 +27,10 @@ vi.mock('../../lib/supabase', () => ({
   },
 }));
 
+const mockGetDocuments = vi.fn();
+const mockDeleteStorageDocument = vi.fn();
+const mockUnrecord = vi.fn();
+
 vi.mock('../icp.service', () => ({
   icpService: {
     initialize: async () => undefined,
@@ -36,8 +40,12 @@ vi.mock('../icp.service', () => ({
       registerDocumentProof: (...args: unknown[]) => mockRegisterProof(...args),
     },
     emitDocumentUploadedEvent: () => undefined,
+    getDocumentsByTransaction: (...args: unknown[]) => mockGetDocuments(...args),
+    deleteStorageDocument: (...args: unknown[]) => mockDeleteStorageDocument(...args),
+    unrecordFormUpload: (...args: unknown[]) => mockUnrecord(...args),
   },
 }));
+vi.mock('../../utils/logger', () => ({ logger: { warn: vi.fn(), error: vi.fn(), info: vi.fn(), debug: vi.fn() } }));
 
 vi.mock('../../utils/hashGenerator', () => ({
   generateFileHash: async () => 'abcdef123456deadbeef',
@@ -49,6 +57,7 @@ vi.mock('../docClassify.service', async (importOriginal) => {
 });
 
 import {
+  withdrawCompletedForm,
   CompletedFormRejectedError,
   judgeCompletedForm,
   uploadCompletedForm,
@@ -158,5 +167,55 @@ describe('uploadCompletedForm', () => {
     expect(mockRegisterProof).toHaveBeenCalledTimes(1);
     expect(mockRemove).not.toHaveBeenCalled();
     expect(result).toEqual({ documentId: '7', verdict: 'unverified', reason: "We couldn't check this file right now." });
+  });
+});
+
+describe('withdrawCompletedForm', () => {
+  const ta6Pdf = { id: 'doc_41', type: 'ta6_canonical_upload', storageLocation: 'supabase://propxchain-documents/transactions/tx_1/ta6/abc.pdf' };
+  const ta10Pdf = { id: 'doc_42', type: 'ta10_canonical_upload', storageLocation: 'supabase://propxchain-documents/transactions/tx_1/ta10/def.pdf' };
+
+  beforeEach(() => {
+    mockGetDocuments.mockReset().mockResolvedValue([ta6Pdf, ta10Pdf]);
+    mockDeleteStorageDocument.mockReset().mockResolvedValue(true);
+    mockRemove.mockReset().mockResolvedValue({ error: null });
+    mockUnrecord.mockReset().mockResolvedValue(undefined);
+  });
+
+  it('should delete only this form\'s PDF proof and bytes, then clear the upload on the transaction', async () => {
+    const result = await withdrawCompletedForm('tx_1', 'ta6');
+
+    expect(result).toEqual({ removed: 1 });
+    expect(mockDeleteStorageDocument).toHaveBeenCalledTimes(1);
+    expect(mockDeleteStorageDocument).toHaveBeenCalledWith(41);
+    expect(mockRemove).toHaveBeenCalledWith(['transactions/tx_1/ta6/abc.pdf']);
+    expect(mockUnrecord).toHaveBeenCalledWith('tx_1', 'ta6');
+  });
+
+  it('should clear the upload even when no PDF proof is on record', async () => {
+    mockGetDocuments.mockResolvedValue([]);
+
+    expect(await withdrawCompletedForm('tx_1', 'ta7')).toEqual({ removed: 0 });
+    expect(mockDeleteStorageDocument).not.toHaveBeenCalled();
+    expect(mockUnrecord).toHaveBeenCalledWith('tx_1', 'ta7');
+  });
+
+  it('should stop before clearing the flag when the proof will not delete', async () => {
+    mockDeleteStorageDocument.mockResolvedValue(false);
+
+    await expect(withdrawCompletedForm('tx_1', 'ta6')).rejects.toThrow('The stored PDF could not be removed');
+    expect(mockUnrecord).not.toHaveBeenCalled();
+  });
+
+  it('should still clear the flag when the bucket object is already gone', async () => {
+    mockRemove.mockResolvedValue({ error: { message: 'Object not found' } });
+
+    expect(await withdrawCompletedForm('tx_1', 'ta6')).toEqual({ removed: 1 });
+    expect(mockUnrecord).toHaveBeenCalledTimes(1);
+  });
+
+  it('should surface the canister\'s refusal when the caller may not withdraw', async () => {
+    mockUnrecord.mockRejectedValue(new Error('Only the seller or their solicitor can withdraw a form upload'));
+
+    await expect(withdrawCompletedForm('tx_1', 'ta6')).rejects.toThrow(/Only the seller or their solicitor/);
   });
 });

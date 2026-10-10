@@ -19,11 +19,14 @@ const mockGetTA10 = vi.fn();
 const mockGetTA7 = vi.fn();
 const mockRecordFormUpload = vi.fn();
 const mockUploadCompletedForm = vi.fn();
+const mockGetTransaction = vi.fn();
+const mockWithdrawCompletedForm = vi.fn();
 vi.mock('@/services/icp.service', () => ({
   icpService: {
     getTA6: (...a: unknown[]) => mockGetTA6(...a),
     getTA10: (...a: unknown[]) => mockGetTA10(...a),
     getTA7: (...a: unknown[]) => mockGetTA7(...a),
+    getTransaction: (...a: unknown[]) => mockGetTransaction(...a),
     recordFormUpload: (...a: unknown[]) => mockRecordFormUpload(...a),
     ledgerManager: { logEvent: vi.fn() },
   },
@@ -32,6 +35,7 @@ vi.mock('@/services/web2-document.service', () => ({ web2DocumentService: { uplo
 vi.mock('@/services/completedFormUpload.service', () => ({
   CompletedFormRejectedError: class CompletedFormRejectedError extends Error {},
   uploadCompletedForm: (...a: unknown[]) => mockUploadCompletedForm(...a),
+  withdrawCompletedForm: (...a: unknown[]) => mockWithdrawCompletedForm(...a),
 }));
 vi.mock('@/utils/fileHash', () => ({ sha256Hex: async () => 'hash-of-file' }));
 vi.mock('@/hooks/use-toast', () => ({ useToast: () => ({ toast: vi.fn() }) }));
@@ -64,6 +68,29 @@ describe('PropertyInfoStage hydration', () => {
     mockGetTA10.mockReset();
     mockGetTA7.mockReset();
     mockGetTA7.mockResolvedValue(null);
+    mockGetTransaction.mockReset().mockResolvedValue(null);
+  });
+
+  it('should show a form uploaded as a PDF earlier, read from the seller party flag', async () => {
+    mockGetTA6.mockResolvedValue(null);
+    mockGetTA10.mockResolvedValue(null);
+    mockGetTransaction.mockResolvedValue({ sellers: [[{ ta6FormUploaded: true, ta10FormUploaded: false }]] });
+
+    renderStage();
+
+    expect(await screen.findByText('Uploaded: PDF uploaded earlier')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Remove upload' })).toBeInTheDocument();
+    expect(screen.getAllByText('Fill form online')).toHaveLength(1);
+  });
+
+  it('should still show an online form when the summary cannot be read', async () => {
+    mockGetTA6.mockResolvedValue({ section1: {} });
+    mockGetTA10.mockResolvedValue(null);
+    mockGetTransaction.mockRejectedValue(new Error('offline'));
+
+    renderStage();
+
+    expect(await screen.findByText(/Filled online/)).toBeInTheDocument();
   });
 
   it('should show a TA6 saved on chain as filled online on an active stage, before submission', async () => {
@@ -107,8 +134,24 @@ describe('PropertyInfoStage completed-form upload', () => {
     mockGetTA6.mockReset().mockResolvedValue(null);
     mockGetTA10.mockReset().mockResolvedValue(null);
     mockGetTA7.mockReset().mockResolvedValue(null);
+    mockGetTransaction.mockReset().mockResolvedValue(null);
     mockRecordFormUpload.mockReset().mockResolvedValue(undefined);
     mockUploadCompletedForm.mockReset();
+    mockWithdrawCompletedForm.mockReset().mockResolvedValue({ removed: 1 });
+  });
+
+  it('should untick the form and offer the upload again once a mistaken PDF is removed', async () => {
+    mockUploadCompletedForm.mockResolvedValue({ documentId: '7', verdict: 'accepted', reason: null });
+    renderStage();
+    fireEvent.change(screen.getByLabelText('Upload TA6 Property Information Form'), { target: { files: [pdf] } });
+    await waitFor(() => expect(screen.getByText('Uploaded: my-ta6.pdf')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove upload' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Yes, remove it' }));
+
+    await waitFor(() => expect(mockWithdrawCompletedForm).toHaveBeenCalledWith('tx_1', 'ta6'));
+    await waitFor(() => expect(screen.queryByText('Uploaded: my-ta6.pdf')).not.toBeInTheDocument());
+    expect(screen.getAllByText('Upload completed form')).toHaveLength(2);
   });
 
   it('should record an accepted upload on chain and show it as uploaded', async () => {

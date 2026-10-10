@@ -12,6 +12,7 @@ import type { Tenure } from '../../../../types/listing.types';
 import ExplainerCard from '../../../explainer/ExplainerCard';
 import ExplainerModal from '../../../explainer/ExplainerModal';
 import { CheckMyAnswers } from '../../../propertyInfo/CheckMyAnswers';
+import { RemoveFormUpload } from '../../../propertyInfo/RemoveFormUpload';
 import PropertyInfoExplainerContent, {
   showsLeaseholdForm,
 } from '../../../propertyInfo/PropertyInfoExplainerContent';
@@ -84,6 +85,26 @@ function offersCheck(formId: FormId, completion: FormCompletion): formId is 'ta6
   return (formId === 'ta6' || formId === 'ta10') && completion.method === 'online';
 }
 
+/**
+ * Which forms stand as uploaded PDFs, read from the seller parties' flags.
+ * Any failure reads as "none": the online-form hydration must not be lost
+ * because the summary could not be fetched.
+ */
+async function loadUploadedFlags(transactionId: string): Promise<{ ta6: boolean; ta10: boolean }> {
+  try {
+    // The raw canister record: `sellers` is `opt vec TransactionParty`, so [] | [[...]].
+    const tx = await icpService.getTransaction(transactionId);
+    const sellers = tx?.sellers?.[0] ?? [];
+    return {
+      ta6: sellers.some((p) => p.ta6FormUploaded),
+      ta10: sellers.some((p) => p.ta10FormUploaded),
+    };
+  } catch (err) {
+    logger.warn('[stage3] uploaded-form flags unavailable:', err);
+    return { ta6: false, ta10: false };
+  }
+}
+
 export function PropertyInfoStage({ stage, onComplete, transactionId, postcode, propertyAddress, tenure, readOnly = false, isEditing = false, onCancelEdit, onAfterEdit, viewerIsBuyer = false }: StageProps): ReactNode {
   const FORMS = visibleForms(tenure);
   const { toast } = useToast();
@@ -111,22 +132,26 @@ export function PropertyInfoStage({ stage, onComplete, transactionId, postcode, 
   // this once did) left a saved TA6 unticked and sent sellers off to upload
   // a PDF they had already answered. Online-form data is queryable
   // (getTA6/TA10/TA7 -> null when never saved, otherwise the record).
-  // Uploaded PDFs aren't queryable, so an upload-only completion will
-  // appear unset until the user re-uploads: acceptable trade-off for v1.
+  // An uploaded PDF is not queryable as a form, but recordFormUpload flips
+  // a per-party flag the transaction summary carries, so an upload-only
+  // completion shows as uploaded here too (and can be removed). TA7 has no
+  // flag and still appears unset after a reload.
   useEffect(() => {
     if (!transactionId) return;
     let cancelled = false;
     void (async () => {
       try {
-        const [ta6, ta10, ta7] = await Promise.all([
+        const [ta6, ta10, ta7, uploaded] = await Promise.all([
           icpService.getTA6(transactionId),
           icpService.getTA10(transactionId),
           icpService.getTA7(transactionId),
+          loadUploadedFlags(transactionId),
         ]);
         if (cancelled) return;
+        const fromUpload: FormCompletion = { method: 'uploaded', detail: 'PDF uploaded earlier' };
         setCompletions((prev) => ({
-          ta6: ta6 ? { method: 'online', detail: 'Previously saved' } : prev.ta6,
-          ta10: ta10 ? { method: 'online', detail: 'Previously saved' } : prev.ta10,
+          ta6: ta6 ? { method: 'online', detail: 'Previously saved' } : uploaded.ta6 ? fromUpload : prev.ta6,
+          ta10: ta10 ? { method: 'online', detail: 'Previously saved' } : uploaded.ta10 ? fromUpload : prev.ta10,
           ta7: ta7 ? { method: 'online', detail: 'Previously saved' } : prev.ta7,
         }));
       } catch (err) {
@@ -374,6 +399,20 @@ export function PropertyInfoStage({ stage, onComplete, transactionId, postcode, 
                   aria-label={`Upload ${form.label}`}
                 />
               </div>
+            )}
+
+            {/* A PDF uploaded by mistake can be taken back; an online form
+                has Edit instead. Hidden for buyers and read-only views. */}
+            {transactionId && !readOnly && !viewerIsBuyer && completion.method === 'uploaded' && (
+              <RemoveFormUpload
+                transactionId={transactionId}
+                formId={form.id}
+                formLabel={form.label}
+                onRemoved={() => {
+                  setCompletions((prev) => ({ ...prev, [form.id]: { method: null, detail: null } }));
+                  toast({ title: `${form.id.toUpperCase()} upload removed`, description: 'Upload another or fill the form in online.' });
+                }}
+              />
             )}
 
             {/* Advisory pre-submit check on the seller's own saved answers.

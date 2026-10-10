@@ -43,10 +43,10 @@ importers:
         version: 8.5.2(@capacitor/core@8.5.2)
       '@dfinity/agent':
         specifier: ^1.4.0
-        version: 1.4.0(@dfinity/candid@3.4.3(@dfinity/principal@3.4.3))(@dfinity/principal@3.4.3)
+        version: 1.4.0(@dfinity/candid@3.4.3(@dfinity/principal@1.4.0))(@dfinity/principal@1.4.0)
       '@dfinity/candid':
         specifier: ^3.4.3
-        version: 3.4.3(@dfinity/principal@3.4.3)
+        version: 3.4.3(@dfinity/principal@1.4.0)
       '@dfinity/vetkeys':
         specifier: 0.4.0
         version: 0.4.0(@noble/hashes@2.4.0)
@@ -54,8 +54,8 @@ importers:
         specifier: ^3.3.4
         version: 3.10.0(react-hook-form@7.73.1(react@18.3.1))
       '@propxchain/core-client':
-        specifier: 0.16.0-canary.55
-        version: 0.16.0-canary.55(@dfinity/candid@3.4.3(@dfinity/principal@3.4.3))
+        specifier: 0.18.0-canary.57
+        version: 0.18.0-canary.57(@dfinity/candid@3.4.3(@dfinity/principal@1.4.0))
       '@radix-ui/react-alert-dialog':
         specifier: ^1.1.15
         version: 1.1.15(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -996,8 +996,8 @@ packages:
   '@polka/url@1.0.0-next.29':
     resolution: {integrity: sha512-wwQAWhWSuHaag8c4q/KN/vCoeOJYshAIvMQwD4GpSb3OiZklFfvAgmj0VCBBImRpuF/aFgIRzllXlVX93Jevww==}
 
-  '@propxchain/core-client@0.16.0-canary.55':
-    resolution: {integrity: sha512-eneuC93lLnKkQOH3IJ9YkRUzpP/13WwcraByqQKi77shTea3ocE79eL3NhffgAWFb8rrOKGOlEUuanSAa9aQeQ==}
+  '@propxchain/core-client@0.18.0-canary.57':
+    resolution: {integrity: sha512-qwhZ4NAVoKC/U3e1W6uvMHoxmW+3ddC+nMtE+DHy35ceHuIUhp++DGrBbhedhdRODNe75hlUgyYXf1E9rgDj3g==}
     engines: {node: '>=20'}
 
   '@protobufjs/aspromise@1.1.2':
@@ -3748,9 +3748,9 @@ snapshots:
     dependencies:
       '@capacitor/core': 8.5.2
 
-  '@dfinity/agent@1.4.0(@dfinity/candid@3.4.3(@dfinity/principal@3.4.3))(@dfinity/principal@1.4.0)':
+  '@dfinity/agent@1.4.0(@dfinity/candid@3.4.3(@dfinity/principal@1.4.0))(@dfinity/principal@1.4.0)':
     dependencies:
-      '@dfinity/candid': 3.4.3(@dfinity/principal@3.4.3)
+      '@dfinity/candid': 3.4.3(@dfinity/principal@1.4.0)
       '@dfinity/principal': 1.4.0
       '@noble/curves': 1.9.7
       '@noble/hashes': 1.8.0
@@ -3759,24 +3759,17 @@ snapshots:
       buffer: 6.0.3
       simple-cbor: 0.4.1
 
-  '@dfinity/agent@1.4.0(@dfinity/candid@3.4.3(@dfinity/principal@3.4.3))(@dfinity/principal@3.4.3)':
+  '@dfinity/agent@3.4.3(@dfinity/candid@3.4.3(@dfinity/principal@1.4.0))(@dfinity/principal@3.4.3)(@noble/hashes@2.4.0)':
     dependencies:
-      '@dfinity/candid': 3.4.3(@dfinity/principal@3.4.3)
-      '@dfinity/principal': 3.4.3
-      '@noble/curves': 1.9.7
-      '@noble/hashes': 1.8.0
-      base64-arraybuffer: 0.2.0
-      borc: 2.1.2
-      buffer: 6.0.3
-      simple-cbor: 0.4.1
-
-  '@dfinity/agent@3.4.3(@dfinity/candid@3.4.3(@dfinity/principal@3.4.3))(@dfinity/principal@3.4.3)(@noble/hashes@2.4.0)':
-    dependencies:
-      '@dfinity/candid': 3.4.3(@dfinity/principal@3.4.3)
+      '@dfinity/candid': 3.4.3(@dfinity/principal@1.4.0)
       '@dfinity/cbor': 0.2.3
       '@dfinity/principal': 3.4.3
       '@noble/curves': 1.9.7
       '@noble/hashes': 2.4.0
+
+  '@dfinity/candid@3.4.3(@dfinity/principal@1.4.0)':
+    dependencies:
+      '@dfinity/principal': 1.4.0
 
   '@dfinity/candid@3.4.3(@dfinity/principal@3.4.3)':
     dependencies:
@@ -3798,7 +3791,7 @@ snapshots:
 
   '@dfinity/vetkeys@0.4.0(@noble/hashes@2.4.0)':
     dependencies:
-      '@dfinity/agent': 3.4.3(@dfinity/candid@3.4.3(@dfinity/principal@3.4.3))(@dfinity/principal@3.4.3)(@noble/hashes@2.4.0)
+      '@dfinity/agent': 3.4.3(@dfinity/candid@3.4.3(@dfinity/principal@1.4.0))(@dfinity/principal@3.4.3)(@noble/hashes@2.4.0)
       '@dfinity/candid': 3.4.3(@dfinity/principal@3.4.3)
       '@dfinity/principal': 3.4.3
       idb-keyval: 6.2.5
@@ -4429,9 +4422,9 @@ snapshots:
 
   '@polka/url@1.0.0-next.29': {}
 
-  '@propxchain/core-client@0.16.0-canary.55(@dfinity/candid@3.4.3(@dfinity/principal@3.4.3))':
+  '@propxchain/core-client@0.18.0-canary.57(@dfinity/candid@3.4.3(@dfinity/principal@1.4.0))':
     dependencies:
-      '@dfinity/agent': 1.4.0(@dfinity/candid@3.4.3(@dfinity/principal@3.4.3))(@dfinity/principal@1.4.0)
+      '@dfinity/agent': 1.4.0(@dfinity/candid@3.4.3(@dfinity/principal@1.4.0))(@dfinity/principal@1.4.0)
       '@dfinity/certificate-verification': 4.0.0(@icp-sdk/core@6.1.0)
       '@dfinity/principal': 1.4.0
       '@icp-sdk/auth': 7.1.0(@icp-sdk/core@6.1.0)
