@@ -20,6 +20,7 @@ import type { FormCheckForm, FormCheckResult } from '@/services/formCheck.servic
 import { logger } from '@/utils/logger';
 
 import { CheckMyAnswersPanel } from './CheckMyAnswersPanel';
+import { PaperworkFindings } from './PaperworkFindings';
 import type { FormNavState } from './CheckMyAnswersPanel';
 
 export interface CheckMyAnswersProps {
@@ -113,6 +114,9 @@ export function CheckMyAnswers({ transactionId, form, navState }: CheckMyAnswers
       {result !== null && (
         <CheckMyAnswersPanel transactionId={transactionId} result={result} navState={navState} />
       )}
+      {/* The consents scan's stored reading of each TA6 attachment, beside the
+          answers check. Only the TA6 has attachment slots the scan covers. */}
+      {result !== null && form === 'ta6' && <PaperworkFindings transactionId={transactionId} />}
     </div>
   );
 }

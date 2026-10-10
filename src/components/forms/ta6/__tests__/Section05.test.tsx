@@ -32,6 +32,33 @@ function uploader(classification: DocClassification | null) {
   });
 }
 
+describe('Section05 consents context', () => {
+  it('should upload a 5.2 attachment with the row kind, link and the ticked changes', async () => {
+    // Arrange
+    const uploadFile = uploader(null);
+    const value: TA6Section5Alterations = {
+      ...emptySection5(),
+      q5_1Alterations: { ...emptySection5().q5_1Alterations, extension: true, loftConversion: true },
+      q5_2Documents: [row({ status: 'attached', documentId: null }, { kind: 'planning-permission', relatesTo: 'extension' })],
+    };
+    render(<Section05 value={value} onChange={() => {}} readOnly={false} uploadFile={uploadFile} />);
+    const file = new File(['pdf'], 'decision.pdf', { type: 'application/pdf' });
+
+    // Act
+    fireEvent.change(screen.getByLabelText('5.2.1 attachment'), { target: { files: [file] } });
+
+    // Assert
+    await waitFor(() =>
+      expect(uploadFile).toHaveBeenCalledWith(file, {
+        section: '5.2',
+        kind: 'planning-permission',
+        relatesTo: 'extension',
+        ticked: ['extension', 'loft-conversion'],
+      }),
+    );
+  });
+});
+
 describe('Section05', () => {
   it('should render the 5.1 tick-set, 5.2 documents block, response questions and the solar toggle', () => {
     // Arrange / Act

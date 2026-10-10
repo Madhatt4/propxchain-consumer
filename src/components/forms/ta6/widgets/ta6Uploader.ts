@@ -15,7 +15,7 @@
 import { supabase } from '../../../../lib/supabase';
 import { onChainFileName, storageObjectName } from '../../../../lib/onChainDocument';
 import { classifyDocument, describeClassification } from '../../../../services/docClassify.service';
-import type { DocClassification } from '../../../../services/docClassify.service';
+import type { DocClassification, DocFinding, DocScanContext } from '../../../../services/docClassify.service';
 import { icpService } from '../../../../services/icp.service';
 import { generateFileHash } from '../../../../utils/hashGenerator';
 
@@ -36,6 +36,23 @@ export interface TA6Upload {
   advisory: Promise<string | null>;
   /** The classification behind the line, for a slot that can act on it (5.2 prefills its kind). */
   classification: Promise<DocClassification | null>;
+  /**
+   * The consents scan's findings for a slot that sent a context: the list for
+   * a readable document, null when unreadable or when the scan was
+   * unavailable. Settles with the classification.
+   */
+  findings?: Promise<DocFinding[] | null>;
+  /**
+   * Re-run the scan on the same object with a changed context (the seller
+   * picked a different kind or linked the row to another change). The text is
+   * re-extracted server-side; nothing was kept from the first pass.
+   */
+  rescan?: (context: DocScanContext) => Promise<DocFinding[] | null>;
+}
+
+/** The findings, or null when the scan did not run or could not read the file. */
+function findingsOf(classification: DocClassification | null): DocFinding[] | null {
+  return classification?.findings ?? null;
 }
 
 /**
@@ -43,8 +60,10 @@ export interface TA6Upload {
  * user-facing message on session, upload, or canister failure — DocumentSlot
  * surfaces the message inline.
  */
-export function makeTa6Uploader(transactionId: string): (file: File) => Promise<TA6Upload> {
-  return async (file: File): Promise<TA6Upload> => {
+export function makeTa6Uploader(
+  transactionId: string,
+): (file: File, context?: DocScanContext) => Promise<TA6Upload> {
+  return async (file: File, context?: DocScanContext): Promise<TA6Upload> => {
     const contentType = file.type || 'application/octet-stream';
     await requireSession();
     const fileHash = await generateFileHash(file);
@@ -53,9 +72,12 @@ export function makeTa6Uploader(transactionId: string): (file: File) => Promise<
     const documentId = await registerProof(file, fileHash, contentType, storageLocation, transactionId);
     icpService.emitDocumentUploadedEvent(transactionId, TA6_ATTACHMENT_DOC_TYPE, fileHash);
     // classifyDocument never rejects: every failure is a null.
-    const classification = classifyDocument(transactionId, path);
+    const classification = classifyDocument(transactionId, path, context);
     const advisory = classification.then((c) => (c ? describeClassification(c) : null));
-    return { documentId, advisory, classification };
+    const findings = classification.then(findingsOf);
+    const rescan = (next: DocScanContext): Promise<DocFinding[] | null> =>
+      classifyDocument(transactionId, path, next).then(findingsOf);
+    return { documentId, advisory, classification, findings, rescan };
   };
 }
 

@@ -9,7 +9,7 @@ import {
   TA6_ALTERATION_KIND_LABELS,
   tickedAlterationKinds,
 } from '../../../types/ta6.alterationDocument';
-import type { DocClassification } from '../../../services/docClassify.service';
+import type { DocClassification, DocScanContext } from '../../../services/docClassify.service';
 import type {
   TA6AlterationDocument,
   TA6AlterationDocumentKind,
@@ -52,6 +52,10 @@ export const Section05DocumentRow: React.FC<Section05DocumentRowProps> = ({
 
   const setKind = (kind: TA6AlterationDocumentKind | null): void =>
     onChange({ ...value, kind, kindDetails: kind === 'other' ? value.kindDetails : null });
+
+  // What the consents scan needs to know about this row. Rebuilt on every
+  // render, so a kind or link change reaches the slot and re-runs the scan.
+  const scanContext: DocScanContext = { section: '5.2', kind: value.kind, relatesTo: value.relatesTo, ticked };
 
   const prefill = (classification: DocClassification): void => {
     if (value.kind !== null || classification.confidence < DOC_TYPE_CONFIDENCE_AT) return;
@@ -110,6 +114,7 @@ export const Section05DocumentRow: React.FC<Section05DocumentRowProps> = ({
         readOnly={readOnly}
         onUpload={uploadFile}
         onClassified={prefill}
+        scanContext={scanContext}
       />
     </div>
   );

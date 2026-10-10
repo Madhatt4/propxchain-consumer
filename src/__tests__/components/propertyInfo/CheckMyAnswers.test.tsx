@@ -16,6 +16,8 @@ vi.mock('@/services/formCheck.service', async (importOriginal) => {
   return { ...actual, checkForm: (...args: unknown[]) => mockCheckForm(...args) };
 });
 vi.mock('@/utils/logger', () => ({ logger: { warn: vi.fn(), error: vi.fn(), info: vi.fn(), debug: vi.fn() } }));
+// The paperwork list under the panel reads its own table; here it has nothing to say.
+vi.mock('@/services/documentFindings.service', () => ({ loadPaperworkFindings: vi.fn().mockResolvedValue([]) }));
 
 import { CheckMyAnswers } from '../../../components/propertyInfo/CheckMyAnswers';
 import { FormCheckError, type FormCheckResult } from '../../../services/formCheck.service';
