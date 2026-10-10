@@ -3,7 +3,8 @@
 
 /**
  * Reservation saga — multi-step orchestrator for plot reservations.
- * Steps: hold for the buyer → (ICP TODO) → snapshot → hand back the plot's code.
+ * Steps: hold for the buyer → (ICP TODO) → snapshot → hand back the plot's
+ * code and email it to the buyer.
  *
  * The buyer claims the plot by entering its invite code on the Join screen
  * (plotClaim.service). While pending, only the email named here can claim it.
@@ -91,6 +92,23 @@ async function getInviteCode(plotId: string): Promise<string> {
   return plot.invite_code;
 }
 
+/**
+ * Email the buyer their code (send-plot-invite edge function). The server reads
+ * the address and code from the plot, so only the buyer's name is sent. Never
+ * throws: a failed email leaves the hold in place and the developer still has
+ * the code to pass on.
+ */
+async function emailBuyer(plotId: string, buyerName: string): Promise<boolean> {
+  try {
+    const { data, error } = await supabase.functions.invoke<{ ok?: boolean }>('send-plot-invite', {
+      body: { plot_id: plotId, buyer_name: buyerName.trim() },
+    });
+    return !error && data?.ok === true;
+  } catch {
+    return false;
+  }
+}
+
 /** Release a reservation, returning the plot to available status. */
 async function releaseReservationRow(plotId: string): Promise<void> {
   // TODO: Write canister audit event for the release
@@ -126,8 +144,8 @@ export const reservationService = {
   async reservePlot(
     input: ReservationInput,
     onProgress: (progress: ReservationProgress) => void,
-  ): Promise<{ inviteCode: string }> {
-    const { plotId, buyerEmail } = input;
+  ): Promise<{ inviteCode: string; emailSent: boolean }> {
+    const { plotId, buyerName, buyerEmail } = input;
 
     // Step 1: Set pending
     onProgress({ step: 1, status: 'pending' });
@@ -159,12 +177,11 @@ export const reservationService = {
       throw err;
     }
 
-    // Step 4: The plot's code, for the developer to give the buyer
+    // Step 4: The plot's code, emailed to the buyer and shown to the developer
     onProgress({ step: 4, status: 'pending' });
+    let inviteCode: string;
     try {
-      const inviteCode = await getInviteCode(plotId);
-      onProgress({ step: 4, status: 'success' });
-      return { inviteCode };
+      inviteCode = await getInviteCode(plotId);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Unknown error';
       onProgress({ step: 4, status: 'failed', error: msg });
@@ -172,5 +189,8 @@ export const reservationService = {
       await rollbackPending(plotId);
       throw err;
     }
+    const emailSent = await emailBuyer(plotId, buyerName);
+    onProgress({ step: 4, status: 'success' });
+    return { inviteCode, emailSent };
   },
 };
