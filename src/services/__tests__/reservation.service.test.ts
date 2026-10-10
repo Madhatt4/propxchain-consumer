@@ -19,7 +19,6 @@ function builder(table: string): Record<string, unknown> {
   const call: Call = { table, op: '', filters: [] };
   calls.push(call);
   const result = (): { data: unknown; error: unknown } => {
-    if (call.op === 'upsert') return { data: null, error: snapshotError.value };
     if (call.op === 'update' && call.filters.some(([k, v]) => k === 'reservation_status' && v === 'available')) {
       return { data: [{ id: 'plot-1' }], error: null }; // setPending succeeds
     }
@@ -27,7 +26,6 @@ function builder(table: string): Record<string, unknown> {
   };
   const b: Record<string, unknown> = {
     update: (payload: unknown) => ((call.op = 'update'), (call.payload = payload), b),
-    upsert: (payload: unknown) => ((call.op = 'upsert'), (call.payload = payload), b),
     insert: (payload: unknown) => ((call.op = 'insert'), (call.payload = payload), b),
     eq: (k: string, v: unknown) => (call.filters.push([k, v]), b),
     is: (k: string, v: unknown) => (call.filters.push([k, v]), b),
@@ -37,9 +35,15 @@ function builder(table: string): Record<string, unknown> {
   return b;
 }
 
+const rpc = vi.fn(async (fn: string, args: unknown) => {
+  calls.push({ table: `rpc:${fn}`, op: 'rpc', payload: args, filters: [] });
+  return { data: 'snapshot-1', error: snapshotError.value };
+});
+
 vi.mock('@/lib/supabase', () => ({
   supabase: {
     from: (table: string) => builder(table),
+    rpc: (fn: string, args: unknown) => rpc(fn, args),
     auth: { getUser: async () => ({ data: { user: { id: 'dev-1' } } }) },
   },
 }));
@@ -49,14 +53,10 @@ vi.mock('@/services/plots.service', () => ({
     getById: async () => ({ id: 'plot-1-abcdef', plot_number: '7', plot_type_id: null, invite_code: plotCode.value }),
   },
 }));
-vi.mock('@/services/plot-types.service', () => ({ plotTypesService: { getById: vi.fn() } }));
-vi.mock('@/services/sites.service', () => ({
-  sitesService: { getById: async () => ({ name: 'Site', address: '1 Road' }) },
-}));
 
 import { reservationService } from '../reservation.service';
 
-const INPUT = { plotId: 'plot-1', siteId: 'site-1', buyerName: 'B', buyerEmail: ' Buyer@Example.com ' };
+const INPUT = { plotId: 'plot-1', buyerName: 'B', buyerEmail: ' Buyer@Example.com ' };
 
 function rollbacks(): Call[] {
   return calls.filter(
@@ -95,6 +95,9 @@ describe('reservationService.reservePlot rollback', () => {
     const result = await reservationService.reservePlot(INPUT, vi.fn());
 
     expect(result.inviteCode).toBe('TX-ABCD-EFGH');
+    // The server builds the snapshot, so a plot reserved before (whose old
+    // snapshot is kept) can be reserved again.
+    expect(rpc).toHaveBeenCalledWith('snapshot_plot_reservation', { p_plot_id: 'plot-1' });
     const hold = calls.find((c) => c.table === 'plots' && c.op === 'update');
     expect(hold?.payload).toEqual({ reservation_status: 'pending', reserved_for_email: 'buyer@example.com' });
     expect(rollbacks()).toHaveLength(0);
