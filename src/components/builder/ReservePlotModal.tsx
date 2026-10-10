@@ -199,7 +199,7 @@ export default function ReservePlotModal({
 
       try {
         const result = await reservationService.reservePlot(
-          { plotId, siteId, buyerName, buyerEmail },
+          { plotId, buyerName, buyerEmail },
           handleProgress,
         );
         setInviteCode(result.inviteCode);
@@ -208,7 +208,7 @@ export default function ReservePlotModal({
         setPhase('failed');
       }
     },
-    [plotId, siteId],
+    [plotId],
   );
 
   const handleFormComplete = useCallback(

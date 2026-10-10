@@ -10,13 +10,10 @@
  */
 
 import { supabase } from '@/lib/supabase';
-import { plotsService, type Plot } from '@/services/plots.service';
-import { plotTypesService } from '@/services/plot-types.service';
-import { sitesService } from '@/services/sites.service';
+import { plotsService } from '@/services/plots.service';
 
 export interface ReservationInput {
   plotId: string;
-  siteId: string;
   buyerName: string;
   buyerEmail: string;
 }
@@ -72,45 +69,13 @@ async function rollbackPending(plotId: string): Promise<void> {
   }
 }
 
-/** Step 3: Create a frozen snapshot of the listing. */
-async function createSnapshot(
-  plot: Plot,
-  siteId: string,
-): Promise<void> {
-  const site = await sitesService.getById(siteId);
-
-  const plotType = plot.plot_type_id
-    ? await plotTypesService.getById(plot.plot_type_id)
-    : null;
-
-  // TODO: replace placeholder transaction_id with real ICP tx id
-  const transactionId = `pending_${plot.id.slice(0, 8)}`;
-
-  const { error } = await supabase
-    .from('plot_listing_snapshots')
-    .upsert({
-      plot_id: plot.id,
-      transaction_id: transactionId,
-      plot_number: plot.plot_number,
-      sale_price_pence: plot.sale_price_pence,
-      description_addendum: plot.description_addendum,
-      expected_practical_completion: plot.expected_practical_completion,
-      plot_specific_image_refs: plot.plot_specific_image_refs,
-      features_addendum: plot.features_addendum,
-      plot_type_name: plotType?.name ?? null,
-      plot_type_description: plotType?.description ?? null,
-      plot_type_bedrooms: plotType?.bedrooms ?? null,
-      plot_type_bathrooms: plotType?.bathrooms ?? null,
-      plot_type_internal_area_sqft: plotType?.internal_area_sqft ?? null,
-      plot_type_epc_rating: plotType?.epc_rating ?? null,
-      plot_type_floor_plan_image_refs: plotType?.floor_plan_image_refs ?? null,
-      plot_type_exterior_image_refs: plotType?.exterior_image_refs ?? null,
-      plot_type_interior_image_refs: plotType?.interior_image_refs ?? null,
-      plot_type_features: plotType?.features ?? null,
-      site_name: site.name,
-      site_address: site.address,
-      developer_name: null, // TODO: fetch org name once org service exists
-    }, { onConflict: 'plot_id' });
+/**
+ * Step 3: Freeze the listing as it stands for this reservation. The server
+ * copies it from the plot, plot type, site and developer, and replaces an
+ * earlier attempt nobody claimed (migration 20261010_plot_snapshot_per_reservation).
+ */
+async function createSnapshot(plotId: string): Promise<void> {
+  const { error } = await supabase.rpc('snapshot_plot_reservation', { p_plot_id: plotId });
 
   if (error) {
     throw new Error(`Failed to create snapshot: ${error.message}`);
@@ -162,7 +127,7 @@ export const reservationService = {
     input: ReservationInput,
     onProgress: (progress: ReservationProgress) => void,
   ): Promise<{ inviteCode: string }> {
-    const { plotId, siteId, buyerEmail } = input;
+    const { plotId, buyerEmail } = input;
 
     // Step 1: Set pending
     onProgress({ step: 1, status: 'pending' });
@@ -184,8 +149,7 @@ export const reservationService = {
     // Step 3: Create snapshot
     onProgress({ step: 3, status: 'pending' });
     try {
-      const plot = await plotsService.getById(plotId);
-      await createSnapshot(plot, siteId);
+      await createSnapshot(plotId);
       onProgress({ step: 3, status: 'success' });
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Unknown error';
