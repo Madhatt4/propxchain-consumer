@@ -2,7 +2,7 @@
 // Copyright (C) 2026 PropXchain Ltd
 
 import { describe, expect, it } from 'vitest';
-import { isSellerParty, removeActionFor, type RemovableDeal } from '../dealRemoval';
+import { isDealParty, isSellerParty, removeActionFor, type RemovableDeal } from '../dealRemoval';
 
 const party = (principal: string): { principal: string } => ({ principal });
 
@@ -76,5 +76,19 @@ describe('isSellerParty', () => {
     expect(isSellerParty(withDelegate, 'AGENT')).toBe(false);
     expect(isSellerParty(withDelegate, 'DELEGATE')).toBe(false);
     expect(isSellerParty(withDelegate, undefined)).toBe(false);
+  });
+});
+
+describe('isDealParty', () => {
+  it('should count the buyer, the seller and a co-seller as parties', () => {
+    expect(isDealParty(deal, 'BUYER')).toBe(true);
+    expect(isDealParty(deal, 'SELLER')).toBe(true);
+    expect(isDealParty(deal, 'CO_SELLER')).toBe(true);
+  });
+
+  it('should not count a creator with no slot, or no principal', () => {
+    expect(isDealParty(deal, 'AGENT')).toBe(false);
+    expect(isDealParty(deal, 'CONVEYANCER')).toBe(false);
+    expect(isDealParty(deal, undefined)).toBe(false);
   });
 });

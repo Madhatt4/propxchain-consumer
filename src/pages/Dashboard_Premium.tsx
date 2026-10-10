@@ -18,7 +18,7 @@ import { LandRegistryAddress, LAND_REGISTRY_URLS } from '../services/landRegistr
 import { getPartyCountsForTransaction, getRequiredDocumentsForRole } from '../constants/documentTypes';
 import PortalShell from '../components/navigation/PortalShell';
 import TransactionListCard from '../components/dashboard/TransactionListCard';
-import { isSellerParty, removeActionFor } from '../lib/dealRemoval';
+import { isDealParty, isSellerParty, removeActionFor } from '../lib/dealRemoval';
 import { Link2, Plus } from 'lucide-react';
 
 import { usePortalSections } from '../components/navigation/usePortalSections';
@@ -407,8 +407,11 @@ const Dashboard_PremiumContent: React.FC = () => {
   // Handle transaction card click — navigate straight to the flow page
   // (archives the in-dashboard Seller Dashboard detail view)
   const handleTransactionClick = async (tx: Transaction) => {
-    // Conveyancers work a matter in their own screen; everyone else opens the flow.
-    navigate(isConveyancer ? `/conveyancer?tx=${encodeURIComponent(tx.id)}` : `/transaction/${tx.id}/flow`);
+    // Conveyancers work a matter in their own screen; everyone else opens the
+    // flow. A conveyancer who is the buyer or seller on this deal is a party
+    // here, so they get the flow too.
+    const asConveyancer = isConveyancer && !isDealParty(tx, principalId);
+    navigate(asConveyancer ? `/conveyancer?tx=${encodeURIComponent(tx.id)}` : `/transaction/${tx.id}/flow`);
   };
 
   // Helper function to load documents (can be called to refresh)

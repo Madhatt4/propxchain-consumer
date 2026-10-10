@@ -46,6 +46,16 @@ export function isSellerParty(tx: RemovableDeal, principal: string | null | unde
   return dealSideOf(partiesOf(tx), principal) === 'seller';
 }
 
+/**
+ * True for anyone holding a buyer or seller slot, or on either list. A
+ * conveyancer who is also buying or selling a home of their own opens that
+ * deal as a party, not on the conveyancer matter screen.
+ */
+export function isDealParty(tx: RemovableDeal, principal: string | null | undefined): boolean {
+  if (!principal) return false;
+  return dealSideOf(partiesOf(tx), principal) !== 'other';
+}
+
 /** Which removal the canister will accept from `principal` on this deal. */
 export function removeActionFor(tx: RemovableDeal, principal: string | null | undefined): RemoveAction {
   if (!principal) return 'none';
