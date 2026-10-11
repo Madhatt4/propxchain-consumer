@@ -7,7 +7,7 @@ import type { SolicitorRecord } from '../../../types/solicitor.types';
 const mockSolicitor: SolicitorRecord = {
   principal: Principal.fromText('aaaaa-aa'),
   name: 'Jane Smith',
-  email: 'jane@smithpartners.co.uk',
+  email: 'jane@example.com',
   firmName: 'Smith & Partners LLP',
   regulatoryBody: 'sra',
   regNumber: '654321',

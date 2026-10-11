@@ -226,7 +226,7 @@ export function FreeReportSection(): JSX.Element {
                 </div>
                 <div>
                   <label htmlFor="hmr-email" className="sr-only">Email address</label>
-                  <input id="hmr-email" type="email" autoComplete="email" value={form.email} onChange={(e) => set('email', e.target.value)} placeholder="you@email.com" className={inputCls} />
+                  <input id="hmr-email" type="email" autoComplete="email" value={form.email} onChange={(e) => set('email', e.target.value)} placeholder="you@example.com" className={inputCls} />
                 </div>
                 <div>
                   <label htmlFor="hmr-house" className="sr-only">House name or number</label>

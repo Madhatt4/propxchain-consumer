@@ -111,7 +111,7 @@ export default function AppointSolicitorForm({
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="e.g. jane@smithpartners.co.uk"
+          placeholder="e.g. jane@example.com"
           className={`mt-1 ${inputClasses}`}
         />
         {!isEmailValid && (

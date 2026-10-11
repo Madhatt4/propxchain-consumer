@@ -484,7 +484,7 @@ const RegistrationView: React.FC<RegistrationViewProps> = ({ regForm, setRegForm
           value={regForm.email}
           onChange={(e) => setRegForm((p) => ({ ...p, email: e.target.value }))}
           autoComplete="email"
-          placeholder="you@firm.co.uk"
+          placeholder="you@example.com"
           className="mt-2 w-full rounded-md border border-[#E5E7EB] bg-white px-4 py-3 font-[DM_Sans] text-base text-[#1A1A1A] focus:border-[#0D9488] focus:outline-none focus:ring-1 focus:ring-[#0D9488] dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100"
         />
       </div>

@@ -60,6 +60,16 @@ const IC_SYSTEM_CANISTERS = new Set([
   'ryjl3-tyaaa-aaaaa-aaaba-cai', // NNS ICP ledger
 ]);
 
+// Example and placeholder addresses must use the reserved example.com domain:
+// a made-up name at a real-looking firm's domain can be someone's real inbox.
+// Real mailboxes the product genuinely emails or shows are listed by domain.
+const EMAIL = /[A-Za-z0-9._%+-]+@([A-Za-z0-9.-]+\.[a-z]{2,})/g;
+const ALLOWED_EMAIL_DOMAINS = new Set([
+  'example.com',
+  'propxchain.com', // our own mailboxes
+  'optimus-move.co.uk', // survey partner's referral inbox, shown to users
+]);
+
 describe('identities in the shipped bundle', () => {
   it('should not hard-code any user or controller principal in production source', () => {
     // Arrange / Act
@@ -80,6 +90,17 @@ describe('identities in the shipped bundle', () => {
   it('should not hard-code a PropXchain canister id in production source', () => {
     // Arrange / Act
     const found = offenders(CANISTER_ID).filter((hit) => !IC_SYSTEM_CANISTERS.has(hit.split(': ')[1]));
+
+    // Assert
+    expect(found).toEqual([]);
+  }, SCAN_TIMEOUT_MS);
+
+  it('should only use example.com or known real mailboxes for email addresses', () => {
+    // Arrange / Act
+    const found = offenders(EMAIL).filter((hit) => {
+      const domain = hit.split('@').pop()?.toLowerCase() ?? '';
+      return !ALLOWED_EMAIL_DOMAINS.has(domain);
+    });
 
     // Assert
     expect(found).toEqual([]);

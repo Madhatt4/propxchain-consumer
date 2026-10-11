@@ -93,7 +93,7 @@ const StepDetails: React.FC<Props> = ({ form, updateForm, onNext, onBack }) => {
               type="email"
               value={form.solicitorEmail}
               onChange={(e) => updateForm({ solicitorEmail: e.target.value })}
-              placeholder="e.g. jane@smithpartners.co.uk"
+              placeholder="e.g. jane@example.com"
               className="mt-1 w-full rounded-md border border-[var(--border-color)] bg-[var(--bg-card)] px-4 py-3 font-[DM_Sans] text-sm text-[var(--text-main)] focus:border-[#0D9488] focus:outline-none focus:ring-1 focus:ring-[#0D9488]"
             />
             {!isEmailValid && (
