@@ -24,6 +24,22 @@ const config: CapacitorConfig = {
   android: {
     allowMixedContent: false,
   },
+  plugins: {
+    FirebaseMessaging: {
+      presentationOptions: ['alert', 'sound'],
+    },
+  },
+  // Avoids a Swift Package Manager identity clash between the Firebase plugin
+  // and firebase-ios-sdk (capawesome-team/capacitor-firebase#959).
+  experimental: {
+    ios: {
+      spm: {
+        packageOptions: {
+          '@capacitor-firebase/messaging': { symlink: true },
+        },
+      },
+    },
+  },
 };
 
 export default config;

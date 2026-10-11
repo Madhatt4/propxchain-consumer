@@ -1,0 +1,160 @@
+name: iOS TestFlight
+
+# Builds the iPhone app on a macOS runner, signs it, and uploads it to
+# TestFlight. Run it from the Actions tab ("Run workflow").
+#
+# Signing is Apple cloud signing: the App Store Connect API key below lets
+# xcodebuild create and fetch the distribution certificate and provisioning
+# profile itself, so no certificate or profile is stored in this repo or in
+# secrets. The build number is the workflow run number, so every upload is
+# unique and always goes up.
+#
+# Secrets (set once, see the setup notes in the mobile-app thread):
+#   ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8  App Store Connect API key (Admin)
+#   APPLE_TEAM_ID                          10-character team id
+#   VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY and the worker URLs, shared
+#   with deploy-frontend.yml.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-testflight
+  cancel-in-progress: false
+
+jobs:
+  testflight:
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Check signing secrets and Firebase config are present
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          fail=0
+          for name in ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_P8 APPLE_TEAM_ID; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Secret $name is missing. Add it under Settings, Secrets and variables, Actions."
+              fail=1
+            fi
+          done
+          if [ ! -f ios/App/App/GoogleService-Info.plist ]; then
+            echo "::error::ios/App/App/GoogleService-Info.plist is missing. Download it from the Firebase iOS app and commit it."
+            fail=1
+          fi
+          exit $fail
+
+      - name: Select Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5
+
+      - name: Setup Node
+        # The Capacitor 8 CLI needs Node 22.
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build the web bundle for the app
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_RIGHTMOVE_WORKER_URL: ${{ secrets.VITE_RIGHTMOVE_WORKER_URL }}
+          VITE_PAYMENT_WORKER_URL: ${{ secrets.VITE_PAYMENT_WORKER_URL }}
+          VITE_ONESEARCH_WORKER_URL: ${{ secrets.VITE_ONESEARCH_WORKER_URL }}
+          VITE_GROUNDSURE_WORKER_URL: ${{ secrets.VITE_GROUNDSURE_WORKER_URL }}
+          VITE_AML_WORKER_URL: ${{ secrets.VITE_AML_WORKER_URL }}
+          VITE_TMGROUP_WORKER_URL: ${{ secrets.VITE_TMGROUP_WORKER_URL }}
+          VITE_MAINTENANCE_MODE: ${{ vars.VITE_MAINTENANCE_MODE }}
+          VITE_TITLE_WORKER_URL: ${{ vars.VITE_TITLE_WORKER_URL }}
+          VITE_CARTO_BASEMAPS_KEY: ${{ vars.VITE_CARTO_BASEMAPS_KEY }}
+          VITE_ENTITLEMENT_CANISTER_ID: ${{ vars.VITE_ENTITLEMENT_CANISTER_ID }}
+          VITE_VMC_PROXY_URL: ${{ vars.VITE_VMC_PROXY_URL }}
+        run: |
+          if [ -z "$VITE_SUPABASE_URL" ] || [ -z "$VITE_SUPABASE_ANON_KEY" ]; then
+            echo "::error::Supabase env vars not visible to the build"
+            exit 1
+          fi
+          pnpm build:mobile
+          if ! grep -qrlF "$VITE_SUPABASE_URL" dist-mobile/assets/; then
+            echo "::error::Supabase URL not baked into dist-mobile, env substitution failed"
+            exit 1
+          fi
+
+      - name: Copy the bundle into the iOS project
+        run: pnpm exec cap sync ios
+
+      - name: Write the App Store Connect key
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          key_path="$RUNNER_TEMP/AuthKey_${ASC_KEY_ID}.p8"
+          printf '%s\n' "$ASC_KEY_P8" > "$key_path"
+          chmod 600 "$key_path"
+          echo "ASC_KEY_PATH=$key_path" >> "$GITHUB_ENV"
+
+      - name: Archive
+        run: |
+          xcodebuild archive \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$ASC_KEY_PATH" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
+            CURRENT_PROJECT_VERSION="${{ github.run_number }}"
+
+      - name: Sign and upload to TestFlight
+        run: |
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>${APPLE_TEAM_ID}</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>manageAppVersionAndBuildNumber</key><false/>
+            <key>uploadSymbols</key><true/>
+          </dict>
+          </plist>
+          EOF
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -exportPath "$RUNNER_TEMP/export" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$ASC_KEY_PATH" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+          echo "Uploaded build ${{ github.run_number }}. It shows in TestFlight once Apple finishes processing it."
+
+      - name: Remove the key
+        if: always()
+        run: rm -f "$RUNNER_TEMP"/AuthKey_*.p8
