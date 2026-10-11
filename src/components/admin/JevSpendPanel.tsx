@@ -107,7 +107,7 @@ export function JevSpendPanel(): ReactElement {
             </tbody>
           </table>
           <p className="mt-2 text-xs text-muted-foreground">
-            Estimated from tokens at TypeSafe&apos;s observed rate (about $0.037 per million), in US dollars. TypeSafe
+            Estimated from tokens at TypeSafe&apos;s observed rate (about $0.037 per million tokens), in US dollars. TypeSafe
             bills by token and does not return a charge per call; the console is the exact figure.
           </p>
         </CardContent>
