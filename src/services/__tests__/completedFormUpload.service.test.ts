@@ -72,20 +72,40 @@ function classified(docType: string, confidence = 0.95): DocClassification {
 
 describe('judgeCompletedForm', () => {
   it('should accept a file that reads as the form it was handed as', () => {
-    expect(judgeCompletedForm('ta6', classified('ta6_form'))).toEqual({ verdict: 'accepted', reason: null });
-    expect(judgeCompletedForm('ta10', classified('ta10_form'))).toEqual({ verdict: 'accepted', reason: null });
-    expect(judgeCompletedForm('ta7', classified('ta7_form'))).toEqual({ verdict: 'accepted', reason: null });
+    expect(judgeCompletedForm('ta6', classified('ta6_form'))).toEqual({
+      verdict: 'accepted',
+      reason: null,
+      check: 'AI check: reads as a completed TA6 form.',
+    });
+    expect(judgeCompletedForm('ta10', classified('ta10_form')).verdict).toBe('accepted');
+    expect(judgeCompletedForm('ta7', classified('ta7_form')).verdict).toBe('accepted');
+  });
+
+  it('should say so when an accepted form probably is not about this property', () => {
+    expect(judgeCompletedForm('ta6', { ...classified('ta6_form'), matchesProperty: 0.07 }).check).toBe(
+      'AI check: reads as a completed TA6 form. It may not be for this property.',
+    );
+  });
+
+  it('should always give the card a line to show, even when unsure', () => {
+    expect(judgeCompletedForm('ta6', null).check).toBe(
+      "AI check: we couldn't check this file right now. Your conveyancer will check it.",
+    );
+    expect(judgeCompletedForm('ta6', { ...classified('other', 0), unreadable: true }).check).toBe(
+      "AI check: we couldn't read the text in this file. Your conveyancer will check it.",
+    );
   });
 
   it('should reject a file that confidently reads as something else', () => {
     expect(judgeCompletedForm('ta6', classified('epc'))).toEqual({
       verdict: 'rejected',
       reason: 'This reads as an Energy Performance Certificate, not a completed TA6 form.',
+      check: 'AI check: This reads as an Energy Performance Certificate, not a completed TA6 form.',
     });
   });
 
   it('should reject a file that confidently reads as a different form', () => {
-    expect(judgeCompletedForm('ta6', classified('ta10_form'))).toEqual({
+    expect(judgeCompletedForm('ta6', classified('ta10_form'))).toMatchObject({
       verdict: 'rejected',
       reason: 'This reads as a completed TA10 form, not a completed TA6 form.',
     });
@@ -96,21 +116,21 @@ describe('judgeCompletedForm', () => {
   });
 
   it('should let a file through unverified when the classifier is not sure', () => {
-    expect(judgeCompletedForm('ta6', classified('epc', 0.4))).toEqual({
+    expect(judgeCompletedForm('ta6', classified('epc', 0.4))).toMatchObject({
       verdict: 'unverified',
       reason: "We couldn't confirm what this document is.",
     });
   });
 
   it('should let a file through unverified when its text could not be read', () => {
-    expect(judgeCompletedForm('ta6', { ...classified('other', 0), unreadable: true })).toEqual({
+    expect(judgeCompletedForm('ta6', { ...classified('other', 0), unreadable: true })).toMatchObject({
       verdict: 'unverified',
       reason: "We couldn't read the text in this file.",
     });
   });
 
   it('should let a file through unverified when the classifier is unavailable', () => {
-    expect(judgeCompletedForm('ta6', null)).toEqual({
+    expect(judgeCompletedForm('ta6', null)).toMatchObject({
       verdict: 'unverified',
       reason: "We couldn't check this file right now.",
     });
@@ -132,7 +152,7 @@ describe('uploadCompletedForm', () => {
     expect(mockUpload).toHaveBeenCalledWith('transactions/tx_1/ta6/abcdef123456.pdf', file, expect.anything());
     expect(mockClassify).toHaveBeenCalledWith('tx_1', 'transactions/tx_1/ta6/abcdef123456.pdf');
     expect(mockRegisterProof).toHaveBeenCalledTimes(1);
-    expect(result).toEqual({ documentId: '7', verdict: 'accepted', reason: null });
+    expect(result).toMatchObject({ documentId: '7', verdict: 'accepted', reason: null });
   });
 
   it('should keep each form in its own folder', async () => {
@@ -166,7 +186,7 @@ describe('uploadCompletedForm', () => {
 
     expect(mockRegisterProof).toHaveBeenCalledTimes(1);
     expect(mockRemove).not.toHaveBeenCalled();
-    expect(result).toEqual({ documentId: '7', verdict: 'unverified', reason: "We couldn't check this file right now." });
+    expect(result).toMatchObject({ documentId: '7', verdict: 'unverified', reason: "We couldn't check this file right now." });
   });
 });
 

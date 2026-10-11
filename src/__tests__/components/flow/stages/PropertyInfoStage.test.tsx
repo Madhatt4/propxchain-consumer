@@ -155,12 +155,14 @@ describe('PropertyInfoStage completed-form upload', () => {
   });
 
   it('should record an accepted upload on chain and show it as uploaded', async () => {
-    mockUploadCompletedForm.mockResolvedValue({ documentId: '7', verdict: 'accepted', reason: null });
+    mockUploadCompletedForm.mockResolvedValue({ documentId: '7', verdict: 'accepted', reason: null, check: 'AI check: reads as a completed TA6 form.' });
     renderStage();
 
     fireEvent.change(screen.getByLabelText('Upload TA6 Property Information Form'), { target: { files: [pdf] } });
 
     await waitFor(() => expect(screen.getByText('Uploaded: my-ta6.pdf')).toBeInTheDocument());
+    // The check is never silent: the seller can see the file was read.
+    expect(screen.getByText('AI check: reads as a completed TA6 form.')).toBeInTheDocument();
     expect(mockUploadCompletedForm).toHaveBeenCalledWith(pdf, 'tx_1', 'ta6');
     expect(mockRecordFormUpload).toHaveBeenCalledWith('tx_1', 'ta6', 'hash-of-file', 'my-ta6.pdf');
   });
@@ -185,6 +187,7 @@ describe('PropertyInfoStage completed-form upload', () => {
       documentId: '7',
       verdict: 'unverified',
       reason: "We couldn't read the text in this file.",
+      check: "AI check: we couldn't read the text in this file. Your conveyancer will check it.",
     });
     renderStage();
 
@@ -192,5 +195,6 @@ describe('PropertyInfoStage completed-form upload', () => {
 
     await waitFor(() => expect(screen.getByText('Uploaded: my-ta6.pdf')).toBeInTheDocument());
     expect(mockRecordFormUpload).toHaveBeenCalledTimes(1);
+    expect(screen.getByText(/AI check: we couldn't read the text/)).toBeInTheDocument();
   });
 });

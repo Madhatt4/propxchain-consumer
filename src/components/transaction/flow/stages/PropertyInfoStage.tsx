@@ -74,6 +74,8 @@ type CompletionMethod = 'online' | 'uploaded' | null;
 interface FormCompletion {
   method: CompletionMethod;
   detail: string | null; // filename for upload, ISO date for online
+  /** What the AI check made of an uploaded PDF, shown under the file name. Null for online forms and restored uploads. */
+  check?: string | null;
 }
 
 /**
@@ -184,18 +186,20 @@ export function PropertyInfoStage({ stage, onComplete, transactionId, postcode, 
     try {
       // Bucket + classification first: a file that is confidently not this
       // form is refused here and nothing below runs.
-      const { verdict, reason } = await uploadCompletedForm(file, transactionId, formId);
+      const { verdict, check } = await uploadCompletedForm(file, transactionId, formId);
       const hash = await sha256Hex(file);
       await web2DocumentService.uploadDocument(file, transactionId, formId);
       await icpService.recordFormUpload(transactionId, formId, hash, file.name);
       setCompletions((prev) => ({
         ...prev,
-        [formId]: { method: 'uploaded', detail: file.name },
+        [formId]: { method: 'uploaded', detail: file.name, check },
       }));
       if (isEditing) setEditedInSession((s) => new Set(s).add(formId));
+      // The seller must be able to tell the file was checked, even when it
+      // passed: the line below the file name stays, this just announces it.
       toast({
-        title: `${formId.toUpperCase()} uploaded`,
-        description: verdict === 'unverified' ? `${file.name}. ${reason} Your conveyancer will check it.` : file.name,
+        title: verdict === 'accepted' ? `${formId.toUpperCase()} uploaded and checked` : `${formId.toUpperCase()} uploaded`,
+        description: `${file.name}. ${check}`,
       });
     } catch (err) {
       const rejected = err instanceof CompletedFormRejectedError;
@@ -315,6 +319,18 @@ export function PropertyInfoStage({ stage, onComplete, transactionId, postcode, 
                 ) : (
                   <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">{form.description}</p>
                 )}
+                {isComplete && completion.check && (
+                  <p
+                    className={`text-xs mt-0.5 ${
+                      /may not|couldn't/.test(completion.check)
+                        ? 'text-amber-700 dark:text-amber-300'
+                        : 'text-gray-500 dark:text-slate-400'
+                    }`}
+                  >
+                    {completion.check}
+                  </p>
+                )}
+
               </div>
             </div>
 
