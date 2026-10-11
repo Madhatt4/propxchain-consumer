@@ -49,6 +49,7 @@ vi.mock('../../hooks/useTransactionFlow', () => ({
     setStageEditing: vi.fn(),
     isLoading: false,
     error: null,
+    accessDenied: false,
     chainPersistError: null,
     invalidationKey: 0,
     bumpInvalidationKey: vi.fn(),
@@ -113,6 +114,23 @@ function renderWithRouter(): void {
 }
 
 describe('TransactionFlowPage', () => {
+  it('should show the not-a-party state instead of the deal when the viewer is not on it', async () => {
+    const { useTransactionFlow } = await import('../../hooks/useTransactionFlow');
+    const hook = vi.mocked(useTransactionFlow);
+    const original = hook.getMockImplementation();
+    const base = hook('1');
+    hook.mockReturnValue({ ...base, accessDenied: true });
+    try {
+      renderWithRouter();
+
+      expect(screen.getByText("You're not on this transaction")).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Back to dashboard' })).toHaveAttribute('href', '/dashboard');
+      expect(screen.queryByText('List Property')).not.toBeInTheDocument();
+    } finally {
+      hook.mockImplementation(original!);
+    }
+  });
+
   it('should render stage cards', () => {
     renderWithRouter();
     expect(screen.getAllByText('List Property').length).toBeGreaterThan(0);

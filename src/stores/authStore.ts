@@ -9,7 +9,7 @@ import { User as SupabaseUser } from '@supabase/supabase-js';
 import { icpService } from '../services/icp.service';
 import { supabaseAuthService } from '../services/supabase.auth.service';
 import { removeDevicePushToken } from '../services/devicePushToken.service';
-import { clearDealStorage } from '@/utils/clearDealStorage';
+import { clearDealStorage, rememberSignedInPrincipal } from '@/utils/clearDealStorage';
 import { logger } from '@/utils/logger';
 
 interface UserProfile {
@@ -684,6 +684,16 @@ export const useNeedsProfileSetup = (): boolean => useAuthStore((state) => state
 export const useAuthMethod = (): 'supabase' | 'ii' | null => useAuthStore((state) => state.authMethod);
 export const useHasPrincipal = (): boolean => useAuthStore((state) => state.principal !== null);
 export const useIdentityError = (): string | null => useAuthStore((state) => state.identityError);
+
+// Every sign-in path (Internet Identity, Supabase password, OAuth, session
+// restore, the retry branch) ends by setting principalId, so one subscriber
+// covers them all: a different principal than last time on this browser
+// wipes the previous account's cached deal data before anything renders it.
+useAuthStore.subscribe((state, previous) => {
+  if (state.principalId && state.principalId !== previous.principalId) {
+    rememberSignedInPrincipal(state.principalId);
+  }
+});
 
 /** Non-hook accessor for services/non-React code */
 export const getStorePrincipalId = (): string | null => useAuthStore.getState().principalId;
