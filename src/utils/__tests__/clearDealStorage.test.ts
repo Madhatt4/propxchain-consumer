@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { clearDealStorage, isDealStorageKey } from '../clearDealStorage';
+import { clearDealStorage, isDealStorageKey, LAST_PRINCIPAL_KEY, rememberSignedInPrincipal } from '../clearDealStorage';
 
 describe('clearDealStorage', () => {
   beforeEach(() => {
@@ -25,8 +25,10 @@ describe('clearDealStorage', () => {
       'propxchain_search_signoffs',
       'propxchain_acknowledged_docs',
       'txPartyCount',
+      'rightmoveListings',
+      'propertyTitleNumbers',
     ];
-    const keptKeys = ['px-theme', 'estate-agent.listings.view', 'settings'];
+    const keptKeys = ['px-theme', 'estate-agent.listings.view', 'settings', LAST_PRINCIPAL_KEY];
     for (const k of [...dealKeys, ...keptKeys]) localStorage.setItem(k, 'x');
 
     // Act
@@ -45,5 +47,56 @@ describe('clearDealStorage', () => {
   it('should not treat a key that merely contains a prefix as deal data', () => {
     expect(isDealStorageKey('my_ta6_notes')).toBe(false);
     expect(isDealStorageKey('ta6_tx_9')).toBe(true);
+  });
+});
+
+describe('rememberSignedInPrincipal', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it('should keep deal data on the first sign-in on this browser and remember who it was', () => {
+    localStorage.setItem('rightmoveListings', '{"tx_1":{}}');
+
+    expect(rememberSignedInPrincipal('aaaaa-aa')).toBe(false);
+
+    expect(localStorage.getItem('rightmoveListings')).toBe('{"tx_1":{}}');
+    expect(localStorage.getItem(LAST_PRINCIPAL_KEY)).toBe('aaaaa-aa');
+  });
+
+  it('should keep deal data when the same principal signs in again', () => {
+    rememberSignedInPrincipal('aaaaa-aa');
+    localStorage.setItem('txflow:tx_1:aaaaa-aa', 'x');
+
+    expect(rememberSignedInPrincipal('aaaaa-aa')).toBe(false);
+
+    expect(localStorage.getItem('txflow:tx_1:aaaaa-aa')).toBe('x');
+  });
+
+  it('should wipe the previous account\'s deal data when a different principal signs in', () => {
+    rememberSignedInPrincipal('aaaaa-aa');
+    localStorage.setItem('rightmoveListings', '{"tx_1":{}}');
+    localStorage.setItem('txflow:tx_1:aaaaa-aa', 'x');
+    localStorage.setItem('px-theme', 'dark');
+
+    expect(rememberSignedInPrincipal('bbbbb-bb')).toBe(true);
+
+    expect(localStorage.getItem('rightmoveListings')).toBeNull();
+    expect(localStorage.getItem('txflow:tx_1:aaaaa-aa')).toBeNull();
+    expect(localStorage.getItem('px-theme')).toBe('dark');
+    expect(localStorage.getItem(LAST_PRINCIPAL_KEY)).toBe('bbbbb-bb');
+  });
+
+  it('should treat unreadable storage as a first sign-in rather than throw', () => {
+    const broken = {
+      getItem: () => { throw new Error('blocked'); },
+      setItem: () => { throw new Error('blocked'); },
+      removeItem: () => undefined,
+      key: () => null,
+      length: 0,
+      clear: () => undefined,
+    } as unknown as Storage;
+
+    expect(rememberSignedInPrincipal('aaaaa-aa', broken)).toBe(false);
   });
 });
