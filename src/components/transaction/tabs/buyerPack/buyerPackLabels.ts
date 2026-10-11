@@ -7,6 +7,7 @@
  */
 import type { BuyerPackItem, BuyerPackItemId, BuyerPackStatus, ChainPosition } from '@/services/buyerPack.service';
 import type { VaultSlotId } from '@/types/vault.types';
+import { formatOfferDate } from '@/services/offerExpiry';
 
 export const ITEM_LABELS: Record<BuyerPackItemId, string> = {
   id_aml: 'ID and AML verified',
@@ -55,7 +56,8 @@ function describeMortgage(i: BuyerPackItem): string {
   if (d.funding_type === 'cash') return i.status === 'ready' ? 'Cash · funds evidenced' : 'Cash · proof of funds still needed';
   if (d.funding_type === 'mortgage') {
     const stage = d.mortgage_stage === 'offer' ? 'Offer held' : d.mortgage_stage === 'dip' ? 'DIP held' : 'No DIP or offer sent yet';
-    return ['Mortgage', stage, d.lender_name].filter(Boolean).join(' · ');
+    const expires = d.mortgage_stage === 'offer' && d.offer_expires_on ? `expires ${formatOfferDate(d.offer_expires_on)}` : null;
+    return ['Mortgage', stage, d.lender_name, expires].filter(Boolean).join(' · ');
   }
   return 'Not declared';
 }

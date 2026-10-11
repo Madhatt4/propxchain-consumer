@@ -8,6 +8,7 @@ import type { BuyerPackItem } from '@/services/buyerPack.service';
 const mockLoad = vi.fn();
 const mockDeclare = vi.fn();
 const mockSync = vi.fn();
+const mockReadOffer = vi.fn();
 vi.mock('@/services/buyerPack.service', async () => {
   const actual = await vi.importActual<typeof import('@/services/buyerPack.service')>('@/services/buyerPack.service');
   return {
@@ -15,6 +16,7 @@ vi.mock('@/services/buyerPack.service', async () => {
     loadBuyerPack: (...a: unknown[]) => mockLoad(...a),
     declareBuyerPack: (...a: unknown[]) => mockDeclare(...a),
     syncBuyerPack: (...a: unknown[]) => mockSync(...a),
+    readOfferExpiry: (...a: unknown[]) => mockReadOffer(...a),
   };
 });
 vi.mock('@/utils/logger', () => ({ logger: { info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn() } }));
@@ -50,7 +52,42 @@ const READY_MORTGAGE = pack({ status: 'ready', detail: { funding_type: 'mortgage
 const r = (ui: React.ReactElement) => render(<MemoryRouter>{ui}</MemoryRouter>);
 
 describe('MortgageFundingStage', () => {
-  beforeEach(() => { mockLoad.mockReset(); mockDeclare.mockReset(); mockSync.mockReset(); });
+  beforeEach(() => { mockLoad.mockReset(); mockDeclare.mockReset(); mockSync.mockReset(); mockReadOffer.mockReset(); });
+
+  const OFFER_SENT = pack({ status: 'ready', detail: { funding_type: 'mortgage', lender_name: 'Santander', mortgage_stage: 'offer' }, onLedger: true });
+
+  it('once the offer is sent, reads its expiry for the buyer to check and saves the date they confirm', async () => {
+    mockLoad.mockResolvedValue(OFFER_SENT);
+    mockReadOffer.mockResolvedValue({ expiresOn: '2027-03-31' });
+    mockDeclare.mockResolvedValue(pack({ status: 'ready', detail: { funding_type: 'mortgage', lender_name: 'Santander', mortgage_stage: 'offer', offer_expires_on: '2027-04-01' }, onLedger: true }));
+    r(<MortgageFundingStage stage={makeStage('active')} transactionId="tx_1" />);
+    await waitFor(() => expect(screen.getByLabelText(/When does your mortgage offer expire/)).toHaveValue('2027-03-31'));
+    expect(mockReadOffer).toHaveBeenCalledWith('tx_1');
+    expect(screen.getByTestId('offer-expiry-note')).toHaveTextContent(/Check it matches/);
+    // The buyer corrects it against the paper offer before saving.
+    fireEvent.change(screen.getByLabelText(/When does your mortgage offer expire/), { target: { value: '2027-04-01' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save and check' }));
+    await waitFor(() => expect(mockDeclare).toHaveBeenCalledWith('tx_1', { fundingType: 'mortgage', lenderName: 'Santander', mortgageOfferExpiresOn: '2027-04-01' }));
+  });
+
+  it('a saved date is not overwritten by a fresh read, and a failed read asks the buyer to type it', async () => {
+    mockLoad.mockResolvedValue(pack({ status: 'ready', detail: { funding_type: 'mortgage', mortgage_stage: 'offer', offer_expires_on: '2027-01-15' }, onLedger: true }));
+    r(<MortgageFundingStage stage={makeStage('active')} transactionId="tx_1" />);
+    await waitFor(() => expect(screen.getByLabelText(/When does your mortgage offer expire/)).toHaveValue('2027-01-15'));
+    expect(mockReadOffer).not.toHaveBeenCalled();
+    mockReadOffer.mockResolvedValue({ expiresOn: null, reason: 'no_date_found' });
+    fireEvent.click(screen.getByRole('button', { name: 'Read it from my offer' }));
+    expect(await screen.findByTestId('offer-expiry-note')).toHaveTextContent(/type it in/);
+    expect(screen.getByLabelText(/When does your mortgage offer expire/)).toHaveValue('2027-01-15');
+  });
+
+  it('no expiry field before an offer is sent', async () => {
+    mockLoad.mockResolvedValue(READY_MORTGAGE);
+    r(<MortgageFundingStage stage={makeStage('active')} transactionId="tx_1" />);
+    await waitFor(() => expect(screen.getByRole('combobox')).toHaveValue('Santander'));
+    expect(screen.queryByLabelText(/When does your mortgage offer expire/)).not.toBeInTheDocument();
+    expect(mockReadOffer).not.toHaveBeenCalled();
+  });
 
   it('a completed stage summarises the pack line, never an amount', async () => {
     mockLoad.mockResolvedValue(READY_MORTGAGE);

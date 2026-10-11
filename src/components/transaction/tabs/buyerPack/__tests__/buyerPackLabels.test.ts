@@ -17,6 +17,7 @@ describe('buyerPackLabels', () => {
   it('the mortgage line names type, stage and lender, never an amount', () => {
     expect(describeItem(item({ item: 'mortgage', status: 'ready', detail: { funding_type: 'mortgage', lender_name: 'Halifax', mortgage_stage: 'dip' } }))).toBe('Mortgage · DIP held · Halifax');
     expect(describeItem(item({ item: 'mortgage', status: 'in_progress', detail: { funding_type: 'mortgage', mortgage_stage: 'none' } }))).toBe('Mortgage · No DIP or offer sent yet');
+    expect(describeItem(item({ item: 'mortgage', status: 'ready', detail: { funding_type: 'mortgage', lender_name: 'Halifax', mortgage_stage: 'offer', offer_expires_on: '2027-03-31' } }))).toBe('Mortgage · Offer held · Halifax · expires 31 March 2027');
     expect(describeItem(item({ item: 'mortgage', status: 'ready', detail: { funding_type: 'cash' } }))).toBe('Cash · funds evidenced');
     expect(describeItem(item({ item: 'mortgage', status: 'in_progress', detail: { funding_type: 'cash' } }))).toBe('Cash · proof of funds still needed');
     expect(describeItem(item({ item: 'mortgage' }))).toBe('Not declared');

@@ -32,6 +32,7 @@ import { BuyerInviteCard } from '../components/transaction/flow/BuyerInviteCard'
 import BotPanelCard from '../components/transaction/BotPanelCard';
 import NextStepCard from '../components/common/NextStepCard';
 import { StallLine } from '../components/transaction/flow/StallLine';
+import { OfferExpiryLine } from '../components/transaction/flow/OfferExpiryLine';
 import { MandateBanners } from '../components/transaction/flow/MandateBanners';
 import { TOPBAR_ACTION_SLOT_ID } from '../components/navigation/AppTopBar';
 import { flashNextStepTarget } from '../utils/nextStepHighlight';
@@ -740,6 +741,9 @@ export default function TransactionFlowPage(): ReactElement {
             />
           </div>
         )}
+
+        {/* Mortgage offer expiry: every party sees it once the buyer's offer is within a month of running out. */}
+        {id && <OfferExpiryLine transactionId={id} refreshKey={invalidationKey} className="mb-4" />}
 
         {/* Stall attribution: who the deal is waiting on and for how long, with
             the stage against its benchmark. Free for every tier, and shown
