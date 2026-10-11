@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { JevSpendPanel } from './JevSpendPanel';
 import type { BudgetData, TransactionCost } from '../../types/adminDashboard.types';
 
 interface BudgetPanelProps {
@@ -112,6 +113,10 @@ export const BudgetPanel: React.FC<BudgetPanelProps> = ({
           </CardContent>
         </Card>
       )}
+
+      {/* The AI checks' running cost (Jev). Reads its own data, so a budget
+          that is not configured never hides it. */}
+      <JevSpendPanel />
     </div>
   );
 };
