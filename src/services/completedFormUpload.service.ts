@@ -17,7 +17,7 @@
  * confident "this is an EPC" or "this is a TA10" is a refusal.
  */
 import { requireSession, registerFormProof, uploadFormBytes } from './ta6DocumentUpload';
-import { classifyDocument, DOC_TYPE_CONFIDENCE_AT, docTypeLabel } from './docClassify.service';
+import { classifyDocument, DOC_TYPE_CONFIDENCE_AT, docTypeLabel, MATCHES_PROPERTY_AT } from './docClassify.service';
 import { icpService } from './icp.service';
 import { generateFileHash } from '../utils/hashGenerator';
 import { supabase } from '../lib/supabase';
@@ -32,6 +32,12 @@ export interface CompletedFormJudgement {
   verdict: CompletedFormVerdict;
   /** Why, for the seller: null only when accepted. */
   reason: string | null;
+  /**
+   * The one line the stage card keeps under the upload, so the seller can see
+   * the file was checked and what the check made of it. Never empty: a
+   * silent pass read as "no scan" (Marc, 2026-10-11).
+   */
+  check: string;
 }
 
 export interface CompletedFormUpload extends CompletedFormJudgement {
@@ -61,16 +67,28 @@ export function judgeCompletedForm(
   formId: CompletedFormId,
   classification: DocClassification | null,
 ): CompletedFormJudgement {
-  if (classification === null) return { verdict: 'unverified', reason: "We couldn't check this file right now." };
-  if (classification.unreadable) return { verdict: 'unverified', reason: "We couldn't read the text in this file." };
-  if (classification.confidence < DOC_TYPE_CONFIDENCE_AT) {
-    return { verdict: 'unverified', reason: "We couldn't confirm what this document is." };
+  const unverified = (reason: string): CompletedFormJudgement => ({
+    verdict: 'unverified',
+    reason,
+    check: `AI check: ${reason.replace(/^We /, 'we ')} Your conveyancer will check it.`,
+  });
+  if (classification === null) return unverified("We couldn't check this file right now.");
+  if (classification.unreadable) return unverified("We couldn't read the text in this file.");
+  if (classification.confidence < DOC_TYPE_CONFIDENCE_AT) return unverified("We couldn't confirm what this document is.");
+  if (classification.docType === FORM_DOC_TYPE[formId]) {
+    const parts = [`AI check: reads as ${docTypeLabel(FORM_DOC_TYPE[formId])}.`];
+    // The same property-match signal the attachment slots show; the form
+    // itself still counts, the conveyancer decides what the mismatch means.
+    if (classification.matchesProperty !== null && classification.matchesProperty < MATCHES_PROPERTY_AT) {
+      parts.push('It may not be for this property.');
+    }
+    return { verdict: 'accepted', reason: null, check: parts.join(' ') };
   }
-  if (classification.docType === FORM_DOC_TYPE[formId]) return { verdict: 'accepted', reason: null };
   const expected = docTypeLabel(FORM_DOC_TYPE[formId]);
   const actual =
     classification.docType === 'other' ? 'none of the documents we recognise' : docTypeLabel(classification.docType);
-  return { verdict: 'rejected', reason: `This reads as ${actual}, not ${expected}.` };
+  const reason = `This reads as ${actual}, not ${expected}.`;
+  return { verdict: 'rejected', reason, check: `AI check: ${reason}` };
 }
 
 /**
