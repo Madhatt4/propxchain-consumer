@@ -8,21 +8,36 @@ import { logger } from '@/utils/logger';
 import { CANISTER_IDS } from '@/config/canisterIds';
 import { useAuthStore } from '../stores/authStore';
 import { toTransactionStatus } from '@/types/transactionStatus';
+import {
+  buildLedgerDocuments,
+  CHAIN_STATUS_LABEL,
+  type LedgerChainStatus,
+  type LedgerDocument,
+  type LocalDocumentRecord,
+  type OnChainDocumentRow,
+} from '@/lib/ledgerDocuments';
 
-interface BlockchainDocument {
-  id: string;
-  transactionId: string;
-  documentName: string;
-  documentType: string;
-  uploadedBy: string;
-  uploadedAt: string;
-  blockchainHash: string;
-  fileSize: number;
-  canisterId: string;
-  chunkCount: number;
-  verified: boolean;
-  propertyAddress: string;
+/** The fields of a merged chain + localStorage transaction the ledger reads. */
+interface LedgerSourceTransaction {
+  id: string | number;
+  propertyAddress?: string;
+  uploadedDocuments?: LocalDocumentRecord[];
+  wizardData?: { documents?: LocalDocumentRecord[] };
 }
+
+const CHAIN_STATUS_BADGE: Record<LedgerChainStatus, string> = {
+  verified: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+  recorded: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+  'not-on-chain': 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200',
+  unchecked: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200',
+};
+
+const CHAIN_STATUS_HINT: Record<LedgerChainStatus, string> = {
+  verified: "The file has been re-hashed and matched the fingerprint on chain",
+  recorded: "The file's fingerprint is on chain but has not been re-checked against the file",
+  'not-on-chain': 'No fingerprint for this document is recorded on chain',
+  unchecked: "The chain lookup failed, so we can't say whether this is recorded",
+};
 
 interface Transaction {
   id: string;
@@ -41,7 +56,7 @@ const BlockchainLedgerPage: React.FC = () => {
   const [userRole, setUserRole] = useState<'client' | 'solicitor'>('client');
   const [activeTab, setActiveTab] = useState<'transactions' | 'documents' | 'verification'>('transactions');
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [documents, setDocuments] = useState<BlockchainDocument[]>([]);
+  const [documents, setDocuments] = useState<LedgerDocument[]>([]);
   const [selectedTransaction, setSelectedTransaction] = useState<string | null>(null);
   const [verificationHash, setVerificationHash] = useState('');
   const [loading, setLoading] = useState(true);
@@ -118,6 +133,29 @@ const BlockchainLedgerPage: React.FC = () => {
         };
       });
 
+      // Hashes and verification come only from document_storage. Each lookup
+      // is caught on its own so one failing transaction marks just its rows
+      // "couldn't check" rather than claiming they are not on chain.
+      const allDocuments: LedgerDocument[] = (
+        await Promise.all(
+          mergedTransactions.map(async (tx: LedgerSourceTransaction) => {
+            let onChain: OnChainDocumentRow[] | null;
+            try {
+              onChain = await icpService.getDocumentsByTransaction(String(tx.id));
+            } catch (error) {
+              logger.error('Error loading on-chain documents:', error);
+              onChain = null;
+            }
+            return buildLedgerDocuments({
+              transactionId: String(tx.id),
+              propertyAddress: tx.propertyAddress || 'Address not available',
+              onChain,
+              local: [...(tx.uploadedDocuments || []), ...(tx.wizardData?.documents || [])],
+            });
+          }),
+        )
+      ).flat();
+
       // Transform transactions for display
       const transformedTransactions: Transaction[] = Array.isArray(mergedTransactions)
         ? mergedTransactions.map((tx: any) => {
@@ -128,7 +166,7 @@ const BlockchainLedgerPage: React.FC = () => {
               status: toTransactionStatus(tx.status),
               role: userParty?.role || tx.wizardData?.userRole || 'seller',
               parties: tx.parties || [],
-              documentCount: (tx.uploadedDocuments?.length || 0) + (tx.wizardData?.documents?.length || 0),
+              documentCount: allDocuments.filter(d => d.transactionId === String(tx.id)).length,
               createdAt: tx.createdAt || new Date().toISOString(),
               blockchainTxId: tx.id,
             };
@@ -136,47 +174,6 @@ const BlockchainLedgerPage: React.FC = () => {
         : [];
 
       setTransactions(transformedTransactions);
-
-      // Load documents (simulate blockchain document storage)
-      const allDocuments: BlockchainDocument[] = [];
-      mergedTransactions.forEach((tx: any) => {
-        // Add uploaded documents
-        tx.uploadedDocuments?.forEach((doc: any, index: number) => {
-          allDocuments.push({
-            id: `doc_${tx.id}_${index}`,
-            transactionId: tx.id,
-            documentName: doc.name || 'Document',
-            documentType: doc.type || 'application/pdf',
-            uploadedBy: user?.email || 'Unknown',
-            uploadedAt: doc.uploadedAt || new Date().toISOString(),
-            blockchainHash: doc.blockchainHash || `hash_${Date.now()}_${index}`,
-            fileSize: doc.size || 0,
-            canisterId: CANISTER_IDS.document_storage,
-            chunkCount: Math.ceil((doc.size || 0) / (2 * 1024 * 1024)), // 2MB chunks
-            verified: true,
-            propertyAddress: tx.propertyAddress || 'Address not available',
-          });
-        });
-
-        // Add wizard documents
-        tx.wizardData?.documents?.forEach((doc: any, index: number) => {
-          allDocuments.push({
-            id: `wiz_doc_${tx.id}_${index}`,
-            transactionId: tx.id,
-            documentName: doc.name || doc.type || 'Wizard Document',
-            documentType: doc.type || 'document',
-            uploadedBy: user?.email || 'Unknown',
-            uploadedAt: doc.uploadedAt || tx.createdAt || new Date().toISOString(),
-            blockchainHash: doc.blockchainHash || `hash_wizard_${Date.now()}_${index}`,
-            fileSize: doc.size || 0,
-            canisterId: CANISTER_IDS.document_storage,
-            chunkCount: Math.ceil((doc.size || 0) / (2 * 1024 * 1024)),
-            verified: true,
-            propertyAddress: tx.propertyAddress || 'Address not available',
-          });
-        });
-      });
-
       setDocuments(allDocuments);
       setLoading(false);
     } catch (err: any) {
@@ -207,25 +204,30 @@ const BlockchainLedgerPage: React.FC = () => {
     });
   };
 
-  const handleVerifyHash = () => {
-    if (!verificationHash) {
-      alert('Please enter a contract hash or transaction ID to verify');
+  const formatOptionalDate = (dateString: string | null): string =>
+    dateString ? formatDate(dateString) : 'Date not recorded';
+
+  // Matches only hashes read from document_storage this session (a local-only
+  // copy has no hash), and says no more than that lookup proves.
+  const handleVerifyHash = (input: string = verificationHash) => {
+    const needle = input.trim().toLowerCase();
+    if (!needle) {
+      alert('Please enter a document hash or transaction ID to look up');
       return;
     }
 
-    // Find matching document or transaction
-    const matchingDoc = documents.find(doc =>
-      doc.blockchainHash === verificationHash || doc.transactionId === verificationHash
-    );
-    const matchingTx = transactions.find(tx =>
-      tx.id?.toLowerCase() === verificationHash?.toLowerCase() ||
-      tx.blockchainTxId === verificationHash
-    );
+    const matchingDoc = documents.find(doc => doc.blockchainHash?.toLowerCase() === needle);
+    const matchingTx = transactions.find(tx => tx.id?.toLowerCase() === needle);
 
-    if (matchingDoc || matchingTx) {
-      alert(`✅ Verification Successful!\n\n${matchingDoc ? 'Document' : 'Transaction'} found and verified on blockchain.\n\nStatus: IMMUTABLE\nNetwork: Internet Computer Protocol`);
+    if (matchingDoc) {
+      const checked = matchingDoc.chainStatus === 'verified'
+        ? 'The file has also been re-hashed and matched this fingerprint.'
+        : 'The file has not yet been re-hashed against this fingerprint.';
+      alert(`Found on chain\n\n"${matchingDoc.documentName}" has this fingerprint recorded on the Internet Computer.\n\n${checked}`);
+    } else if (matchingTx) {
+      alert('Found on chain\n\nThis transaction is recorded on the Internet Computer.');
     } else {
-      alert('⚠️ Verification Failed\n\nNo matching document or transaction found.\n\nPlease check the hash and try again.');
+      alert('Not found\n\nNo document fingerprint or transaction with that value is recorded on chain for your transactions.');
     }
   };
 
@@ -421,7 +423,7 @@ const BlockchainLedgerPage: React.FC = () => {
                   )}
                 </h2>
                 <p className={`text-sm ${themeClasses.textSecondary} mt-1`}>
-                  All documents are stored on ICP blockchain with cryptographic verification
+                  Each recorded document has its SHA-256 fingerprint stored on the Internet Computer. The file itself is kept off-chain.
                 </p>
               </div>
               <div className="overflow-x-auto">
@@ -474,39 +476,43 @@ const BlockchainLedgerPage: React.FC = () => {
                             </div>
                           </td>
                           <td className="px-6 py-4">
-                            <div className={`text-xs font-mono ${themeClasses.textSecondary}`}>
-                              {doc.blockchainHash.substring(0, 20)}...
-                            </div>
-                            <div className={`text-xs ${themeClasses.textSecondary} mt-1`}>
-                              Canister: {doc.canisterId.substring(0, 12)}...
-                            </div>
+                            {doc.blockchainHash ? (
+                              <>
+                                <div className={`text-xs font-mono ${themeClasses.textSecondary}`} title={doc.blockchainHash}>
+                                  {doc.blockchainHash.substring(0, 20)}...
+                                </div>
+                                <div className={`text-xs ${themeClasses.textSecondary} mt-1`} title={CANISTER_IDS.document_storage}>
+                                  Canister: {CANISTER_IDS.document_storage.substring(0, 12)}...
+                                </div>
+                              </>
+                            ) : (
+                              <div className={`text-xs ${themeClasses.textSecondary}`}>
+                                No hash on chain
+                              </div>
+                            )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className={`text-sm ${themeClasses.textPrimary}`}>
-                              {formatDate(doc.uploadedAt)}
+                              {formatOptionalDate(doc.uploadedAt)}
                             </div>
-                            <div className={`text-xs ${themeClasses.textSecondary}`}>
-                              by {doc.uploadedBy}
-                            </div>
+                            {doc.uploadedBy && (
+                              <div className={`text-xs ${themeClasses.textSecondary}`}>
+                                by {doc.uploadedBy === currentUser?.principal ? 'you' : 'another party'}
+                              </div>
+                            )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className={`text-sm ${themeClasses.textPrimary}`}>
                               {formatFileSize(doc.fileSize)}
                             </div>
-                            <div className={`text-xs ${themeClasses.textSecondary}`}>
-                              {doc.chunkCount} chunks
-                            </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            {doc.verified ? (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                                ✓ Verified
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
-                                ⏳ Pending
-                              </span>
-                            )}
+                            <span
+                              title={CHAIN_STATUS_HINT[doc.chainStatus]}
+                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${CHAIN_STATUS_BADGE[doc.chainStatus]}`}
+                            >
+                              {CHAIN_STATUS_LABEL[doc.chainStatus]}
+                            </span>
                           </td>
                         </tr>
                       ))
@@ -526,58 +532,56 @@ const BlockchainLedgerPage: React.FC = () => {
                 Blockchain Verification
               </h2>
               <p className={`${themeClasses.textSecondary} mb-6`}>
-                Enter a contract hash or transaction ID to verify its authenticity on the Internet Computer blockchain
+                Enter a document fingerprint (SHA-256 hash) or transaction ID to check whether it is recorded on the Internet Computer for one of your transactions
               </p>
 
               <div className="mb-6">
                 <label className={`block text-sm font-medium ${themeClasses.textPrimary} mb-2`}>
-                  Contract Hash or Transaction ID
+                  Document Hash or Transaction ID
                 </label>
                 <input
                   type="text"
                   value={verificationHash}
                   onChange={(e) => setVerificationHash(e.target.value)}
-                  placeholder="e.g., blockchain_tx_a7f2e9k3m8b1c4d6f8g2h5j7"
+                  placeholder="64-character SHA-256 hash or transaction ID"
                   className={`w-full px-4 py-3 border ${themeClasses.border} rounded-lg bg-transparent ${themeClasses.textPrimary} font-mono text-sm`}
                 />
               </div>
 
               <button
-                onClick={handleVerifyHash}
+                onClick={() => handleVerifyHash()}
                 className="w-full bg-gray-700 text-white py-3 px-6 rounded-lg font-semibold hover:bg-gray-600 transition-colors"
               >
-                🔍 Verify on Blockchain
+                🔍 Look up on chain
               </button>
 
               <div className={`mt-8 p-4 rounded-lg ${themeClasses.cardSecondary} border ${themeClasses.border}`}>
-                <h3 className={`font-semibold ${themeClasses.textPrimary} mb-3`}>How Verification Works</h3>
+                <h3 className={`font-semibold ${themeClasses.textPrimary} mb-3`}>What this checks</h3>
                 <ul className={`space-y-2 text-sm ${themeClasses.textSecondary}`}>
-                  <li>✓ Queries the ICP blockchain directly</li>
-                  <li>✓ Validates cryptographic signatures</li>
-                  <li>✓ Confirms document integrity</li>
-                  <li>✓ Checks immutability status</li>
-                  <li>✓ Verifies all parties' signatures</li>
+                  <li>• Looks the value up among the fingerprints and transactions read from the Internet Computer for your transactions</li>
+                  <li>• A match means that exact fingerprint was recorded on chain; it does not check a file you hold now</li>
+                  <li>• &quot;Verified&quot; means the file was later re-hashed and matched its on-chain fingerprint</li>
                 </ul>
               </div>
 
-              {documents.length > 0 && (
+              {documents.some(doc => doc.blockchainHash) && (
                 <div className="mt-6">
                   <h3 className={`text-sm font-semibold ${themeClasses.textPrimary} mb-3`}>
                     Quick Verify - Your Documents:
                   </h3>
                   <div className="space-y-2">
-                    {documents.slice(0, 5).map(doc => (
+                    {documents.filter(doc => doc.blockchainHash).slice(0, 5).map(doc => (
                       <button
                         key={doc.id}
                         onClick={() => {
-                          setVerificationHash(doc.blockchainHash);
-                          handleVerifyHash();
+                          setVerificationHash(doc.blockchainHash ?? '');
+                          handleVerifyHash(doc.blockchainHash ?? '');
                         }}
                         className={`w-full text-left px-4 py-2 rounded border ${themeClasses.border} hover:border-gray-500 transition-colors`}
                       >
                         <div className={`text-sm ${themeClasses.textPrimary}`}>{doc.documentName}</div>
                         <div className={`text-xs font-mono ${themeClasses.textSecondary}`}>
-                          {doc.blockchainHash.substring(0, 40)}...
+                          {doc.blockchainHash?.substring(0, 40)}...
                         </div>
                       </button>
                     ))}
