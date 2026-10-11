@@ -141,6 +141,7 @@ const messageManagerIdlFactory = ({ IDL }: { IDL: any }) => {
     getThreadMessages: IDL.Func([IDL.Text], [Result(IDL.Vec(Message), IDL.Text)], ['query']),
     markAsRead: IDL.Func([IDL.Text], [Result(IDL.Bool, IDL.Text)], []),
     markThreadAsRead: IDL.Func([IDL.Text], [Result(IDL.Nat, IDL.Text)], []),
+    recordBankDetailWarning: IDL.Func([IDL.Text], [Result(IDL.Nat, IDL.Text)], []),
     getUnreadCount: IDL.Func([], [IDL.Nat], ['query']),
     getUnreadMessages: IDL.Func([], [IDL.Vec(Message)], ['query']),
     getMySentMessages: IDL.Func([], [IDL.Vec(Message)], ['query']),
@@ -353,6 +354,22 @@ class MessageService {
 
     const result = await this.actor.markThreadAsRead(threadId);
     return 'ok' in result ? Number(result.ok) : 0;
+  }
+
+  /**
+   * Puts "bank-detail warning shown" on the audit trail for a message this
+   * user received. The canister refuses a second call for the same message
+   * and reader, and anyone who is not a recipient. Never throws: the warning
+   * on screen matters more than the trail entry.
+   */
+  async recordBankDetailWarning(messageId: string): Promise<boolean> {
+    try {
+      await this.ensureActor();
+      const result = await this.actor.recordBankDetailWarning(messageId);
+      return 'ok' in result;
+    } catch {
+      return false;
+    }
   }
 
   async getUnreadCount(): Promise<number> {
