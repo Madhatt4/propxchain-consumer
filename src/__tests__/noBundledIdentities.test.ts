@@ -15,8 +15,10 @@ import { join } from 'node:path';
  * Admin status now comes only from the user_management canister (useIsAdmin /
  * amIAdmin). These checks stop either leak coming back.
  *
- * Canister IDs (`…-cai`) are not covered: every request to a canister names
- * its ID, so they are public by nature.
+ * Canister IDs (`…-cai`) are public by nature, but this repo's rule is that
+ * none are hard-coded: they come from `@propxchain/core-client` and
+ * `canister_ids.json` through `src/config/canisterIds.ts`, so a recreated
+ * canister is fixed in one published place.
  */
 
 // Same walker as pricingClaims.test.ts: `fs.globSync` is missing on CI's Node 20.
@@ -49,6 +51,15 @@ function offenders(pattern: RegExp): string[] {
 
 const SCAN_TIMEOUT_MS = 30_000;
 
+const CANISTER_ID = /\b[a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{5}-cai\b/g;
+
+// Internet Computer system canisters, not PropXchain's. The admin testing
+// panel uses them as obviously-foreign principals for its mock personas.
+const IC_SYSTEM_CANISTERS = new Set([
+  'rrkah-fqaaa-aaaaa-aaaaq-cai', // local replica's default first canister
+  'ryjl3-tyaaa-aaaaa-aaaba-cai', // NNS ICP ledger
+]);
+
 describe('identities in the shipped bundle', () => {
   it('should not hard-code any user or controller principal in production source', () => {
     // Arrange / Act
@@ -61,6 +72,14 @@ describe('identities in the shipped bundle', () => {
   it('should not read an admin allowlist from a build-time variable', () => {
     // Arrange / Act
     const found = offenders(/VITE_ADMIN_PRINCIPALS/g);
+
+    // Assert
+    expect(found).toEqual([]);
+  }, SCAN_TIMEOUT_MS);
+
+  it('should not hard-code a PropXchain canister id in production source', () => {
+    // Arrange / Act
+    const found = offenders(CANISTER_ID).filter((hit) => !IC_SYSTEM_CANISTERS.has(hit.split(': ')[1]));
 
     // Assert
     expect(found).toEqual([]);

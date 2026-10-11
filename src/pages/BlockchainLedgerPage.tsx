@@ -5,6 +5,7 @@ import DashboardHeader from '../components/navigation/DashboardHeader';
 import { useCanAccessFeature } from '../hooks/useSubscription';
 import UpgradePrompt from '../components/subscription/UpgradePrompt';
 import { logger } from '@/utils/logger';
+import { CANISTER_IDS } from '@/config/canisterIds';
 import { useAuthStore } from '../stores/authStore';
 import { toTransactionStatus } from '@/types/transactionStatus';
 
@@ -150,7 +151,7 @@ const BlockchainLedgerPage: React.FC = () => {
             uploadedAt: doc.uploadedAt || new Date().toISOString(),
             blockchainHash: doc.blockchainHash || `hash_${Date.now()}_${index}`,
             fileSize: doc.size || 0,
-            canisterId: 'u7777-77777-77774-qaaaq-cai',
+            canisterId: CANISTER_IDS.document_storage,
             chunkCount: Math.ceil((doc.size || 0) / (2 * 1024 * 1024)), // 2MB chunks
             verified: true,
             propertyAddress: tx.propertyAddress || 'Address not available',
@@ -168,7 +169,7 @@ const BlockchainLedgerPage: React.FC = () => {
             uploadedAt: doc.uploadedAt || tx.createdAt || new Date().toISOString(),
             blockchainHash: doc.blockchainHash || `hash_wizard_${Date.now()}_${index}`,
             fileSize: doc.size || 0,
-            canisterId: 'u7777-77777-77774-qaaaq-cai',
+            canisterId: CANISTER_IDS.document_storage,
             chunkCount: Math.ceil((doc.size || 0) / (2 * 1024 * 1024)),
             verified: true,
             propertyAddress: tx.propertyAddress || 'Address not available',
