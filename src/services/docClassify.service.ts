@@ -62,7 +62,9 @@ export type DocScanContext =
       /** The 5.1 changes ticked, for a row the seller has not linked yet. */
       ticked: TA6AlterationKind[];
     }
-  | { section: '6.1'; warrantyType: TA6WarrantyType };
+  | { section: '6.1'; warrantyType: TA6WarrantyType }
+  /** A completed form handed in as a PDF from the stage card: the scan reviews the answers. */
+  | { section: 'form'; form: 'ta6' | 'ta10' | 'ta7' };
 
 export type DocFindingKey =
   | 'unrelated_to_change'
@@ -74,7 +76,20 @@ export type DocFindingKey =
   | 'wrong_warranty_type'
   | 'installer_promise_only'
   | 'not_transferable'
-  | 'warranty_expired';
+  | 'warranty_expired'
+  | 'mostly_blank'
+  | 'many_blanks'
+  | 'some_blanks'
+  | 'yes_without_detail'
+  | 'answers_contradict'
+  | 'alterations_without_paperwork'
+  | 'dispute_undisclosed'
+  | 'services_gap'
+  | 'environment_detail_missing'
+  | 'item_included_and_excluded'
+  | 'rooms_not_covered'
+  | 'lease_terms_missing'
+  | 'charges_unanswered';
 
 export interface DocPropertyCheck {
   expectedPostcode: string | null;

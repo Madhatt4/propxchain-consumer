@@ -76,9 +76,18 @@ describe('judgeCompletedForm', () => {
       verdict: 'accepted',
       reason: null,
       check: 'AI check: reads as a completed TA6 form.',
+      findings: [],
     });
     expect(judgeCompletedForm('ta10', classified('ta10_form')).verdict).toBe('accepted');
     expect(judgeCompletedForm('ta7', classified('ta7_form')).verdict).toBe('accepted');
+  });
+
+  it('should carry the scan\'s findings on the answers through with the verdict', () => {
+    const finding = { key: 'mostly_blank', label: 'Most of the answers are blank', probability: 1 };
+    expect(judgeCompletedForm('ta6', { ...classified('ta6_form'), findings: [finding] }).findings).toEqual([finding]);
+    expect(judgeCompletedForm('ta6', { ...classified('ta6_form'), findings: null }).findings).toEqual([]);
+    expect(judgeCompletedForm('ta6', null).findings).toEqual([]);
+    expect(judgeCompletedForm('ta6', { ...classified('epc'), findings: [finding] }).findings).toEqual([]);
   });
 
   it('should say so when an accepted form probably is not about this property', () => {
@@ -110,6 +119,7 @@ describe('judgeCompletedForm', () => {
       verdict: 'rejected',
       reason: 'This reads as an Energy Performance Certificate, not a completed TA6 form.',
       check: 'AI check: This reads as an Energy Performance Certificate, not a completed TA6 form.',
+      findings: [],
     });
   });
 
@@ -159,7 +169,7 @@ describe('uploadCompletedForm', () => {
     const result = await uploadCompletedForm(file, 'tx_1', 'ta6');
 
     expect(mockUpload).toHaveBeenCalledWith('transactions/tx_1/ta6/abcdef123456.pdf', file, expect.anything());
-    expect(mockClassify).toHaveBeenCalledWith('tx_1', 'transactions/tx_1/ta6/abcdef123456.pdf');
+    expect(mockClassify).toHaveBeenCalledWith('tx_1', 'transactions/tx_1/ta6/abcdef123456.pdf', { section: 'form', form: 'ta6' });
     expect(mockRegisterProof).toHaveBeenCalledTimes(1);
     expect(result).toMatchObject({ documentId: '7', verdict: 'accepted', reason: null });
   });

@@ -32,6 +32,10 @@ vi.mock('@/services/icp.service', () => ({
   },
 }));
 vi.mock('@/services/web2-document.service', () => ({ web2DocumentService: { uploadDocument: vi.fn() } }));
+const mockLoadPaperworkFindings = vi.fn();
+vi.mock('@/services/documentFindings.service', () => ({
+  loadPaperworkFindings: (...a: unknown[]) => mockLoadPaperworkFindings(...a),
+}));
 vi.mock('@/services/completedFormUpload.service', () => ({
   CompletedFormRejectedError: class CompletedFormRejectedError extends Error {},
   uploadCompletedForm: (...a: unknown[]) => mockUploadCompletedForm(...a),
@@ -69,6 +73,7 @@ describe('PropertyInfoStage hydration', () => {
     mockGetTA7.mockReset();
     mockGetTA7.mockResolvedValue(null);
     mockGetTransaction.mockReset().mockResolvedValue(null);
+    mockLoadPaperworkFindings.mockReset().mockResolvedValue([]);
   });
 
   it('should show a form uploaded as a PDF earlier, read from the seller party flag', async () => {
@@ -81,6 +86,20 @@ describe('PropertyInfoStage hydration', () => {
     expect(await screen.findByText('Uploaded: PDF uploaded earlier')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Remove upload' })).toBeInTheDocument();
     expect(screen.getAllByText('Fill form online')).toHaveLength(1);
+  });
+
+  it('should show the stored findings for a form uploaded in an earlier session', async () => {
+    mockGetTA6.mockResolvedValue(null);
+    mockGetTA10.mockResolvedValue(null);
+    mockGetTransaction.mockResolvedValue({ sellers: [[{ ta6FormUploaded: true, ta10FormUploaded: false }]] });
+    mockLoadPaperworkFindings.mockResolvedValue([
+      { section: 'ta6', title: 'Uploaded TA6 Property Information Form', findings: ['Many answers are blank'] },
+    ]);
+
+    renderStage();
+
+    expect(await screen.findByText('Uploaded: PDF uploaded earlier')).toBeInTheDocument();
+    expect(await screen.findByRole('list', { name: 'ta6 findings' })).toHaveTextContent('Many answers are blank');
   });
 
   it('should still show an online form when the summary cannot be read', async () => {
@@ -135,6 +154,7 @@ describe('PropertyInfoStage completed-form upload', () => {
     mockGetTA10.mockReset().mockResolvedValue(null);
     mockGetTA7.mockReset().mockResolvedValue(null);
     mockGetTransaction.mockReset().mockResolvedValue(null);
+    mockLoadPaperworkFindings.mockReset().mockResolvedValue([]);
     mockRecordFormUpload.mockReset().mockResolvedValue(undefined);
     mockUploadCompletedForm.mockReset();
     mockWithdrawCompletedForm.mockReset().mockResolvedValue({ removed: 1 });
@@ -155,7 +175,16 @@ describe('PropertyInfoStage completed-form upload', () => {
   });
 
   it('should record an accepted upload on chain and show it as uploaded', async () => {
-    mockUploadCompletedForm.mockResolvedValue({ documentId: '7', verdict: 'accepted', reason: null, check: 'AI check: reads as a completed TA6 form.' });
+    mockUploadCompletedForm.mockResolvedValue({
+      documentId: '7',
+      verdict: 'accepted',
+      reason: null,
+      check: 'AI check: reads as a completed TA6 form.',
+      findings: [
+        { key: 'mostly_blank', label: 'Most of the answers are blank', probability: 1 },
+        { key: 'yes_without_detail', label: 'A Yes answer has no detail where the form asks for it', probability: 0.8 },
+      ],
+    });
     renderStage();
 
     fireEvent.change(screen.getByLabelText('Upload TA6 Property Information Form'), { target: { files: [pdf] } });
@@ -163,6 +192,9 @@ describe('PropertyInfoStage completed-form upload', () => {
     await waitFor(() => expect(screen.getByText('Uploaded: my-ta6.pdf')).toBeInTheDocument());
     // The check is never silent: the seller can see the file was read.
     expect(screen.getByText('AI check: reads as a completed TA6 form.')).toBeInTheDocument();
+    const list = screen.getByRole('list', { name: 'ta6 findings' });
+    expect(list).toHaveTextContent('Most of the answers are blank');
+    expect(list).toHaveTextContent('A Yes answer has no detail');
     expect(mockUploadCompletedForm).toHaveBeenCalledWith(pdf, 'tx_1', 'ta6');
     expect(mockRecordFormUpload).toHaveBeenCalledWith('tx_1', 'ta6', 'hash-of-file', 'my-ta6.pdf');
   });

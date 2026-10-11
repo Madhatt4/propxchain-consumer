@@ -68,6 +68,18 @@ describe('summarisePaperwork', () => {
     expect(summary.findings).toEqual([FINDING_LABELS.not_transferable]);
   });
 
+  it('should title a form uploaded as a PDF by the form and label its findings', () => {
+    const [summary] = summarisePaperwork([
+      row({ section: 'ta10', context: { form: 'ta10' }, findings: [{ key: 'item_included_and_excluded', probability: 0.9 }, { key: 'some_blanks', probability: 1 }] }),
+    ]);
+
+    expect(summary).toEqual({
+      section: 'ta10',
+      title: 'Uploaded TA10 Fittings and Contents Form',
+      findings: [FINDING_LABELS.item_included_and_excluded, FINDING_LABELS.some_blanks],
+    });
+  });
+
   it('should fall back to the slot alone when the seller has not said what the paperwork is', () => {
     const [summary] = summarisePaperwork([row({ context: { kind: null, relatesTo: null } })]);
 
