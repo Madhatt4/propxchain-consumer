@@ -37,6 +37,7 @@ export const FINDING_LABELS: Readonly<Record<DocFindingKey, string>> = {
   installer_promise_only: "The installer's own promise, with no insurance behind it",
   not_transferable: 'No sign the guarantee passes to a new owner',
   warranty_expired: 'The guarantee term appears to have ended',
+  wrong_paperwork: 'Reads as a different kind of document, not what this slot is for',
   mostly_blank: 'Most of the answers are blank',
   many_blanks: 'Many answers are blank',
   some_blanks: 'A few answers are blank',

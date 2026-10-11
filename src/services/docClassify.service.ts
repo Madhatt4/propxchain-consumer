@@ -77,6 +77,7 @@ export type DocFindingKey =
   | 'installer_promise_only'
   | 'not_transferable'
   | 'warranty_expired'
+  | 'wrong_paperwork'
   | 'mostly_blank'
   | 'many_blanks'
   | 'some_blanks'
