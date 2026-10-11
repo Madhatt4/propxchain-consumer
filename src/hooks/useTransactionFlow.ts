@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { icpService } from '../services/icp.service';
+import { partyRoleService } from '../services/partyRole.service';
 import { useAuthStore } from '../stores/authStore';
 import { logger } from '@/utils/logger';
 import {
@@ -58,6 +59,13 @@ interface UseTransactionFlowReturn {
   setStageEditing: (stageId: string, editing: boolean) => void;
   isLoading: boolean;
   error: string | null;
+  /**
+   * True when the signed-in viewer is not a party to this deal: the chain
+   * refused the transaction, no mandate names them, and no party-role row
+   * is visible to them. The page shows a not-a-party state instead of
+   * composing itself from public and cached data.
+   */
+  accessDenied: boolean;
   chainPersistError: string | null;
   /** Monotonic counter that bumps after every successful audit-event write
    *  (stage completion, provider selection). Consumers that read the ledger
@@ -208,6 +216,33 @@ async function persistToChain(transactionId: string, state: TransactionFlowState
   }
 }
 
+/**
+ * Whether a signed-in viewer has no standing on this deal at all. Three
+ * independent signals must all say no: the canister refused the read (null,
+ * not a failure), no live mandate names the viewer as a delegate, and no
+ * party-role row is visible to them under RLS. Any one of them saying yes
+ * keeps the page open, so an estate agent or a delegate the chain does not
+ * list is never locked out by this check alone. Unsigned viewers are not
+ * judged here; the route guard owns them.
+ */
+async function isNotAParty(
+  transactionId: string,
+  principalId: string | null,
+  txRead: { tx: unknown; failed: boolean },
+  delegates: ReadonlyArray<[string, string]>,
+): Promise<boolean> {
+  if (!principalId || txRead.failed || txRead.tx !== null) return false;
+  if (delegates.some(([, delegate]) => delegate === principalId)) return false;
+  try {
+    const rows = await partyRoleService.listForTransaction(transactionId);
+    return rows.length === 0;
+  } catch {
+    // Could not ask Supabase either: leave the page as it was rather than
+    // lock someone out on a flaky connection.
+    return false;
+  }
+}
+
 function deriveUserRole(
   transaction: TransactionData | null,
   principalId: string | null,
@@ -347,6 +382,7 @@ export function useTransactionFlow(
   const [transaction, setTransaction] = useState<TransactionData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [accessDenied, setAccessDenied] = useState(false);
   const [flowState, setFlowState] = useState<TransactionFlowState>(() =>
     loadFlowState(transactionId, principalId ?? null),
   );
@@ -363,13 +399,23 @@ export function useTransactionFlow(
     async function fetchTransaction(): Promise<void> {
       try {
         setIsLoading(true);
-        const [progress, fullTx, chainState, delegates] = await Promise.all([
+        // A refused read resolves null; a failed one (network, canister
+        // down) rejects and is kept apart, because "could not ask" must
+        // never read as "not allowed".
+        const [progress, txRead, chainState, delegates] = await Promise.all([
           icpService.getTransactionProgress(transactionId).catch(() => null),
-          icpService.getTransaction(transactionId).catch(() => null),
+          icpService.getTransaction(transactionId).then(
+            (tx) => ({ tx, failed: false as const }),
+            () => ({ tx: null, failed: true as const }),
+          ),
           icpService.getFlowState(transactionId).catch(() => null),
           icpService.getDelegates(transactionId),
         ]);
+        const fullTx = txRead.tx;
         if (!cancelled) {
+          setAccessDenied(
+            await isNotAParty(transactionId, principalId ?? null, txRead, delegates),
+          );
           const txData: TransactionData = {
             id: transactionId,
             seller: fullTx?.seller?.toString() ?? (progress as TransactionData | null)?.seller ?? null,
@@ -758,6 +804,7 @@ export function useTransactionFlow(
     setStageEditing,
     isLoading,
     error,
+    accessDenied,
     chainPersistError,
     invalidationKey,
     bumpInvalidationKey,

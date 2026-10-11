@@ -43,6 +43,11 @@ vi.mock('../../services/icp.service', () => ({
   },
 }));
 
+const mockListForTransaction = vi.fn().mockResolvedValue([]);
+vi.mock('../../services/partyRole.service', () => ({
+  partyRoleService: { listForTransaction: (...args: unknown[]) => mockListForTransaction(...args) },
+}));
+
 // Mock authStore
 vi.mock('../../stores/authStore', () => ({
   useAuthStore: vi.fn(() => ({
@@ -63,6 +68,57 @@ describe('useTransactionFlow', () => {
     mockGetTransactionProgress.mockResolvedValue(null);
     mockGetTransaction.mockResolvedValue(null);
     mockGetFlowState.mockResolvedValue(null);
+    mockListForTransaction.mockResolvedValue([]);
+  });
+
+  describe('not a party', () => {
+    it('should deny a signed-in viewer the chain refuses who holds no mandate and sees no role rows', async () => {
+      mockGetTransaction.mockResolvedValue(null);
+      const { result } = renderHook(() => useTransactionFlow('tx-123'));
+      await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
+      expect(result.current.accessDenied).toBe(true);
+      expect(mockListForTransaction).toHaveBeenCalledWith('tx-123');
+    });
+
+    it('should not deny when the chain read failed rather than refused', async () => {
+      mockGetTransaction.mockRejectedValue(new Error('network'));
+      const { result } = renderHook(() => useTransactionFlow('tx-123'));
+      await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
+      expect(result.current.accessDenied).toBe(false);
+      expect(mockListForTransaction).not.toHaveBeenCalled();
+    });
+
+    it('should not deny a viewer a party-role row is visible to', async () => {
+      mockListForTransaction.mockResolvedValue([{ transaction_id: 'tx-123', role: 'estate_agent', side: 'seller' }]);
+      const { result } = renderHook(() => useTransactionFlow('tx-123'));
+      await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
+      expect(result.current.accessDenied).toBe(false);
+    });
+
+    it('should not deny a delegate a live mandate names', async () => {
+      mockGetDelegates.mockResolvedValueOnce([['seller-principal', 'test-principal']]);
+      const { result } = renderHook(() => useTransactionFlow('tx-123'));
+      await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
+      expect(result.current.accessDenied).toBe(false);
+    });
+
+    it('should not deny when the chain returned the transaction', async () => {
+      mockGetTransaction.mockResolvedValue({
+        seller: { toString: () => 'test-principal' },
+        buyer: { toString: () => 'test-principal' },
+      });
+      const { result } = renderHook(() => useTransactionFlow('tx-123'));
+      await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
+      expect(result.current.accessDenied).toBe(false);
+      expect(mockListForTransaction).not.toHaveBeenCalled();
+    });
+
+    it('should leave the page open when Supabase cannot be asked either', async () => {
+      mockListForTransaction.mockRejectedValue(new Error('offline'));
+      const { result } = renderHook(() => useTransactionFlow('tx-123'));
+      await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
+      expect(result.current.accessDenied).toBe(false);
+    });
   });
 
   it('should default activeJourney to seller', () => {

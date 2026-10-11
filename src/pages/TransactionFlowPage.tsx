@@ -6,7 +6,7 @@ import type { ReactElement, ReactNode } from 'react';
 import { useAuthStore } from '../stores/authStore';
 // Note: React.ReactElement used in BuyerSideStagePlaceholder return type below
 // is provided via the ReactElement named import.
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useTransactionFlow } from '../hooks/useTransactionFlow';
 import { useMoveNarrator } from '../hooks/useMoveNarrator';
 import { TopBar } from '../components/transaction/flow/TopBar';
@@ -396,6 +396,33 @@ function LoadingState(): ReactElement {
   );
 }
 
+/**
+ * The signed-in account is not on this deal. Before this state existed the
+ * page composed itself from the public listing, the flow state cached in the
+ * browser and a default journey, and every real action then failed with a
+ * different message (2026-10-10: a second account saw a working-looking
+ * seller page whose uploads hit the storage fence).
+ */
+function NotAPartyState(): ReactElement {
+  return (
+    <div className="flex h-screen items-center justify-center bg-gray-50 dark:bg-[#060b18]">
+      <div className="text-center max-w-md px-6">
+        <p className="text-slate-800 dark:text-slate-100 font-semibold mb-2">You're not on this transaction</p>
+        <p className="text-slate-500 dark:text-slate-400 text-sm mb-4">
+          The account you're signed in with isn't a party to this deal. If you were invited, sign in with the
+          account that received the invite. Otherwise ask the seller to share the transaction with you.
+        </p>
+        <Link
+          to="/dashboard"
+          className="inline-block px-4 py-2 bg-gradient-to-r from-teal-600 to-teal-700 text-white rounded-xl text-sm font-semibold"
+        >
+          Back to dashboard
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }): ReactElement {
   return (
     <div className="flex h-screen items-center justify-center bg-gray-50 dark:bg-[#060b18]">
@@ -483,6 +510,7 @@ export default function TransactionFlowPage(): ReactElement {
     setStageEditing,
     isLoading,
     error,
+    accessDenied,
     invalidationKey,
     bumpInvalidationKey,
   } = useTransactionFlow(id);
@@ -557,6 +585,7 @@ export default function TransactionFlowPage(): ReactElement {
 
   if (isLoading) return <LoadingState />;
   if (error) return <ErrorState message={error} onRetry={() => window.location.reload()} />;
+  if (accessDenied) return <NotAPartyState />;
 
   const inviteCode = transaction?.inviteCode ?? null;
   // Prefer the canister's stored address; fall back to the imported listing
