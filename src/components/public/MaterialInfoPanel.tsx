@@ -8,6 +8,7 @@ import type { MaterialInfo, MaterialInfoField, MaterialInfoSource } from '@/type
 const SOURCE_LABELS: Record<Exclude<MaterialInfoSource, 'missing'>, string> = {
   listing: 'from listing',
   epc: 'from EPC register',
+  seller: "from seller's TA6",
   agent: 'confirmed by agent',
 };
 
@@ -66,16 +67,18 @@ function MaterialInfoRow<T>({ label, field: infoField, format }: MaterialInfoRow
 
 interface MaterialInfoSectionProps {
   heading: string;
+  subheading: string;
   children: ReactNode;
 }
 
 /** Heading + divided rows for one Material Information part (A/B/C). */
-function MaterialInfoSection({ heading, children }: MaterialInfoSectionProps): JSX.Element {
+function MaterialInfoSection({ heading, subheading, children }: MaterialInfoSectionProps): JSX.Element {
   return (
     <section className="mb-6">
-      <h3 className="mb-2 font-[DM_Sans] text-sm font-semibold uppercase tracking-wide text-[#1A1A1A]">
+      <h3 className="font-[DM_Sans] text-sm font-semibold uppercase tracking-wide text-[#1A1A1A]">
         {heading}
       </h3>
+      <p className="mb-2 font-[DM_Sans] text-xs text-[#6B7280]">{subheading}</p>
       <div className="divide-y divide-[#E5E7EB]">{children}</div>
     </section>
   );
@@ -92,29 +95,42 @@ export interface MaterialInfoPanelProps {
  *  to `{}`, which doesn't match the compile-time `MaterialInfo` shape. */
 export function MaterialInfoPanel({ info: rawInfo, tenure }: MaterialInfoPanelProps): JSX.Element {
   const info = normalizeMaterialInfo(rawInfo);
-  // Lease terms are only meaningless for a confirmed freehold; when tenure is
-  // unknown (null) we still show the section so an agent can fill it in.
-  const showLeaseSection = tenure !== 'freehold';
+  // NTS puts lease terms in Part A, alongside tenure. They're only
+  // meaningless for a confirmed freehold; when tenure is unknown (null) we
+  // still show them so an agent can fill them in.
+  const showLeaseRows = tenure !== 'freehold';
 
   return (
     <div className="rounded-lg border border-[#E5E7EB] bg-white p-6">
-      <MaterialInfoSection heading="Part A">
+      <MaterialInfoSection heading="Part A" subheading="Price, council tax and tenure">
         <MaterialInfoRow label="Price" field={info.price} format={formatGbp} />
         <MaterialInfoRow label="Tenure" field={info.tenure} format={(value) => value} />
         <MaterialInfoRow label="Council tax band" field={info.councilTaxBand} format={(value) => value} />
         <MaterialInfoRow label="EPC rating" field={info.epcRating} format={(value) => value} />
-        <MaterialInfoRow label="Floor area" field={info.epcFloorAreaSqm} format={formatArea} />
+        {showLeaseRows && (
+          <>
+            <MaterialInfoRow label="Lease years remaining" field={info.leaseYearsRemaining} format={(value) => `${value}`} />
+            <MaterialInfoRow label="Ground rent" field={info.groundRentPerYear} format={formatGbp} />
+            <MaterialInfoRow label="Service charge" field={info.serviceChargePerYear} format={formatGbp} />
+          </>
+        )}
       </MaterialInfoSection>
 
-      {showLeaseSection && (
-        <MaterialInfoSection heading="Part B">
-          <MaterialInfoRow label="Lease years remaining" field={info.leaseYearsRemaining} format={(value) => `${value}`} />
-          <MaterialInfoRow label="Ground rent" field={info.groundRentPerYear} format={formatGbp} />
-          <MaterialInfoRow label="Service charge" field={info.serviceChargePerYear} format={formatGbp} />
-        </MaterialInfoSection>
-      )}
+      <MaterialInfoSection heading="Part B" subheading="The property, its utilities and connectivity">
+        <MaterialInfoRow label="Property type" field={info.propertyType} format={(value) => value} />
+        <MaterialInfoRow label="Bedrooms" field={info.bedrooms} format={(value) => `${value}`} />
+        <MaterialInfoRow label="Bathrooms" field={info.bathrooms} format={(value) => `${value}`} />
+        <MaterialInfoRow label="Floor area" field={info.epcFloorAreaSqm} format={formatArea} />
+        <MaterialInfoRow label="Electricity" field={info.electricity} format={(value) => value} />
+        <MaterialInfoRow label="Water" field={info.water} format={(value) => value} />
+        <MaterialInfoRow label="Sewerage" field={info.sewerage} format={(value) => value} />
+        <MaterialInfoRow label="Heating" field={info.heating} format={(value) => value} />
+        <MaterialInfoRow label="Broadband" field={info.broadband} format={(value) => value} />
+        <MaterialInfoRow label="Mobile signal" field={info.mobileSignal} format={(value) => value} />
+        <MaterialInfoRow label="Parking" field={info.parking} format={(value) => value} />
+      </MaterialInfoSection>
 
-      <MaterialInfoSection heading="Part C">
+      <MaterialInfoSection heading="Part C" subheading="Risks, restrictions and designations">
         <MaterialInfoRow label="Flood risk" field={info.floodRisk} format={(value) => value} />
         <MaterialInfoRow label="Conservation area" field={info.conservationArea} format={formatBoolean} />
         <MaterialInfoRow label="Listed building" field={info.listedBuilding} format={(value) => value} />

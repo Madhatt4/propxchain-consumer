@@ -41,12 +41,12 @@ export default function ListingDetailPage(): JSX.Element {
     queryFn: () => estateAgentListingsService.getById(id!),
   });
 
-  const { info, overrides, setOverrides, epc } = useListingMaterialInfo(row);
+  const { info, overrides, setOverrides, epc, seller } = useListingMaterialInfo(row);
   const { updateMutation, statusMutation, publishMutation } = useListingDetailMutations(id, organisationId, organisationName);
   const agentPrincipal = usePrincipalId();
   const startSale = useListingStartSale(id, organisationId);
   const inviteCode = useTransactionInviteCode(row?.transaction_id ?? null);
-  const { handleDetailsSave, handleMaterialInfoSave } = useListingDetailHandlers(updateMutation, info, overrides, epc);
+  const { handleDetailsSave, handleMaterialInfoSave } = useListingDetailHandlers(updateMutation, info, overrides, epc, seller);
 
   if (isOrgLoading || isRowLoading) return <CenteredMessage>Loading…</CenteredMessage>;
   if (!organisationId) return <CenteredMessage>Your account isn&apos;t linked to an agency yet.</CenteredMessage>;
