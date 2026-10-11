@@ -148,13 +148,26 @@ const AttachedControls: React.FC<AttachedControlsProps> = ({
         </span>
       )}
       {!readOnly && onUpload && (
-        <input
-          type="file"
-          aria-label={`${refCode} attachment`}
-          onChange={handleFile}
-          disabled={isUploading}
-          className="text-sm text-gray-600 file:mr-3 file:cursor-pointer file:rounded-full file:border-0 file:bg-gray-100 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-gray-700 file:transition-colors hover:file:bg-gray-200 dark:text-slate-400 dark:file:bg-slate-800 dark:file:text-slate-200 dark:hover:file:bg-slate-700"
-        />
+        // One action: choosing a file uploads it and marks the slot Attached.
+        // A plain file input dressed as a button; the input keeps the label
+        // so the picker is reachable by keyboard and by tests.
+        <label
+          className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+            documentId
+              ? 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'
+              : 'bg-teal-600 text-white hover:bg-teal-700'
+          } ${isUploading ? 'opacity-50' : ''}`}
+        >
+          <Paperclip className="h-3.5 w-3.5" aria-hidden="true" />
+          {documentId ? 'Replace file' : 'Attach a file'}
+          <input
+            type="file"
+            aria-label={`${refCode} attachment`}
+            onChange={handleFile}
+            disabled={isUploading}
+            className="sr-only"
+          />
+        </label>
       )}
       {isUploading && (
         <span className="text-sm font-medium text-teal-600 dark:text-teal-400">Uploading...</span>
@@ -194,15 +207,11 @@ export const DocumentSlot: React.FC<DocumentSlotProps> = ({
   return (
     <div className="space-y-3">
       <PromptHeader refCode={refCode} prompt={prompt} />
-      <SegmentedButtons
-        options={DOCUMENT_STATUS_OPTIONS}
-        labels={DOCUMENT_STATUS_LABELS}
-        value={value.status}
-        onSelect={handleStatus}
-        disabled={readOnly}
-        label={`${refCode} document status`}
-      />
-      {value.status === 'attached' && (
+      {/* The file picker comes first and is live before any status is chosen:
+          choosing a file is the common case and should be one click, not
+          "Attached" then "choose file" (Marc, 2026-10-11). Picking a file sets
+          the status to Attached; the other statuses stay below for the rest. */}
+      {(value.status === 'attached' || (value.status === 'not-answered' && !readOnly && !!onUpload)) && (
         <AttachedControls
           refCode={refCode}
           documentId={value.documentId}
@@ -213,6 +222,14 @@ export const DocumentSlot: React.FC<DocumentSlotProps> = ({
           scanContext={scanContext}
         />
       )}
+      <SegmentedButtons
+        options={DOCUMENT_STATUS_OPTIONS}
+        labels={DOCUMENT_STATUS_LABELS}
+        value={value.status}
+        onSelect={handleStatus}
+        disabled={readOnly}
+        label={`${refCode} document status`}
+      />
     </div>
   );
 };

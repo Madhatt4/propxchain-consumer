@@ -106,3 +106,34 @@ describe('DocumentSlot consents findings', () => {
     expect(screen.queryByRole('list', { name: '5.2.1 findings' })).not.toBeInTheDocument();
   });
 });
+
+describe('DocumentSlot one-click attach', () => {
+  it('should offer the file picker before any status is chosen and mark the slot attached on upload', async () => {
+    const onChange = vi.fn();
+    const onUpload = vi.fn().mockResolvedValue(upload([]));
+    render(
+      <DocumentSlot refCode="5.2.1" prompt={undefined} value={{ status: 'not-answered', documentId: null }} onChange={onChange} onUpload={onUpload} />,
+    );
+
+    expect(screen.getByText('Attach a file')).toBeInTheDocument();
+    pick();
+
+    await waitFor(() => expect(onChange).toHaveBeenCalledWith({ status: 'attached', documentId: '99' }));
+  });
+
+  it('should hide the picker once the seller has said the document will follow or does not apply', () => {
+    render(
+      <DocumentSlot refCode="5.2.1" prompt={undefined} value={{ status: 'to-follow', documentId: null }} onChange={() => {}} onUpload={vi.fn()} />,
+    );
+
+    expect(screen.queryByLabelText('5.2.1 attachment')).not.toBeInTheDocument();
+  });
+
+  it('should say Replace file once a document is attached', () => {
+    render(
+      <DocumentSlot refCode="5.2.1" prompt={undefined} value={{ status: 'attached', documentId: '42' }} onChange={() => {}} onUpload={vi.fn()} />,
+    );
+
+    expect(screen.getByText('Replace file')).toBeInTheDocument();
+  });
+});
