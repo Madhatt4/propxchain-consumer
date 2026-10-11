@@ -22,7 +22,7 @@ import { icpService } from './icp.service';
 import { generateFileHash } from '../utils/hashGenerator';
 import { supabase } from '../lib/supabase';
 import { logger } from '../utils/logger';
-import type { DocClassification } from './docClassify.service';
+import type { DocClassification, DocFinding } from './docClassify.service';
 
 export type CompletedFormId = 'ta6' | 'ta10' | 'ta7';
 
@@ -38,6 +38,12 @@ export interface CompletedFormJudgement {
    * silent pass read as "no scan" (Marc, 2026-10-11).
    */
   check: string;
+  /**
+   * What the scan found in the answers: blanks, a Yes with no detail,
+   * contradictions, the form's own gaps. Labels ready to show; empty for a
+   * clean form or when the scan could not run. Never for a rejected file.
+   */
+  findings: DocFinding[];
 }
 
 export interface CompletedFormUpload extends CompletedFormJudgement {
@@ -67,10 +73,12 @@ export function judgeCompletedForm(
   formId: CompletedFormId,
   classification: DocClassification | null,
 ): CompletedFormJudgement {
+  const findings = classification?.findings ?? [];
   const unverified = (reason: string): CompletedFormJudgement => ({
     verdict: 'unverified',
     reason,
     check: `AI check: ${reason.replace(/^We /, 'we ')} Your conveyancer will check it.`,
+    findings,
   });
   if (classification === null) return unverified("We couldn't check this file right now.");
   if (classification.unreadable) return unverified("We couldn't read the text in this file.");
@@ -82,13 +90,13 @@ export function judgeCompletedForm(
     // conveyancer decides what the mismatch means.
     const caveat = propertyCaveat(classification);
     if (caveat) parts.push(caveat);
-    return { verdict: 'accepted', reason: null, check: parts.join(' ') };
+    return { verdict: 'accepted', reason: null, check: parts.join(' '), findings };
   }
   const expected = docTypeLabel(FORM_DOC_TYPE[formId]);
   const actual =
     classification.docType === 'other' ? 'none of the documents we recognise' : docTypeLabel(classification.docType);
   const reason = `This reads as ${actual}, not ${expected}.`;
-  return { verdict: 'rejected', reason, check: `AI check: ${reason}` };
+  return { verdict: 'rejected', reason, check: `AI check: ${reason}`, findings: [] };
 }
 
 /**
@@ -106,7 +114,11 @@ export async function uploadCompletedForm(
   const fileHash = await generateFileHash(file);
   const path = await uploadFormBytes(file, transactionId, formId, fileHash, contentType);
 
-  const judgement = judgeCompletedForm(formId, await classifyDocument(transactionId, path));
+  // The form context turns on the answers review in the same call.
+  const judgement = judgeCompletedForm(
+    formId,
+    await classifyDocument(transactionId, path, { section: 'form', form: formId }),
+  );
   if (judgement.verdict === 'rejected') {
     // Best effort: a refused file must not sit in the bucket, but a failed
     // clean-up is not the seller's problem and must not hide the real reason.

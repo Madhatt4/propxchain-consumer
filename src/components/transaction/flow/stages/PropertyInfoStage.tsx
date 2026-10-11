@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FileText, Check, Upload, PenLine, Pencil } from 'lucide-react';
+import { AlertTriangle, FileText, Check, Upload, PenLine, Pencil } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { icpService } from '@/services/icp.service';
 import { web2DocumentService } from '@/services/web2-document.service';
@@ -13,6 +13,7 @@ import ExplainerCard from '../../../explainer/ExplainerCard';
 import ExplainerModal from '../../../explainer/ExplainerModal';
 import { CheckMyAnswers } from '../../../propertyInfo/CheckMyAnswers';
 import { RemoveFormUpload } from '../../../propertyInfo/RemoveFormUpload';
+import { loadPaperworkFindings } from '@/services/documentFindings.service';
 import PropertyInfoExplainerContent, {
   showsLeaseholdForm,
 } from '../../../propertyInfo/PropertyInfoExplainerContent';
@@ -76,6 +77,8 @@ interface FormCompletion {
   detail: string | null; // filename for upload, ISO date for online
   /** What the AI check made of an uploaded PDF, shown under the file name. Null for online forms and restored uploads. */
   check?: string | null;
+  /** What the scan found in an uploaded PDF's answers, as labels. Empty when clean or not scanned. */
+  findings?: string[];
 }
 
 /**
@@ -92,6 +95,20 @@ function offersCheck(formId: FormId, completion: FormCompletion): formId is 'ta6
  * Any failure reads as "none": the online-form hydration must not be lost
  * because the summary could not be fetched.
  */
+/**
+ * The stored findings for each form uploaded as a PDF, newest reading per
+ * form, so a reload still shows what the scan said. Empty on any failure.
+ */
+async function loadUploadedFormFindings(transactionId: string): Promise<Partial<Record<FormId, string[]>>> {
+  const out: Partial<Record<FormId, string[]>> = {};
+  for (const doc of await loadPaperworkFindings(transactionId)) {
+    if ((doc.section === 'ta6' || doc.section === 'ta10' || doc.section === 'ta7') && !(doc.section in out)) {
+      out[doc.section] = doc.findings;
+    }
+  }
+  return out;
+}
+
 async function loadUploadedFlags(transactionId: string): Promise<{ ta6: boolean; ta10: boolean }> {
   try {
     // The raw canister record: `sellers` is `opt vec TransactionParty`, so [] | [[...]].
@@ -120,6 +137,9 @@ export function PropertyInfoStage({ stage, onComplete, transactionId, postcode, 
   });
 
   const [uploading, setUploading] = useState<FormId | null>(null);
+  // Findings stored for forms uploaded in an earlier session, merged at
+  // render so they show whichever of the two reads lands first.
+  const [storedFindings, setStoredFindings] = useState<Partial<Record<FormId, string[]>>>({});
   // Form IDs touched during this edit session. Drives audit-event emission
   // on save — only forms the user actually re-saved get a `ta_form_edited`
   // event, not every form on the stage. Reset whenever edit mode toggles.
@@ -160,6 +180,11 @@ export function PropertyInfoStage({ stage, onComplete, transactionId, postcode, 
         logger.warn('[stage3] hydrate failed:', err);
       }
     })();
+    // The stored findings for uploaded forms ride behind the tick, never in
+    // front of it: a slow or failed read must not hold up "Uploaded".
+    void loadUploadedFormFindings(transactionId).then((found) => {
+      if (!cancelled) setStoredFindings(found);
+    });
     return () => { cancelled = true; };
   }, [transactionId, isEditing, stage.status]);
 
@@ -186,13 +211,13 @@ export function PropertyInfoStage({ stage, onComplete, transactionId, postcode, 
     try {
       // Bucket + classification first: a file that is confidently not this
       // form is refused here and nothing below runs.
-      const { verdict, check } = await uploadCompletedForm(file, transactionId, formId);
+      const { verdict, check, findings } = await uploadCompletedForm(file, transactionId, formId);
       const hash = await sha256Hex(file);
       await web2DocumentService.uploadDocument(file, transactionId, formId);
       await icpService.recordFormUpload(transactionId, formId, hash, file.name);
       setCompletions((prev) => ({
         ...prev,
-        [formId]: { method: 'uploaded', detail: file.name, check },
+        [formId]: { method: 'uploaded', detail: file.name, check, findings: (findings ?? []).map((f) => f.label) },
       }));
       if (isEditing) setEditedInSession((s) => new Set(s).add(formId));
       // The seller must be able to tell the file was checked, even when it
@@ -283,6 +308,7 @@ export function PropertyInfoStage({ stage, onComplete, transactionId, postcode, 
       {FORMS.map((form) => {
         const completion = completions[form.id];
         const isComplete = completion.method !== null;
+        const uploadFindings = completion.method === 'uploaded' ? (completion.findings ?? storedFindings[form.id] ?? []) : [];
         const isUploadingThis = uploading === form.id;
 
         return (
@@ -329,6 +355,16 @@ export function PropertyInfoStage({ stage, onComplete, transactionId, postcode, 
                   >
                     {completion.check}
                   </p>
+                )}
+                {uploadFindings.length > 0 && (
+                  <ul aria-label={`${form.id} findings`} className="mt-1 space-y-0.5">
+                    {uploadFindings.map((finding) => (
+                      <li key={finding} className="flex items-start gap-1.5 text-xs text-amber-700 dark:text-amber-300">
+                        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                        {finding}
+                      </li>
+                    ))}
+                  </ul>
                 )}
 
               </div>

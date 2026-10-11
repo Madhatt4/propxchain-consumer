@@ -37,6 +37,25 @@ export const FINDING_LABELS: Readonly<Record<DocFindingKey, string>> = {
   installer_promise_only: "The installer's own promise, with no insurance behind it",
   not_transferable: 'No sign the guarantee passes to a new owner',
   warranty_expired: 'The guarantee term appears to have ended',
+  mostly_blank: 'Most of the answers are blank',
+  many_blanks: 'Many answers are blank',
+  some_blanks: 'A few answers are blank',
+  yes_without_detail: 'A Yes answer has no detail where the form asks for it',
+  answers_contradict: 'Some answers contradict each other',
+  alterations_without_paperwork: 'Changes to the property are listed with no paperwork for them',
+  dispute_undisclosed: 'Something reads like a dispute or notice that is not disclosed',
+  services_gap: "The services or drainage answers would draw a conveyancer's query",
+  environment_detail_missing: 'Flooding, radon or knotweed is answered without the detail asked for',
+  item_included_and_excluded: 'An item is marked both included and excluded',
+  rooms_not_covered: 'Some main rooms have no items listed',
+  lease_terms_missing: 'Ground rent, service charge, lease term or landlord details are missing',
+  charges_unanswered: 'Arrears, upcoming costs or the reserve fund are not answered',
+};
+
+const FORM_TITLES: Readonly<Record<string, string>> = {
+  ta6: 'Uploaded TA6 Property Information Form',
+  ta10: 'Uploaded TA10 Fittings and Contents Form',
+  ta7: 'Uploaded TA7 Leasehold Information Form',
 };
 
 export interface DocumentFindingsRow {
@@ -74,6 +93,7 @@ function warrantyTitle(context: Record<string, unknown>): string {
 
 function titleFor(row: DocumentFindingsRow): string {
   const context = row.context ?? {};
+  if (row.section in FORM_TITLES) return FORM_TITLES[row.section];
   return row.section === '6.1' ? warrantyTitle(context) : alterationTitle(context);
 }
 
