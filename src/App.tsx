@@ -79,7 +79,6 @@ const TicketPage = lazy(() => import('./pages/support/TicketPage'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const AllTransactionsAuditPage = lazy(() => import('./pages/AllTransactionsAuditPage'));
 const AdminTestingPanel = lazy(() => import('./pages/AdminTestingPanel'));
-const ICPTest = lazy(() => import('./pages/ICPTest'));
 const ShareTransactionPage = lazy(() => import('./pages/ShareTransactionPage'));
 const JoinTransactionPage = lazy(() => import('./pages/JoinTransactionPage'));
 const PricingPage = lazy(() => import('./pages/PricingPage'));
@@ -299,7 +298,6 @@ function App() {
               {/* /wizard now redirects to simplified create-transaction flow */}
               <Route path="/wizard" element={<Navigate to="/create-transaction" replace />} />
               <Route path="/transaction-dashboard" element={<ProtectedRoute><TransactionDashboardPage /></ProtectedRoute>} />
-              <Route path="/icp-test" element={<ProtectedRoute><ICPTest /></ProtectedRoute>} />
               <Route path="/payment/success" element={<PaymentSuccessPage />} />
               <Route path="/seller-fee/success" element={<SellerFeeSuccessPage />} />
 

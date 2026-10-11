@@ -21,8 +21,6 @@ import TicketQueue from '../../components/admin/support/TicketQueue';
 import AdminTicketThread from '../../components/admin/support/AdminTicketThread';
 import { useSupportDesk } from '../../hooks/useSupportDesk';
 import { useIsAdmin } from '../../hooks/useIsAdmin';
-import { usePrincipalId } from '../../stores/authStore';
-import { isAdminPrincipal } from '../../constants/adminPrincipals';
 
 const PANE = 'min-w-0';
 
@@ -36,12 +34,11 @@ const Placeholder: React.FC = () => (
 
 const SupportDeskPage: React.FC = () => {
   const navigate = useNavigate();
-  const principalId = usePrincipalId();
   const { isAdmin, isLoading: isAdminLoading } = useIsAdmin();
-  // The env allowlist is the same fallback the admin dashboard keeps for when
-  // the canister query fails transiently, so the desk cannot be the one admin
-  // screen that locks out on a bad round trip.
-  const isAllowed = isAdmin || isAdminPrincipal(principalId);
+  // Admin comes from the user_management canister only, the same answer every
+  // admin screen uses. There is no bundled allowlist to fall back on: anything
+  // in the bundle is public.
+  const isAllowed = isAdmin;
 
   const desk = useSupportDesk(isAllowed);
 

@@ -75,7 +75,6 @@ export interface AuditReport {
     blockchain: {
       network: 'ic';
       canistersQueried: string[];
-      controllerPrincipal: string;
       queryTimestamp: string;
     };
     supabase: {
@@ -594,7 +593,6 @@ export async function fetchAuditReport(transactionId: string): Promise<AuditRepo
           'transaction_manager', 'document_storage', 'ledger_manager',
           'document_verification', 'user_management',
         ],
-        controllerPrincipal: 'nfzga-dpxug-zxng7-gxx6c-plzm5-wn7bm-oj5k7-ky3sf-mmgp5-6asur-2qe',
         queryTimestamp: startTime,
       },
       supabase: {

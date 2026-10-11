@@ -8,8 +8,6 @@ import { useAnimatedCounter } from '../../../hooks/useAnimatedCounter';
 import AppTopBar from '@/components/navigation/AppTopBar';
 import { RemindersMenu } from '../RemindersMenu';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
-import { usePrincipalId } from '@/stores/authStore';
-import { isAdminPrincipal } from '@/constants/adminPrincipals';
 
 interface TopBarProps {
   /** Drives the reminders popover in the context strip. */
@@ -74,10 +72,9 @@ export function TopBar({
 }: TopBarProps): ReactElement {
   const [isExpanded, setIsExpanded] = useState(false);
   const navigate = useNavigate();
-  const principalId = usePrincipalId();
   const { isAdmin: isAdminFromCanister } = useIsAdmin();
   // Admins can open this transaction on the conveyancer matter screen.
-  const canViewAsConveyancer = Boolean(transactionId) && (isAdminPrincipal(principalId) || isAdminFromCanister);
+  const canViewAsConveyancer = Boolean(transactionId) && isAdminFromCanister;
   const animatedTotal = useAnimatedCounter(totalCostPence);
 
   return (

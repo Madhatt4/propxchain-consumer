@@ -4,9 +4,9 @@
 import React, { useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
-import { useAuthStore, usePrincipalId } from '../stores/authStore';
+import { useAuthStore } from '../stores/authStore';
 import { decideRoute } from './decideRoute';
-import { isAdminPrincipal } from '../constants/adminPrincipals';
+import { useIsAdmin } from '../hooks/useIsAdmin';
 import { isNativeApp } from '../lib/native';
 
 /**
@@ -38,19 +38,23 @@ const AuthGate: React.FC = () => {
   const authMethod = useAuthStore((s) => s.authMethod);
   const isInitialized = useAuthStore((s) => s.isInitialized);
   const isLoading = useAuthStore((s) => s.isLoading);
-  const principalId = usePrincipalId();
+  const { isAdmin, isLoading: isAdminLoading } = useIsAdmin();
 
-  const authReady = isInitialized && !isLoading;
+  // Routing waits for the canister's admin answer, so an admin is never sent
+  // down the normal path first. Without a principal the admin query is
+  // disabled and resolves immediately.
+  const authReady = isInitialized && !isLoading && !isAdminLoading;
 
   // Admin escape hatch: platform admins always land on the dashboard,
-  // whatever their email-verification state. Mirrors LoginPage.getPostLoginRoute.
+  // whatever their email-verification state. Admin status comes from the
+  // user_management canister, never from a list shipped in the bundle.
   useEffect(() => {
     if (navigatedRef.current) return;
     if (!authReady) return;
-    if (!isAdminPrincipal(principalId)) return;
+    if (!isAdmin) return;
     navigatedRef.current = true;
     navigate('/dashboard', { replace: true });
-  }, [authReady, principalId, navigate]);
+  }, [authReady, isAdmin, navigate]);
 
   // Internet Identity escape hatch: II users have no Supabase session, so
   // decideRoute() (which keys off `user`) would bounce them to /login. They
@@ -60,16 +64,16 @@ const AuthGate: React.FC = () => {
   useEffect(() => {
     if (navigatedRef.current) return;
     if (!authReady) return;
-    if (isAdminPrincipal(principalId)) return; // admin handled above
+    if (isAdmin) return; // admin handled above
     if (authMethod !== 'ii') return;
     navigatedRef.current = true;
     navigate('/dashboard', { replace: true });
-  }, [authReady, authMethod, principalId, navigate]);
+  }, [authReady, authMethod, isAdmin, navigate]);
 
   useEffect(() => {
     if (navigatedRef.current) return;
     if (!authReady) return;
-    if (isAdminPrincipal(principalId)) return; // admin handled above
+    if (isAdmin) return; // admin handled above
     if (authMethod === 'ii') return; // II handled above
 
     const decision = decideRoute({
@@ -81,7 +85,7 @@ const AuthGate: React.FC = () => {
 
     navigatedRef.current = true;
     navigate(decision.path, { replace: true });
-  }, [authReady, authMethod, supabaseUser, searchParams, navigate, principalId]);
+  }, [authReady, authMethod, supabaseUser, searchParams, navigate, isAdmin]);
 
   return <FullPageSpinner />;
 };

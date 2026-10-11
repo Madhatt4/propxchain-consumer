@@ -15,7 +15,7 @@ if (
   import.meta.env.VITE_ALLOW_DEV_AUTH === 'true' &&
   window.location.hostname === 'localhost'
 ) {
-  const devPrincipal = import.meta.env.VITE_ADMIN_PRINCIPALS?.split(',')[0]?.trim();
+  const devPrincipal = import.meta.env.VITE_DEV_PRINCIPAL?.trim();
   if (devPrincipal) {
     useAuthStore.setState({ principalId: devPrincipal, isAuthenticated: true });
     // BrowserRouter: seed the path before render so the router boots on /dashboard.

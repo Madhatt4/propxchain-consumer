@@ -33,8 +33,6 @@ vi.mock('../../../hooks/useIsAdmin', () => ({ useIsAdmin: () => useIsAdmin() }))
 
 vi.mock('../../../stores/authStore', () => ({ usePrincipalId: () => 'aaaaa-aa' }));
 
-vi.mock('../../../constants/adminPrincipals', () => ({ isAdminPrincipal: () => false }));
-
 const listAdminTickets = vi.fn();
 const getAdminTicket = vi.fn();
 vi.mock('../../../services/supportAdmin.service', async () => {

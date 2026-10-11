@@ -35,8 +35,7 @@ const SENSITIVE_PATTERNS = {
 
 /**
  * Redacts a principal ID to show only first/last segments
- * Example: "76l4h-lzfta-x3y3g-mgoev-o6uwb-dbott-blau3-m56bc-7n27c-ge66m-dqe"
- *       -> "76l4h-***-dqe"
+ * Example: "abcde-fghij-…-xyz" -> "abcde-***-xyz"
  */
 function redactPrincipal(principal: string): string {
   const parts = principal.split('-');
