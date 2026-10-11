@@ -107,8 +107,8 @@ export function JevSpendPanel(): ReactElement {
             </tbody>
           </table>
           <p className="mt-2 text-xs text-muted-foreground">
-            Cost is what TypeSafe reports per call, in US dollars. Calls made before cost recording began count as calls
-            and tokens but carry no price.
+            Estimated from tokens at TypeSafe&apos;s observed rate (about $0.037 per million tokens), in US dollars. TypeSafe
+            bills by token and does not return a charge per call; the console is the exact figure.
           </p>
         </CardContent>
       </Card>

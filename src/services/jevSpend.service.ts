@@ -8,8 +8,9 @@
  * API reported. The function runs as the caller, so a non-admin gets an
  * empty list (jev_decisions admits admins only), never an error to show.
  *
- * Calls logged before cost recording began have no price; they still count
- * as calls and tokens, and the panel says so.
+ * TypeSafe returns tokens but no charge per call, so the summary prices
+ * tokens at the rate observed on the TypeSafe console (one function in the
+ * database holds it); the panel says the figure is an estimate.
  */
 import { supabase } from '../lib/supabase';
 import { logger } from '../utils/logger';
