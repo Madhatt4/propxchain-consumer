@@ -10,6 +10,7 @@ import {
 } from './threadCrypto.service';
 import { getStorePrincipalId } from '../stores/authStore';
 import { logger } from '@/utils/logger';
+import { CANISTER_IDS } from '@/config/canisterIds';
 import {
   Thread,
   ThreadWithUnread,
@@ -24,9 +25,8 @@ import {
   convertCandidThread,
 } from '../types/message.types';
 
-// Message Manager canister ID — fallback to mainnet ID matches icp.service.ts pattern,
-// since CI build env doesn't inject VITE_MESSAGE_MANAGER_CANISTER_ID.
-const MESSAGE_MANAGER_CANISTER_ID = import.meta.env.VITE_MESSAGE_MANAGER_CANISTER_ID || '37una-maaaa-aaaaa-qd3mq-cai';
+// Published by core-client; a VITE_MESSAGE_MANAGER_CANISTER_ID override still wins.
+const MESSAGE_MANAGER_CANISTER_ID = CANISTER_IDS.message_manager;
 
 // IDL Factory for message_manager
 const messageManagerIdlFactory = ({ IDL }: { IDL: any }) => {

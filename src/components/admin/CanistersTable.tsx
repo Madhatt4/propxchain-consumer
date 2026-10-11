@@ -23,6 +23,7 @@ import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 import { useThemeClasses } from '../../hooks/useThemeClasses';
 import { useCyclesHealth } from '../../hooks/useCyclesHealth';
+import { CYCLES_WALLET_ID } from '@/config/canisterIds';
 import type { CanisterCycleInfo } from '../../types/adminDashboard.types';
 import type { CanisterHealth, Measurement, HealthStatus } from '../../services/cyclesHealth';
 import {
@@ -36,7 +37,6 @@ import {
 
 // ── Cycles wallet footer (verbatim from CyclesHealthTable) ───────────────────
 
-const CYCLES_WALLET_ID = 'lqmd6-yiaaa-aaaaa-qcwuq-cai';
 const CYCLES_WALLET_FUND_CMD =
   `dfx ledger --network ic top-up ${CYCLES_WALLET_ID} \\\n  --amount <ICP> --identity Propxchain`;
 

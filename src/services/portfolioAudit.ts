@@ -17,6 +17,7 @@
 
 import { icpService } from './icp.service';
 import { logger } from '@/utils/logger';
+import { CANISTER_IDS } from '@/config/canisterIds';
 import type { AuditEvent } from './transactionAudit';
 import { sanitizeText } from './transactionAudit';
 
@@ -28,9 +29,7 @@ export const ANOMALY_EVENT_TYPES: ReadonlySet<string> = new Set([
   'lr_submission_failed',       // Land Registry submission rejected
 ]);
 
-const LEDGER_MANAGER_CANISTER_ID =
-  (import.meta.env.VITE_LEDGER_MANAGER_CANISTER_ID as string | undefined) ||
-  'hty74-maaaa-aaaaa-qcxza-cai';
+const LEDGER_MANAGER_CANISTER_ID = CANISTER_IDS.ledger_manager;
 
 const NS_PER_MS = 1_000_000;
 

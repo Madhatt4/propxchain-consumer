@@ -5,6 +5,7 @@ import DashboardHeader from '../components/navigation/DashboardHeader';
 import { useCanAccessFeature } from '../hooks/useSubscription';
 import UpgradePrompt from '../components/subscription/UpgradePrompt';
 import { logger } from '@/utils/logger';
+import { CANISTER_IDS } from '@/config/canisterIds';
 import { useAuthStore } from '../stores/authStore';
 import { toTransactionStatus } from '@/types/transactionStatus';
 import {
@@ -476,9 +477,14 @@ const BlockchainLedgerPage: React.FC = () => {
                           </td>
                           <td className="px-6 py-4">
                             {doc.blockchainHash ? (
-                              <div className={`text-xs font-mono ${themeClasses.textSecondary}`} title={doc.blockchainHash}>
-                                {doc.blockchainHash.substring(0, 20)}...
-                              </div>
+                              <>
+                                <div className={`text-xs font-mono ${themeClasses.textSecondary}`} title={doc.blockchainHash}>
+                                  {doc.blockchainHash.substring(0, 20)}...
+                                </div>
+                                <div className={`text-xs ${themeClasses.textSecondary} mt-1`} title={CANISTER_IDS.document_storage}>
+                                  Canister: {CANISTER_IDS.document_storage.substring(0, 12)}...
+                                </div>
+                              </>
                             ) : (
                               <div className={`text-xs ${themeClasses.textSecondary}`}>
                                 No hash on chain

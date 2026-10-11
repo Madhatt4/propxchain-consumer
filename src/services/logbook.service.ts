@@ -13,8 +13,7 @@
 import { Actor, HttpAgent } from '@propxchain/core-client';
 import { icpService } from './icp.service';
 
-/** Mainnet property_logbook, created 2026-08-15 (monorepo canister_ids.json). */
-const MAINNET_LOGBOOK_CANISTER_ID = '43x7o-qaaaa-aaaaa-qhm6q-cai';
+import { MAINNET_LOGBOOK_CANISTER_ID } from '@/config/canisterIds';
 import { logger } from '@/utils/logger';
 import type { Logbook, LogbookClaim, LogbookEntry, LogbookEvidence } from '../types/logbook.types';
 
