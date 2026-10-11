@@ -18,9 +18,12 @@ const mockAuthState = {
 vi.mock('../stores/authStore', () => ({
   useAuthStore: <T,>(selector: (s: typeof mockAuthState) => T): T =>
     selector(mockAuthState),
-  // AuthGate's admin escape hatch reads usePrincipalId(). null makes
-  // isAdminPrincipal(null) false, so these tests exercise the normal path.
-  usePrincipalId: (): string | null => null,
+}));
+
+// Admin status comes from the user_management canister via useIsAdmin.
+const mockAdminState = { isAdmin: false, role: null as 'super' | 'regular' | null, isLoading: false };
+vi.mock('../hooks/useIsAdmin', () => ({
+  useIsAdmin: () => mockAdminState,
 }));
 
 import AuthGate from './AuthGate';
@@ -47,6 +50,9 @@ const resetMocks = (): void => {
   mockAuthState.authMethod = 'supabase';
   mockAuthState.isInitialized = true;
   mockAuthState.isLoading = false;
+  mockAdminState.isAdmin = false;
+  mockAdminState.role = null;
+  mockAdminState.isLoading = false;
 };
 
 // ── tests ─────────────────────────────────────────────────────────────────
@@ -93,6 +99,37 @@ describe('<AuthGate>', () => {
     await waitFor(() => {
       expect(screen.getByTestId('at-onboarding')).toBeInTheDocument();
     });
+  });
+
+  it('should send a canister admin to /dashboard even with an unverified email', async () => {
+    // Arrange
+    mockAuthState.supabaseUser = { id: 'user-1', email_confirmed_at: null };
+    mockAdminState.isAdmin = true;
+    mockAdminState.role = 'super';
+
+    // Act
+    renderAt();
+
+    // Assert
+    await waitFor(() => {
+      expect(screen.getByTestId('at-dashboard')).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId('at-verify')).toBeNull();
+  });
+
+  it('should hold on the spinner until the canister admin answer arrives', () => {
+    // Arrange: an unverified user whose admin status is still loading must not
+    // be routed to /verify before we know whether they are an admin.
+    mockAuthState.supabaseUser = { id: 'user-1', email_confirmed_at: null };
+    mockAdminState.isLoading = true;
+
+    // Act
+    const { container } = renderAt();
+
+    // Assert
+    expect(container.querySelector('.animate-spin')).toBeTruthy();
+    expect(screen.queryByTestId('at-verify')).toBeNull();
+    expect(screen.queryByTestId('at-dashboard')).toBeNull();
   });
 
   it('sends a signed-out visitor to /login', async () => {

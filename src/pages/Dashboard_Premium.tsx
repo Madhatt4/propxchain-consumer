@@ -28,7 +28,6 @@ import { SplitPanelProvider, useSplitPanel } from '../contexts/SplitPanelContext
 import type { DocumentProofInfo } from '../types/splitPanel.types';
 import { NewDocumentBadge } from '@/components/documents/NewDocumentBadge';
 import { getNewDocumentCount } from '@/utils/documentAcknowledgment';
-import { isAdminPrincipal } from '@/constants/adminPrincipals';
 import { useActiveTransactionStore } from '../stores/activeTransactionStore';
 import { useAuthStore, usePrincipalId, useIsAuthenticated } from '../stores/authStore';
 import { usePortalKinds } from '@/components/navigation/usePortalSections';
@@ -63,7 +62,7 @@ const Dashboard_PremiumContent: React.FC = () => {
   const storeProfile = useAuthStore((s) => s.userProfile);
   const { isAdmin: isAdminFromCanister } = useIsAdmin();
   // Admins can open any transaction on the conveyancer matter screen (card menu).
-  const isAdminUser = isAdminPrincipal(principalId) || isAdminFromCanister;
+  const isAdminUser = isAdminFromCanister;
   // Common sections for everyone, plus an agent's, developer's or conveyancer's extras.
   const portalSections = usePortalSections();
   const [user, setUser] = useState<{ principal: string; name?: string; email?: string; userType?: unknown } | null>(null);
@@ -326,7 +325,7 @@ const Dashboard_PremiumContent: React.FC = () => {
     const needsOnboarding = localStorage.getItem('needsOnboarding') === 'true';
     const onboardingComplete = localStorage.getItem('onboardingComplete') === 'true';
     if (needsOnboarding && !onboardingComplete) {
-      const isAdmin = isAdminPrincipal(principalId) || isAdminFromCanister;
+      const isAdmin = isAdminFromCanister;
       if (!isAdmin) {
         navigate('/onboarding/role');
         return;

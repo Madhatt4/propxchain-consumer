@@ -2,7 +2,6 @@
 // Copyright (C) 2025 PropXchain Ltd
 
 import { useAuthStore } from '../../stores/authStore';
-import { isAdminPrincipal } from '../../constants/adminPrincipals';
 import { consumePendingInviteUrl } from '../../utils/pendingInviteUrl';
 
 /**
@@ -31,7 +30,6 @@ export function getPostLoginRoute(fromPath?: string): string {
 
   const authState = useAuthStore.getState();
   if (authState.orgJustCreated) return '/post-login?fresh=1';
-  if (isAdminPrincipal(authState.principalId)) return '/dashboard';
   if (authState.authMethod === 'ii') return '/dashboard';
 
   const role = authState.supabaseUser?.user_metadata?.role as string | undefined;

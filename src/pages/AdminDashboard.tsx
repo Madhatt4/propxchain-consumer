@@ -70,19 +70,14 @@ const AdminDashboard: React.FC = () => {
 
         if (!icpService.userManagement) await icpService.initialize();
 
-        // Single source of truth: user_management `admins` stable map.
-        // Falls back to env-configured principal allowlist if the canister
-        // query fails transiently.
+        // Single source of truth: user_management `admins` stable map. There is
+        // deliberately no client-side allowlist: anything baked into the bundle
+        // is public, and the canister enforces admin on every write anyway.
         let isAdmin = false;
         try {
           isAdmin = await (await icpService.requireUserManagement()).amIAdmin();
         } catch (err) {
-          logger.warn('amIAdmin() failed, falling back to env allowlist', err);
-        }
-
-        if (!isAdmin) {
-          const { isAdminPrincipal } = await import('../constants/adminPrincipals');
-          if (isAdminPrincipal(principalId)) isAdmin = true;
+          logger.warn('amIAdmin() failed; treating as not admin', err);
         }
 
         if (!isAdmin) {

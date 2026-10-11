@@ -8,7 +8,6 @@
  */
 
 import { logger } from '@/utils/logger';
-import { apiService } from './api.service';
 
 // IndexedDB database name and store
 const DB_NAME = 'propxchain_documents';
@@ -116,12 +115,11 @@ class Web2DocumentService {
     options: {
       firmId?: string;
       uploadedBy?: string;
-      registerWithApi?: boolean;
     } = {}
   ): Promise<DocumentMetadata> {
     await this.dbReady;
 
-    const { firmId, uploadedBy, registerWithApi = true } = options;
+    const { firmId, uploadedBy } = options;
 
     // Generate hash (file stays local, only hash goes to server)
     const fileHash = await this.generateFileHash(file);
@@ -160,24 +158,6 @@ class Web2DocumentService {
 
     // Store metadata in localStorage
     this.saveMetadataToLocalStorage(metadata);
-
-    // Register hash with API (if enabled)
-    if (registerWithApi) {
-      try {
-        await apiService.post(`/api/documents/${transactionId}/hash`, {
-          documentType,
-          fileName: file.name,
-          fileHash,
-          fileSize: file.size,
-          contentType: file.type,
-          storageLocation,
-        }, true);
-        logger.info(`Document hash registered with API: ${documentId}`);
-      } catch (error) {
-        logger.warn('Failed to register hash with API (offline mode):', error);
-        // Continue - document is stored locally, can sync later
-      }
-    }
 
     logger.info(`Document stored locally: ${documentId} (${file.name})`);
     return metadata;
@@ -278,13 +258,6 @@ class Web2DocumentService {
 
     // Delete from localStorage metadata
     this.deleteMetadataFromLocalStorage(documentId);
-
-    // Try to delete from API
-    try {
-      await apiService.delete(`/api/documents/${documentId}`, true);
-    } catch (error) {
-      logger.warn('Failed to delete from API:', error);
-    }
 
     logger.info(`Document deleted: ${documentId}`);
   }
@@ -426,35 +399,6 @@ class Web2DocumentService {
       totalSize,
       byType,
     };
-  }
-
-  /**
-   * Sync local documents with API (for offline-first scenarios)
-   */
-  async syncWithApi(): Promise<{ synced: number; failed: number }> {
-    const allMetadata = this.getAllMetadataFromLocalStorage();
-    let synced = 0;
-    let failed = 0;
-
-    for (const metadata of allMetadata) {
-      try {
-        await apiService.post(`/api/documents/${metadata.transactionId}/hash`, {
-          documentType: metadata.documentType,
-          fileName: metadata.fileName,
-          fileHash: metadata.fileHash,
-          fileSize: metadata.fileSize,
-          contentType: metadata.contentType,
-          storageLocation: metadata.storageLocation,
-        }, true);
-        synced++;
-      } catch (error) {
-        logger.warn(`Failed to sync document ${metadata.id}:`, error);
-        failed++;
-      }
-    }
-
-    logger.info(`Document sync complete: ${synced} synced, ${failed} failed`);
-    return { synced, failed };
   }
 
   /**

@@ -103,7 +103,7 @@ const AdminTestingPanel: React.FC = () => {
         id: 'SOLICITOR-BUYER-001',
         principal: 'rrkah-fqaaa-aaaaa-aaaaq-cai', // Valid canister principal
         name: 'Catherine Law (Buyer\'s Solicitor)',
-        email: 'catherine.law@smithlawfirm.co.uk',
+        email: 'catherine.law@example.com',
         mobile: '+44 20 7946 0958',
         username: 'catherine_solicitor',
         userType: 'solicitor',
@@ -114,7 +114,7 @@ const AdminTestingPanel: React.FC = () => {
         id: 'SOLICITOR-SELLER-001',
         principal: 'ryjl3-tyaaa-aaaaa-aaaba-cai', // Valid canister principal
         name: 'David Williams (Seller\'s Solicitor)',
-        email: 'david.williams@joneslegal.co.uk',
+        email: 'david.williams@example.com',
         mobile: '+44 20 7946 0987',
         username: 'david_solicitor',
         userType: 'solicitor',
