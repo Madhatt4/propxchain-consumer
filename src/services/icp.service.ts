@@ -55,22 +55,9 @@ import { logger } from '@/utils/logger';
 import { delegatePairsOf } from '@/lib/dealAccess';
 import { onChainFileName } from '@/lib/onChainDocument';
 import { normalizeParty } from '../types/multiParty.types';
+import { CANISTER_IDS } from '@/config/canisterIds';
 
-// Canister IDs for IC mainnet (from canister_ids.json)
-const CANISTER_IDS = {
-  property_registry: import.meta.env.VITE_PROPERTY_REGISTRY_CANISTER_ID || 'l6oow-dyaaa-aaaaa-qcwvq-cai',
-  document_verification: import.meta.env.VITE_DOCUMENT_VERIFICATION_CANISTER_ID || 'xand7-wiaaa-aaaah-arlea-cai',
-  transaction_manager: import.meta.env.VITE_TRANSACTION_MANAGER_CANISTER_ID || 'llj73-cqaaa-aaaaa-qcwwa-cai',
-  user_management: import.meta.env.VITE_USER_MANAGEMENT_CANISTER_ID || 'lmizp-piaaa-aaaaa-qcwwq-cai',
-  document_storage: import.meta.env.VITE_DOCUMENT_STORAGE_CANISTER_ID || '646az-pqaaa-aaaaa-qczja-cai',
-  email_service: import.meta.env.VITE_EMAIL_SERVICE_CANISTER_ID || '5by6v-qyaaa-aaaaa-qc65a-cai',
-  ledger_manager: import.meta.env.VITE_LEDGER_MANAGER_CANISTER_ID || 'hty74-maaaa-aaaaa-qcxza-cai',
-  land_registry_integration: import.meta.env.VITE_LAND_REGISTRY_CANISTER_ID || 'o4flv-xaaaa-aaaaa-qdaeq-cai',
-  message_manager: import.meta.env.VITE_MESSAGE_MANAGER_CANISTER_ID || '37una-maaaa-aaaaa-qd3mq-cai',
-  skill_receipts: import.meta.env.VITE_SKILL_RECEIPTS_CANISTER_ID || 'f5gl2-eyaaa-aaaaa-qgypq-cai',
-  entitlement: import.meta.env.VITE_ENTITLEMENT_CANISTER_ID || 'fiv22-eqaaa-aaaaa-qhcmq-cai',
-  frontend: import.meta.env.VITE_ICP_CANISTER_ID || 'u4idr-jyaaa-aaaab-qco5q-cai',
-};
+// Canister IDs come from core-client (platform) and canister_ids.json (frontend).
 
 // Production-only configuration - always use IC mainnet
 const HOST = 'https://ic0.app';
@@ -1012,7 +999,6 @@ class ICPService {
       { name: 'ledger_manager', actor: this.ledgerManagerActor, id: CANISTER_IDS.ledger_manager },
       { name: 'land_registry_integration', actor: this.landRegistryIntegrationActor, id: CANISTER_IDS.land_registry_integration },
       { name: 'message_manager', actor: null as CanisterActor, id: CANISTER_IDS.message_manager },
-      { name: 'skill_receipts', actor: null as CanisterActor, id: CANISTER_IDS.skill_receipts },
       { name: 'entitlement', actor: null as CanisterActor, id: CANISTER_IDS.entitlement },
     ];
 
