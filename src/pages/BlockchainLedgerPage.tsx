@@ -98,11 +98,13 @@ const BlockchainLedgerPage: React.FC = () => {
         setUserRole(isSolicitor ? 'solicitor' : 'client');
       }
 
-      // Load transactions from blockchain
+      // getAllTransactions is admin-only on transaction_manager and returns []
+      // for everyone else; this is a personal ledger, so admins included see
+      // only the transactions they are a party to.
       const { icpService } = await import('../services/icp.service');
       let blockchainTransactions: any[] = [];
       try {
-        blockchainTransactions = await icpService.getAllTransactions();
+        blockchainTransactions = await icpService.getMyTransactions();
         if (!Array.isArray(blockchainTransactions)) {
           logger.warn('Blockchain returned non-array, using empty array');
           blockchainTransactions = [];

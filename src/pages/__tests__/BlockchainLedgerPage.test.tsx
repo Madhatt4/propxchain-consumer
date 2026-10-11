@@ -13,10 +13,12 @@ vi.mock('../../stores/authStore', () => ({
   useAuthStore: { getState: () => ({ principalId: 'principal-me', isAuthenticated: true }) },
 }));
 
+const getMyTransactions = vi.fn();
 const getAllTransactions = vi.fn();
 const getDocumentsByTransaction = vi.fn();
 vi.mock('../../services/icp.service', () => ({
   icpService: {
+    getMyTransactions: (...a: unknown[]) => getMyTransactions(...a),
     getAllTransactions: (...a: unknown[]) => getAllTransactions(...a),
     getDocumentsByTransaction: (...a: unknown[]) => getDocumentsByTransaction(...a),
   },
@@ -47,7 +49,7 @@ describe('BlockchainLedgerPage document ledger', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
-    getAllTransactions.mockResolvedValue([{ id: 'tx_1', propertyAddress: '1 Test Street', status: 'active' }]);
+    getMyTransactions.mockResolvedValue([{ id: 'tx_1', propertyAddress: '1 Test Street', status: 'active' }]);
     localStorage.setItem(
       'transactions',
       JSON.stringify([{ id: 'tx_1', uploadedDocuments: [{ name: 'Local Survey', size: 1024 }] }]),
@@ -109,5 +111,31 @@ describe('BlockchainLedgerPage document ledger', () => {
 
     // Assert
     expect(getDocumentsByTransaction).toHaveBeenCalledWith('tx_1');
+  });
+});
+
+describe('BlockchainLedgerPage transaction source', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    localStorage.clear();
+    getDocumentsByTransaction.mockResolvedValue([]);
+  });
+
+  it("should load the caller's own transactions, not the admin-only list that is empty for non-admins", async () => {
+    // Arrange
+    getMyTransactions.mockResolvedValue([{ id: 'tx_mine', propertyAddress: '2 Own Road', status: 'active' }]);
+    getAllTransactions.mockResolvedValue([]);
+
+    // Act
+    render(
+      <MemoryRouter>
+        <BlockchainLedgerPage />
+      </MemoryRouter>,
+    );
+
+    // Assert
+    expect(await screen.findByText('2 Own Road')).toBeInTheDocument();
+    expect(getMyTransactions).toHaveBeenCalledTimes(1);
+    expect(getAllTransactions).not.toHaveBeenCalled();
   });
 });
