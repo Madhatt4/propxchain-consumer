@@ -87,6 +87,15 @@ describe('judgeCompletedForm', () => {
     );
   });
 
+  it('should say which postcode the form gives when it is not this transaction\'s', () => {
+    const check = judgeCompletedForm('ta6', {
+      ...classified('ta6_form'),
+      matchesProperty: 0.07,
+      propertyCheck: { expectedPostcode: 'SG19 2LA', foundPostcodes: ['SG19 1AB'], postcodeMatches: false },
+    }).check;
+    expect(check).toBe("AI check: reads as a completed TA6 form. It gives postcode SG19 1AB, not this transaction's SG19 2LA.");
+  });
+
   it('should always give the card a line to show, even when unsure', () => {
     expect(judgeCompletedForm('ta6', null).check).toBe(
       "AI check: we couldn't check this file right now. Your conveyancer will check it.",

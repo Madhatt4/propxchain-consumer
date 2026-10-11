@@ -100,6 +100,38 @@ describe('docClassify.service', () => {
       );
     });
 
+    it('should say which postcode the document gives when the function found a different one', () => {
+      expect(
+        describeClassification({
+          ...EPC,
+          matchesProperty: 0.07,
+          propertyCheck: { expectedPostcode: 'SG19 2LA', foundPostcodes: ['SG19 1AB', 'SG18 0AB'], postcodeMatches: false },
+        }),
+      ).toBe(
+        "Reads as an Energy Performance Certificate. It gives postcode SG19 1AB and SG18 0AB, not this transaction's SG19 2LA.",
+      );
+    });
+
+    it('should say the document names no postcode when that is why it could not be tied to the property', () => {
+      expect(
+        describeClassification({
+          ...EPC,
+          matchesProperty: 0.1,
+          propertyCheck: { expectedPostcode: 'SG19 2LA', foundPostcodes: [], postcodeMatches: null },
+        }),
+      ).toBe("Reads as an Energy Performance Certificate. It names no postcode, so we couldn't tie it to this property.");
+    });
+
+    it('should add no property caveat when the postcode matches even if the probability is low', () => {
+      expect(
+        describeClassification({
+          ...EPC,
+          matchesProperty: 0.3,
+          propertyCheck: { expectedPostcode: 'SG19 2LA', foundPostcodes: ['SG19 2LA'], postcodeMatches: true },
+        }),
+      ).toBe('Reads as an Energy Performance Certificate. It may not be for this property.');
+    });
+
     it('should add a date warning when the document is out of date', () => {
       expect(describeClassification({ ...EPC, inDate: false })).toBe(
         'Reads as an Energy Performance Certificate. It looks out of date.',
