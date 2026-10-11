@@ -76,6 +76,13 @@ export type DocFindingKey =
   | 'not_transferable'
   | 'warranty_expired';
 
+export interface DocPropertyCheck {
+  expectedPostcode: string | null;
+  foundPostcodes: string[];
+  /** True when the transaction's postcode is in the document, false when others are and it is not, null when either side is empty. */
+  postcodeMatches: boolean | null;
+}
+
 /** One thing the consents scan found worth saying, already at or above the function's bar. */
 export interface DocFinding {
   key: DocFindingKey | string;
@@ -95,6 +102,12 @@ export interface DocClassification {
   matchesProperty: number | null;
   /** True for an image or image-only PDF: no text, so nothing was asked. */
   unreadable: boolean;
+  /**
+   * The reason behind `matchesProperty`, computed in code by the function:
+   * the postcodes the document carries against the transaction's. Null when
+   * unreadable; absent from older function builds.
+   */
+  propertyCheck?: DocPropertyCheck | null;
   /**
    * The consents scan's findings. Present only when a `DocScanContext` was
    * sent: the list (possibly empty) for a readable document, null when it
@@ -177,15 +190,33 @@ export function docTypeLabel(docType: string): string {
   return DOC_TYPE_LABELS[docType] ?? `a ${docType.replace(/_/g, ' ')}`;
 }
 
+/**
+ * Why the document may not be for this property, in the seller's words, or
+ * null when nothing says so. The postcode fact is preferred over the bare
+ * probability: "it gives SG19 1AB, not this transaction's SG19 2LA" is
+ * something the seller can act on; "it may not be" is not.
+ */
+export function propertyCaveat(result: DocClassification): string | null {
+  if (result.matchesProperty === null || result.matchesProperty >= MATCHES_PROPERTY_AT) return null;
+  const check = result.propertyCheck;
+  if (check?.postcodeMatches === false && check.expectedPostcode) {
+    const found = check.foundPostcodes.join(' and ');
+    return `It gives postcode ${found}, not this transaction's ${check.expectedPostcode}.`;
+  }
+  if (check && check.foundPostcodes.length === 0) {
+    return "It names no postcode, so we couldn't tie it to this property.";
+  }
+  return 'It may not be for this property.';
+}
+
 /** The one quiet line the slot shows under an attachment. */
 export function describeClassification(result: DocClassification): string {
   if (result.unreadable) return UNREADABLE_LINE;
   if (result.docType === 'other' || result.confidence < DOC_TYPE_CONFIDENCE_AT) return UNSURE_LINE;
 
   const parts = [`Reads as ${docTypeLabel(result.docType)}.`];
-  if (result.matchesProperty !== null && result.matchesProperty < MATCHES_PROPERTY_AT) {
-    parts.push('It may not be for this property.');
-  }
+  const caveat = propertyCaveat(result);
+  if (caveat) parts.push(caveat);
   if (result.inDate === false) parts.push('It looks out of date.');
   return parts.join(' ');
 }

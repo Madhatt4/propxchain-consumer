@@ -17,7 +17,7 @@
  * confident "this is an EPC" or "this is a TA10" is a refusal.
  */
 import { requireSession, registerFormProof, uploadFormBytes } from './ta6DocumentUpload';
-import { classifyDocument, DOC_TYPE_CONFIDENCE_AT, docTypeLabel, MATCHES_PROPERTY_AT } from './docClassify.service';
+import { classifyDocument, DOC_TYPE_CONFIDENCE_AT, docTypeLabel, propertyCaveat } from './docClassify.service';
 import { icpService } from './icp.service';
 import { generateFileHash } from '../utils/hashGenerator';
 import { supabase } from '../lib/supabase';
@@ -77,11 +77,11 @@ export function judgeCompletedForm(
   if (classification.confidence < DOC_TYPE_CONFIDENCE_AT) return unverified("We couldn't confirm what this document is.");
   if (classification.docType === FORM_DOC_TYPE[formId]) {
     const parts = [`AI check: reads as ${docTypeLabel(FORM_DOC_TYPE[formId])}.`];
-    // The same property-match signal the attachment slots show; the form
-    // itself still counts, the conveyancer decides what the mismatch means.
-    if (classification.matchesProperty !== null && classification.matchesProperty < MATCHES_PROPERTY_AT) {
-      parts.push('It may not be for this property.');
-    }
+    // The same property caveat the attachment slots show, with the postcode
+    // reason when the function gave one; the form itself still counts, the
+    // conveyancer decides what the mismatch means.
+    const caveat = propertyCaveat(classification);
+    if (caveat) parts.push(caveat);
     return { verdict: 'accepted', reason: null, check: parts.join(' ') };
   }
   const expected = docTypeLabel(FORM_DOC_TYPE[formId]);
