@@ -134,3 +134,4 @@ jobs:
         run: |
           pnpm type-check
           pnpm vitest run src/pro-private
+          node scripts/check-builder-theme-tokens.mjs
