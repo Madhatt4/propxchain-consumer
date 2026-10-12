@@ -4,7 +4,7 @@
 import { defineConfig, configDefaults } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import path from 'path';
-import { resolveProSlot } from './config/pro-slot.mjs';
+import { resolveProSlot } from './config/pro-slot';
 
 export default defineConfig({
   plugins: [react()],

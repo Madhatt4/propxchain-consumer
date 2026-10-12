@@ -6,7 +6,7 @@ import react from '@vitejs/plugin-react'
 import path from 'path'
 
 import { DEV_SECURITY_HEADERS } from './config/security-headers.mjs'
-import { resolveProSlot } from './config/pro-slot.mjs'
+import { resolveProSlot } from './config/pro-slot'
 
 // https://vitejs.dev/config/
 export default defineConfig({

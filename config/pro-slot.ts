@@ -12,7 +12,7 @@
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 
-export function resolveProSlot(root) {
+export function resolveProSlot(root: string): string {
   const privateEntry = path.resolve(root, 'src/pro-private/index.tsx');
   return existsSync(privateEntry) ? privateEntry : path.resolve(root, 'src/pro-slot/stub.tsx');
 }

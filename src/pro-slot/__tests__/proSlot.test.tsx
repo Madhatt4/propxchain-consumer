@@ -6,7 +6,7 @@ import path from 'node:path';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
-import { resolveProSlot } from '../../../config/pro-slot.mjs';
+import { resolveProSlot } from '../../../config/pro-slot';
 import ProStub from '../stub';
 
 describe('resolveProSlot', () => {
