@@ -52,9 +52,9 @@ describe('sectionsFor', () => {
   it('should link each extra to its existing page', () => {
     const byLabel = Object.fromEntries(sectionsFor(['agent', 'developer', 'conveyancer']).map((s) => [s.label, s.to]));
     expect(byLabel).toMatchObject({
-      Listings: '/estate-agent/listings',
-      Pipeline: '/estate-agent/pipeline',
-      Sites: '/builder',
+      Listings: '/pro/estate-agent/listings',
+      Pipeline: '/pro/estate-agent/pipeline',
+      Sites: '/pro/builder',
     });
   });
 });

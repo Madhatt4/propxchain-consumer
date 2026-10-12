@@ -40,7 +40,7 @@ describe('MandateBanners', () => {
     expect(banner).toHaveAttribute('data-side', 'seller');
     expect(banner).toHaveTextContent('Acting for the seller on this deal.');
     expect(banner).toHaveTextContent('recorded in their name');
-    expect(screen.getByRole('link', { name: 'Back to your pipeline' })).toHaveAttribute('href', '/estate-agent/pipeline');
+    expect(screen.getByRole('link', { name: 'Back to your pipeline' })).toHaveAttribute('href', '/pro/estate-agent/pipeline');
   });
 
   it('names both sides once the agency acts for both, seller first', () => {

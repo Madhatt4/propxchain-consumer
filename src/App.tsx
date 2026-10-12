@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2025 PropXchain Ltd
 
-import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
 import { useEffect, lazy, Suspense } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/queryClient';
@@ -40,7 +40,6 @@ import { IS_REGISTRATION_OPEN } from './config/registration';
 import RegisterDeveloperPage from './pages/auth/RegisterDeveloperPage';
 import RegisterConveyancerPage from './pages/auth/RegisterConveyancerPage';
 import RegisterEstateAgentPage from './pages/auth/RegisterEstateAgentPage';
-import JoinConveyancerPage from './pages/conveyancer/JoinConveyancerPage';
 import ProfileSetup from './pages/auth/ProfileSetup';
 import PasswordResetForm from './components/auth/PasswordResetForm';
 import Dashboard from './pages/Dashboard_Premium'; // Eager load dashboard to avoid 503 errors after login
@@ -102,7 +101,6 @@ const PublicListingPage = lazy(() => import('./pages/public/PublicListingPage'))
 import PaymentSuccessPage from './pages/payment/PaymentSuccessPage';
 import SellerFeeSuccessPage from './pages/payment/SellerFeeSuccessPage';
 import QuoteFormPage from './pages/quote/QuoteFormPage';
-const ConveyancerDashboard = lazy(() => import('./pages/ConveyancerDashboard'));
 const AuthCallback = lazy(() => import('./pages/auth/AuthCallback'));
 const ResetPasswordPage = lazy(() => import('./pages/auth/ResetPasswordPage'));
 const RoleSelectionPage = lazy(() => import('./pages/onboarding/RoleSelectionPage'));
@@ -117,25 +115,8 @@ const TA7FormPage = lazy(() => import('./pages/TA7FormPage'));
 const BotAgentSettings = lazy(() => import('./pages/BotAgentSettings'));
 const MyDocumentsPage = lazy(() => import('./pages/MyDocumentsPage'));
 const MyLogbooksPage = lazy(() => import('./pages/MyLogbooksPage'));
-const BuilderLayout = lazy(() => import('./components/builder/BuilderLayout'));
-const BuilderDashboardPage = lazy(() => import('./pages/builder/BuilderDashboardPage'));
-const SiteCreateWizard = lazy(() => import('./pages/builder/SiteCreateWizard'));
-const SiteDetailPage = lazy(() => import('./pages/builder/SiteDetailPage'));
-const PlotTypeListPage = lazy(() => import('./pages/builder/PlotTypeListPage'));
-const PlotTypeEditPage = lazy(() => import('./pages/builder/PlotTypeEditPage'));
-const PlotListPage = lazy(() => import('./pages/builder/PlotListPage'));
-const PlotDetailPage = lazy(() => import('./pages/builder/PlotDetailPage'));
-const PlotCreatePage = lazy(() => import('./pages/builder/PlotCreatePage'));
-const PlotImportPage = lazy(() => import('./pages/builder/PlotImportPage'));
-const PipelineKanbanPage = lazy(() => import('./pages/builder/PipelineKanbanPage'));
-const MilestonesPage = lazy(() => import('./pages/builder/MilestonesPage'));
 const SagasPage = lazy(() => import('./pages/admin/SagasPage'));
 const SupportDeskPage = lazy(() => import('./pages/admin/SupportDeskPage'));
-const EstateAgentLayout = lazy(() => import('./components/estate-agent/EstateAgentLayout'));
-const EstateAgentListingListPage = lazy(() => import('./pages/estate-agent/ListingListPage'));
-const EstateAgentListingCreatePage = lazy(() => import('./pages/estate-agent/ListingCreatePage'));
-const EstateAgentListingDetailPage = lazy(() => import('./pages/estate-agent/ListingDetailPage'));
-const EstateAgentPipelinePage = lazy(() => import('./pages/estate-agent/PipelinePage'));
 const DelegatePage = lazy(() => import('./pages/DelegatePage'));
 // PropXchain Pro: the private trade workspaces, or a stub in public builds (config/pro-slot.ts).
 const ProApp = lazy(() => import('@pro-slot'));
@@ -156,6 +137,28 @@ const LoadingFallback = () => (
 const TransactionFlowRedirect = () => {
   const { id = '' } = useParams<{ id: string }>();
   return <Navigate to={`/transaction/${id}/flow`} replace />;
+};
+
+// The conveyancer workspace moved into PropXchain Pro. Old links (emailed join
+// codes, bookmarks, ?tx= deep links) keep working.
+const ConveyancerRedirect = () => {
+  const { search } = useLocation();
+  return <Navigate to={`/pro/conveyancer${search}`} replace />;
+};
+// The estate agent workspace moved into PropXchain Pro too.
+const EstateAgentRedirect = () => {
+  const { '*': rest = '' } = useParams();
+  const { search } = useLocation();
+  return <Navigate to={`/pro/estate-agent${rest ? `/${rest}` : ''}${search}`} replace />;
+};
+const BuilderRedirect = () => {
+  const { '*': rest = '' } = useParams();
+  const { search } = useLocation();
+  return <Navigate to={`/pro/builder${rest ? `/${rest}` : ''}${search}`} replace />;
+};
+const ConveyancerJoinRedirect = () => {
+  const { code = '' } = useParams<{ code: string }>();
+  return <Navigate to={`/pro/conveyancer/join/${encodeURIComponent(code)}`} replace />;
 };
 
 function App() {
@@ -263,7 +266,7 @@ function App() {
               <Route path="/register/developer" element={<RegisterDeveloperPage />} />
               <Route path="/register/conveyancer" element={<RegisterConveyancerPage />} />
               <Route path="/register/estate-agent" element={<RegisterEstateAgentPage />} />
-              <Route path="/conveyancer/join/:code" element={<JoinConveyancerPage />} />
+              <Route path="/conveyancer/join/:code" element={<ConveyancerJoinRedirect />} />
               <Route path="/auth/callback" element={<Suspense fallback={<div />}><AuthCallback /></Suspense>} />
               <Route path="/reset-password" element={<Suspense fallback={<div />}><ResetPasswordPage /></Suspense>} />
               <Route path="/forgot-password" element={<PasswordResetForm />} />
@@ -325,34 +328,15 @@ function App() {
               <Route path="/admin/testing" element={<ProtectedRoute><RequirePrincipal><RequireProfile><AdminTestingPanel /></RequireProfile></RequirePrincipal></ProtectedRoute>} />
               <Route path="/admin/sagas" element={<ProtectedRoute><RequirePrincipal><RequireProfile><SagasPage /></RequireProfile></RequirePrincipal></ProtectedRoute>} />
               <Route path="/admin/support" element={<ProtectedRoute><RequirePrincipal><RequireProfile><SupportDeskPage /></RequireProfile></RequirePrincipal></ProtectedRoute>} />
-              <Route path="/conveyancer" element={<ProtectedRoute><RequirePrincipal><RequireProfile><ConveyancerDashboard /></RequireProfile></RequirePrincipal></ProtectedRoute>} />
-              <Route path="/pro/*" element={<ProtectedRoute><RequirePrincipal><RequireProfile><Suspense fallback={<LoadingFallback />}><ProApp /></Suspense></RequireProfile></RequirePrincipal></ProtectedRoute>} />
+              <Route path="/conveyancer" element={<ConveyancerRedirect />} />
+              {/* Pro applies its own guards per route: the conveyancer join page opens signed out. */}
+              <Route path="/pro/*" element={<Suspense fallback={<LoadingFallback />}><ProApp /></Suspense>} />
 
-              {/* Builder / Developer portal — wrapped in BuilderLayout for sidebar */}
-              <Route path="/builder" element={<ProtectedRoute><BuilderLayout /></ProtectedRoute>}>
-                <Route index element={<BuilderDashboardPage />} />
-                <Route path="sites/new" element={<SiteCreateWizard />} />
-                <Route path="sites/:siteId" element={<SiteDetailPage />} />
-                <Route path="sites/:siteId/plot-types" element={<PlotTypeListPage />} />
-                <Route path="sites/:siteId/plot-types/new" element={<PlotTypeEditPage />} />
-                <Route path="sites/:siteId/plot-types/:plotTypeId/edit" element={<PlotTypeEditPage />} />
-                <Route path="sites/:siteId/plots" element={<PlotListPage />} />
-                <Route path="sites/:siteId/plots/import" element={<PlotImportPage />} />
-                <Route path="sites/:siteId/plots/new" element={<PlotCreatePage />} />
-                <Route path="sites/:siteId/plots/:plotId" element={<PlotDetailPage />} />
-                <Route path="sites/:siteId/plots/:plotId/edit" element={<PlotCreatePage />} />
-                <Route path="sites/:siteId/pipeline" element={<PipelineKanbanPage />} />
-                <Route path="sites/:siteId/milestones" element={<MilestonesPage />} />
-              </Route>
+              {/* The developer portal moved into PropXchain Pro. */}
+              <Route path="/builder/*" element={<BuilderRedirect />} />
 
               {/* Estate agent portal — listings + sales progression */}
-              <Route path="/estate-agent" element={<ProtectedRoute><EstateAgentLayout /></ProtectedRoute>}>
-                <Route index element={<Navigate to="listings" replace />} />
-                <Route path="listings" element={<EstateAgentListingListPage />} />
-                <Route path="listings/new" element={<EstateAgentListingCreatePage />} />
-                <Route path="listings/:id" element={<EstateAgentListingDetailPage />} />
-                <Route path="pipeline" element={<EstateAgentPipelinePage />} />
-              </Route>
+              <Route path="/estate-agent/*" element={<EstateAgentRedirect />} />
 
                 <Route path="*" element={<NotFoundRedirect />} />
                 </Routes>

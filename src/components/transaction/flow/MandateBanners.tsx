@@ -51,7 +51,7 @@ export function MandateBanners({ transactionId, myRole, className = '' }: Mandat
             Anything with legal weight still goes to them to confirm.
           </span>
         </p>
-        <Link to="/estate-agent/pipeline" className={ACTION}>
+        <Link to="/pro/estate-agent/pipeline" className={ACTION}>
           Back to your pipeline
         </Link>
       </div>

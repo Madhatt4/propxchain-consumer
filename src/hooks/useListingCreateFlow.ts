@@ -20,7 +20,7 @@ import type { CreateAgentListingInput } from '@/services/estateAgentListings.ser
 import type { StartSaleResult } from '@/services/startSale.service';
 import type { AgentListingRow } from '@/types/estateAgentListing.types';
 
-const LISTINGS_PATH = '/estate-agent/listings';
+const LISTINGS_PATH = '/pro/estate-agent/listings';
 
 export interface UseListingCreateFlowResult {
   mutation: UseMutationResult<AgentListingRow, Error, CreateAgentListingInput>;
