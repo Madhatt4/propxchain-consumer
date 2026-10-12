@@ -5,6 +5,11 @@ import type { MaterialInfoOverrides } from '@/types/materialInfo.types';
 
 const FLOOD_RISK_OPTIONS = ['Very low', 'Low', 'Medium', 'High'];
 const LISTED_BUILDING_OPTIONS = ['None', 'Grade I', 'Grade II*', 'Grade II'];
+// Labels match what the seller's TA6 produces (utils/materialInfoFromTa6), so
+// a TA6-sourced value shows as the selected option rather than an orphan.
+const ELECTRICITY_OPTIONS = ['Mains', 'Not mains'];
+const WATER_OPTIONS = ['Mains', 'Private supply'];
+const SEWERAGE_OPTIONS = ['Mains', 'Septic tank', 'Cesspool', 'Sewage treatment plant', 'Other'];
 
 type OverridesKey = keyof MaterialInfoOverrides;
 
@@ -44,6 +49,34 @@ function TextFieldRow({ id, label, value, onChange }: TextFieldRowProps): JSX.El
         maxLength={1}
         value={value}
         onChange={(e) => onChange(e.target.value.trim() === '' ? undefined : e.target.value.toUpperCase())}
+        className="mt-2 w-full rounded-md border border-[#E5E7EB] bg-white px-4 py-2 font-[DM_Sans] text-sm text-[#1A1A1A] focus:border-[#0D9488] focus:outline-none focus:ring-1 focus:ring-[#0D9488]"
+      />
+    </div>
+  );
+}
+
+interface FreeTextFieldRowProps {
+  id: string;
+  label: string;
+  placeholder: string;
+  value: string | undefined;
+  onChange: (next: string | undefined) => void;
+}
+
+/** Short free-text input (heating, broadband, parking…). Empty input clears the override. */
+function FreeTextFieldRow({ id, label, placeholder, value, onChange }: FreeTextFieldRowProps): JSX.Element {
+  return (
+    <div>
+      <label htmlFor={id} className="block font-[DM_Sans] text-sm font-medium text-[#1A1A1A]">
+        {label}
+      </label>
+      <input
+        id={id}
+        type="text"
+        maxLength={120}
+        placeholder={placeholder}
+        value={value ?? ''}
+        onChange={(e) => onChange(e.target.value.trim() === '' ? undefined : e.target.value)}
         className="mt-2 w-full rounded-md border border-[#E5E7EB] bg-white px-4 py-2 font-[DM_Sans] text-sm text-[#1A1A1A] focus:border-[#0D9488] focus:outline-none focus:ring-1 focus:ring-[#0D9488]"
       />
     </div>
@@ -200,6 +233,55 @@ export function MaterialInfoEditor({ value, onChange }: MaterialInfoEditorProps)
         label="Service charge (per year)"
         value={value.serviceChargePerYear}
         onChange={(next) => onChange(withOverride(value, 'serviceChargePerYear', next))}
+      />
+      <SelectFieldRow
+        id="material-info-electricity"
+        label="Electricity"
+        value={value.electricity}
+        options={ELECTRICITY_OPTIONS}
+        onChange={(next) => onChange(withOverride(value, 'electricity', next))}
+      />
+      <SelectFieldRow
+        id="material-info-water"
+        label="Water"
+        value={value.water}
+        options={WATER_OPTIONS}
+        onChange={(next) => onChange(withOverride(value, 'water', next))}
+      />
+      <SelectFieldRow
+        id="material-info-sewerage"
+        label="Sewerage"
+        value={value.sewerage}
+        options={SEWERAGE_OPTIONS}
+        onChange={(next) => onChange(withOverride(value, 'sewerage', next))}
+      />
+      <FreeTextFieldRow
+        id="material-info-heating"
+        label="Heating"
+        placeholder="e.g. Gas central heating"
+        value={value.heating}
+        onChange={(next) => onChange(withOverride(value, 'heating', next))}
+      />
+      <FreeTextFieldRow
+        id="material-info-broadband"
+        label="Broadband"
+        placeholder="e.g. Fibre to the premises, up to 900 Mbps"
+        value={value.broadband}
+        onChange={(next) => onChange(withOverride(value, 'broadband', next))}
+      />
+      <FreeTextFieldRow
+        id="material-info-mobile-signal"
+        label="Mobile signal"
+        placeholder="e.g. Good indoors on all four networks"
+        value={value.mobileSignal}
+        onChange={(next) => onChange(withOverride(value, 'mobileSignal', next))}
+      />
+      <FreeTextFieldRow
+        id="material-info-parking"
+        label="Parking"
+        placeholder="e.g. Driveway, garage"
+        value={value.parking}
+        onChange={(next) => onChange(withOverride(value, 'parking', next))}
       />
     </div>
   );
