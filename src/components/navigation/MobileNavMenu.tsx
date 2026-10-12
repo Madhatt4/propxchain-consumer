@@ -81,7 +81,7 @@ const MobileNavMenu: React.FC<MobileNavMenuProps> = ({ isOpen, onClose }) => {
     ...(isAdmin
       ? [
           { label: 'Consumer Dashboard', path: '/dashboard', id: 'dashboard', icon: Home },
-          { label: 'Builder Portal', path: '/builder', id: 'builder', icon: Building2 },
+          { label: 'Builder Portal', path: '/pro/builder', id: 'builder', icon: Building2 },
         ]
       : [{ label: 'Dashboard', path: '/dashboard', id: 'dashboard', icon: Home }]),
     { label: 'Profile', path: '/profile-setup', id: 'profile', icon: User },

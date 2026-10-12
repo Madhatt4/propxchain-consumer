@@ -33,11 +33,11 @@ const PremiumSidebar: React.FC<PremiumSidebarProps> = ({ activeRoute, onAddTrans
   const supabaseUser = useAuthStore((s) => s.supabaseUser);
   const isDeveloperUser = supabaseUser?.user_metadata?.role === 'developer'
     || supabaseUser?.user_metadata?.propxchain_pending_developer_org != null;
-  const isBuilderContext = isDeveloperUser || currentRoute.startsWith('/builder');
-  const dashboardRoute = isBuilderContext ? '/builder' : '/dashboard';
+  const isBuilderContext = isDeveloperUser || currentRoute.startsWith('/pro/builder');
+  const dashboardRoute = isBuilderContext ? '/pro/builder' : '/dashboard';
 
   const isActive = (route: string): boolean => {
-    if (route === '/dashboard' || route === '/builder') {
+    if (route === '/dashboard' || route === '/pro/builder') {
       return currentRoute === route || currentRoute === '/';
     }
     return currentRoute === route || currentRoute.startsWith(route + '/');
@@ -95,8 +95,8 @@ const PremiumSidebar: React.FC<PremiumSidebarProps> = ({ activeRoute, onAddTrans
               <span className="premium-nav-label">Consumer Dashboard</span>
             </Link>
             <Link
-              to="/builder"
-              className={`premium-nav-item ${isActive('/builder') ? 'active' : ''}`}
+              to="/pro/builder"
+              className={`premium-nav-item ${isActive('/pro/builder') ? 'active' : ''}`}
             >
               <span className="premium-nav-icon">🏗️</span>
               <span className="premium-nav-label">Builder Portal</span>

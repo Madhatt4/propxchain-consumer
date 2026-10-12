@@ -101,7 +101,7 @@ describe('SupportChatWidget', () => {
     expect(isHelpRoute('/transaction/tx-1/flow')).toBe(true);
     expect(isHelpRoute('/conveyancer')).toBe(true);
     expect(isHelpRoute('/pro/estate-agent/listings')).toBe(true);
-    expect(isHelpRoute('/builder/sites/s-1/plots')).toBe(true);
+    expect(isHelpRoute('/pro/builder/sites/s-1/plots')).toBe(true);
     expect(isHelpRoute('/messages')).toBe(true);
   });
 
