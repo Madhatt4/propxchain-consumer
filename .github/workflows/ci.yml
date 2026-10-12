@@ -77,3 +77,60 @@ jobs:
         # Trivial smoke: @propxchain/core-client must import and instantiate.
         # Sharpens in A3.1 (expanded surface) and A7 (full cross-repo contract).
         run: node --input-type=module -e "import('@propxchain/core-client').then(m => { const c = new m.PropXchainClient(); if (!c.transactionManager) throw new Error('core-client missing transactionManager'); console.log('core-client smoke OK'); })"
+
+  pro:
+    # The deploy builds PropXchain Pro (the monorepo's private packages/pro)
+    # into the bundle, but the deploy only runs after merge. Without this job a
+    # PR showed green and the failure (a token that cannot read the monorepo,
+    # or Pro code that no longer type-checks against this tree) arrived as an
+    # email after merge. Same mount as deploy-frontend.yml, so the PR goes red
+    # first. Fork PRs get no secrets, so they skip it; the deploy still checks.
+    name: PropXchain Pro mount
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Check the PropXchain Pro token is set
+        env:
+          PRO_REPO_TOKEN: ${{ secrets.PRO_REPO_TOKEN }}
+        run: |
+          if [ -z "$PRO_REPO_TOKEN" ]; then
+            echo "::error::PRO_REPO_TOKEN is not set. Add a fine-grained token with read access to Madhatt4/Propxchain contents as a repository secret."
+            exit 1
+          fi
+
+      - name: Check out PropXchain Pro
+        uses: actions/checkout@v6
+        with:
+          repository: Madhatt4/Propxchain
+          ref: main
+          token: ${{ secrets.PRO_REPO_TOKEN }}
+          path: .pro-checkout
+          sparse-checkout: packages/pro
+          persist-credentials: false
+
+      - name: Mount PropXchain Pro into the slot
+        run: |
+          cp -r .pro-checkout/packages/pro/src src/pro-private
+          rm -rf .pro-checkout
+          test -f src/pro-private/index.tsx
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Type-check and test PropXchain Pro
+        run: |
+          pnpm type-check
+          pnpm vitest run src/pro-private
