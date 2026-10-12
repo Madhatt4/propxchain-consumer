@@ -51,7 +51,7 @@ permissions:
 jobs:
   build-verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     concurrency:
       group: build-verify-frontend-${{ github.ref }}
       cancel-in-progress: true
@@ -73,6 +73,41 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      # PropXchain Pro (the trade workspaces) is proprietary and lives in the
+      # private monorepo's packages/pro. It is built into this bundle through
+      # the /pro slot (config/pro-slot.ts). Shipping without it would silently
+      # replace every trade workspace with the stub, so a missing token fails
+      # the deploy instead.
+      - name: Check the PropXchain Pro token is set
+        env:
+          PRO_REPO_TOKEN: ${{ secrets.PRO_REPO_TOKEN }}
+        run: |
+          if [ -z "$PRO_REPO_TOKEN" ]; then
+            echo "::error::PRO_REPO_TOKEN is not set. Add a fine-grained token with read access to Madhatt4/Propxchain contents as a repository secret."
+            exit 1
+          fi
+
+      - name: Check out PropXchain Pro
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          repository: Madhatt4/Propxchain
+          ref: main
+          token: ${{ secrets.PRO_REPO_TOKEN }}
+          path: .pro-checkout
+          sparse-checkout: packages/pro
+          persist-credentials: false
+
+      - name: Mount PropXchain Pro into the slot
+        run: |
+          cp -r .pro-checkout/packages/pro/src src/pro-private
+          rm -rf .pro-checkout
+          test -f src/pro-private/index.tsx
+
+      - name: Type-check and test PropXchain Pro
+        run: |
+          pnpm type-check
+          pnpm vitest run src/pro-private
 
       - name: Verify build env secrets
         env:
@@ -300,6 +335,14 @@ jobs:
             echo ""
             echo "Bundle: \`$INDEX_JS\`"
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Verify PropXchain Pro is in the bundle, not the stub
+        run: |
+          if grep -qrlF "not part of this build" dist/assets/; then
+            echo "::error::dist/ carries the Pro stub. The private package was not built in."
+            exit 1
+          fi
+          echo "PropXchain Pro is in the bundle."
 
       - name: Upload verified dist for deploy job
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0

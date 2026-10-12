@@ -116,3 +116,6 @@ supabase/.temp/
 
 # Native app web bundle (pnpm build:mobile), regenerated before every cap sync
 /dist-mobile/
+
+# PropXchain Pro: private package checked out by the deploy (config/pro-slot.ts)
+src/pro-private/
