@@ -24,8 +24,8 @@ export const COMMON_SECTIONS: readonly SectionTab[] = [
 
 const EXTRA_SECTIONS: Record<PortalKind, readonly SectionTab[]> = {
   agent: [
-    { label: 'Listings', to: '/estate-agent/listings' },
-    { label: 'Pipeline', to: '/estate-agent/pipeline' },
+    { label: 'Listings', to: '/pro/estate-agent/listings' },
+    { label: 'Pipeline', to: '/pro/estate-agent/pipeline' },
   ],
   developer: [{ label: 'Sites', to: '/builder' }],
   conveyancer: [],

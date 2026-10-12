@@ -21,7 +21,7 @@ describe('<AgentStartGate>', () => {
 
     expect(screen.getByRole('link', { name: /yes, i.m acting for a seller/i })).toHaveAttribute(
       'href',
-      '/estate-agent/listings/new',
+      '/pro/estate-agent/listings/new',
     );
   });
 

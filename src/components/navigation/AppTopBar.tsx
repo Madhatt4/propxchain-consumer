@@ -81,7 +81,7 @@ const MENU_ITEM =
 const ADMIN_PORTAL_LINKS: ReadonlyArray<{ label: string; to: string }> = [
   { label: 'Admin dashboard', to: '/admin' },
   { label: 'Builder portal', to: '/builder' },
-  { label: 'Estate agent portal', to: '/estate-agent' },
+  { label: 'Estate agent portal', to: '/pro/estate-agent' },
 ];
 
 export const AppTopBar: React.FC<AppTopBarProps> = ({

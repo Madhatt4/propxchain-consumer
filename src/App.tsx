@@ -129,11 +129,6 @@ const PipelineKanbanPage = lazy(() => import('./pages/builder/PipelineKanbanPage
 const MilestonesPage = lazy(() => import('./pages/builder/MilestonesPage'));
 const SagasPage = lazy(() => import('./pages/admin/SagasPage'));
 const SupportDeskPage = lazy(() => import('./pages/admin/SupportDeskPage'));
-const EstateAgentLayout = lazy(() => import('./components/estate-agent/EstateAgentLayout'));
-const EstateAgentListingListPage = lazy(() => import('./pages/estate-agent/ListingListPage'));
-const EstateAgentListingCreatePage = lazy(() => import('./pages/estate-agent/ListingCreatePage'));
-const EstateAgentListingDetailPage = lazy(() => import('./pages/estate-agent/ListingDetailPage'));
-const EstateAgentPipelinePage = lazy(() => import('./pages/estate-agent/PipelinePage'));
 const DelegatePage = lazy(() => import('./pages/DelegatePage'));
 // PropXchain Pro: the private trade workspaces, or a stub in public builds (config/pro-slot.ts).
 const ProApp = lazy(() => import('@pro-slot'));
@@ -161,6 +156,12 @@ const TransactionFlowRedirect = () => {
 const ConveyancerRedirect = () => {
   const { search } = useLocation();
   return <Navigate to={`/pro/conveyancer${search}`} replace />;
+};
+// The estate agent workspace moved into PropXchain Pro too.
+const EstateAgentRedirect = () => {
+  const { '*': rest = '' } = useParams();
+  const { search } = useLocation();
+  return <Navigate to={`/pro/estate-agent${rest ? `/${rest}` : ''}${search}`} replace />;
 };
 const ConveyancerJoinRedirect = () => {
   const { code = '' } = useParams<{ code: string }>();
@@ -356,13 +357,7 @@ function App() {
               </Route>
 
               {/* Estate agent portal — listings + sales progression */}
-              <Route path="/estate-agent" element={<ProtectedRoute><EstateAgentLayout /></ProtectedRoute>}>
-                <Route index element={<Navigate to="listings" replace />} />
-                <Route path="listings" element={<EstateAgentListingListPage />} />
-                <Route path="listings/new" element={<EstateAgentListingCreatePage />} />
-                <Route path="listings/:id" element={<EstateAgentListingDetailPage />} />
-                <Route path="pipeline" element={<EstateAgentPipelinePage />} />
-              </Route>
+              <Route path="/estate-agent/*" element={<EstateAgentRedirect />} />
 
                 <Route path="*" element={<NotFoundRedirect />} />
                 </Routes>
