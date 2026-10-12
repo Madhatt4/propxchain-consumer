@@ -6,6 +6,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { logger } from '@/utils/logger';
 import { messageService } from '../../services/message.service';
 import { ComposeMessageModal } from './ComposeMessageModal';
+import { BankDetailWarning } from './BankDetailWarning';
+import { useBankDetailWarnings } from '@/hooks/useBankDetailWarnings';
 import {
   ThreadWithUnread,
   Message,
@@ -31,6 +33,8 @@ import { getStorePrincipalId, getStoreIsAuthenticated } from '../../stores/authS
 
 type Tab = 'inbox' | 'sent' | 'archived';
 
+const recordBankDetailWarning = (id: string) => messageService.recordBankDetailWarning(id);
+
 export const MessagesPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -48,6 +52,8 @@ export const MessagesPage: React.FC = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [isMobileView, setIsMobileView] = useState(false);
   const [showMobileMessages, setShowMobileMessages] = useState(false);
+
+  const showsBankWarning = useBankDetailWarnings(threadMessages, getStorePrincipalId(), recordBankDetailWarning);
 
   // Check auth
   useEffect(() => {
@@ -428,6 +434,7 @@ export const MessagesPage: React.FC = () => {
                                 {message.senderRole}
                               </span>
                             </div>
+                            {showsBankWarning(message) && <BankDetailWarning />}
                             <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                             <p className={`text-xs mt-2 ${isOwnMessage ? 'text-emerald-100' : 'text-slate-400'}`}>
                               {formatDate(message.createdAt)}
