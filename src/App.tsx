@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2025 PropXchain Ltd
 
-import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
 import { useEffect, lazy, Suspense } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/queryClient';
@@ -40,7 +40,6 @@ import { IS_REGISTRATION_OPEN } from './config/registration';
 import RegisterDeveloperPage from './pages/auth/RegisterDeveloperPage';
 import RegisterConveyancerPage from './pages/auth/RegisterConveyancerPage';
 import RegisterEstateAgentPage from './pages/auth/RegisterEstateAgentPage';
-import JoinConveyancerPage from './pages/conveyancer/JoinConveyancerPage';
 import ProfileSetup from './pages/auth/ProfileSetup';
 import PasswordResetForm from './components/auth/PasswordResetForm';
 import Dashboard from './pages/Dashboard_Premium'; // Eager load dashboard to avoid 503 errors after login
@@ -102,7 +101,6 @@ const PublicListingPage = lazy(() => import('./pages/public/PublicListingPage'))
 import PaymentSuccessPage from './pages/payment/PaymentSuccessPage';
 import SellerFeeSuccessPage from './pages/payment/SellerFeeSuccessPage';
 import QuoteFormPage from './pages/quote/QuoteFormPage';
-const ConveyancerDashboard = lazy(() => import('./pages/ConveyancerDashboard'));
 const AuthCallback = lazy(() => import('./pages/auth/AuthCallback'));
 const ResetPasswordPage = lazy(() => import('./pages/auth/ResetPasswordPage'));
 const RoleSelectionPage = lazy(() => import('./pages/onboarding/RoleSelectionPage'));
@@ -156,6 +154,17 @@ const LoadingFallback = () => (
 const TransactionFlowRedirect = () => {
   const { id = '' } = useParams<{ id: string }>();
   return <Navigate to={`/transaction/${id}/flow`} replace />;
+};
+
+// The conveyancer workspace moved into PropXchain Pro. Old links (emailed join
+// codes, bookmarks, ?tx= deep links) keep working.
+const ConveyancerRedirect = () => {
+  const { search } = useLocation();
+  return <Navigate to={`/pro/conveyancer${search}`} replace />;
+};
+const ConveyancerJoinRedirect = () => {
+  const { code = '' } = useParams<{ code: string }>();
+  return <Navigate to={`/pro/conveyancer/join/${encodeURIComponent(code)}`} replace />;
 };
 
 function App() {
@@ -263,7 +272,7 @@ function App() {
               <Route path="/register/developer" element={<RegisterDeveloperPage />} />
               <Route path="/register/conveyancer" element={<RegisterConveyancerPage />} />
               <Route path="/register/estate-agent" element={<RegisterEstateAgentPage />} />
-              <Route path="/conveyancer/join/:code" element={<JoinConveyancerPage />} />
+              <Route path="/conveyancer/join/:code" element={<ConveyancerJoinRedirect />} />
               <Route path="/auth/callback" element={<Suspense fallback={<div />}><AuthCallback /></Suspense>} />
               <Route path="/reset-password" element={<Suspense fallback={<div />}><ResetPasswordPage /></Suspense>} />
               <Route path="/forgot-password" element={<PasswordResetForm />} />
@@ -325,8 +334,9 @@ function App() {
               <Route path="/admin/testing" element={<ProtectedRoute><RequirePrincipal><RequireProfile><AdminTestingPanel /></RequireProfile></RequirePrincipal></ProtectedRoute>} />
               <Route path="/admin/sagas" element={<ProtectedRoute><RequirePrincipal><RequireProfile><SagasPage /></RequireProfile></RequirePrincipal></ProtectedRoute>} />
               <Route path="/admin/support" element={<ProtectedRoute><RequirePrincipal><RequireProfile><SupportDeskPage /></RequireProfile></RequirePrincipal></ProtectedRoute>} />
-              <Route path="/conveyancer" element={<ProtectedRoute><RequirePrincipal><RequireProfile><ConveyancerDashboard /></RequireProfile></RequirePrincipal></ProtectedRoute>} />
-              <Route path="/pro/*" element={<ProtectedRoute><RequirePrincipal><RequireProfile><Suspense fallback={<LoadingFallback />}><ProApp /></Suspense></RequireProfile></RequirePrincipal></ProtectedRoute>} />
+              <Route path="/conveyancer" element={<ConveyancerRedirect />} />
+              {/* Pro applies its own guards per route: the conveyancer join page opens signed out. */}
+              <Route path="/pro/*" element={<Suspense fallback={<LoadingFallback />}><ProApp /></Suspense>} />
 
               {/* Builder / Developer portal — wrapped in BuilderLayout for sidebar */}
               <Route path="/builder" element={<ProtectedRoute><BuilderLayout /></ProtectedRoute>}>

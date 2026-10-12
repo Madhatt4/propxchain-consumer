@@ -86,6 +86,6 @@ describe('TopBar — View as conveyancer', () => {
     adminState.isAdmin = true;
     renderBar();
     fireEvent.click(screen.getByRole('button', { name: /view as conveyancer/i }));
-    expect(mockNavigate).toHaveBeenCalledWith('/conveyancer?tx=TX-7');
+    expect(mockNavigate).toHaveBeenCalledWith('/pro/conveyancer?tx=TX-7');
   });
 });

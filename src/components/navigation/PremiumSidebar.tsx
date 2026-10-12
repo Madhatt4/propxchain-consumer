@@ -102,8 +102,8 @@ const PremiumSidebar: React.FC<PremiumSidebarProps> = ({ activeRoute, onAddTrans
               <span className="premium-nav-label">Builder Portal</span>
             </Link>
             <Link
-              to="/conveyancer"
-              className={`premium-nav-item ${isActive('/conveyancer') ? 'active' : ''}`}
+              to="/pro/conveyancer"
+              className={`premium-nav-item ${isActive('/pro/conveyancer') ? 'active' : ''}`}
             >
               <span className="premium-nav-icon">⚖️</span>
               <span className="premium-nav-label">Conveyancer Portal</span>
@@ -198,8 +198,8 @@ const PremiumSidebar: React.FC<PremiumSidebarProps> = ({ activeRoute, onAddTrans
                 return (
                   <>
                     <Link
-                      to="/conveyancer"
-                      className={`premium-nav-item ${isActive('/conveyancer') ? 'active' : ''}`}
+                      to="/pro/conveyancer"
+                      className={`premium-nav-item ${isActive('/pro/conveyancer') ? 'active' : ''}`}
                     >
                       <span className="premium-nav-icon">&#9878;</span>
                       <span className="premium-nav-label">Conveyancer Portal</span>
