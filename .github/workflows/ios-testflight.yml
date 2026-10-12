@@ -144,6 +144,11 @@ jobs:
           for d in devices:
               a = d["attributes"]
               print(f"  platform={a['platform']}  class={a.get('deviceClass')}  status={a['status']}")
+          # Confirms the key belongs to the team that owns the app ID.
+          req = urllib.request.Request("https://api.appstoreconnect.apple.com/v1/bundleIds?filter[identifier]=com.propxchain.app",
+                                       headers={"Authorization": f"Bearer {token}"})
+          ids = [b["attributes"]["identifier"] for b in json.load(urllib.request.urlopen(req))["data"]]
+          print("app ID visible to this key:", "com.propxchain.app" in ids)
           EOF
 
       - name: Archive
