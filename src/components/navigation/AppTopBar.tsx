@@ -80,7 +80,7 @@ const MENU_ITEM =
 /** Admin-only shortcuts into each role portal, in menu order. */
 const ADMIN_PORTAL_LINKS: ReadonlyArray<{ label: string; to: string }> = [
   { label: 'Admin dashboard', to: '/admin' },
-  { label: 'Builder portal', to: '/builder' },
+  { label: 'Builder portal', to: '/pro/builder' },
   { label: 'Estate agent portal', to: '/pro/estate-agent' },
 ];
 

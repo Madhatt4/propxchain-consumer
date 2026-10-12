@@ -115,18 +115,6 @@ const TA7FormPage = lazy(() => import('./pages/TA7FormPage'));
 const BotAgentSettings = lazy(() => import('./pages/BotAgentSettings'));
 const MyDocumentsPage = lazy(() => import('./pages/MyDocumentsPage'));
 const MyLogbooksPage = lazy(() => import('./pages/MyLogbooksPage'));
-const BuilderLayout = lazy(() => import('./components/builder/BuilderLayout'));
-const BuilderDashboardPage = lazy(() => import('./pages/builder/BuilderDashboardPage'));
-const SiteCreateWizard = lazy(() => import('./pages/builder/SiteCreateWizard'));
-const SiteDetailPage = lazy(() => import('./pages/builder/SiteDetailPage'));
-const PlotTypeListPage = lazy(() => import('./pages/builder/PlotTypeListPage'));
-const PlotTypeEditPage = lazy(() => import('./pages/builder/PlotTypeEditPage'));
-const PlotListPage = lazy(() => import('./pages/builder/PlotListPage'));
-const PlotDetailPage = lazy(() => import('./pages/builder/PlotDetailPage'));
-const PlotCreatePage = lazy(() => import('./pages/builder/PlotCreatePage'));
-const PlotImportPage = lazy(() => import('./pages/builder/PlotImportPage'));
-const PipelineKanbanPage = lazy(() => import('./pages/builder/PipelineKanbanPage'));
-const MilestonesPage = lazy(() => import('./pages/builder/MilestonesPage'));
 const SagasPage = lazy(() => import('./pages/admin/SagasPage'));
 const SupportDeskPage = lazy(() => import('./pages/admin/SupportDeskPage'));
 const DelegatePage = lazy(() => import('./pages/DelegatePage'));
@@ -162,6 +150,11 @@ const EstateAgentRedirect = () => {
   const { '*': rest = '' } = useParams();
   const { search } = useLocation();
   return <Navigate to={`/pro/estate-agent${rest ? `/${rest}` : ''}${search}`} replace />;
+};
+const BuilderRedirect = () => {
+  const { '*': rest = '' } = useParams();
+  const { search } = useLocation();
+  return <Navigate to={`/pro/builder${rest ? `/${rest}` : ''}${search}`} replace />;
 };
 const ConveyancerJoinRedirect = () => {
   const { code = '' } = useParams<{ code: string }>();
@@ -339,22 +332,8 @@ function App() {
               {/* Pro applies its own guards per route: the conveyancer join page opens signed out. */}
               <Route path="/pro/*" element={<Suspense fallback={<LoadingFallback />}><ProApp /></Suspense>} />
 
-              {/* Builder / Developer portal — wrapped in BuilderLayout for sidebar */}
-              <Route path="/builder" element={<ProtectedRoute><BuilderLayout /></ProtectedRoute>}>
-                <Route index element={<BuilderDashboardPage />} />
-                <Route path="sites/new" element={<SiteCreateWizard />} />
-                <Route path="sites/:siteId" element={<SiteDetailPage />} />
-                <Route path="sites/:siteId/plot-types" element={<PlotTypeListPage />} />
-                <Route path="sites/:siteId/plot-types/new" element={<PlotTypeEditPage />} />
-                <Route path="sites/:siteId/plot-types/:plotTypeId/edit" element={<PlotTypeEditPage />} />
-                <Route path="sites/:siteId/plots" element={<PlotListPage />} />
-                <Route path="sites/:siteId/plots/import" element={<PlotImportPage />} />
-                <Route path="sites/:siteId/plots/new" element={<PlotCreatePage />} />
-                <Route path="sites/:siteId/plots/:plotId" element={<PlotDetailPage />} />
-                <Route path="sites/:siteId/plots/:plotId/edit" element={<PlotCreatePage />} />
-                <Route path="sites/:siteId/pipeline" element={<PipelineKanbanPage />} />
-                <Route path="sites/:siteId/milestones" element={<MilestonesPage />} />
-              </Route>
+              {/* The developer portal moved into PropXchain Pro. */}
+              <Route path="/builder/*" element={<BuilderRedirect />} />
 
               {/* Estate agent portal — listings + sales progression */}
               <Route path="/estate-agent/*" element={<EstateAgentRedirect />} />

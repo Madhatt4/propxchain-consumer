@@ -27,7 +27,7 @@ const EXTRA_SECTIONS: Record<PortalKind, readonly SectionTab[]> = {
     { label: 'Listings', to: '/pro/estate-agent/listings' },
     { label: 'Pipeline', to: '/pro/estate-agent/pipeline' },
   ],
-  developer: [{ label: 'Sites', to: '/builder' }],
+  developer: [{ label: 'Sites', to: '/pro/builder' }],
   conveyancer: [],
 };
 

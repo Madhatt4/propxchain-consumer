@@ -54,7 +54,7 @@ describe('sectionsFor', () => {
     expect(byLabel).toMatchObject({
       Listings: '/pro/estate-agent/listings',
       Pipeline: '/pro/estate-agent/pipeline',
-      Sites: '/builder',
+      Sites: '/pro/builder',
     });
   });
 });

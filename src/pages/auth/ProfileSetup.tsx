@@ -252,7 +252,7 @@ const ProfileSetup: React.FC = () => {
         supaMeta?.role === 'developer' ||
         supaMeta?.propxchain_pending_developer_org != null;
       if (isDeveloper) {
-        navigate('/builder');
+        navigate('/pro/builder');
       } else {
         localStorage.setItem('needsOnboarding', 'true');
         navigate('/onboarding/role');

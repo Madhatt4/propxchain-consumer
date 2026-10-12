@@ -12,7 +12,7 @@
  *
  * WHAT IT CHECKS
  * --------------
- * Under src/pages/builder and src/components/builder, production files may not
+ * Under src/pro-private/builder (PropXchain Pro), production files may not
  * use `gray-<n>` or `bg-white` utility classes, with or without a variant
  * prefix. Use the tokens instead: --bg-main, --bg-card, --bg-section,
  * --text-main, --text-secondary, --text-muted, --border-color, --border-light.
@@ -20,10 +20,16 @@
  * Test files are out of scope: they are not shipped.
  */
 
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
-const ROOTS = ['src/pages/builder', 'src/components/builder'];
+// The builder portal moved into PropXchain Pro, which only exists in this tree
+// when the deploy (or a local junction) mounts it at src/pro-private.
+const ROOTS = ['src/pro-private/builder'].filter((root) => existsSync(root));
+if (ROOTS.length === 0) {
+  console.log('builder theme tokens: skipped, PropXchain Pro is not mounted');
+  process.exit(0);
+}
 const BANNED = /\b(?:[a-z-]+:)*(?:[a-z-]+-)?(?:gray-\d{2,3}(?:\/\d+)?|bg-white)\b/g;
 
 function walk(dir) {

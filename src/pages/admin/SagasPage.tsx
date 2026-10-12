@@ -172,7 +172,7 @@ const SagasPage: React.FC = () => {
             onToggleExpand={toggleExpand}
             onRetry={handleRetry}
             onRelease={handleRelease}
-            onViewPlot={(siteId, plotId) => navigate(`/builder/sites/${siteId}/plots/${plotId}/edit`)}
+            onViewPlot={(siteId, plotId) => navigate(`/pro/builder/sites/${siteId}/plots/${plotId}/edit`)}
           />
         )}
       </main>
