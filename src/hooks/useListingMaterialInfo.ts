@@ -11,9 +11,11 @@ import { useMemo, useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 
 import { lookupEpc } from '@/services/epc.service';
+import { icpService } from '@/services/icp.service';
 import { buildMaterialInfo, emptyMaterialInfo, normalizeMaterialInfo } from '@/utils/materialInfo';
+import { partBFromTa6 } from '@/utils/materialInfoFromTa6';
 import type { AgentListingRow } from '@/types/estateAgentListing.types';
-import type { MaterialInfo, MaterialInfoOverrides } from '@/types/materialInfo.types';
+import type { MaterialInfo, MaterialInfoOverrides, SellerPartB } from '@/types/materialInfo.types';
 import type { EpcCertificate } from '@/services/epc.service';
 
 /** The only fields an agent may hand-enter — the fields `MaterialInfoOverrides`
@@ -27,6 +29,13 @@ const OVERRIDE_KEYS: readonly (keyof MaterialInfoOverrides)[] = [
   'floodRisk',
   'conservationArea',
   'listedBuilding',
+  'electricity',
+  'water',
+  'sewerage',
+  'heating',
+  'broadband',
+  'mobileSignal',
+  'parking',
 ];
 
 /** Copies one field's value into the overrides object if the merged view says
@@ -57,6 +66,8 @@ export interface UseListingMaterialInfoResult {
   setOverrides: (next: MaterialInfoOverrides) => void;
   epc: EpcCertificate | null;
   epcLoading: boolean;
+  /** Part B answers from the seller's TA6, once the listing has a linked sale. */
+  seller: SellerPartB;
 }
 
 /** Loads the EPC certificate for a listing row (once per row id) and merges
@@ -78,10 +89,19 @@ export function useListingMaterialInfo(row: AgentListingRow | null): UseListingM
       lookupEpc(row!.listing.postcode, { addressLine: row!.listing.addressLine1 ?? row!.listing.address }),
   });
 
+  // A linked sale's TA6 already answers most of Part B. Any failure (no
+  // access yet, no TA6 yet) just means the agent fills those rows by hand.
+  const transactionId = row?.transaction_id ?? null;
+  const { data: seller = {} } = useQuery({
+    queryKey: ['listing-ta6-part-b', transactionId],
+    enabled: !!transactionId,
+    queryFn: async (): Promise<SellerPartB> => partBFromTa6(await icpService.getTA6(transactionId!).catch(() => null)),
+  });
+
   const info = useMemo(
-    () => (row ? buildMaterialInfo(row.listing, epc, overrides) : emptyMaterialInfo()),
-    [row, epc, overrides],
+    () => (row ? buildMaterialInfo(row.listing, epc, overrides, seller) : emptyMaterialInfo()),
+    [row, epc, overrides, seller],
   );
 
-  return { info, overrides, setOverrides, epc, epcLoading };
+  return { info, overrides, setOverrides, epc, epcLoading, seller };
 }

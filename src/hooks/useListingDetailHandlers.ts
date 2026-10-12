@@ -12,7 +12,7 @@ import type { UseMutationResult } from '@tanstack/react-query';
 
 import { buildMaterialInfo } from '@/utils/materialInfo';
 import { estateAgentListingsService } from '@/services/estateAgentListings.service';
-import type { MaterialInfo, MaterialInfoOverrides } from '@/types/materialInfo.types';
+import type { MaterialInfo, MaterialInfoOverrides, SellerPartB } from '@/types/materialInfo.types';
 import type { PropertyListing, ProvenanceMap } from '@/types/listing.types';
 import type { EpcCertificate } from '@/services/epc.service';
 
@@ -32,6 +32,7 @@ export function useListingDetailHandlers(
   info: MaterialInfo,
   overrides: MaterialInfoOverrides,
   epc: EpcCertificate | null,
+  seller: SellerPartB = {},
 ): UseListingDetailHandlersResult {
   const handleDetailsSave = useCallback(
     (updated: PropertyListing, provenance: ProvenanceMap, agentUrl: string | null | undefined): void => {
@@ -39,7 +40,7 @@ export function useListingDetailHandlers(
       // saving the stale merged view — otherwise the saved panel can lag
       // an edit to price/tenure/etc. until the agent separately hits
       // "Save material information".
-      const rebuiltInfo = buildMaterialInfo(updated, epc, overrides);
+      const rebuiltInfo = buildMaterialInfo(updated, epc, overrides, seller);
       // Omit the column entirely when the form wasn't managing it. Sending
       // `null` here would blank an agency's saved URL on any save from a
       // surface that doesn't show the field.
@@ -50,7 +51,7 @@ export function useListingDetailHandlers(
         ...(agentUrl === undefined ? {} : { agent_url: agentUrl }),
       });
     },
-    [updateMutation, epc, overrides],
+    [updateMutation, epc, overrides, seller],
   );
 
   const handleMaterialInfoSave = useCallback((): void => {

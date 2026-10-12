@@ -3,7 +3,7 @@
 
 import type { FieldProvenance, PropertyListing, Tenure } from '@/types/listing.types';
 import type { EpcCertificate } from '@/services/epc.service';
-import type { MaterialInfo, MaterialInfoField, MaterialInfoOverrides, MaterialInfoSource } from '@/types/materialInfo.types';
+import type { MaterialInfo, MaterialInfoField, MaterialInfoOverrides, MaterialInfoSource, SellerPartB } from '@/types/materialInfo.types';
 
 const MISSING = { value: null, source: 'missing' as const };
 
@@ -21,6 +21,8 @@ export function emptyMaterialInfo(): MaterialInfo {
   return {
     price: MISSING, tenure: MISSING, councilTaxBand: MISSING, epcRating: MISSING, epcFloorAreaSqm: MISSING,
     leaseYearsRemaining: MISSING, groundRentPerYear: MISSING, serviceChargePerYear: MISSING,
+    propertyType: MISSING, bedrooms: MISSING, bathrooms: MISSING, electricity: MISSING, water: MISSING,
+    sewerage: MISSING, heating: MISSING, broadband: MISSING, mobileSignal: MISSING, parking: MISSING,
     floodRisk: MISSING, conservationArea: MISSING, listedBuilding: MISSING,
   };
 }
@@ -39,17 +41,29 @@ export function normalizeMaterialInfo(info: Partial<MaterialInfo>): MaterialInfo
     leaseYearsRemaining: info.leaseYearsRemaining ?? empty.leaseYearsRemaining,
     groundRentPerYear: info.groundRentPerYear ?? empty.groundRentPerYear,
     serviceChargePerYear: info.serviceChargePerYear ?? empty.serviceChargePerYear,
+    propertyType: info.propertyType ?? empty.propertyType,
+    bedrooms: info.bedrooms ?? empty.bedrooms,
+    bathrooms: info.bathrooms ?? empty.bathrooms,
+    electricity: info.electricity ?? empty.electricity,
+    water: info.water ?? empty.water,
+    sewerage: info.sewerage ?? empty.sewerage,
+    heating: info.heating ?? empty.heating,
+    broadband: info.broadband ?? empty.broadband,
+    mobileSignal: info.mobileSignal ?? empty.mobileSignal,
+    parking: info.parking ?? empty.parking,
     floodRisk: info.floodRisk ?? empty.floodRisk,
     conservationArea: info.conservationArea ?? empty.conservationArea,
     listedBuilding: info.listedBuilding ?? empty.listedBuilding,
   };
 }
 
-/** Merge listing facts, EPC certificate and agent overrides. Precedence: agent > epc > listing. */
+/** Merge listing facts, EPC certificate, the seller's TA6 answers and agent
+ *  overrides. Precedence: agent > seller > epc > listing. */
 export function buildMaterialInfo(
   listing: PropertyListing,
   epc: EpcCertificate | null,
   overrides: MaterialInfoOverrides,
+  seller: SellerPartB = {},
 ): MaterialInfo {
   return {
     price: field(nonZero(listing.price), 'listing'),
@@ -60,6 +74,16 @@ export function buildMaterialInfo(
     leaseYearsRemaining: pick([overrides.leaseYearsRemaining, 'agent'], [nonZero(listing.leaseYearsRemaining), 'listing']),
     groundRentPerYear: pick([overrides.groundRentPerYear, 'agent'], [nonZero(listing.groundRentPerYear), 'listing']),
     serviceChargePerYear: pick([overrides.serviceChargePerYear, 'agent'], [nonZero(listing.serviceChargePerYear), 'listing']),
+    propertyType: field((listing.propertyType ?? '').trim() || null, 'listing'),
+    bedrooms: field(nonZero(listing.bedrooms), 'listing'),
+    bathrooms: field(nonZero(listing.bathrooms), 'listing'),
+    electricity: pick([overrides.electricity, 'agent'], [seller.electricity, 'seller']),
+    water: pick([overrides.water, 'agent'], [seller.water, 'seller']),
+    sewerage: pick([overrides.sewerage, 'agent'], [seller.sewerage, 'seller']),
+    heating: pick([overrides.heating, 'agent'], [seller.heating, 'seller']),
+    broadband: pick([overrides.broadband, 'agent'], [seller.broadband, 'seller']),
+    mobileSignal: field(overrides.mobileSignal, 'agent'),
+    parking: pick([overrides.parking, 'agent'], [seller.parking, 'seller']),
     floodRisk: field(overrides.floodRisk, 'agent'),
     conservationArea: field(overrides.conservationArea, 'agent'),
     listedBuilding: field(overrides.listedBuilding, 'agent'),
