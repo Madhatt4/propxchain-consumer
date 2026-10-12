@@ -410,7 +410,7 @@ const Dashboard_PremiumContent: React.FC = () => {
     // flow. A conveyancer who is the buyer or seller on this deal is a party
     // here, so they get the flow too.
     const asConveyancer = isConveyancer && !isDealParty(tx, principalId);
-    navigate(asConveyancer ? `/conveyancer?tx=${encodeURIComponent(tx.id)}` : `/transaction/${tx.id}/flow`);
+    navigate(asConveyancer ? `/pro/conveyancer?tx=${encodeURIComponent(tx.id)}` : `/transaction/${tx.id}/flow`);
   };
 
   // Helper function to load documents (can be called to refresh)
@@ -771,7 +771,7 @@ const Dashboard_PremiumContent: React.FC = () => {
                       typeLabel={formatTransactionType(tx.transactionType)}
                       listing={getRightmoveData(String(tx.id))}
                       onOpen={() => handleTransactionClick(tx)}
-                      onViewAsConveyancer={isAdminUser ? () => navigate(`/conveyancer?tx=${encodeURIComponent(tx.id)}`) : undefined}
+                      onViewAsConveyancer={isAdminUser ? () => navigate(`/pro/conveyancer?tx=${encodeURIComponent(tx.id)}`) : undefined}
                       onEdit={() => {
                         setSelectedTransaction(tx);
                         setEditPostcode(getStoredPostcode(tx.id) || tx.postcode || '');

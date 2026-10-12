@@ -54,6 +54,7 @@ export const NO_HELP_PREFIXES: readonly string[] = [
   '/login',
   '/register',
   '/conveyancer/join',
+  '/pro/conveyancer/join',
   '/auth',
   '/reset-password',
   '/forgot-password',

@@ -30,13 +30,23 @@ const PROTECTED_WITHOUT_HELP = ['/post-login', '/onboarding', '/admin'];
 interface TopLevelRoute {
   path: string;
   isProtected: boolean;
+  /** Only forwards to another route, so it never shows a page of its own. */
+  isRedirect: boolean;
 }
+
+/**
+ * PropXchain Pro mounts its own routes and guards them one by one, so the
+ * signed-out join page opens without a login. Its no-help entries live in
+ * chatRoutes next to the rest.
+ */
+const GUARDED_INSIDE = ['/pro/*'];
 
 /** `<Route path="/…" element={…}` lines; nested children use relative paths. */
 function topLevelRoutes(): TopLevelRoute[] {
   return [...app.matchAll(/<Route path="(\/[^"]*)" element=\{(.*)$/gm)].map((m) => ({
     path: m[1],
     isProtected: m[2].includes('<ProtectedRoute>'),
+    isRedirect: /^\{?<(Navigate|\w+Redirect)\b/.test(m[2]),
   }));
 }
 
@@ -53,7 +63,10 @@ describe('help button route classification', () => {
   });
 
   it('should keep the help button off every public route', () => {
-    const leaking = routes.filter((r) => !r.isProtected && isHelpRoute(sample(r.path))).map((r) => r.path);
+    const leaking = routes
+      .filter((r) => !r.isProtected && !r.isRedirect && !GUARDED_INSIDE.includes(r.path))
+      .filter((r) => isHelpRoute(sample(r.path)))
+      .map((r) => r.path);
     expect(leaking).toEqual([]);
   });
 
@@ -64,5 +77,10 @@ describe('help button route classification', () => {
       .filter((r) => !isHelpRoute(sample(r.path)))
       .map((r) => r.path);
     expect(missing).toEqual([]);
+  });
+
+  it('should offer help in the Pro workspaces but not on the signed-out join page', () => {
+    expect(isHelpRoute('/pro/conveyancer')).toBe(true);
+    expect(isHelpRoute('/pro/conveyancer/join/x')).toBe(false);
   });
 });
