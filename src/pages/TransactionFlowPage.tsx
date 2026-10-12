@@ -32,6 +32,7 @@ import { BuyerInviteCard } from '../components/transaction/flow/BuyerInviteCard'
 import BotPanelCard from '../components/transaction/BotPanelCard';
 import NextStepCard from '../components/common/NextStepCard';
 import { StallLine } from '../components/transaction/flow/StallLine';
+import { SearchAgeLine } from '../components/transaction/flow/SearchAgeLine';
 import { MandateBanners } from '../components/transaction/flow/MandateBanners';
 import { TOPBAR_ACTION_SLOT_ID } from '../components/navigation/AppTopBar';
 import { flashNextStepTarget } from '../utils/nextStepHighlight';
@@ -745,6 +746,7 @@ export default function TransactionFlowPage(): ReactElement {
             the stage against its benchmark. Free for every tier, and shown
             whichever of the next-step or AI cards is on screen. */}
         {id && <StallLine transactionId={id} refreshKey={invalidationKey} className="mb-4" />}
+        {id && <SearchAgeLine transactionId={id} refreshKey={invalidationKey} className="mb-4" />}
 
         {/* Agent CRM: whom the viewer acts for, or who acts for the viewer, with the withdrawal. */}
         {id && <MandateBanners transactionId={id} myRole={userRole} className="mb-4" />}
