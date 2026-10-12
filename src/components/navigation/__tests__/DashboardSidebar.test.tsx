@@ -45,7 +45,7 @@ describe('DashboardSidebar', () => {
     fireEvent.click(screen.getByRole('button', { name: /estate agent portal/i }));
 
     expect(screen.getByRole('button', { name: /admin dashboard/i })).toBeInTheDocument();
-    expect(mockNavigate).toHaveBeenCalledWith('/estate-agent');
+    expect(mockNavigate).toHaveBeenCalledWith('/pro/estate-agent');
   });
 
   it('should hide the admin-only items from non-admins', () => {

@@ -36,7 +36,7 @@ export const NAVIGATION_TARGETS = {
   sellers: '/sellers',
   buyers: '/buyers',
   conveyancers: '/conveyancers',
-  'estate-agents': '/estate-agent',
+  'estate-agents': '/pro/estate-agent',
   resources: '/resources',
   faq: '/faq',
   'find-a-conveyancer': '/find-a-conveyancer',

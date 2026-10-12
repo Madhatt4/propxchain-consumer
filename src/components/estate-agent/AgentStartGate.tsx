@@ -34,7 +34,7 @@ export default function AgentStartGate(): JSX.Element {
       <p className="mt-2 text-sm text-[var(--text-secondary)]">{ROLE_PRICE_COPY}</p>
 
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Link to="/estate-agent/listings/new" className={CARD_CLASS}>
+        <Link to="/pro/estate-agent/listings/new" className={CARD_CLASS}>
           <Home className="h-6 w-6 text-[#0D9488]" aria-hidden="true" />
           <span className="font-medium text-[var(--text-main)]">Yes, I&apos;m acting for a seller</span>
           <span className="text-sm text-[var(--text-secondary)]">

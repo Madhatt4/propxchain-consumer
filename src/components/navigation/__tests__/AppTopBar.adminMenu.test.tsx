@@ -46,7 +46,7 @@ describe('AppTopBar admin menu', () => {
     expect(labels.slice(-4)).toEqual(['Admin dashboard', 'Builder portal', 'Estate agent portal', 'Log out']);
 
     fireEvent.click(screen.getByRole('menuitem', { name: /estate agent portal/i }));
-    expect(mockNavigate).toHaveBeenCalledWith('/estate-agent');
+    expect(mockNavigate).toHaveBeenCalledWith('/pro/estate-agent');
   });
 
   it('should hide the admin portals from non-admins', () => {
