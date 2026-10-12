@@ -4,6 +4,7 @@
 import { defineConfig, configDefaults } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import { resolveProSlot } from './config/pro-slot.mjs';
 
 export default defineConfig({
   plugins: [react()],
@@ -35,6 +36,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
+      '@pro-slot': resolveProSlot(__dirname),
       '@': path.resolve(__dirname, './src')
     },
     // Don't realpath through pnpm symlinks. The default (false) calls

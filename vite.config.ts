@@ -6,6 +6,7 @@ import react from '@vitejs/plugin-react'
 import path from 'path'
 
 import { DEV_SECURITY_HEADERS } from './config/security-headers.mjs'
+import { resolveProSlot } from './config/pro-slot.mjs'
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -14,6 +15,8 @@ export default defineConfig({
   publicDir: 'public', // Serve public assets (videos excluded via .dfxignore)
   resolve: {
     alias: {
+      // Before '@' so the more specific alias wins.
+      '@pro-slot': resolveProSlot(__dirname),
       '@': path.resolve(__dirname, './src'),
       '@components': path.resolve(__dirname, './src/components'),
       '@pages': path.resolve(__dirname, './src/pages'),

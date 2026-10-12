@@ -137,6 +137,8 @@ const EstateAgentListingCreatePage = lazy(() => import('./pages/estate-agent/Lis
 const EstateAgentListingDetailPage = lazy(() => import('./pages/estate-agent/ListingDetailPage'));
 const EstateAgentPipelinePage = lazy(() => import('./pages/estate-agent/PipelinePage'));
 const DelegatePage = lazy(() => import('./pages/DelegatePage'));
+// PropXchain Pro: the private trade workspaces, or a stub in public builds (config/pro-slot.mjs).
+const ProApp = lazy(() => import('@pro-slot'));
 
 // Loading component - theme-aware to prevent flash
 const LoadingFallback = () => (
@@ -324,6 +326,7 @@ function App() {
               <Route path="/admin/sagas" element={<ProtectedRoute><RequirePrincipal><RequireProfile><SagasPage /></RequireProfile></RequirePrincipal></ProtectedRoute>} />
               <Route path="/admin/support" element={<ProtectedRoute><RequirePrincipal><RequireProfile><SupportDeskPage /></RequireProfile></RequirePrincipal></ProtectedRoute>} />
               <Route path="/conveyancer" element={<ProtectedRoute><RequirePrincipal><RequireProfile><ConveyancerDashboard /></RequireProfile></RequirePrincipal></ProtectedRoute>} />
+              <Route path="/pro/*" element={<ProtectedRoute><RequirePrincipal><RequireProfile><Suspense fallback={<LoadingFallback />}><ProApp /></Suspense></RequireProfile></RequirePrincipal></ProtectedRoute>} />
 
               {/* Builder / Developer portal — wrapped in BuilderLayout for sidebar */}
               <Route path="/builder" element={<ProtectedRoute><BuilderLayout /></ProtectedRoute>}>
