@@ -12,6 +12,8 @@ name: iOS TestFlight
 # Secrets (set once, see the setup notes in the mobile-app thread):
 #   ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8  App Store Connect API key (Admin)
 #   APPLE_TEAM_ID                          10-character team id
+#   GOOGLE_SERVICE_INFO_PLIST              Firebase iOS config file contents
+#                                          (kept out of this public repo)
 #   VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY and the worker URLs, shared
 #   with deploy-frontend.yml.
 
@@ -43,19 +45,23 @@ jobs:
       - name: Check signing secrets and Firebase config are present
         env:
           ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          GOOGLE_SERVICE_INFO_PLIST: ${{ secrets.GOOGLE_SERVICE_INFO_PLIST }}
         run: |
           fail=0
-          for name in ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_P8 APPLE_TEAM_ID; do
+          for name in ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_P8 APPLE_TEAM_ID GOOGLE_SERVICE_INFO_PLIST; do
             if [ -z "${!name}" ]; then
               echo "::error::Secret $name is missing. Add it under Settings, Secrets and variables, Actions."
               fail=1
             fi
           done
-          if [ ! -f ios/App/App/GoogleService-Info.plist ]; then
-            echo "::error::ios/App/App/GoogleService-Info.plist is missing. Download it from the Firebase iOS app and commit it."
-            fail=1
-          fi
           exit $fail
+
+      - name: Write the Firebase config
+        env:
+          GOOGLE_SERVICE_INFO_PLIST: ${{ secrets.GOOGLE_SERVICE_INFO_PLIST }}
+        run: |
+          printf '%s\n' "$GOOGLE_SERVICE_INFO_PLIST" > ios/App/App/GoogleService-Info.plist
+          plutil -lint ios/App/App/GoogleService-Info.plist
 
       - name: Select Xcode
         uses: maxim-lobanov/setup-xcode@v1
