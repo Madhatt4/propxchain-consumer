@@ -17,6 +17,7 @@ import {
   type FundingType,
   declareBuyerPack,
   loadBuyerPack,
+  readOfferExpiry,
   syncBuyerPack,
 } from '../../../../services/buyerPack.service';
 import { lenderPanelService } from '../../../../services/lenderPanel.service';
@@ -38,6 +39,72 @@ interface StageProps {
 }
 
 const mortgageItem = (pack: BuyerPackItem[] | null): BuyerPackItem | undefined => pack?.find((i) => i.item === 'mortgage');
+
+const OFFER_READ_NOTES: Record<string, string> = {
+  no_date_found: "We couldn't find the expiry date in your offer. Please type it in.",
+  not_a_pdf: 'We can only read a PDF offer. Please type the expiry date in.',
+  unreadable: "We couldn't read your offer. Please type the expiry date in.",
+  no_offer_sent: 'Send your mortgage offer from your wallet first, or type the date in.',
+};
+
+interface OfferExpiryFieldProps {
+  transactionId: string;
+  value: string;
+  onChange: (v: string) => void;
+}
+
+/**
+ * When the offer runs out. Read from the sent offer once (the buyer-pack
+ * function reads it in code; nothing leaves the server) and always shown for
+ * the buyer to check before they save: the date they confirm is what every
+ * party on the deal is warned by.
+ */
+function OfferExpiryField({ transactionId, value, onChange }: OfferExpiryFieldProps): ReactNode {
+  const [reading, setReading] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
+  const [tried, setTried] = useState(false);
+
+  const read = (): void => {
+    setReading(true);
+    setNote(null);
+    readOfferExpiry(transactionId)
+      .then((r) => {
+        if (r.expiresOn !== null) { onChange(r.expiresOn); setNote('Read from your offer. Check it matches before you save.'); }
+        else setNote(OFFER_READ_NOTES[r.reason] ?? OFFER_READ_NOTES.unreadable);
+      })
+      .catch((err: unknown) => { logger.warn('[funding] offer read failed', err); setNote(OFFER_READ_NOTES.unreadable); })
+      .finally(() => setReading(false));
+  };
+
+  // Read once, only when there is nothing saved to overwrite.
+  useEffect(() => {
+    if (tried || value) return;
+    setTried(true);
+    read();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tried, value]);
+
+  return (
+    <div>
+      <label htmlFor="offer-expiry" className="mb-1.5 block text-xs font-medium text-gray-700 dark:text-slate-300">
+        When does your mortgage offer expire? <span className="font-normal text-gray-400">(everyone on the deal is warned a month before)</span>
+      </label>
+      <div className="flex items-center gap-2">
+        <input
+          id="offer-expiry"
+          type="date"
+          value={value}
+          onChange={(e) => { onChange(e.target.value); setNote(null); }}
+          className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100"
+        />
+        <button type="button" onClick={read} disabled={reading} className="text-xs font-medium text-teal-700 hover:underline disabled:opacity-50 dark:text-teal-300">
+          {reading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Read it from my offer'}
+        </button>
+      </div>
+      {note && <p data-testid="offer-expiry-note" className="mt-1 text-xs text-gray-500 dark:text-slate-400">{note}</p>}
+    </div>
+  );
+}
 
 interface LenderPickerProps {
   lenders: string[];
@@ -81,6 +148,7 @@ export function MortgageFundingStage({ stage, onComplete, transactionId, isEditi
   const [pack, setPack] = useState<BuyerPackItem[] | null>(null);
   const [fundingType, setFundingType] = useState<FundingType | null>(null);
   const [lenderName, setLenderName] = useState('');
+  const [offerExpiresOn, setOfferExpiresOn] = useState('');
   const [lenders, setLenders] = useState<string[]>([]);
   const [lendersLoaded, setLendersLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -104,6 +172,7 @@ export function MortgageFundingStage({ stage, onComplete, transactionId, isEditi
         const d = mortgageItem(items)?.detail;
         setFundingType(d?.funding_type ?? null);
         setLenderName(d?.lender_name ?? '');
+        setOfferExpiresOn(d?.offer_expires_on ?? '');
       })
       .catch((err: unknown) => { if (live) setError(err instanceof Error ? err.message : 'Could not read your funding position'); });
     return () => { live = false; };
@@ -116,7 +185,9 @@ export function MortgageFundingStage({ stage, onComplete, transactionId, isEditi
   };
 
   const item = mortgageItem(pack);
-  const declaredMatches = !!item && item.detail.funding_type === fundingType && (item.detail.lender_name ?? '') === lenderName.trim();
+  const offerSent = fundingType === 'mortgage' && item?.detail.mortgage_stage === 'offer';
+  const declaredMatches = !!item && item.detail.funding_type === fundingType && (item.detail.lender_name ?? '') === lenderName.trim()
+    && (!offerSent || (item.detail.offer_expires_on ?? '') === offerExpiresOn);
   const canComplete = !!fundingType && !!item && item.status === 'ready' && declaredMatches;
 
   const declare = async (): Promise<BuyerPackItem[] | null> => {
@@ -127,6 +198,7 @@ export function MortgageFundingStage({ stage, onComplete, transactionId, isEditi
       const items = await declareBuyerPack(transactionId, {
         fundingType,
         lenderName: fundingType === 'mortgage' ? lenderName.trim() || null : null,
+        ...(offerSent ? { mortgageOfferExpiresOn: offerExpiresOn || null } : {}),
       });
       refresh(items);
       return items;
@@ -199,6 +271,9 @@ export function MortgageFundingStage({ stage, onComplete, transactionId, isEditi
             <p className="mb-1.5 text-xs font-medium text-gray-700 dark:text-slate-300">Decision in principle or mortgage offer</p>
             {transactionId && <SendToSlot transactionId={transactionId} slots={MORTGAGE_SLOTS} onSent={resync} />}
           </div>
+          {offerSent && transactionId && (
+            <OfferExpiryField transactionId={transactionId} value={offerExpiresOn} onChange={setOfferExpiresOn} />
+          )}
         </>
       )}
       {fundingType === 'cash' && (

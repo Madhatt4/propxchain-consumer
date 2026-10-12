@@ -32,6 +32,7 @@ import { BuyerInviteCard } from '../components/transaction/flow/BuyerInviteCard'
 import BotPanelCard from '../components/transaction/BotPanelCard';
 import NextStepCard from '../components/common/NextStepCard';
 import { StallLine } from '../components/transaction/flow/StallLine';
+import { OfferExpiryLine } from '../components/transaction/flow/OfferExpiryLine';
 import { SearchAgeLine } from '../components/transaction/flow/SearchAgeLine';
 import { MandateBanners } from '../components/transaction/flow/MandateBanners';
 import { TOPBAR_ACTION_SLOT_ID } from '../components/navigation/AppTopBar';
@@ -747,6 +748,8 @@ export default function TransactionFlowPage(): ReactElement {
             whichever of the next-step or AI cards is on screen. */}
         {id && <StallLine transactionId={id} refreshKey={invalidationKey} className="mb-4" />}
         {id && <SearchAgeLine transactionId={id} refreshKey={invalidationKey} className="mb-4" />}
+        {/* Mortgage offer expiry: every party sees it once the buyer's offer is within a month of running out. */}
+        {id && <OfferExpiryLine transactionId={id} refreshKey={invalidationKey} className="mb-4" />}
 
         {/* Agent CRM: whom the viewer acts for, or who acts for the viewer, with the withdrawal. */}
         {id && <MandateBanners transactionId={id} myRole={userRole} className="mb-4" />}

@@ -21,6 +21,8 @@ export interface BuyerPackDetail {
   funding_type?: FundingType;
   lender_name?: string;
   mortgage_stage?: 'none' | 'dip' | 'offer';
+  /** YYYY-MM-DD the buyer confirmed; only present once an offer is sent. */
+  offer_expires_on?: string;
   chain_position?: ChainPosition;
   linked_transaction_id?: string;
   survey_state?: 'none' | 'booked' | 'received';
@@ -44,6 +46,8 @@ export interface BuyerPackDeclaration {
   chainPosition?: ChainPosition | null;
   linkedTransactionId?: string | null;
   surveyReceived?: boolean;
+  /** YYYY-MM-DD the mortgage offer runs out, as the buyer confirmed it. */
+  mortgageOfferExpiresOn?: string | null;
 }
 
 /** Where the buyer uploads before sending to a deal (wallet decision 2). */
@@ -120,6 +124,23 @@ export async function loadBuyerPack(transactionId: string): Promise<BuyerPackIte
 /** The buyer's own facts; the server refuses anyone else. Answers with the refreshed pack. */
 export function declareBuyerPack(transactionId: string, declaration: BuyerPackDeclaration): Promise<BuyerPackItem[]> {
   return invoke({ action: 'declare', transactionId, declaration });
+}
+
+export type OfferExpiryRead =
+  | { expiresOn: string }
+  | { expiresOn: null; reason: 'no_offer_sent' | 'not_a_pdf' | 'unreadable' | 'no_date_found' };
+
+/**
+ * The buyer only: read the expiry date from the mortgage offer they sent to
+ * this deal. A suggestion for them to check; nothing is saved until they
+ * confirm it with a declare.
+ */
+export async function readOfferExpiry(transactionId: string): Promise<OfferExpiryRead> {
+  const { data, error } = await supabase.functions.invoke<OfferExpiryRead>('buyer-pack', {
+    body: { action: 'read_offer_expiry', transactionId },
+  });
+  if (error) throw await toBuyerPackError(error as FunctionsInvokeError);
+  return data ?? { expiresOn: null, reason: 'unreadable' };
 }
 
 /** Make the audit trail match the pack. Any joined party may call it. */
