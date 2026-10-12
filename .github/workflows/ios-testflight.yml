@@ -19,6 +19,11 @@ name: iOS TestFlight
 
 on:
   workflow_dispatch:
+  # Temporary: GitHub only lets you dispatch a workflow once it is on the
+  # default branch, so the first builds run on pushes to this branch.
+  # Remove before merging.
+  push:
+    branches: [feat/mobile-testflight]
 
 permissions:
   contents: read
