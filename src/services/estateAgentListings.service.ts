@@ -108,6 +108,29 @@ export const estateAgentListingsService = {
     return data as AgentListingRow;
   },
 
+  /**
+   * Delete a listing. Only one with no sale started can go: once a listing is
+   * linked to a deal, the deal's audit trail points back at it, so the agent
+   * withdraws it instead. The database enforces the same rule (migration
+   * 20261013_agent_listings_delete_unlinked_only.sql); a refused delete comes
+   * back as zero rows, not an error, so an empty result is the refusal.
+   */
+  async remove(id: string): Promise<void> {
+    const { data, error } = await supabase
+      .from('agent_listings')
+      .delete()
+      .eq('id', id)
+      .is('transaction_id', null)
+      .select('id');
+
+    if (error) {
+      throw new Error(`Failed to delete listing: ${error.message}`);
+    }
+    if (!data || data.length === 0) {
+      throw new Error('This listing can no longer be deleted. A sale has started on it, so withdraw it instead.');
+    }
+  },
+
   /** Set a listing's status directly (e.g. withdraw, mark sold_stc). */
   async setStatus(id: string, status: AgentListingStatus): Promise<void> {
     const { error } = await supabase.from('agent_listings').update({ status }).eq('id', id);

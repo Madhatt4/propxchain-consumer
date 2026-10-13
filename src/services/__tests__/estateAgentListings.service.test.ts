@@ -316,6 +316,45 @@ describe('estateAgentListingsService.setStatus', () => {
   });
 });
 
+describe('estateAgentListingsService.remove', () => {
+  const mockDelete = vi.fn();
+  const mockIs = vi.fn();
+  const mockSelectIds = vi.fn();
+
+  async function wire(result: { data: unknown; error: unknown }): Promise<void> {
+    mockSelectIds.mockResolvedValue(result);
+    mockIs.mockReturnValue({ select: mockSelectIds });
+    mockEq.mockReturnValue({ is: mockIs });
+    mockDelete.mockReturnValue({ eq: mockEq });
+    const { supabase } = await import('@/lib/supabase');
+    (supabase.from as ReturnType<typeof vi.fn>).mockReturnValue({ delete: mockDelete });
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('should delete only a listing with no sale started', async () => {
+    await wire({ data: [{ id: 'id-1' }], error: null });
+
+    await estateAgentListingsService.remove('id-1');
+    expect(mockEq).toHaveBeenCalledWith('id', 'id-1');
+    expect(mockIs).toHaveBeenCalledWith('transaction_id', null);
+  });
+
+  it('should explain a refusal when nothing was deleted', async () => {
+    await wire({ data: [], error: null });
+
+    await expect(estateAgentListingsService.remove('id-1')).rejects.toThrow('withdraw it instead');
+  });
+
+  it('should throw on error', async () => {
+    await wire({ data: null, error: { message: 'nope' } });
+
+    await expect(estateAgentListingsService.remove('id-1')).rejects.toThrow('Failed to delete listing: nope');
+  });
+});
+
 describe('estateAgentListingsService.publish', () => {
   beforeEach(() => {
     vi.clearAllMocks();
