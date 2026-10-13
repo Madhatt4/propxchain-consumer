@@ -10,6 +10,7 @@ import { deliverNarration, recipientFromUser } from './delivery.ts';
 import { ValidationError, validateMonitorFireRequest, validateRequest } from './validate.ts';
 import { runMonitorFire } from './monitor.ts';
 import { verifiedTxId } from './txid.ts';
+import { sendPush } from './push.ts';
 
 /**
  * move-narrator edge function — server-side trigger + delivery for the
@@ -212,6 +213,12 @@ serve(async (req: Request): Promise<Response> => {
   } catch (err) {
     const msg = err instanceof ValidationError ? err.message : 'invalid JSON body';
     return json(req, { error: msg }, 400);
+  }
+
+  // --- test_push: needs no narrator config, so it runs before config() -----
+  if (request.action === 'test_push') {
+    const result = await sendPush(adminClient, user.id);
+    return json(req, result);
   }
 
   // --- act ----------------------------------------------------------------

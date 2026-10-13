@@ -14,6 +14,7 @@ import type {
   NextStepRecommendation,
   NextStepUrgency,
   StatusAction,
+  TestPushAction,
   TransactionContext,
 } from './types.ts';
 
@@ -107,8 +108,10 @@ export function validateRequest(body: unknown): NarratorRequest {
       return { action: 'status', sessionId: str(b.sessionId, 'sessionId'), txId: optionalStr(b.txId) } as StatusAction;
     case 'deliver':
       return { action: 'deliver', sessionId: str(b.sessionId, 'sessionId'), txId: optionalStr(b.txId) } as DeliverAction;
+    case 'test_push':
+      return { action: 'test_push' } as TestPushAction;
     default:
-      throw new ValidationError('action must be one of: fire, status, deliver');
+      throw new ValidationError('action must be one of: fire, status, deliver, test_push');
   }
 }
 
