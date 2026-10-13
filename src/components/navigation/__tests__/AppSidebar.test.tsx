@@ -22,10 +22,11 @@ function renderAt(path: string): void {
 }
 
 describe('AppSidebar', () => {
-  it('should render every section plus Profile and Log out', () => {
+  it('should render every section plus Profile, Settings and Log out', () => {
     renderAt('/dashboard');
     const nav = screen.getByRole('navigation', { name: 'Dashboard sections' });
-    expect(nav.querySelectorAll('a')).toHaveLength(3);
+    expect(nav.querySelectorAll('a')).toHaveLength(4);
+    expect(screen.getByRole('link', { name: 'Settings' })).toHaveAttribute('href', '/dashboard/settings');
     expect(screen.getByRole('button', { name: 'Log out' })).toBeInTheDocument();
   });
 

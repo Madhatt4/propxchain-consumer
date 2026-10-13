@@ -4,13 +4,13 @@
 /**
  * Left side menu under the AppTopBar, shared by every signed-in portal so
  * the dashboard, builder and agent views navigate the same way. Sections
- * are passed in; Profile and Log out are the same everywhere. Below the lg
+ * are passed in; Profile, Settings and Log out are the same everywhere. Below the lg
  * breakpoint the sidebar hides and the SectionTabs strip carries the same
  * sections, so nothing is lost on a phone.
  */
 
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LogOut, User } from 'lucide-react';
+import { LogOut, Settings, User } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import type { SectionTab } from './SectionTabs';
 
@@ -58,6 +58,13 @@ export default function AppSidebar({ sections, ariaLabel }: AppSidebarProps): JS
         >
           <User size={16} strokeWidth={2} />
           Profile
+        </NavLink>
+        <NavLink
+          to="/dashboard/settings"
+          className={({ isActive }) => `${ITEM_BASE} ${isActive ? ITEM_ACTIVE : ITEM_INACTIVE}`}
+        >
+          <Settings size={16} strokeWidth={2} />
+          Settings
         </NavLink>
         <button type="button" onClick={handleLogout} className={`${ITEM_BASE} ${ITEM_INACTIVE} w-full text-left`}>
           <LogOut size={16} strokeWidth={2} />
