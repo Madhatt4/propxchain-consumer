@@ -23,6 +23,7 @@ import {
   LogOut,
   MessageSquare,
   Moon,
+  Settings,
   Sun,
   User,
   Wallet,
@@ -139,6 +140,7 @@ export const AppTopBar: React.FC<AppTopBarProps> = ({
     { label: 'AI Agents', to: '/dashboard/bot-agents', icon: <Bot size={18} strokeWidth={2} /> },
     { label: 'PropXchain Wallet', to: '/dashboard/my-documents', icon: <Wallet size={18} strokeWidth={2} /> },
     { label: 'Property logbook', to: '/dashboard/my-logbooks', icon: <BookOpen size={18} strokeWidth={2} /> },
+    { label: 'Settings', to: '/dashboard/settings', icon: <Settings size={18} strokeWidth={2} /> },
     { label: 'Help & Support', to: '/dashboard/support', icon: <LifeBuoy size={18} strokeWidth={2} /> },
   ];
 

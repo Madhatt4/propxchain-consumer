@@ -17,6 +17,7 @@ import {
   Bot,
   Wallet,
   BookOpen,
+  Settings,
 } from 'lucide-react';
 import { useThemeClasses } from '../../hooks/useThemeClasses';
 import { ThemeToggleWithLabel } from '@/components/common/ThemeToggle';
@@ -90,6 +91,7 @@ const MobileNavMenu: React.FC<MobileNavMenuProps> = ({ isOpen, onClose }) => {
     { label: 'AI Agents', path: '/dashboard/bot-agents', id: 'bot-agents', icon: Bot },
     { label: 'PropXchain Wallet', path: '/dashboard/my-documents', id: 'wallet', icon: Wallet },
     { label: 'Property logbook', path: '/dashboard/my-logbooks', id: 'logbook', icon: BookOpen },
+    { label: 'Settings', path: '/dashboard/settings', id: 'settings', icon: Settings },
     ...(isAdmin ? [{ label: 'Admin Dashboard', path: '/admin', id: 'admin', icon: Shield }] : []),
   ];
 
