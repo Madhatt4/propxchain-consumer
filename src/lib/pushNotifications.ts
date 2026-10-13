@@ -47,14 +47,6 @@ export async function getPushToken(): Promise<string | null> {
   }
 }
 
-export async function deletePushToken(): Promise<void> {
-  try {
-    await FirebaseMessaging.deleteToken();
-  } catch {
-    // Best effort: the server also drops tokens Firebase reports as dead.
-  }
-}
-
 /** Tokens can be reissued by the system; keep the server copy current. */
 export function onPushTokenRefreshed(listener: (token: string) => void): () => void {
   const handle = FirebaseMessaging.addListener('tokenReceived', ({ token }) => listener(token));

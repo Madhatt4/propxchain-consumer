@@ -9,7 +9,6 @@ const m = vi.hoisted(() => ({
   eq: vi.fn(),
   pushPlatform: vi.fn(),
   getPushToken: vi.fn(),
-  deletePushToken: vi.fn(),
 }));
 
 vi.mock('@/lib/supabase', () => ({
@@ -21,7 +20,6 @@ vi.mock('@/lib/supabase', () => ({
 vi.mock('@/lib/pushNotifications', () => ({
   pushPlatform: m.pushPlatform,
   getPushToken: m.getPushToken,
-  deletePushToken: m.deletePushToken,
 }));
 
 import { registerDevicePushToken, removeDevicePushToken } from '../devicePushToken.service';
@@ -33,7 +31,6 @@ describe('devicePushToken.service', () => {
     m.getPushToken.mockResolvedValue('device-token-0123456789');
     m.rpc.mockResolvedValue({ error: null });
     m.eq.mockResolvedValue({ error: null });
-    m.deletePushToken.mockResolvedValue(undefined);
   });
 
   it('does nothing on the web', async () => {
@@ -41,7 +38,6 @@ describe('devicePushToken.service', () => {
     expect(await registerDevicePushToken()).toBe(false);
     await removeDevicePushToken();
     expect(m.rpc).not.toHaveBeenCalled();
-    expect(m.deletePushToken).not.toHaveBeenCalled();
   });
 
   it('registers the phone through the server function with its platform', async () => {
@@ -65,15 +61,8 @@ describe('devicePushToken.service', () => {
     expect(await registerDevicePushToken()).toBe(false);
   });
 
-  it('on sign-out removes the server row and the Firebase token', async () => {
+  it('on sign-out removes the server row only, so the next sign-in can reuse the token', async () => {
     await removeDevicePushToken();
     expect(m.eq).toHaveBeenCalledWith('token', 'device-token-0123456789');
-    expect(m.deletePushToken).toHaveBeenCalled();
-  });
-
-  it('still clears the Firebase token if the server delete throws', async () => {
-    m.eq.mockRejectedValueOnce(new Error('offline'));
-    await expect(removeDevicePushToken()).rejects.toThrow('offline');
-    expect(m.deletePushToken).toHaveBeenCalled();
   });
 });

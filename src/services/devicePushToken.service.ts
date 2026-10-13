@@ -2,7 +2,7 @@
 // Copyright (C) 2026 PropXchain Ltd
 
 import { supabase } from '@/lib/supabase';
-import { deletePushToken, getPushToken, pushPlatform } from '@/lib/pushNotifications';
+import { getPushToken, pushPlatform } from '@/lib/pushNotifications';
 
 /**
  * Keeps this phone's push address on the server so the Move Narrator can
@@ -23,17 +23,18 @@ export async function registerDevicePushToken(knownToken?: string): Promise<bool
 }
 
 /**
- * Remove this phone from the server and from Firebase. Call this BEFORE
- * signing out: it needs the signed-in session to be allowed to delete the row.
+ * Remove this phone from the server. Call this BEFORE signing out: it needs
+ * the signed-in session to be allowed to delete the row.
+ *
+ * The Firebase token itself is left alone. Deleting it invalidated the token a
+ * sign-in moments earlier had registered (the server then got UNREGISTERED and
+ * dropped the phone), and left the next sign-in with no token to register.
+ * With the server row gone, nothing is sent to this phone anyway.
  */
 export async function removeDevicePushToken(): Promise<void> {
   if (!pushPlatform()) return;
-  try {
-    const token = await getPushToken();
-    if (token) {
-      await supabase.from('device_push_tokens').delete().eq('token', token);
-    }
-  } finally {
-    await deletePushToken();
+  const token = await getPushToken();
+  if (token) {
+    await supabase.from('device_push_tokens').delete().eq('token', token);
   }
 }

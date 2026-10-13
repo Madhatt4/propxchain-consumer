@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 
-const { mockLogout } = vi.hoisted(() => ({ mockLogout: vi.fn() }));
+const { mockLogout, native } = vi.hoisted(() => ({ mockLogout: vi.fn(), native: { value: false } }));
+
+vi.mock('@/lib/native', () => ({ isNativeApp: () => native.value }));
 
 vi.mock('@/utils/logger', () => ({
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
@@ -17,6 +19,7 @@ describe('useAutoLogout', () => {
     vi.useFakeTimers();
     localStorage.clear();
     mockLogout.mockReset();
+    native.value = false;
     useAuthStore.setState({ isAuthenticated: false, logout: mockLogout });
   });
 
@@ -36,6 +39,20 @@ describe('useAutoLogout', () => {
     });
 
     expect(mockLogout).toHaveBeenCalledTimes(1);
+  });
+
+  it('should never sign out on its own in the phone app', () => {
+    native.value = true;
+    renderHook(() => useAutoLogout());
+
+    act(() => {
+      useAuthStore.setState({ isAuthenticated: true });
+    });
+    act(() => {
+      vi.advanceTimersByTime(FIFTEEN_MINUTES * 2);
+    });
+
+    expect(mockLogout).not.toHaveBeenCalled();
   });
 
   it('should not sign anyone out while signed out', () => {
