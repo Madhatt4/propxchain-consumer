@@ -55,6 +55,17 @@ describe('TestPushCard', () => {
     expect(await screen.findByRole('status')).toHaveTextContent(/no phone is signed up/i);
   });
 
+  it('shows why a phone was turned down', async () => {
+    m.sendTestPush.mockResolvedValue({
+      channel: 'push',
+      status: 'skipped',
+      detail: 'registered phones were no longer valid (UNREGISTERED)',
+    });
+    render(<TestPushCard />);
+    fireEvent.click(screen.getByRole('button', { name: /send me a test notification/i }));
+    expect(await screen.findByRole('status')).toHaveTextContent(/turned down \(UNREGISTERED\)/i);
+  });
+
   it('offers to turn notifications on in the app when not yet asked', async () => {
     m.isNativeApp.mockReturnValue(true);
     m.getPushPermission.mockResolvedValue('prompt');

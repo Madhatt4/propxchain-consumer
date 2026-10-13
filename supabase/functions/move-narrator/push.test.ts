@@ -7,7 +7,7 @@
  */
 
 import { assertEquals, assert } from 'https://deno.land/std@0.224.0/assert/mod.ts';
-import { PUSH_BODY, PUSH_TITLE, buildFcmMessage, isDeadToken, parseServiceAccount } from './push.ts';
+import { PUSH_BODY, PUSH_TITLE, buildFcmMessage, fcmReason, isDeadToken, parseServiceAccount } from './push.ts';
 import { recipientFromUser } from './delivery.ts';
 
 Deno.test('push text is generic: no address, name or money', () => {
@@ -47,4 +47,13 @@ Deno.test('recipientFromUser carries the user id for push lookup, never from a b
   const r = recipientFromUser({ id: 'user-1', email: 'a@b.co' });
   assertEquals(r.userId, 'user-1');
   assertEquals(recipientFromUser({ email: 'a@b.co' }).userId, undefined);
+});
+
+Deno.test('fcmReason prefers the FCM error code, then the status, then the HTTP code', () => {
+  const withCode = JSON.stringify({
+    error: { status: 'NOT_FOUND', details: [{ '@type': 'type.googleapis.com/google.firebase.fcm.v1.FcmError', errorCode: 'UNREGISTERED' }] },
+  });
+  assertEquals(fcmReason(404, withCode), 'UNREGISTERED');
+  assertEquals(fcmReason(401, '{"error":{"status":"UNAUTHENTICATED"}}'), 'UNAUTHENTICATED');
+  assertEquals(fcmReason(502, 'Bad gateway'), 'HTTP 502');
 });
