@@ -184,6 +184,13 @@ const PremiumSidebar: React.FC<PremiumSidebarProps> = ({ activeRoute, onAddTrans
           <span className="premium-nav-icon">📘</span>
           <span className="premium-nav-label">Property logbook</span>
         </Link>
+        <Link
+          to="/dashboard/settings"
+          className={`premium-nav-item ${isActive('/dashboard/settings') ? 'active' : ''}`}
+        >
+          <span className="premium-nav-icon">⚙️</span>
+          <span className="premium-nav-label">Settings</span>
+        </Link>
 
         {/* Conveyancer Portal - Only visible for conveyancer users */}
         {(() => {
