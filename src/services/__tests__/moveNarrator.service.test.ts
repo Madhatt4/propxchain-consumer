@@ -4,6 +4,7 @@ import {
   fireNarration,
   getNarrationStatus,
   deliverNarration,
+  sendTestPush,
   isNarrationSettled,
   type MoveNarratorTransaction,
 } from '../moveNarrator.service';
@@ -158,5 +159,20 @@ describe('isNarrationSettled', () => {
 
   it('should settle when idle with an unsatisfied verdict so partial outputs can still deliver', () => {
     expect(isNarrationSettled('idle', 'unsatisfied')).toBe(true);
+  });
+
+  it('sends a test push with no recipient, so it can only reach the caller', async () => {
+    mockInvoke.mockReset();
+    mockInvoke.mockResolvedValue({
+      data: { channel: 'push', status: 'sent', detail: '1 of 1 phones' },
+      error: null,
+    });
+
+    const result = await sendTestPush();
+
+    expect(result.status).toBe('sent');
+    const [name, opts] = mockInvoke.mock.calls[0] as [string, { body: unknown }];
+    expect(name).toBe('move-narrator');
+    expect(opts.body).toEqual({ action: 'test_push' });
   });
 });

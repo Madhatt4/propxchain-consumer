@@ -77,7 +77,13 @@ export type StatusAction = { action: 'status'; sessionId: string; txId?: string 
  * `txId` is optional and telemetry-only — see StatusAction above.
  */
 export type DeliverAction = { action: 'deliver'; sessionId: string; txId?: string };
-export type NarratorRequest = FireAction | StatusAction | DeliverAction;
+/**
+ * Sends the standard generic push to the caller's own registered phones, so a
+ * person can check notifications reach them without waiting for a real update.
+ * No fields: the recipient is always the authenticated user.
+ */
+export type TestPushAction = { action: 'test_push' };
+export type NarratorRequest = FireAction | StatusAction | DeliverAction | TestPushAction;
 
 /**
  * Server-to-server nudge path for the transaction-monitor cron (chunk 2).

@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useTheme } from '../contexts/ThemeContext';
 import { Sun, Moon, Monitor } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
+import TestPushCard from '@/components/mobile/TestPushCard';
 
 interface SettingsUser {
   principal: string;
@@ -133,6 +134,8 @@ const SettingsPage: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
+
+            <TestPushCard />
 
             {/* Info Card */}
             <Card>

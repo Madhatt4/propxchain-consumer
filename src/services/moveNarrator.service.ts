@@ -42,7 +42,7 @@ export interface InAppNotification {
 }
 
 export interface ChannelResult {
-  channel: 'in_app' | 'email' | 'sms';
+  channel: 'in_app' | 'email' | 'sms' | 'push';
   status: 'sent' | 'skipped' | 'error' | 'returned_to_client';
   detail?: string;
 }
@@ -128,4 +128,12 @@ export async function getNarrationStatus(sessionId: string, txId?: string): Prom
  */
 export async function deliverNarration(sessionId: string, txId?: string): Promise<DeliverResult> {
   return invokeAction<DeliverResult>({ action: 'deliver', sessionId, ...(txId ? { txId } : {}) });
+}
+
+/**
+ * Send the standard generic notification to the signed-in person's own phones.
+ * Lets them check notifications reach them without waiting for a real update.
+ */
+export async function sendTestPush(): Promise<ChannelResult> {
+  return invokeAction<ChannelResult>({ action: 'test_push' });
 }

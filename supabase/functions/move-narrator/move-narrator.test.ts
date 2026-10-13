@@ -64,6 +64,12 @@ Deno.test('validateRequest requires sessionId for status', () => {
   assertThrows(() => validateRequest({ action: 'status' }), ValidationError, 'sessionId');
 });
 
+Deno.test('validateRequest accepts test_push and drops any extra fields', () => {
+  // A caller must not be able to aim the test at someone else's phones.
+  const r = validateRequest({ action: 'test_push', userId: 'someone-else' });
+  assertEquals(r, { action: 'test_push' });
+});
+
 // NOTE: this action never accepted a `recipient` field — audit 2026-07-25,
 // finding #2 removed it before this test was written (a caller-chosen
 // recipient made this function an open relay). Fixed pre-existing test rot
