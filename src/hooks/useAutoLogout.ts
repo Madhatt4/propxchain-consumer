@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { logger } from '@/utils/logger';
+import { isNativeApp } from '@/lib/native';
 
 // Idle timeout: 15 minutes (financial/legal services standard)
 const IDLE_TIMEOUT_MS = 15 * 60 * 1000;
@@ -143,7 +144,11 @@ export const useAutoLogout = (): {
   }, [resetTimer]);
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    // The phone app never signs out on its own: signing out stops push
+    // notifications to the phone, and iOS freezes these timers in the
+    // background so they all fire the moment the app is reopened. The
+    // BiometricGate asks for Face ID on open and after a minute away instead.
+    if (!isAuthenticated || isNativeApp()) {
       clearAllTimers();
       setShowWarning(false);
       return;
