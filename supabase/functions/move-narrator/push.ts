@@ -60,6 +60,24 @@ export function isDeadToken(status: number, bodyText: string): boolean {
   return status === 404 || /UNREGISTERED|INVALID_ARGUMENT.*token/i.test(bodyText);
 }
 
+/**
+ * FCM's own name for why a send failed (UNREGISTERED, SENDER_ID_MISMATCH,
+ * THIRD_PARTY_AUTH_ERROR, ...), so a failure says what to fix instead of only
+ * an HTTP status. Prefers the FCM error code over the generic status.
+ */
+export function fcmReason(status: number, bodyText: string): string {
+  try {
+    const err = (JSON.parse(bodyText) as {
+      error?: { status?: string; details?: Array<{ errorCode?: string }> };
+    }).error;
+    const code = err?.details?.find((d) => d.errorCode)?.errorCode ?? err?.status;
+    if (code) return code;
+  } catch {
+    // not JSON
+  }
+  return `HTTP ${status}`;
+}
+
 function b64url(input: ArrayBuffer | string): string {
   const bytes = typeof input === 'string' ? new TextEncoder().encode(input) : new Uint8Array(input);
   let bin = '';
@@ -135,6 +153,7 @@ export async function sendPush(
 
   let sent = 0;
   const failures: string[] = [];
+  const deadReasons: string[] = [];
   for (const token of tokens) {
     const res = await fetch(`https://fcm.googleapis.com/v1/projects/${sa.project_id}/messages:send`, {
       method: 'POST',
@@ -146,14 +165,19 @@ export async function sendPush(
       continue;
     }
     const text = await res.text();
+    const reason = fcmReason(res.status, text);
+    // The reason only, never the token: it is enough to tell a removed app
+    // from a Firebase or Apple setup problem.
+    console.warn(`move-narrator push: FCM ${res.status} ${reason}`);
     if (isDeadToken(res.status, text)) {
       await admin.from('device_push_tokens').delete().eq('token', token);
+      deadReasons.push(reason);
     } else {
-      failures.push(`FCM ${res.status}`);
+      failures.push(`FCM ${res.status} ${reason}`);
     }
   }
 
   if (sent > 0) return { channel: 'push', status: 'sent', detail: `${sent} of ${tokens.length} phones` };
   if (failures.length > 0) return { channel: 'push', status: 'error', detail: failures[0] };
-  return { channel: 'push', status: 'skipped', detail: 'registered phones were no longer valid' };
+  return { channel: 'push', status: 'skipped', detail: `registered phones were no longer valid (${deadReasons[0]})` };
 }

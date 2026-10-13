@@ -20,8 +20,13 @@ import { sendTestPush, type ChannelResult } from '@/services/moveNarrator.servic
 function describeResult(result: ChannelResult): string {
   if (result.status === 'sent') return 'Sent. It should arrive on your phone in a few seconds.';
   const detail = result.detail ?? '';
-  if (detail.includes('no registered phones') || detail.includes('no longer valid')) {
+  if (detail.includes('no registered phones')) {
     return 'No phone is signed up for notifications yet. Open the PropXchain app on your phone and turn them on.';
+  }
+  if (detail.includes('no longer valid')) {
+    // Keep FCM's reason visible: it tells a removed app from a setup problem.
+    const reason = /\(([^)]+)\)/.exec(detail)?.[1];
+    return `Your phone's sign-up was turned down${reason ? ` (${reason})` : ''}, so it has been removed. Open the PropXchain app on your phone to sign it up again.`;
   }
   if (detail.includes('not configured')) {
     return 'Notifications are not switched on at our end yet.';
