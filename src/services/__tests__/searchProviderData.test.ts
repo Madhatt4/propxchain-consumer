@@ -174,11 +174,12 @@ describe('tmGroupProvider', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('onesearchProvider (PISCES metadata)', () => {
-  it('should be a tier-1 instant-order provider flagged Recommended', () => {
+  it('should be a tier-1 instant-order provider with no recommendation badge', () => {
     expect(onesearchProvider.id).toBe('onesearch');
     expect(onesearchProvider.tier).toBe(1);
     expect(onesearchProvider.instantOrder).toBe(true);
-    expect(onesearchProvider.highlight).toBe('Recommended');
+    // No search provider is recommended over another; the customer chooses.
+    expect(onesearchProvider.highlight).toBeUndefined();
   });
 
   it('should carry a £259.20 "from" price equal to the Standard pack VAT-inclusive RRP', () => {
