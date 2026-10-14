@@ -56,7 +56,8 @@ export function SiteFooter({ onScrollTo }: SiteFooterProps): JSX.Element {
             color: 'var(--fg-3)',
           }}
         >
-          © 2026 PropXchain Ltd · England &amp; Wales · VAT GB 524 6852 77
+          © 2026 PropXchain Ltd · England &amp; Wales · VAT GB 524 6852 77 · PropXchain® is a
+          registered trade mark of PropXchain Ltd (UK00004420719)
         </span>
       </div>
     </footer>
