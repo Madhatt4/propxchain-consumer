@@ -17,7 +17,6 @@ export const searchProviders: Provider[] = [
       'Digital delivery',
       'Automated council liaison',
     ],
-    highlight: 'Recommended',
     regulated: 'CoPSO Member',
   },
   {

@@ -26,7 +26,7 @@ export interface SearchProvider {
   turnaroundPriority?: string;
   priorityFeePence?: number;
   regulated: string;
-  highlight?: 'Recommended' | 'Budget' | 'Direct';
+  highlight?: 'Budget' | 'Direct';
   instantOrder: boolean;
   standardPackPence: number;
   standardPackSearches: SearchItem[];
@@ -110,7 +110,6 @@ export const onesearchProvider: SearchProvider = {
   tier: 1,
   turnaround: '1-5 working days',
   regulated: 'CoPSO Member',
-  highlight: 'Recommended',
   instantOrder: true,
   // Header "from" price = Standard pack RRP, VAT-INCLUSIVE (£216 net + £43.20
   // VAT = £259.20). Inc-VAT because the card is consumer-facing and

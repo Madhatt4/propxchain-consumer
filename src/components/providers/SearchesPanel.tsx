@@ -1524,7 +1524,9 @@ export function SearchesPanel({
         </>
       )}
 
-      {/* OneSearch — recommended, collapsed by default like the others */}
+      {/* No provider is badged or highlighted over another: the panel guides
+          which searches the area needs, and the customer (often led by their
+          conveyancer or estate agent) picks the provider. */}
       <SearchAreaNote source={areaSource} halfSizeMetres={areaHalfSize} />
 
       <CollapsibleProviderCard
@@ -1533,8 +1535,6 @@ export function SearchesPanel({
         tagline={onesearchProvider.tagline}
         turnaround={onesearchProvider.turnaround}
         fromPricePence={onesearchProvider.standardPackPence}
-        badge="Recommended"
-        highlighted
       >
         <div className="space-y-4">
           <OneSearchPackageBuilder
