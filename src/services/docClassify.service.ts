@@ -15,6 +15,7 @@
  */
 import { supabase } from '../lib/supabase';
 import { logger } from '../utils/logger';
+import type { DocFact } from './documentFacts.service';
 import type { TA6AlterationDocumentKind, TA6AlterationKind } from '../types/ta6.alterationDocument';
 
 const FUNCTION_NAME = 'doc-classify';
@@ -116,7 +117,7 @@ export interface DocClassification {
   inDate: boolean | null;
   /** 0..1 yes-probability that the document is about this property; null when unreadable. */
   matchesProperty: number | null;
-  /** True for an image or image-only PDF: no text, so nothing was asked. */
+  /** True when nothing could be read: an image-only PDF, a HEIC, or a photo outside the size limits. */
   unreadable: boolean;
   /**
    * The reason behind `matchesProperty`, computed in code by the function:
@@ -130,6 +131,12 @@ export interface DocClassification {
    * could not be read. Absent for every other upload.
    */
   findings?: DocFinding[] | null;
+  /**
+   * Suggested property facts for the five TA6 certificates (gas safety,
+   * EICR, FENSA, EPC, building regs). Each waits for the seller to confirm it
+   * (documentFacts.service). Empty or absent for everything else.
+   */
+  facts?: DocFact[];
 }
 
 /**

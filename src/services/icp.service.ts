@@ -4549,6 +4549,24 @@ class ICPService {
   }
 
   /**
+   * Record a document fact the seller confirmed or rejected (rejection is the
+   * value "rejected"): key, value and the source file's SHA-256, never
+   * anything personal. Seller side only; the canister checks.
+   */
+  async recordDocumentFact(
+    txId: string,
+    factKey: string,
+    value: string,
+    sourceFileHash: string
+  ): Promise<void> {
+    return wrapWriteCall(async () => {
+      if (!this.transactionManagerActor) await this.initialize();
+      const result = await this.txActor.recordDocumentFact(txId, factKey, value, sourceFileHash);
+      if ('err' in result) throw new Error(result.err);
+    });
+  }
+
+  /**
    * Withdraw a form PDF upload made by mistake: clears the per-party uploaded
    * flag and records `<form>_upload_withdrawn`. The bytes and the storage
    * proof are removed separately (completedFormUpload.service).

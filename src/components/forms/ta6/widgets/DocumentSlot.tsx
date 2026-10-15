@@ -1,12 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AlertTriangle, Paperclip } from 'lucide-react';
 
+import { FactSuggestions } from './FactSuggestions';
 import { PromptHeader } from './PromptHeader';
 import { SegmentedButtons } from './SegmentedButtons';
 import { DOCUMENT_STATUS_LABELS, DOCUMENT_STATUS_OPTIONS } from './types';
 import type { TA6PromptEntry, TA6DocumentStatusChoice } from './types';
 import type { TA6Upload } from './ta6Uploader';
 import type { DocClassification, DocFinding, DocScanContext } from '../../../../services/docClassify.service';
+import type { DocFact } from '../../../../services/documentFacts.service';
 import type { TA6DocumentValue } from '../../../../types/ta6.types';
 
 export interface DocumentSlotProps {
@@ -72,6 +74,8 @@ const AttachedControls: React.FC<AttachedControlsProps> = ({
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [advisory, setAdvisory] = useState<string | null>(null);
   const [findings, setFindings] = useState<DocFinding[]>([]);
+  const [facts, setFacts] = useState<DocFact[]>([]);
+  const decide = useRef<TA6Upload['decide']>(undefined);
   // Which pick the pending advisory belongs to: a late answer about an
   // earlier file must not overwrite the line for the file now attached.
   const pickSeq = useRef(0);
@@ -94,10 +98,18 @@ const AttachedControls: React.FC<AttachedControlsProps> = ({
     setUploadError(null);
     setAdvisory(null);
     setFindings([]);
+    setFacts([]);
     try {
       const upload = scanContext ? await onUpload(file, scanContext) : await onUpload(file);
       latest.current.onUploaded(upload.documentId);
       rescan.current = upload.rescan;
+      decide.current = upload.decide;
+      upload.facts?.then(
+        (found) => {
+          if (pickSeq.current === seq) setFacts(found);
+        },
+        () => undefined,
+      );
       lastScannedKey.current = contextKey;
       upload.findings?.then(
         (found) => {
@@ -177,6 +189,9 @@ const AttachedControls: React.FC<AttachedControlsProps> = ({
         <span className="basis-full text-xs text-gray-500 dark:text-slate-400">{advisory}</span>
       )}
       <FindingsList refCode={refCode} findings={findings} />
+      {!readOnly && decide.current && (
+        <FactSuggestions refCode={refCode} facts={facts} decide={decide.current} />
+      )}
     </div>
   );
 };
