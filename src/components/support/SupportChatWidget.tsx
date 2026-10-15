@@ -15,7 +15,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import type { ChatContext } from '../../services/supportChat.service';
 import { useActiveTransactionStore } from '../../stores/activeTransactionStore';
 import { useAuthStore } from '../../stores/authStore';
-import { isHelpRoute } from './chatRoutes';
+import { isHelpRoute, transactionIdFromPath } from './chatRoutes';
 import SupportChatPanel from './SupportChatPanel';
 import { useSupportChat } from './useSupportChat';
 
@@ -23,8 +23,11 @@ const SupportChatWidget: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const transactionId = useActiveTransactionStore((s) => s.transactionId);
-  const stage = useActiveTransactionStore((s) => s.stage);
+  const publishedId = useActiveTransactionStore((s) => s.transactionId);
+  const publishedStage = useActiveTransactionStore((s) => s.stage);
+  const transactionId = transactionIdFromPath(location.pathname) ?? publishedId;
+  // A published stage belongs to the published deal; never pin it on another.
+  const stage = transactionId === publishedId ? publishedStage : null;
   const [isOpen, setIsOpen] = useState(false);
   const launcherRef = useRef<HTMLButtonElement>(null);
 

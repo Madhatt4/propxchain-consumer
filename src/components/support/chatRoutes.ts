@@ -73,6 +73,18 @@ function underPrefix(pathname: string, prefix: string): boolean {
   return pathname === prefix || pathname.startsWith(`${prefix}/`);
 }
 
+/**
+ * The deal a `/transaction/:id/...` page is about, or null off those pages.
+ *
+ * Only the premium dashboard publishes to the active-transaction store, so on
+ * the transaction pages themselves the chat would otherwise not know which
+ * sale the user is asking about. The URL is the truth there.
+ */
+export function transactionIdFromPath(pathname: string): string | null {
+  const match = /^\/transaction\/([^/]+)/.exec(pathname);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
 /** Whether the help button belongs on this route for a signed-in user. */
 export function isHelpRoute(pathname: string): boolean {
   if (pathname === '/' || pathname === '') return false;
