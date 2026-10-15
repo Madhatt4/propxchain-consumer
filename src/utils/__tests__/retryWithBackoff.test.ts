@@ -146,6 +146,9 @@ describe('retryWithBackoff', () => {
     it('should add jitter when enabled', async () => {
       const fn = vi.fn().mockRejectedValue(new Error('network error'));
       const delays: number[] = [];
+      // Pinned: an unpinned Math.random() under 0.001 gives exactly 500 and
+      // failed CI on main (2026-10-15). 0.4 scales the base by 0.7.
+      const random = vi.spyOn(Math, 'random').mockReturnValue(0.4);
 
       retryWithBackoff(fn, {
         maxRetries: 3,
@@ -158,10 +161,18 @@ describe('retryWithBackoff', () => {
       });
 
       await vi.runAllTimersAsync();
+      random.mockRestore();
 
-      // With jitter, delays should vary (not exact exponential)
-      expect(delays[0]).toBeGreaterThan(500); // At least 50% of base
-      expect(delays[0]).toBeLessThan(1000); // But less than base
+      expect(delays[0]).toBe(700);
+    });
+
+    it('should keep jitter within half to just under the full delay at either extreme', () => {
+      const random = vi.spyOn(Math, 'random');
+      random.mockReturnValue(0);
+      expect(calculateBackoffDelay(0, 1000, 10000, true)).toBe(500);
+      random.mockReturnValue(0.999999);
+      expect(calculateBackoffDelay(0, 1000, 10000, true)).toBe(999);
+      random.mockRestore();
     });
   });
 
