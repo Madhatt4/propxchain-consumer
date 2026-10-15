@@ -168,7 +168,7 @@ describe('uploadCompletedForm', () => {
   it('should upload under the form folder, classify that object, and register the proof when accepted', async () => {
     const result = await uploadCompletedForm(file, 'tx_1', 'ta6');
 
-    expect(mockUpload).toHaveBeenCalledWith('transactions/tx_1/ta6/abcdef123456.pdf', file, expect.anything());
+    expect(mockUpload).toHaveBeenCalledWith('transactions/tx_1/ta6/abcdef123456.pdf', expect.any(ArrayBuffer), expect.anything());
     expect(mockClassify).toHaveBeenCalledWith('tx_1', 'transactions/tx_1/ta6/abcdef123456.pdf', { section: 'form', form: 'ta6' });
     expect(mockRegisterProof).toHaveBeenCalledTimes(1);
     expect(result).toMatchObject({ documentId: '7', verdict: 'accepted', reason: null });
@@ -179,7 +179,7 @@ describe('uploadCompletedForm', () => {
 
     await uploadCompletedForm(file, 'tx_1', 'ta10');
 
-    expect(mockUpload).toHaveBeenCalledWith('transactions/tx_1/ta10/abcdef123456.pdf', file, expect.anything());
+    expect(mockUpload).toHaveBeenCalledWith('transactions/tx_1/ta10/abcdef123456.pdf', expect.any(ArrayBuffer), expect.anything());
   });
 
   it('should remove the object and throw, registering nothing, when the file is rejected', async () => {
