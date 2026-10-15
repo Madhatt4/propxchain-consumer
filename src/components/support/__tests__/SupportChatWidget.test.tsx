@@ -29,7 +29,7 @@ vi.mock('../../../stores/authStore', () => ({
 vi.mock('@/utils/logger', () => ({ logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() } }));
 
 import { useActiveTransactionStore } from '../../../stores/activeTransactionStore';
-import { isHelpRoute } from '../chatRoutes';
+import { isHelpRoute, transactionIdFromPath } from '../chatRoutes';
 import SupportChatWidget from '../SupportChatWidget';
 
 interface InvokeBody {
@@ -156,6 +156,17 @@ describe('SupportChatWidget', () => {
     await waitFor(() =>
       expect(bodyFor('support-chat').context).toEqual({ pagePath: '/dashboard', transactionId: 'tx-77', stage: 'exchanged' }),
     );
+  });
+
+  it('should read the transaction id from transaction paths and nowhere else', () => {
+    expect(transactionIdFromPath('/transaction/tx_123/flow')).toBe('tx_123');
+    expect(transactionIdFromPath('/transaction/tx%20a')).toBe('tx a');
+    expect(transactionIdFromPath('/transaction-dashboard')).toBeNull();
+    expect(transactionIdFromPath('/dashboard')).toBeNull();
+  });
+
+  it('should keep the raw segment rather than throw on a malformed escape', () => {
+    expect(transactionIdFromPath('/transaction/tx%/flow')).toBe('tx%');
   });
 
   it('should send the transaction in the URL when nothing has published one', async () => {

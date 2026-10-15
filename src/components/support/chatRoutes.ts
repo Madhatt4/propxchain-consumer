@@ -82,7 +82,14 @@ function underPrefix(pathname: string, prefix: string): boolean {
  */
 export function transactionIdFromPath(pathname: string): string | null {
   const match = /^\/transaction\/([^/]+)/.exec(pathname);
-  return match ? decodeURIComponent(match[1]) : null;
+  if (!match) return null;
+  // A malformed escape (a stray "%") makes decodeURIComponent throw, and this
+  // runs during render: keep the raw segment rather than crash the widget.
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return match[1];
+  }
 }
 
 /** Whether the help button belongs on this route for a signed-in user. */
