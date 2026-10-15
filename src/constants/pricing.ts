@@ -43,5 +43,4 @@ export const PAID_ITEMS: readonly PaidItem[] = [
   },
   { label: 'Property chain check', cost: '£25', priceGbp: 25, note: 'One-off, per transaction' },
   { label: 'Conveyancer', cost: 'Quote', priceGbp: null, note: 'The conveyancer quotes you directly' },
-  { label: 'Stamp duty', cost: 'Set by HMRC', priceGbp: null, note: 'Varies by property price' },
 ];

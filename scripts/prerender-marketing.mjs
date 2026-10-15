@@ -156,7 +156,6 @@ const pages = [
     <li><strong>HM Land Registry title:</strong> £7 per title pull — names the registered owner.</li>
     <li><strong>Property chain check:</strong> £25, one-off per transaction.</li>
     <li><strong>Conveyancer:</strong> the conveyancer quotes you directly.</li>
-    <li><strong>Stamp duty:</strong> set by HMRC, varies by property price.</li>
   </ul>
   <p>You only pay for what you order, and you see the price before you pay.</p>
 </section>

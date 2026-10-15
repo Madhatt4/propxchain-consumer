@@ -148,13 +148,13 @@ const TermsOfServicePage: React.FC = () => {
             <section>
               <h2 className="text-2xl font-bold text-black mb-4">5. Fees and Payments</h2>
               <p className="mb-4">
-                PropXchain charges fees for use of the Platform. All fees applicable to an order are shown to you before you confirm and pay, and you will not be charged more than the amount displayed at the point of purchase. We may change our fees from time to time; changes will not affect orders you have already placed, and for any recurring fee we will give you at least 30 days' notice.
+                Using the Platform is free. Some items you choose to order, such as searches, ID checks and HM Land Registry documents, are paid for per item. All fees applicable to an order are shown to you before you confirm and pay, and you will not be charged more than the amount displayed at the point of purchase. We may change our fees from time to time; changes will not affect orders you have already placed, and for any recurring fee we will give you at least 30 days' notice.
               </p>
               <p className="mb-4">
                 <strong>Property searches (PropXchain as merchant of record).</strong> When you order regulated property searches (for example local authority, drainage, environmental or similar searches) through the Platform, you purchase them from PropXchain as merchant of record, and we commission them from a third-party regulated search provider on your behalf. The price shown at checkout includes PropXchain's margin for arranging and delivering the searches. Your contract for the search order is with PropXchain and PropXchain is responsible to you for that order; the underlying search product remains that of the third-party provider.
               </p>
               <p className="mb-4">
-                <strong>Official pass-through charges.</strong> Some items are official fees set by third parties (for example HM Land Registry). Where we collect these from you, we pass them through at the applicable official rate plus a fixed handling fee of £7, which is shown separately at checkout.
+                <strong>HM Land Registry documents.</strong> £7 is what HM Land Registry charge for a title, and that is what you pay. The price of any other HM Land Registry document is shown before you pay.
               </p>
               <p className="mb-4">
                 <strong>Conveyancing fees.</strong> Conveyancing services are provided by the regulated conveyancer you choose, under a separate contract directly between you and that conveyancer, and you pay their fees directly to them. PropXchain is not a party to that contract, does not set those fees, and receives no referral fee, commission or markup on your conveyancer's charges.
