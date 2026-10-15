@@ -9,7 +9,7 @@
  * edition facts come from ta6GuideData.mjs, which both files import.
  *
  * Product claims are checked against the code: the TA6 stepper is not
- * tier-gated (App.tsx route, PricingPage Starter list), "Export PDF" produces
+ * gated (App.tsx route, PricingPage free list), "Export PDF" produces
  * PropXchain's own record of the answers rather than the official form, and
  * the pack share link redacts personal details (utils/packRedaction.ts).
  */
@@ -41,7 +41,7 @@ const SECTION_ROWS: React.ReactNode[][] = TA6_SECTIONS.map((s) => [
 ]);
 
 const TA6FormGuide: React.FC = () => (
-  <ResourceLayout meta={meta} lede={LEDE} productLink={{ to: '/register', lead: 'Fill in your TA6 answers online, section by section, free on the Starter tier.', label: 'Start your transaction free' }}>
+  <ResourceLayout meta={meta} lede={LEDE} productLink={{ to: '/register', lead: 'Fill in your TA6 answers online, section by section, free.', label: 'Start your transaction free' }}>
     <GuideH2 id="what">What is the TA6 form?</GuideH2>
     <GuideP>
       The TA6 is the Law Society&apos;s <Term>Property Information Form</Term>.
@@ -130,7 +130,7 @@ const TA6FormGuide: React.FC = () => (
 
     <GuideH2 id="propxchain">Filling in your TA6 on PropXchain</GuideH2>
     <GuideP>
-      On the free Starter tier you can fill in your TA6 answers online, one
+      On PropXchain you can fill in your TA6 answers online, free, one
       section at a time, with a plain-English help card above each section.
       Each section saves as you finish it. When you are done you can export a PDF
       record of them for your conveyancer, and share them with buyers and
@@ -142,7 +142,7 @@ const TA6FormGuide: React.FC = () => (
       paraphrases the questions. The official Law Society wording is what
       governs your answers, and your conveyancer may still ask you to sign
       the official form through their supplier. See{' '}
-      <GuideLink to="/pricing">pricing</GuideLink> for what is included in each tier.
+      <GuideLink to="/pricing">pricing</GuideLink> for what is free and what is paid per item.
     </GuideP>
   </ResourceLayout>
 );

@@ -81,7 +81,7 @@ export default function TmGroupPackPicker({
                     <span className="block text-xs text-gray-500 dark:text-gray-400">{pack.tagline}</span>
                     {pack.excludesAuthorityFees && (
                       <span className="mt-1 block text-xs text-amber-700 dark:text-amber-400">
-                        Council and water authority fees are charged on top at cost — they vary by
+                        Council and water authority fees are charged on top — they vary by
                         council and are included in the total below once we have priced your property.
                       </span>
                     )}

@@ -85,7 +85,7 @@ describe('SearchPackageBuilder tmGroup pack selection', () => {
     renderPriced();
 
     expect(
-      screen.getAllByText(/Council and water authority fees are charged on top at cost/).length,
+      screen.getAllByText(/Council and water authority fees are charged on top/).length,
     ).toBeGreaterThan(0);
   });
 

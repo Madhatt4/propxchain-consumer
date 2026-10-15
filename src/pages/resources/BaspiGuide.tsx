@@ -130,9 +130,9 @@ const BaspiGuide: React.FC = () => (
       title for £7 and names the registered owner; and everything
       lives in one shared view with an on-chain audit trail, so your buyer
       and conveyancer rely on the same verified record rather than asking
-      you the same questions twice. The Starter tier is free with no
-      platform fee, and the optional £75 AI co-pilot reads your title and
-      searches in plain English and tailors your conveyancer quote request.
+      you the same questions twice. PropXchain is free to use, with no
+      platform fee, and its AI reads your title and searches in plain
+      English and tailors your conveyancer quote request.
       See <GuideLink to="/pricing">pricing</GuideLink>, or start with{' '}
       <GuideLink to="/sellers">how a seller-led sale works</GuideLink>.
     </GuideP>

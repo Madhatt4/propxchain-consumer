@@ -41,8 +41,8 @@ const AboutPage: React.FC = () => {
             <p>
               <span className="font-medium text-[#5F8A68] dark:text-[#6EE7B7]">Honest about cost.</span>{' '}
               Consumer-direct: you pick your own providers and see every price up front, with
-              no success fees and no tied conveyancer. Starting is free — an
-              optional £75 AI co-pilot is the only thing we charge for.
+              no success fees and no tied conveyancer. Using PropXchain is free —
+              you only pay for third-party items you order, like searches and checks.
             </p>
           </div>
         </div>

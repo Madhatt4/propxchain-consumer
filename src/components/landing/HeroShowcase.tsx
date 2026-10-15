@@ -454,7 +454,7 @@ export function HeroShowcase(): React.ReactElement {
         rx={360} ry={190} tilt={8} duration={28} delay={-14} reverse />
       <LoopBadge icon="📋" label="Searches ordered" color="#8fbc8f"
         rx={320} ry={240} tilt={20} duration={24} delay={-18} />
-      <LoopBadge icon="💷" label="£75 AI co-pilot" color="#00d4b8"
+      <LoopBadge icon="💷" label="Free to use" color="#00d4b8"
         rx={350} ry={160} tilt={-5} duration={19} delay={-8} reverse />
 
       {/* Star dots orbiting on their own paths */}

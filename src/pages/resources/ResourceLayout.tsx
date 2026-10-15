@@ -85,8 +85,8 @@ const CtaBand: React.FC = () => (
         Ready when you are.
       </h2>
       <p className="mx-auto mt-3 max-w-xl font-[DM_Sans] text-base text-[#6B7280] dark:text-[#94A3B8]">
-        Start your transaction free: no platform fee, your own providers, every
-        milestone on-chain. Add the £75 AI co-pilot whenever you want it.
+        PropXchain is free to use: no platform fee, your own providers, every
+        milestone on-chain. You only pay for the searches and checks you order.
       </p>
       <div className="mt-7 flex flex-wrap items-center justify-center gap-4">
         <Link

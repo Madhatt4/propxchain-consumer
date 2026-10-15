@@ -120,7 +120,7 @@ const SupportPage: React.FC = () => {
     },
     {
       question: 'What are the fees for using PropXchain?',
-      answer: 'Buyers and sellers can run a transaction free on the Starter tier and choose their own providers, with every price shown before they commit. The optional Premium tier adds a £75-per-transaction AI co-pilot. Your professional fees are set by the conveyancer and search providers you choose.'
+      answer: 'Using PropXchain is free for buyers and sellers — no plans, no tiers, no platform fee. You pay per item for third-party items you order, such as searches, ID and AML checks and the £7 HM Land Registry title pull, each priced when you order. Your conveyancer quotes you directly.'
     },
     {
       question: 'Can I invite my solicitor to the platform?',

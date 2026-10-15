@@ -114,10 +114,9 @@ PropXchain runs these canisters on ICP mainnet:
 | 8 | Email Service | 5by6v-qyaaa-aaaaa-qc65a-cai | Contact forms, notifications | Production |
 | 9 | Firm Factory | gcqvm-tiaaa-aaaaa-qdszq-cai | Law firm management | Production |
 | 10 | Ledger Manager | hty74-maaaa-aaaaa-qcxza-cai | Analytics, event logging | Production |
-| 11 | Subscription Manager | 3jsrn-tqaaa-aaaaa-qddxq-cai | Premium subscriptions | Production |
-| 12 | Message Manager | 37una-maaaa-aaaaa-qd3mq-cai | In-app messaging | Production |
-| 13 | Oscar Canister | khstc-3qaaa-aaaaa-qdyfq-cai | AI assistant | Production |
-| 14 | Land Registry | o4flv-xaaaa-aaaaa-qdaeq-cai | UK Land Registry integration | Simulated |
+| 11 | Message Manager | 37una-maaaa-aaaaa-qd3mq-cai | In-app messaging | Production |
+| 12 | Oscar Canister | khstc-3qaaa-aaaaa-qdyfq-cai | AI assistant | Production |
+| 13 | Land Registry | o4flv-xaaaa-aaaaa-qdaeq-cai | UK Land Registry integration | Simulated |
 
 Inter-canister dependency graph:
 - transaction_manager is the central orchestrator
@@ -1283,9 +1282,6 @@ Core platform services canister providing shared infrastructure.
 ### Firm Factory (gcqvm-tiaaa-aaaaa-qdszq-cai)
 Law firm management. Handles firm creation, team member management, and firm-level configuration for solicitor practices.
 
-### Subscription Manager (3jsrn-tqaaa-aaaaa-qddxq-cai)
-Premium subscription management. Handles plan creation, billing cycles, and feature access control for paid tiers.
-
 ### Message Manager (37una-maaaa-aaaaa-qd3mq-cai)
 In-app messaging system for communication between transaction parties (buyers, sellers, solicitors).
 
@@ -1711,13 +1707,18 @@ Draft a message to the other parties for the owner to read and send.
 
 ## 20. Pricing Model
 
-| Tier / cost | Price | Details |
-|-------------|-------|---------|
-| Starter (buyers and sellers) | Free | No platform fee. Run your own transaction; pick your own providers and see every price before you commit. |
-| Premium AI co-pilot | 75 GBP per transaction | Optional. Reads your HM Land Registry title and search results in plain English, flags what matters, and tailors your conveyancer quote request. |
-| Property searches | 50–450 GBP | Bought through PropXchain from the provider you choose. |
-| Conveyancer (reserved legal acts) | Quoted per transaction | The panel conveyancer quotes you directly; PropXchain never marks up the fee. |
-| Solicitors / firms | Subscription plans available | Contact for pricing. |
+PropXchain is free to use for buyers and sellers. There are no plans, no tiers and no platform fee: the property pack and forms, AI reads of the title and search results, enquiry checks, the document vault and the on-chain audit trail are all free. Paid premium extras may be added later; none exist today.
+
+Third-party items are paid per item, priced when you order:
+
+| Item | Price | Details |
+|------|-------|---------|
+| PropXchain platform | Free | No plans, no tiers, no platform fee. |
+| Property searches | Per search, priced when you order | Bought through PropXchain from the provider you choose. |
+| ID and AML checks | Per check, priced when you order | Run by a regulated identity provider. |
+| HM Land Registry title pull | 7 GBP per title | Names the registered owner. |
+| Property chain check | 25 GBP, one-off per transaction | |
+| Conveyancer (reserved legal acts) | Quoted per transaction | The panel conveyancer quotes you directly. |
 
 Stamp Duty Land Tax (SDLT) is separate and paid to HMRC, not to PropXchain. Standard SDLT rates apply based on purchase price.
 

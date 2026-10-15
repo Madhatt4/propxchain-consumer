@@ -201,20 +201,21 @@ export interface PricingTier {
   ctaPath?: string;
   features: string[];
   ctaLabel: string;
-  /** Highlighted "Popular" tier. */
+  /** Highlighted card. */
   featured?: boolean;
 }
 
 export const PRICING_TIERS: PricingTier[] = [
   {
-    name: 'Starter',
-    sub: 'Free for everyone. Pick your own providers and see every price up front. No platform fee.',
+    name: 'Free to use',
+    sub: 'Everything on PropXchain is free for buyers and sellers. No plans, no tiers, no platform fee.',
     price: 'Free',
     priceNote: 'for all parties',
     features: [
-      'Transaction tracking with on-chain audit',
-      'HM Land Registry title pull — £7, names the registered owner',
+      'Your property pack, with the TA6 and TA10 forms',
+      'AI reads of your title and search results',
       'Document vault and verification',
+      'Transaction tracking with on-chain audit',
       'Conveyancer panel access',
     ],
     ctaLabel: 'Get started free',
@@ -222,25 +223,26 @@ export const PRICING_TIERS: PricingTier[] = [
     featured: true,
   },
   {
-    name: 'Premium',
-    sub: 'An AI co-pilot for the whole transaction — on top of everything in Starter.',
-    price: '£75',
-    priceNote: 'per transaction · coming soon',
+    name: 'Paid per item',
+    sub: 'Third-party items you choose to order. Each one is priced when you order it.',
+    price: 'Per item',
+    priceNote: 'priced when you order',
     features: [
-      'Everything in Starter',
-      'AI reads your HMLR title in plain English',
-      'AI reads your search results, issues flagged',
-      'Complexity-aware conveyancer quote request',
-      'AI next-step cards + priority support',
+      'Property searches',
+      'ID & AML checks',
+      'HM Land Registry title pull — £7',
+      'Property chain check — £25',
+      'Conveyancer — quoted to you directly',
     ],
-    ctaLabel: 'Get notified',
+    ctaLabel: 'See what you pay for',
+    ctaPath: '/pricing',
   },
   {
     name: 'Enterprise',
     sub: 'Volume, bespoke integrations, SLA, dedicated account manager.',
     price: 'Custom',
     features: [
-      'Everything in Premium',
+      'Everything on the free platform',
       'API access and white-label',
       'Dedicated account manager',
       'SSO, audit logs, SLA',

@@ -97,7 +97,7 @@ const FaqPage: React.FC = () => {
             Still curious?
           </h2>
           <p className="mx-auto mt-3 max-w-xl font-[DM_Sans] text-sm text-[#6B7280] dark:text-[#94A3B8]">
-            Starter is free and takes two minutes to set up — or ask us
+            PropXchain is free and takes two minutes to set up — or ask us
             anything first.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-4">

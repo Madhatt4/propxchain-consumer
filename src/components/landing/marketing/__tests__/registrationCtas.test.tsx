@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 
 /**
  * Every CTA on the landing page used to scroll to #report whatever its label
- * said — including "Create a free buyer account" and all three pricing tiers.
+ * said — including "Create a free buyer account" and all three pricing cards.
  * That is the offer-and-destination mismatch config/registration.ts was
  * written to stop, and it survived on the landing page because nothing there
  * read the flag.
@@ -69,7 +69,7 @@ describe('landing CTAs when sign-ups are open', () => {
     ).toHaveAttribute('href', '/register');
   });
 
-  it('should route the Starter tier CTA to the register page', async () => {
+  it('should route the free-to-use card CTA to the register page', async () => {
     const { PricingSection } = await withFlag(OPEN, () => import('../PricingSection'));
     inRouter(<PricingSection onScrollTo={noop} />);
 
@@ -142,7 +142,7 @@ describe('landing CTAs when sign-ups are closed', () => {
     );
   });
 
-  it('should not send the Starter tier CTA to a register page that would refuse it', async () => {
+  it('should not send the free-to-use card CTA to a register page that would refuse it', async () => {
     const { PricingSection } = await withFlag(CLOSED, () => import('../PricingSection'));
     inRouter(<PricingSection onScrollTo={noop} />);
 
@@ -153,7 +153,7 @@ describe('landing CTAs when sign-ups are closed', () => {
   });
 });
 
-describe('tier CTA destinations that do not depend on sign-ups', () => {
+describe('pricing card CTA destinations that do not depend on sign-ups', () => {
   beforeAll(() => {
     vi.resetModules();
   });
@@ -179,10 +179,15 @@ describe('tier CTA destinations that do not depend on sign-ups', () => {
     }
   });
 
-  it('should keep the Premium notify CTA on the report form, as it is not yet sold', async () => {
-    const { PricingSection } = await withFlag(OPEN, () => import('../PricingSection'));
-    inRouter(<PricingSection onScrollTo={noop} />);
-
-    expect(screen.getByRole('link', { name: 'Get notified' })).toHaveAttribute('href', '#report');
+  it('should route the paid-per-item card to the pricing page in both states', async () => {
+    for (const state of [OPEN, CLOSED]) {
+      const { PricingSection } = await withFlag(state, () => import('../PricingSection'));
+      const { unmount } = inRouter(<PricingSection onScrollTo={noop} />);
+      expect(screen.getByRole('link', { name: 'See what you pay for' })).toHaveAttribute(
+        'href',
+        '/pricing',
+      );
+      unmount();
+    }
   });
 });

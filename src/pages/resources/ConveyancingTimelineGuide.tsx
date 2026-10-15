@@ -207,9 +207,9 @@ const ConveyancingTimelineGuide: React.FC = () => (
       when you start, your forms are guided and stored as you complete them,
       searches you order are tracked to the transaction, and every milestone is
       timestamped on-chain so nobody has to take anyone&apos;s word for where
-      things stand. The Starter tier is free with no platform fee; the optional
-      £75 AI co-pilot reads your title and search results in plain English and
-      flags issues before they become enquiries. See{' '}
+      things stand. PropXchain is free to use, with no platform fee; its AI
+      reads your title and search results in plain English and flags issues
+      before they become enquiries. See{' '}
       <GuideLink to="/pricing">pricing</GuideLink> for the full breakdown, or
       start with{' '}
       <GuideLink to="/resources/selling/what-is-a-property-pack">the sales pack guide</GuideLink>{' '}

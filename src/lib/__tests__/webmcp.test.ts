@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { TIER_METADATA } from '@/constants/subscriptionFeatures'
+import { PAID_ITEMS } from '@/constants/pricing'
 import { buildTools, NAVIGATION_TARGETS, registerWebMcpTools, searchResources } from '../webmcp'
 
 interface Tool {
@@ -68,11 +68,25 @@ describe('tools', () => {
     expect(() => nav.execute({ page: 'admin' })).toThrow(/Unknown page/)
   })
 
-  it('should return pricing straight from TIER_METADATA', () => {
-    const result = byName('propxchain_get_pricing').execute({}) as Array<{ tier: string; pricePerTransactionGbp: number }>
-    expect(result.map((r) => r.tier)).toEqual(['Starter', 'Premium'])
-    expect(result[0].pricePerTransactionGbp).toBe(TIER_METADATA.starter.annualPrice)
-    expect(result[1].pricePerTransactionGbp).toBe(TIER_METADATA.premium.annualPrice)
+  it('should report the platform as free, with third-party items paid per item', () => {
+    const result = byName('propxchain_get_pricing').execute({}) as {
+      platformPriceGbp: number
+      paidPerItem: Array<{ item: string; priceGbp: number | null }>
+    }
+    const priceOf = (item: string): number | null | undefined =>
+      result.paidPerItem.find((r) => r.item === item)?.priceGbp
+    expect(result.platformPriceGbp).toBe(0)
+    expect(result.paidPerItem.map((r) => r.item)).toEqual(PAID_ITEMS.map((i) => i.label))
+    expect(priceOf('HM Land Registry title')).toBe(7)
+    expect(priceOf('Property chain check')).toBe(25)
+    // Searches and conveyancers have no fixed price, so the tool must not quote one.
+    expect(priceOf('Property searches')).toBeNull()
+    expect(priceOf('Conveyancer')).toBeNull()
+  })
+
+  it('should never mention tiers or a £75 charge in the pricing tool', () => {
+    const json = JSON.stringify(byName('propxchain_get_pricing').execute({}))
+    expect(json).not.toMatch(/Premium|Starter|£75|"priceGbp":75/)
   })
 
   it('should search published resources and return absolute article URLs', () => {

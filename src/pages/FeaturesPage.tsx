@@ -13,12 +13,12 @@ interface Feature {
 
 const features: Feature[] = [
   {
-    title: 'AI co-pilot for the whole transaction',
+    title: 'AI that reads your title and searches',
     body:
-      'The optional £75 Premium co-pilot reads your HM Land Registry title and your search results in plain English, flags the issues that actually matter, and turns the real complexity of your transaction into a tailored conveyancer quote request — so you often get a tighter quote. Next-step cards guide each stage. No chatbot theatrics.',
+      'Free, like the rest of PropXchain. AI reads your HM Land Registry title and your search results in plain English, flags the issues that actually matter, and turns the real complexity of your transaction into a tailored conveyancer quote request. Next-step cards guide each stage. No chatbot theatrics.',
     bullets: [
       'Plain-English summaries of your title and searches, issues flagged',
-      'Complexity-aware quote request that gets you better conveyancer prices',
+      'Complexity-aware quote request for your conveyancer',
     ],
   },
   {

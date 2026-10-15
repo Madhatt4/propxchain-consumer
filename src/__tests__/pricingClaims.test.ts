@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { findClaims, NO_MARKUP_CLAIMS, PAID_TIER_CLAIMS } from './pricingClaims.sources';
+
 /**
  * Pricing copy is a claim, and the wrong claim is a defect that ships silently.
  *
@@ -15,10 +17,11 @@ import { join } from 'node:path';
  * Guarded here rather than per-component because the failure is a phrase
  * appearing anywhere, not a specific component rendering wrongly.
  *
- * The canonical position (memory: project_pricing_model):
- *   Starter  — free for EVERY party. Providers paid direct at published rates.
- *   Premium  — £75 per transaction, an AI co-pilot. Not a platform fee, not a
- *              bundling or orchestration fee, and not seller-only.
+ * The canonical position (Marc, 2026-10-15): PropXchain is FREE to use for
+ * every party — no plans, no tiers, no £75, no "Premium"/"Starter". Only
+ * third-party items are paid, per item: searches, ID & AML checks, the £7 HM
+ * Land Registry title pull, the £25 chain check. Conveyancers quote direct.
+ * Searches are sold with a margin, so "at cost" / "no mark-up" is false.
  */
 
 // Not `fs.globSync`: it landed in Node 22 and CI pins Node 20, where it is
@@ -74,5 +77,20 @@ describe('pricing copy claims', () => {
     // Both role cards make the same free-to-start claim.
     const freeClaims = rolePicker.match(/Free — no platform fee/g) ?? [];
     expect(freeClaims.length).toBe(2);
+  });
+
+  it('should not offer a paid tier or a £75 charge anywhere in the marketing copy', () => {
+    const offenders = findClaims(PAID_TIER_CLAIMS);
+    expect(offenders, `paid-tier claims left in marketing copy:\n${offenders.join('\n')}`).toEqual([]);
+  });
+
+  it('should never claim searches or other items are sold at cost or without a mark-up', () => {
+    const offenders = findClaims(NO_MARKUP_CLAIMS);
+    expect(offenders, `false no-mark-up claims:\n${offenders.join('\n')}`).toEqual([]);
+  });
+
+  it('should open the pricing page by saying PropXchain is free to use', () => {
+    const page = readFileSync(join(process.cwd(), 'src/pages/PricingPage.tsx'), 'utf8');
+    expect(page).toContain('PropXchain is free to use.');
   });
 });

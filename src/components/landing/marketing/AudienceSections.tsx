@@ -178,8 +178,8 @@ export function AudienceSections({ onScrollTo }: AudienceSectionsProps): JSX.Ele
         titleKey="in charge now."
         lead="List your property, complete your TA6 and TA10 yourself with guidance, order your own searches at a price shown up front — and watch every milestone land on-chain in real time."
         points={[
-          'Start free — pick your own providers and see every price before you commit. No platform fee.',
-          'AI co-pilot premium tier coming soon — reads your HMLR title and search results in plain English.',
+          'Free to use — no platform fee. Pay only for the searches and checks you order, priced when you order.',
+          'AI reads your HMLR title and search results in plain English — included free.',
           'No "we\'re waiting for searches" excuses — you order, you receive, you\'re in control.',
           'Save around £2,000 against the £1,500–2,500 traditional cost per side.',
         ]}
