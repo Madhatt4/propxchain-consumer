@@ -116,6 +116,18 @@ describe('oscarDocumentAnalysis.registerVerificationOnChain', () => {
     }
   });
 
+  it('should return the canister error when verifyWithOscar rejects the record', async () => {
+    verifyWithOscar.mockResolvedValue({ err: 'Unauthorized' });
+
+    const result = await oscarDocumentAnalysis.registerVerificationOnChain(
+      3,
+      analysisWith({ fullName: 'Jane Doe' }),
+      'passport'
+    );
+
+    expect(result).toEqual({ success: false, error: 'Unauthorized' });
+  });
+
   it('should report failure without calling the canister when the actor is missing', async () => {
     actorHolder.actor = null;
 
