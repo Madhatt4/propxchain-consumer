@@ -29,7 +29,7 @@ vi.mock('../../../stores/authStore', () => ({
 vi.mock('@/utils/logger', () => ({ logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() } }));
 
 import { useActiveTransactionStore } from '../../../stores/activeTransactionStore';
-import { isHelpRoute } from '../chatRoutes';
+import { isHelpRoute, transactionIdFromPath } from '../chatRoutes';
 import SupportChatWidget from '../SupportChatWidget';
 
 interface InvokeBody {
@@ -156,6 +156,68 @@ describe('SupportChatWidget', () => {
     await waitFor(() =>
       expect(bodyFor('support-chat').context).toEqual({ pagePath: '/dashboard', transactionId: 'tx-77', stage: 'exchanged' }),
     );
+  });
+
+  it('should read the transaction id from transaction paths and nowhere else', () => {
+    expect(transactionIdFromPath('/transaction/tx_123/flow')).toBe('tx_123');
+    expect(transactionIdFromPath('/transaction/tx%20a')).toBe('tx a');
+    expect(transactionIdFromPath('/transaction-dashboard')).toBeNull();
+    expect(transactionIdFromPath('/dashboard')).toBeNull();
+  });
+
+  it('should keep the raw segment rather than throw on a malformed escape', () => {
+    expect(transactionIdFromPath('/transaction/tx%/flow')).toBe('tx%');
+  });
+
+  it('should send the transaction in the URL when nothing has published one', async () => {
+    renderAt('/transaction/tx_123/flow');
+    openPanel();
+
+    await ask('Where is my sale up to?');
+
+    await waitFor(() =>
+      expect(bodyFor('support-chat').context).toEqual({ pagePath: '/transaction/tx_123/flow', transactionId: 'tx_123' }),
+    );
+  });
+
+  it('should prefer the transaction in the URL over a different published one, and drop its stage', async () => {
+    useActiveTransactionStore.getState().setActiveTransaction({ id: 'tx-other', status: 'exchanged' });
+    renderAt('/transaction/tx_123/forms/ta6');
+    openPanel();
+
+    await ask('Where is my sale up to?');
+
+    await waitFor(() =>
+      expect(bodyFor('support-chat').context).toEqual({ pagePath: '/transaction/tx_123/forms/ta6', transactionId: 'tx_123' }),
+    );
+  });
+
+  it('should keep the published stage when it is for the transaction in the URL', async () => {
+    useActiveTransactionStore.getState().setActiveTransaction({ id: 'tx_123', status: 'active' });
+    renderAt('/transaction/tx_123');
+    openPanel();
+
+    await ask('Where is my sale up to?');
+
+    await waitFor(() =>
+      expect(bodyFor('support-chat').context).toEqual({ pagePath: '/transaction/tx_123', transactionId: 'tx_123', stage: 'active' }),
+    );
+  });
+
+  it('should hand the URL transaction to the ticket', async () => {
+    mockInvoke.mockImplementation((fn: string) =>
+      fn === 'support-ticket'
+        ? Promise.resolve({ data: { ticket: { id: 'ticket-2' } }, error: null })
+        : Promise.resolve(reply({ suggestTicket: true })),
+    );
+    renderAt('/transaction/tx_123/flow');
+    openPanel();
+    await ask('I want a person');
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Open a ticket with this conversation' }));
+
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/dashboard/support/tickets/ticket-2'));
+    expect(bodyFor('support-ticket')).toMatchObject({ transactionId: 'tx_123', pagePath: '/transaction/tx_123/flow' });
   });
 
   it('should carry the whole conversation on the second turn', async () => {
