@@ -63,8 +63,8 @@ describe('oscarDocumentAnalysis.registerVerificationOnChain', () => {
     actorHolder.actor = { verifyWithOscar };
   });
 
-  it('should send a SHA-256 digest of extractedData, never the plaintext', async () => {
-    // Arrange: compact JSON of these fields hashes to the digest below.
+  it('should send no extracted data on-chain, not even a hash', async () => {
+    // Arrange
     const extracted = { fullName: 'Jane Doe', passportNumber: '123456789' };
 
     // Act
@@ -76,22 +76,7 @@ describe('oscarDocumentAnalysis.registerVerificationOnChain', () => {
 
     // Assert
     expect(result).toEqual({ success: true, verificationId: 7 });
-    const sent = sentInput().extractedData;
-    expect(sent).toBe(
-      'fbe630e0be48124fda1ae8c55a9af330fed042b11606a0ce9a81b8eaa5454d4e'
-    );
-    expect(sent).not.toContain('Jane Doe');
-    expect(sent).not.toContain('123456789');
-  });
-
-  it('should send a 64-char lowercase hex digest when extractedData is empty', async () => {
-    await oscarDocumentAnalysis.registerVerificationOnChain(
-      12,
-      analysisWith({}),
-      'passport'
-    );
-
-    expect(sentInput().extractedData).toMatch(/^[0-9a-f]{64}$/);
+    expect(sentInput().extractedData).toBe('');
   });
 
   it('should not put any personal value anywhere in the on-chain payload', async () => {
@@ -100,20 +85,26 @@ describe('oscarDocumentAnalysis.registerVerificationOnChain', () => {
       dateOfBirth: '1980-01-01',
       address: '1 High Street, Sandy'
     };
+    const analysis = {
+      ...analysisWith(extracted),
+      issues: [
+        { severity: 'error', code: 'NAME_MISMATCH', message: 'Name Jane Doe does not match', field: 'fullName' }
+      ],
+      mismatches: [{ field: 'dateOfBirth', expected: '1980-01-01', found: '1981-02-02' }]
+    } as OscarAnalysisResult;
 
-    await oscarDocumentAnalysis.registerVerificationOnChain(
-      3,
-      analysisWith(extracted),
-      'passport'
-    );
+    await oscarDocumentAnalysis.registerVerificationOnChain(3, analysis, 'passport');
 
     // confidence is a bigint, which JSON.stringify cannot encode by default.
     const payload = JSON.stringify(sentInput(), (_key, v: unknown) =>
       typeof v === 'bigint' ? v.toString() : v
     );
-    for (const value of Object.values(extracted)) {
+    for (const value of [...Object.values(extracted), '1981-02-02', 'Jane Doe']) {
       expect(payload).not.toContain(value);
     }
+    // The shape survives: field names and codes, never the values.
+    expect(payload).toContain('NAME_MISMATCH');
+    expect(payload).toContain('dateOfBirth');
   });
 
   it('should return the canister error when verifyWithOscar rejects the record', async () => {

@@ -9,20 +9,7 @@
  */
 export async function sha256Hex(file: File): Promise<string> {
   const buffer = await file.arrayBuffer();
-  return toHex(await crypto.subtle.digest('SHA-256', buffer));
-}
-
-/**
- * SHA-256 of a UTF-8 string as lowercase hex, for anchoring personal data
- * on-chain by digest instead of in plaintext.
- */
-export async function sha256HexOfText(text: string): Promise<string> {
-  const bytes = new TextEncoder().encode(text);
-  return toHex(await crypto.subtle.digest('SHA-256', bytes));
-}
-
-function toHex(buffer: ArrayBuffer): string {
-  return Array.from(new Uint8Array(buffer))
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
+  const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
 }
