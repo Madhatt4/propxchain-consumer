@@ -406,16 +406,22 @@ class OscarDocumentAnalysisService {
         issues: analysisResult.issues.map((issue) => ({
           severity: mapSeverity(issue.severity),
           code: issue.code,
-          message: issue.message,
+          // Issue text can quote a name or a date of birth back; see extractedData.
+          message: '',
           // Candid `opt text` is a 0- or 1-element tuple; the bare ternary
           // widens to string[], which the generated type rejects.
           field: (issue.field ? [issue.field] : []) as [] | [string]
         })),
-        extractedData: JSON.stringify(analysisResult.extractedData),
+        // GDPR: extractedData holds names, passport numbers, dates of birth
+        // and addresses, and canister state is replicated and hard to erase.
+        // Nothing goes on-chain: an unsalted hash of a passport number or a
+        // birth date is reversible by trying every value, and nothing ever
+        // reads one back. Oscar's document analysis is being retired.
+        extractedData: '',
         mismatches: analysisResult.mismatches.map((mismatch) => ({
           field: mismatch.field,
-          expected: mismatch.expected,
-          found: mismatch.found
+          expected: '',
+          found: ''
         })),
         requiresSolicitorReview: analysisResult.requiresSolicitorReview,
         documentType
