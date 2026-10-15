@@ -5,18 +5,13 @@
  * menu survives a missing strip slot, that the drawer opener portals into the
  * strip, and that choosing a section switches it in place.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 
 import { TransactionTabs } from '../TransactionTabs';
 import { TRANSACTION_TABS } from '../transactionTabs.config';
 import { TRANSACTION_NAV_SLOT_ID } from '../../flow/TopBar';
-
-vi.mock('@/hooks/useSubscription', () => ({
-  useIsTierAtLeast: () => true,
-  useCanAccessFeature: () => true,
-}));
 
 function renderTabs(entry = '/t', transactionId = 'tx-1'): void {
   render(

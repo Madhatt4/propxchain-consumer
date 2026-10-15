@@ -9,7 +9,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
-  ENQUIRY_CATEGORIES, EnquiryError, MAX_PDF_BYTES, fileToBase64, raiseEnquiry, transcribeEnquiries,
+  ENQUIRY_CATEGORIES, MAX_PDF_BYTES, fileToBase64, raiseEnquiry, transcribeEnquiries,
   type Enquiry, type EnquiryCategory, type EnquiryDraft,
 } from '@/services/enquiries.service';
 import { categoryLabel } from './enquiryLabels';
@@ -35,8 +35,8 @@ export function EnquiryUpload({ transactionId, onRaised }: Props): JSX.Element {
       const r = await transcribeEnquiries({ transactionId, pdfBase64, filename: file.name });
       setRows(r.drafts.map((d) => ({ ...d, include: true })));
       if (r.drafts.length === 0) setError('No enquiries were found in that PDF.');
-    } catch (e) {
-      setError(e instanceof EnquiryError && e.status === 402 ? 'PDF transcription is part of the seller’s Premium tier.' : 'Could not read that PDF right now.');
+    } catch {
+      setError('Could not read that PDF right now.');
     } finally { setStatus('idle'); }
   };
   const raiseAll = async (): Promise<void> => {

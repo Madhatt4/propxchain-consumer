@@ -29,7 +29,7 @@ const ITEMS = [
   { item: 'chain', status: 'ready', detail: { chain_position: 'none' }, onLedger: false, pending: true },
   { item: 'survey', status: 'not_started', detail: { survey_state: 'none' }, onLedger: false, pending: false },
 ] as const;
-const props = { transactionId: 'tx_1', locked: false, requiredTier: 'starter' as const };
+const props = { transactionId: 'tx_1' };
 const renderTab = () => render(<MemoryRouter><BuyerPackTab {...props} /></MemoryRouter>);
 
 describe('BuyerPackTab', () => {

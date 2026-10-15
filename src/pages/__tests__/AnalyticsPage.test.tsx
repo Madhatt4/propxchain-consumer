@@ -21,7 +21,6 @@ vi.mock('../../stores/authStore', () => ({
   useAuthStore: { getState: () => ({ principalId: 'seller-principal', isAuthenticated: true }) },
 }));
 
-vi.mock('../../hooks/useSubscription', () => ({ useCanAccessFeature: () => true }));
 
 vi.mock('@/components/navigation/AppTopBar', () => ({ default: () => null }));
 

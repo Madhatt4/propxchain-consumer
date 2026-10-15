@@ -16,7 +16,7 @@ vi.mock('@/lib/supabase', () => ({
 
 import { SearchesTab } from '../SearchesTab';
 
-const PROPS = { transactionId: 'tx_1', locked: false, requiredTier: 'starter' as const };
+const PROPS = { transactionId: 'tx_1' };
 
 describe('SearchesTab', () => {
   beforeEach(() => {

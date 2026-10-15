@@ -5,7 +5,6 @@ import { icpService } from '../services/icp.service';
 import { partyRoleService } from '../services/partyRole.service';
 import { logger } from '@/utils/logger';
 import { useAuthStore } from '../stores/authStore';
-import TierToggle from '../components/admin/TierToggle';
 
 interface MockUser {
   id: string;
@@ -386,15 +385,6 @@ const AdminTestingPanel: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left Column - User Management */}
           <div>
-            {/* Subscription Tier toggle — see what premium gates (Move Narrator,
-                premium NextStepCard behaviour, analytics) without re-logging. */}
-            <div className={`${themeClasses.cardBg} rounded-lg p-6 border ${themeClasses.border} mb-6`}>
-              <h2 className={`text-xl font-bold ${themeClasses.textPrimary} mb-4`}>
-                Subscription Tier
-              </h2>
-              <TierToggle />
-            </div>
-
             {/* Active User Card */}
             <div className={`${themeClasses.cardBg} rounded-lg p-6 border ${themeClasses.border} mb-6`}>
               <h2 className={`text-xl font-bold ${themeClasses.textPrimary} mb-4`}>

@@ -124,7 +124,7 @@ serve(async (req: Request): Promise<Response> => {
   });
 
   // --- monitor_fire: Bearer-secret path, no end-user session --------------
-  // See task-5-report.md for the roster/premium-entitlement investigation.
+  // See task-5-report.md for the roster investigation.
   if (isRecord(rawBody) && rawBody.action === 'monitor_fire') {
     // Fail-closed BEFORE the compare: if the secret were empty, comparing
     // against `Bearer ${''}` would match a bare "Bearer " header sent by an
@@ -165,7 +165,7 @@ serve(async (req: Request): Promise<Response> => {
       const { apiKey, agentId, envId } = config();
       const result = await runMonitorFire(adminClient, { apiKey, agentId, envId }, monitorRequest);
       // Full result shape: `skipped` only when present
-      // (the premium roster exceeded the per-invocation cap) — additive, so
+      // (the roster exceeded the per-invocation cap) — additive, so
       // the monorepo caller reading only `.fired` is unaffected either way.
       const responseBody = result.skipped !== undefined
         ? { fired: result.fired, skipped: result.skipped }

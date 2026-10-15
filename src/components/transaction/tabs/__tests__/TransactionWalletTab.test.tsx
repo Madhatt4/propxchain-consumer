@@ -16,7 +16,7 @@ vi.mock('../WalletVcTab', () => ({
 
 import { TransactionWalletTab } from '../TransactionWalletTab';
 
-const props = { transactionId: 'TX-1', locked: false, requiredTier: 'starter' as const };
+const props = { transactionId: 'TX-1' };
 
 describe('TransactionWalletTab', () => {
   beforeEach(() => mockWalletVcMode.mockReturnValue('demo'));

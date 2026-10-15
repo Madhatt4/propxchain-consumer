@@ -99,12 +99,10 @@ const WalletProofPage = lazy(() => import('./pages/WalletProofPage'));
 const PublicListingPage = lazy(() => import('./pages/public/PublicListingPage'));
 // Payment pages — imported eagerly to avoid lazy-load crashes on Stripe redirect
 import PaymentSuccessPage from './pages/payment/PaymentSuccessPage';
-import SellerFeeSuccessPage from './pages/payment/SellerFeeSuccessPage';
 import QuoteFormPage from './pages/quote/QuoteFormPage';
 const AuthCallback = lazy(() => import('./pages/auth/AuthCallback'));
 const ResetPasswordPage = lazy(() => import('./pages/auth/ResetPasswordPage'));
 const RoleSelectionPage = lazy(() => import('./pages/onboarding/RoleSelectionPage'));
-const OnboardingPaymentPage = lazy(() => import('./pages/onboarding/OnboardingPaymentPage'));
 const OnboardingJoinPage = lazy(() => import('./pages/onboarding/OnboardingJoinPage'));
 const OnboardingKycPage = lazy(() => import('./pages/onboarding/OnboardingKycPage'));
 const TransactionFlowPage = lazy(() => import('./pages/TransactionFlowPage'));
@@ -275,7 +273,9 @@ function App() {
               {/* Protected routes (auth required) */}
               <Route path="/profile-setup" element={<ProtectedRoute><ProfileSetup /></ProtectedRoute>} />
               <Route path="/onboarding/role" element={<ProtectedRoute><RoleSelectionPage /></ProtectedRoute>} />
-              <Route path="/onboarding/payment" element={<ProtectedRoute><OnboardingPaymentPage /></ProtectedRoute>} />
+              {/* The £75 seller-fee page was removed when the platform went free
+                  (2026-10-15); old links land on the free start flow. */}
+              <Route path="/onboarding/payment" element={<Navigate to="/start-transaction" replace />} />
               <Route path="/onboarding/join" element={<ProtectedRoute><OnboardingJoinPage /></ProtectedRoute>} />
               {/* Renamed from /onboarding/verify-identity — v3 Scope Reset
                   explicitly descopes on-platform identity verification. The
@@ -304,7 +304,7 @@ function App() {
               <Route path="/wizard" element={<Navigate to="/create-transaction" replace />} />
               <Route path="/transaction-dashboard" element={<ProtectedRoute><TransactionDashboardPage /></ProtectedRoute>} />
               <Route path="/payment/success" element={<PaymentSuccessPage />} />
-              <Route path="/seller-fee/success" element={<SellerFeeSuccessPage />} />
+              <Route path="/seller-fee/success" element={<Navigate to="/dashboard" replace />} />
 
               {/* Protected + RequirePrincipal routes (canister-write pages) */}
               <Route path="/start-transaction" element={<ProtectedRoute><RequirePrincipal><RequireProfile><StartTransactionPage /></RequireProfile></RequirePrincipal></ProtectedRoute>} />

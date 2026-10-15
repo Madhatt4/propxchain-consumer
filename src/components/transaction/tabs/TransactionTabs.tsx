@@ -16,20 +16,13 @@
  * Hybrid navigation: on desktop switching replaces the URL; on mobile each
  * section acts like a page (switching pushes history, so the back button
  * returns to the previous section). State lives in the `?tab=` query param,
- * so every section is deep-linkable. Locked sections render greyed with a
- * lock and open to a teaser (the section component decides).
+ * so every section is deep-linkable.
  */
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { useIsTierAtLeast } from '@/hooks/useSubscription';
-import type { SubscriptionTier } from '@/constants/subscriptionFeatures';
 import { TransactionSectionNav } from './TransactionSectionNav';
-import {
-  isTabUnlocked,
-  TRANSACTION_TABS,
-  type TransactionTabContext,
-} from './transactionTabs.config';
+import { TRANSACTION_TABS, type TransactionTabContext } from './transactionTabs.config';
 import { accessForId, type DealSide } from '@/lib/dealAccess';
 import { ViewOnlyFrame } from '../ViewOnlyFrame';
 
@@ -78,9 +71,6 @@ export function TransactionTabs({
   const [searchParams, setSearchParams] = useSearchParams();
   const isDesktop = useIsDesktop();
 
-  const isPremium = useIsTierAtLeast('premium');
-  const isUnlocked = (t: SubscriptionTier): boolean => isTabUnlocked(t, isPremium);
-
   const requested = searchParams.get('tab') ?? 'overview';
   const activeId = TRANSACTION_TABS.some((t) => t.id === requested) ? requested : 'overview';
   const active = TRANSACTION_TABS.find((t) => t.id === activeId) ?? TRANSACTION_TABS[0];
@@ -96,7 +86,6 @@ export function TransactionTabs({
     <div className="lg:flex lg:items-start lg:gap-5">
       <TransactionSectionNav
         activeId={activeId}
-        isUnlocked={isUnlocked}
         select={select}
         transactionId={context.transactionId}
         isDesktop={isDesktop}
@@ -128,8 +117,6 @@ export function TransactionTabs({
                   const section = (
                     <active.Component
                       {...context}
-                      locked={!isUnlocked(active.minTier)}
-                      requiredTier={active.minTier}
                       readOnly={readOnly}
                     />
                   );

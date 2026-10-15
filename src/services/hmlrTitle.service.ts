@@ -428,7 +428,7 @@ class HmlrTitleService {
     });
 
     // Record the on-chain HMLR-fetched milestone so getNextStep stops
-    // reporting `hmlr_not_fetched` — the NextStepCard and the premium AI
+    // reporting `hmlr_not_fetched` — the NextStepCard and the AI
     // Move Narrator mirror getNextStep, so they advance automatically. The
     // register is general/non-PII, so we anchor only its responseHash
     // (matrix: On+hash). Best-effort and unconditional on a deliverable

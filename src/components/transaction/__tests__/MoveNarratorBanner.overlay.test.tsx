@@ -1,11 +1,11 @@
 /**
  * The AI update card floats and minimises like the NextStepCard.
  *
- * Why this exists: on premium the AI card SUPERSEDES the NextStepCard (they say
- * the same thing), so a premium user opening a transaction sees this component
- * and not that one. Giving the next-step card the floating treatment while
- * leaving this as an inline banner would mean the tier toggle changed the
- * interaction model, not just the wording — which is exactly what Marc hit.
+ * Why this exists: once delivered, the AI card SUPERSEDES the NextStepCard
+ * (they say the same thing), so a user opening a transaction sees this
+ * component and not that one. Giving the next-step card the floating treatment
+ * while leaving this as an inline banner would change the interaction model
+ * the moment the first AI card arrived.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -14,14 +14,9 @@ import MoveNarratorBanner from '../MoveNarratorBanner';
 
 const markRead = vi.fn();
 let mockNotifications: Array<Record<string, unknown>> = [];
-let mockIsPremium = true;
 
 vi.mock('../../../hooks/useMoveNarratorNotifications', () => ({
   useMoveNarratorNotifications: () => ({ notifications: mockNotifications, markRead }),
-}));
-
-vi.mock('../../../hooks/useSubscription', () => ({
-  useSubscription: () => ({ isPremium: mockIsPremium }),
 }));
 
 vi.mock('@/hooks/use-toast', () => ({
@@ -43,7 +38,6 @@ describe('MoveNarratorBanner — floating and minimise', () => {
   beforeEach(() => {
     localStorage.clear();
     markRead.mockReset();
-    mockIsPremium = true;
     mockNotifications = [card()];
   });
 
@@ -115,8 +109,8 @@ describe('MoveNarratorBanner — floating and minimise', () => {
     expect(markRead).toHaveBeenCalledWith('card-1');
   });
 
-  it('should render nothing at all on the starter tier', () => {
-    mockIsPremium = false;
+  it('should render nothing when no AI update exists for this transaction', () => {
+    mockNotifications = [card({ txId: 'tx-other' })];
     const { container } = render(<MoveNarratorBanner txId="tx-1" />);
     expect(container).toBeEmptyDOMElement();
   });

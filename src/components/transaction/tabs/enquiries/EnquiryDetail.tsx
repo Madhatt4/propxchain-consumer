@@ -54,7 +54,6 @@ export function EnquiryDetail({ enquiry, party, onChanged }: Props): JSX.Element
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [premium, setPremium] = useState(false);
 
   useEffect(() => {
     let live = true;
@@ -69,13 +68,8 @@ export function EnquiryDetail({ enquiry, party, onChanged }: Props): JSX.Element
     try { await fn(); } catch (e) { setError(errText(e, `Could not ${label.toLowerCase()}`)); } finally { setBusy(null); }
   };
   const runCheck = () => run('Check', async () => {
-    try {
-      const r = await checkEnquiry({ enquiryId: enquiry.id });
-      setChecks([r.check, ...checks.filter((c) => c.id !== r.check.id)]);
-    } catch (e) {
-      if (e instanceof EnquiryError && e.status === 402) { setPremium(true); return; }
-      throw e;
-    }
+    const r = await checkEnquiry({ enquiryId: enquiry.id });
+    setChecks([r.check, ...checks.filter((c) => c.id !== r.check.id)]);
   });
   const latest = checks[0] ?? null;
 
@@ -92,9 +86,8 @@ export function EnquiryDetail({ enquiry, party, onChanged }: Props): JSX.Element
       <section className="space-y-2">
         <div className="flex items-center justify-between">
           <h4 className="text-sm font-medium">Pack check</h4>
-          {!premium && <Button type="button" size="sm" variant="outline" disabled={busy === 'Check'} onClick={runCheck}>{busy === 'Check' ? 'Checking…' : latest ? 'Run again' : 'Run check'}</Button>}
+          <Button type="button" size="sm" variant="outline" disabled={busy === 'Check'} onClick={runCheck}>{busy === 'Check' ? 'Checking…' : latest ? 'Run again' : 'Run check'}</Button>
         </div>
-        {premium && <p className="text-sm text-muted-foreground">The pack check is part of the seller's Premium tier.</p>}
         {latest ? <CheckResultView result={latest.result} /> : <p className="text-sm text-muted-foreground">No check yet.</p>}
       </section>
 

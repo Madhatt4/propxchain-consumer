@@ -5,30 +5,20 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { useNoIndex } from '../../hooks/useNoIndex';
-import {
-  SubscriptionTier,
-  getUserSubscriptionTier,
-  hasMinimumTier,
-  FEATURE_REQUIREMENTS,
-} from '../../types/subscription.types';
 import { Loader2 } from 'lucide-react';
 
 interface ProtectedRouteProps {
   children: React.ReactElement;
-  requiredTier?: SubscriptionTier;
 }
 
 /**
  * ProtectedRoute Component
  *
- * Wraps routes that require:
- * 1. Authentication (supports both Supabase and Internet Identity)
- * 2. Subscription tier (optional - checks user's subscription level)
- *
- * If user is not authenticated, redirects to /login
- * If user doesn't have required tier, redirects to /pricing
+ * Wraps routes that require authentication (Supabase or Internet Identity).
+ * Unauthenticated users are redirected to /login. There is no tier gate: the
+ * platform is free (2026-10-15).
  */
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredTier }) => {
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const location = useLocation();
   const { isAuthenticated, isInitialized, isLoading } = useAuthStore();
   useNoIndex();
@@ -45,30 +35,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredTier 
   // If not authenticated, redirect to login
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
-  // If requiredTier is specified, check subscription tier
-  if (requiredTier) {
-    const userTier = getUserSubscriptionTier();
-    const hasAccess = hasMinimumTier(userTier, requiredTier);
-
-    if (!hasAccess) {
-      const featureReq = FEATURE_REQUIREMENTS[location.pathname as keyof typeof FEATURE_REQUIREMENTS];
-      const featureName = featureReq?.featureName || 'this feature';
-
-      return (
-        <Navigate
-          to="/pricing"
-          state={{
-            from: location,
-            requiredTier,
-            featureName,
-            currentTier: userTier,
-          }}
-          replace
-        />
-      );
-    }
   }
 
   return children;

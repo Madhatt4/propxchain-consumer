@@ -34,7 +34,7 @@ describe('WalletVcTab', () => {
   });
 
   it('renders the credentials list, request panel and verified result', async () => {
-    render(<WalletVcTab transactionId="tx-1" locked={false} requiredTier="starter" />);
+    render(<WalletVcTab transactionId="tx-1" />);
     expect(await screen.findByText(/Credentials for this transaction/i)).toBeInTheDocument();
     expect(await screen.findByText(/Scan to share your mortgage offer/i)).toBeInTheDocument();
     // Unique to the verified panel (avoids the duplicate "Verified" chip in the list).
@@ -45,13 +45,13 @@ describe('WalletVcTab', () => {
 
   it('renders an error state when the presentation request fails', async () => {
     vi.mocked(svc.getPresentationRequest).mockRejectedValueOnce(new Error('boom'));
-    render(<WalletVcTab transactionId="tx-1" locked={false} requiredTier="starter" />);
+    render(<WalletVcTab transactionId="tx-1" />);
     expect(await screen.findByText(/Couldn[’']t load/i)).toBeInTheDocument();
   });
 
   it('shows the unavailable gate (no sample data) when no verifier is configured', () => {
     vi.mocked(svc.walletVcMode).mockReturnValue('unavailable');
-    render(<WalletVcTab transactionId="tx-1" locked={false} requiredTier="starter" />);
+    render(<WalletVcTab transactionId="tx-1" />);
     expect(screen.getByText(/isn[’']t available yet/i)).toBeInTheDocument();
     expect(screen.queryByText(/Halifax/)).not.toBeInTheDocument();
     expect(svc.getPresentationRequest).not.toHaveBeenCalled();

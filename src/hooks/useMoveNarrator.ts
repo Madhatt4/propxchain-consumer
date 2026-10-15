@@ -1,11 +1,11 @@
 /**
  * useMoveNarrator — detects a transaction's blocker change and drives the
- * server-side Move Narrator run for premium customers.
+ * server-side Move Narrator run, for every user.
  *
  * Mounted wherever a transaction is open (the flow page). On each check it:
  *   1. reads the authoritative `getNextStep` blocker (same call the card makes),
  *   2. compares it to the last blocker recorded for this tx,
- *   3. for a premium user with a genuine change, fires a graded run, polls it
+ *   3. on a genuine change, fires a graded run, polls it
  *      to completion, delivers it, and records the returned in-app card.
  *
  * Idempotency: the recorded blocker is updated synchronously the moment we
@@ -18,7 +18,6 @@
 
 import { useEffect } from 'react';
 
-import { useSubscription } from './useSubscription';
 import { getNextStep } from '../services/next-step.service';
 import {
   evaluateTrigger,
@@ -56,10 +55,8 @@ export function useMoveNarrator({
   propertyAddress,
   refreshKey,
 }: UseMoveNarratorParams): void {
-  const { isPremium, isLoading } = useSubscription();
-
   useEffect(() => {
-    if (!txId || isLoading) return;
+    if (!txId) return;
     let cancelled = false;
 
     void (async () => {
@@ -68,7 +65,7 @@ export function useMoveNarrator({
 
       const currentBlocker = result.ok.blocker;
       const previousBlocker = readLastBlocker(txId);
-      const decision = evaluateTrigger({ currentBlocker, lastBlocker: previousBlocker, isPremium });
+      const decision = evaluateTrigger({ currentBlocker, lastBlocker: previousBlocker });
 
       if (decision === 'noop') return;
 
@@ -102,7 +99,7 @@ export function useMoveNarrator({
     // role/propertyAddress are stable for a given tx; intentionally keyed on the
     // detection inputs so a change or edit re-checks exactly once.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [txId, refreshKey, isPremium, isLoading]);
+  }, [txId, refreshKey]);
 }
 
 interface RunNarrationArgs {

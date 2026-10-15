@@ -44,13 +44,14 @@ describe('EnquiryComposer', () => {
     await waitFor(() => expect(onRaised).toHaveBeenCalled());
   });
 
-  it('a 402 from the check shows the Premium note and still allows raising', async () => {
-    mockCheck.mockRejectedValue(new EnquiryError(402, 'not_entitled'));
+  it('a failed check shows the unavailable note and still allows raising', async () => {
+    mockCheck.mockRejectedValue(new EnquiryError(500, 'internal'));
     mockRaise.mockResolvedValue({ id: 'e1', ledger_pending: true });
     render(<EnquiryComposer transactionId="tx_1" onRaised={vi.fn()} />);
     fireEvent.change(screen.getByLabelText('Enquiry'), { target: { value: 'Q' } });
     fireEvent.click(screen.getByRole('button', { name: 'Check the pack' }));
-    await waitFor(() => expect(screen.getByText(/Premium/)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/not available right now/)).toBeInTheDocument());
+    expect(screen.queryByText(/Premium/)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Raise enquiry' }));
     await waitFor(() => expect(mockRaise).toHaveBeenCalled());
   });
