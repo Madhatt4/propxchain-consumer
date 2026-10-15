@@ -3,10 +3,10 @@
  * user's browser via navigator.modelContext (webmachinelearning.github.io/webmcp).
  * Registered once at startup from main.tsx; a no-op in browsers without the
  * API. Tools only surface facts and routes the app already has, so nothing
- * here can drift from the product: pricing comes from TIER_METADATA and the
+ * here can drift from the product: pricing comes from constants/pricing and the
  * article index from resourcesMeta.
  */
-import { TIER_METADATA } from '@/constants/subscriptionFeatures';
+import { FREE_FEATURES, PAID_ITEMS } from '@/constants/pricing';
 import { articlePath, liveCategories, RESOURCES } from '@/pages/resources/resourcesMeta';
 
 interface ToolDescriptor {
@@ -89,14 +89,18 @@ export function buildTools(navigate: (path: string) => void): ToolDescriptor[] {
     {
       name: 'propxchain_get_pricing',
       description:
-        'Return PropXchain\'s current tiers and prices in GBP: the free Starter tier and the per-transaction Premium tier.',
+        'Return PropXchain\'s pricing in GBP: the platform is free to use (no plans, no tiers, no platform fee), and third-party items are paid per item.',
       inputSchema: { type: 'object', properties: {} },
-      execute: () =>
-        Object.values(TIER_METADATA).map((tier) => ({
-          tier: tier.displayName,
-          description: tier.description,
-          pricePerTransactionGbp: tier.annualPrice,
+      execute: () => ({
+        platformPriceGbp: 0,
+        summary: 'PropXchain is free to use for buyers and sellers. No plans, no tiers, no platform fee.',
+        freeFeatures: [...FREE_FEATURES],
+        paidPerItem: PAID_ITEMS.map((item) => ({
+          item: item.label,
+          priceGbp: item.priceGbp,
+          note: item.note,
         })),
+      }),
     },
   ];
 }

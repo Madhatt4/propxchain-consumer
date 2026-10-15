@@ -26,8 +26,8 @@ interface Reason {
 
 const reasons: Reason[] = [
   {
-    lead: 'Free to start',
-    body: 'No platform fee, no monthly fees, no listing fees. Add the optional £75 AI co-pilot whenever you like.',
+    lead: 'Free to use',
+    body: 'No platform fee, no monthly fees, no listing fees. You only pay for the third-party items you order, like searches and the £7 title pull.',
   },
   {
     lead: 'Save £2,000+ vs traditional',
@@ -51,8 +51,8 @@ const steps: string[] = [
   'List your house — add the address, then hit the Title button to check who owns YOUR property: £7 for the official HM Land Registry record.',
   'Complete the TA6 and TA10 forms with guidance. Save progress and come back anytime.',
   'Invite your buyer — or let us match you. The buyer uses PropXchain free.',
-  'Order searches directly — local authority, drainage, environmental. No solicitor markup.',
-  'Appoint a conveyancer from the CLC-verified panel — quoted directly, never marked up.',
+  'Order searches directly — local authority, drainage, environmental. Priced when you order.',
+  'Appoint a conveyancer from the CLC-verified panel — quoted to you directly.',
   'Exchange and complete through your conveyancers. PropXchain records the exchange and never holds your money.',
 ];
 
@@ -65,7 +65,7 @@ const faqs: Faq[] = [
   {
     question: 'How much does it cost to sell my house with PropXchain?',
     answer:
-      'Free to start — no platform fee. You pay roughly £50–£450 for searches (bought through PropXchain) and your conveyancer’s quoted fee. The optional AI co-pilot is £75 per transaction. No estate agent fee.',
+      'PropXchain is free to use — no platform fee. You pay per item for what you order: searches (bought through PropXchain, priced when you order), the £7 HM Land Registry title pull, and your conveyancer’s quoted fee. No estate agent fee.',
   },
   {
     question: 'Do I need an estate agent?',
@@ -85,11 +85,11 @@ const SellMyHousePage: React.FC = () => {
       {/* ── Hero ────────────────────────────────────────────────── */}
       <section className="mx-auto max-w-[760px] px-6 py-16 sm:py-24">
         <h1 className="font-[Fraunces] text-[2.5rem] font-semibold leading-[1.05] tracking-tight text-[#1A1A1A] dark:text-[#F1F5F9] sm:text-[3.5rem]">
-          Sell your house online — free to start.
+          Sell your house online — free to use.
         </h1>
         <p className="mt-6 max-w-xl font-[DM_Sans] text-lg leading-relaxed text-[#6B7280] dark:text-[#94A3B8]">
-          The simple, fast way to sell your house in the UK. No platform fee, no
-          estate agent, no hidden markup.
+          The simple, fast way to sell your house in the UK. No platform fee and
+          no estate agent fee.
         </p>
       </section>
 

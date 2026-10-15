@@ -2,111 +2,40 @@
 // Copyright (C) 2026 PropXchain Ltd
 
 /**
- * PricingPage (/pricing) — the actual PropXchain model.
+ * PricingPage (/pricing) — the actual PropXchain model (Marc, 2026-10-15).
  *
- *  - Starter is FREE. Self-serve, pay-as-you-go: you pick your own
- *    providers and pay at the prices shown up front. Searches are bought
- *    through PropXchain. No platform fee.
- *  - Premium is £75 per transaction. Everything in Starter, plus an
- *    AI co-pilot: it reads your HM Land Registry title and your search
- *    results in plain English, turns the actual complexity of your
- *    transaction into a tailored conveyancer quote request, and guides
- *    you through every step.
+ *  - Using PropXchain is FREE for every party. No plans, no tiers, no
+ *    platform fee.
+ *  - Third-party items are paid per item, priced when you order: searches,
+ *    ID & AML checks, the £7 HM Land Registry title pull, the £25
+ *    property-chain check. Conveyancers quote you directly.
  *
- * PropXchain never marks up conveyancer fees — the conveyancer quotes
- * you directly.
+ * Searches are sold with a margin, so this page must never claim "at cost",
+ * "no mark-up" or "pass-through" (src/__tests__/pricingClaims.test.ts).
  */
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { IS_REGISTRATION_OPEN, PRELAUNCH_CAPTURE_PATH } from '../config/registration';
-
-interface Tier {
-  name: string;
-  blurb: string;
-  price: string;
-  priceNote: string;
-  features: string[];
-  cta: string;
-  ctaPath: string;
-  featured?: boolean;
-}
-
-const TIERS: Tier[] = [
-  {
-    name: 'Starter',
-    blurb: 'Self-serve, pay-as-you-go. Pick your own providers and see every price up front.',
-    price: 'Free',
-    priceNote: 'no platform fee',
-    features: [
-      'On-chain transaction record and audit trail',
-      'HM Land Registry title pull — £7, names the registered owner',
-      'TA6 + TA10 digital forms',
-      'Document vault and verification',
-      'Buyer invite and progress tracker',
-      'Conveyancer panel access',
-    ],
-    cta: 'Start free',
-    ctaPath: '/register',
-  },
-  {
-    name: 'Premium',
-    blurb: 'Everything in Starter, plus an AI co-pilot for the whole transaction.',
-    price: '£75',
-    priceNote: 'per transaction',
-    features: [
-      'Everything in Starter',
-      'AI reads your HMLR title — issues flagged, summarised in plain English',
-      'AI reads your search results — the material issues pulled out for you',
-      'A complexity-aware conveyancer quote request — often a tighter price',
-      'AI next-step cards guide you through every stage',
-      'Priority support',
-    ],
-    cta: 'Add the AI co-pilot',
-    ctaPath: '/register',
-    featured: true,
-  },
-];
-
-const OTHER_COSTS = [
-  {
-    label: 'Property searches',
-    cost: '£50–450',
-    note: 'You pick the provider and pay the rate shown',
-  },
-  {
-    label: 'Conveyancer (reserved acts)',
-    cost: 'Quote',
-    note: 'Quoted directly per transaction — PropXchain never marks it up',
-  },
-  {
-    label: 'Stamp duty',
-    cost: 'Calculated by HMRC',
-    note: 'Varies by property price',
-  },
-];
+import { FREE_FEATURES, PAID_ITEMS } from '../constants/pricing';
 
 const FAQS = [
   {
-    q: 'Is it really free to start?',
-    a: 'Yes. Starter has no platform fee. You run your own transaction, pick your own providers, and see every price before you commit.',
+    q: 'Is PropXchain really free?',
+    a: 'Yes. Using PropXchain is free for buyers and sellers. There are no plans, no tiers and no platform fee.',
   },
   {
-    q: 'What does the £75 Premium tier add?',
-    a: 'An AI co-pilot for the whole transaction. It reads your HM Land Registry title and your search results in plain English and flags the issues that actually matter, turns the real complexity of your transaction into a tailored conveyancer quote request, and gives you next-step cards that guide you through every stage. Same pricing underneath — you still see every provider\'s price before you commit.',
-  },
-  {
-    q: 'How does the AI get me a better conveyancer quote?',
-    a: 'Conveyancers normally price for the average transaction because they cannot see yours yet. Premium feeds the conveyancer a quote request built from your actual title, your actual searches, and the material issues the AI surfaced — so they can quote on the real work instead of pricing in unknown risk. You often get a tighter quote; they get a more predictable job.',
+    q: 'So what do I pay for?',
+    a: 'Only the third-party items you choose to order: property searches, ID and AML checks, the £7 HM Land Registry title pull and the £25 property chain check. Each one is priced when you order, before you pay.',
   },
   {
     q: 'What about solicitor/conveyancer fees?',
-    a: 'The conveyancer quotes you directly per transaction. PropXchain never marks up their fee. You compare and choose from the panel, or invite your own.',
+    a: 'The conveyancer quotes you directly for your transaction. You compare and choose from the panel, or invite your own.',
   },
   {
-    q: 'Are there any hidden fees?',
-    a: 'No. Starter is free. Premium is £75 per transaction for the AI co-pilot. Your conveyancer quotes you direct and PropXchain never marks that up. Searches are paid at the rate shown before you commit.',
+    q: 'Will it always be free?',
+    a: 'Everything on PropXchain is free today. We may add paid extras later. If we do, you will see the price before you pay.',
   },
 ];
 
@@ -130,73 +59,49 @@ const PricingPage: React.FC = () => {
       {/* Hero */}
       <div className="mx-auto max-w-2xl text-center mb-12">
         <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-50 sm:text-4xl lg:text-5xl mb-4">
-          Start free. Add AI when you want it.
+          PropXchain is free to use.
         </h1>
         <p className="text-lg text-slate-600 dark:text-slate-400">
-          Pick your own providers and see every price up front. Upgrade to the £75 AI
-          co-pilot to have your title and searches read in plain English.
+          No plans, no tiers, no platform fee. You only pay for the third-party items you
+          order, and each one is priced when you order it.
         </p>
       </div>
 
-      {/* Tiers */}
-      <div className="mx-auto grid max-w-4xl gap-6 sm:grid-cols-2">
-        {TIERS.map((tier) => (
-          <div
-            key={tier.name}
-            className={
-              tier.featured
-                ? 'relative rounded-2xl border border-blue-600/40 bg-white dark:bg-slate-800/70 p-8 shadow-lg shadow-blue-600/10'
-                : 'rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 p-8'
-            }
-          >
-            {tier.featured && (
-              <span className="absolute -top-3 right-6 rounded-full bg-blue-600 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white">
-                Popular
+      {/* Free to use */}
+      <div className="mx-auto max-w-2xl rounded-2xl border border-blue-600/40 bg-white dark:bg-slate-800/70 p-8 shadow-lg shadow-blue-600/10">
+        <h2 className="text-xl font-bold text-slate-900 dark:text-slate-50">Free to use</h2>
+        <div className="mt-4 mb-6">
+          <span className="text-5xl font-bold text-slate-900 dark:text-slate-50">Free</span>
+          <span className="ml-2 text-sm text-slate-600 dark:text-slate-400">for buyers and sellers</span>
+        </div>
+        <ul className="space-y-3 mb-8">
+          {FREE_FEATURES.map((feature) => (
+            <li key={feature} className="flex items-start gap-3 text-sm text-slate-700 dark:text-slate-200">
+              <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-500/20 text-green-400 text-xs">
+                &#10003;
               </span>
-            )}
-            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-50">{tier.name}</h2>
-            <p className="mt-2 min-h-[3rem] text-sm text-slate-600 dark:text-slate-400">{tier.blurb}</p>
-            <div className="mt-4 mb-6">
-              <span className="text-5xl font-bold text-slate-900 dark:text-slate-50">{tier.price}</span>
-              <span className="ml-2 text-sm text-slate-600 dark:text-slate-400">{tier.priceNote}</span>
-            </div>
-            <ul className="space-y-3 mb-8">
-              {tier.features.map((feature) => (
-                <li key={feature} className="flex items-start gap-3 text-sm text-slate-700 dark:text-slate-200">
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-500/20 text-green-400 text-xs">
-                    &#10003;
-                  </span>
-                  {feature}
-                </li>
-              ))}
-            </ul>
-            {/* Both tier CTAs pointed at /register unconditionally, so while
-                sign-ups are closed the two biggest buttons on the pricing page
-                led straight to "Sign-ups open at launch". Route to the capture
-                path — the one consumer journey that IS open — and say so. */}
-            <button
-              onClick={() =>
-                navigate(IS_REGISTRATION_OPEN ? tier.ctaPath : PRELAUNCH_CAPTURE_PATH)
-              }
-              className={
-                tier.featured
-                  ? 'w-full rounded-xl bg-blue-600 py-3 text-base font-semibold text-white transition-colors hover:bg-blue-700'
-                  : 'w-full rounded-xl border border-slate-300 dark:border-slate-600 py-3 text-base font-semibold text-slate-900 dark:text-slate-100 transition-colors hover:border-blue-500 hover:text-slate-900 dark:hover:text-white'
-              }
-            >
-              {IS_REGISTRATION_OPEN ? tier.cta : 'Get the free Home Mover Report'}
-            </button>
-          </div>
-        ))}
+              {feature}
+            </li>
+          ))}
+        </ul>
+        {/* While sign-ups are closed /register shows "Sign-ups open at launch",
+            so route to the capture path — the one consumer journey that IS
+            open — and say so. */}
+        <button
+          onClick={() => navigate(IS_REGISTRATION_OPEN ? '/register' : PRELAUNCH_CAPTURE_PATH)}
+          className="w-full rounded-xl bg-blue-600 py-3 text-base font-semibold text-white transition-colors hover:bg-blue-700"
+        >
+          {IS_REGISTRATION_OPEN ? 'Start free' : 'Get the free Home Mover Report'}
+        </button>
       </div>
 
-      {/* Other Costs */}
+      {/* Paid per item */}
       <div className="mx-auto mt-16 max-w-3xl">
         <h2 className="mb-6 text-center text-2xl font-bold text-slate-900 dark:text-slate-50">
-          What else you pay (and who you pay it to)
+          Paid per item
         </h2>
         <div className="grid gap-4 sm:grid-cols-3">
-          {OTHER_COSTS.map((item) => (
+          {PAID_ITEMS.map((item) => (
             <div
               key={item.label}
               className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 p-5 text-center"
@@ -208,7 +113,7 @@ const PricingPage: React.FC = () => {
           ))}
         </div>
         <p className="mt-4 text-center text-sm text-slate-500">
-          You pick your providers. Every cost is shown before you commit, and conveyancer fees are never marked up.
+          You only pay for what you order, and you see the price before you pay.
         </p>
       </div>
 
@@ -240,7 +145,7 @@ const PricingPage: React.FC = () => {
           Ready to start?
         </h3>
         <p className="text-slate-600 dark:text-slate-400 mb-6">
-          Create your free account in 2 minutes — add the AI co-pilot whenever you like.
+          Create your free account in 2 minutes.
         </p>
         <button
           onClick={() => navigate('/register')}

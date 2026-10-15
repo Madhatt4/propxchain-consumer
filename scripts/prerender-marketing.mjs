@@ -127,63 +127,54 @@ const pages = [
   },
   {
     route: 'pricing',
-    title: 'PropXchain Pricing — Free to Start, £75 AI Co-pilot Optional',
-    description: 'Start your UK property sale free, with no platform fee. See every price before you commit and add the optional £75 AI co-pilot to read your title and searches.',
+    title: 'PropXchain Pricing — Free to Use, Pay Only for What You Order',
+    description: 'PropXchain is free to use: no plans, no tiers, no platform fee. Searches, ID checks and the £7 title pull are paid per item, priced when you order.',
     main: `<main id="seo-fallback" role="main" aria-label="PropXchain pricing — summary">
 <p class="muted">Loading PropXchain…</p>
-<h1>Start free. Add AI when you want it.</h1>
-<p>Pick your own providers and see every price up front. Upgrade to the £75 AI co-pilot whenever you like.</p>
+<h1>PropXchain is free to use.</h1>
+<p>No plans, no tiers, no platform fee. You only pay for the third-party items you order, and each one is priced when you order it.</p>
 
-<section aria-labelledby="starter-tier">
-  <h2 id="starter-tier">Starter — free, no platform fee</h2>
-  <p>Self-serve, pay-as-you-go. Everything you need to run your own transaction:</p>
+<section aria-labelledby="free">
+  <h2 id="free">Free to use</h2>
+  <p>Free for buyers and sellers:</p>
   <ul>
-    <li>On-chain transaction record and audit trail</li>
-    <li>HM Land Registry title pull</li>
-    <li>TA6 + TA10 digital forms</li>
+    <li>Your property pack, with the TA6 and TA10 forms</li>
+    <li>AI reads of your title and search results, in plain English</li>
+    <li>Enquiry checks before they reach your conveyancer</li>
     <li>Document vault and verification</li>
-    <li>Buyer invite and progress tracker</li>
+    <li>Buyer invite and live progress tracker</li>
+    <li>On-chain transaction record and audit trail</li>
     <li>Conveyancer panel access</li>
   </ul>
 </section>
 
-<section aria-labelledby="premium-tier">
-  <h2 id="premium-tier">Premium — £75 per transaction</h2>
-  <p>Everything in Starter, plus an AI co-pilot for the whole transaction:</p>
+<section aria-labelledby="paid">
+  <h2 id="paid">Paid per item</h2>
   <ul>
-    <li>AI reads your HMLR title — issues flagged, summarised in plain English</li>
-    <li>AI reads your search results — the material issues pulled out for you</li>
-    <li>A complexity-aware conveyancer quote request — often a tighter price</li>
-    <li>AI next-step cards guide you through every stage</li>
-    <li>Priority support</li>
+    <li><strong>Property searches:</strong> per search, priced when you order.</li>
+    <li><strong>ID &amp; AML checks:</strong> per check, priced when you order.</li>
+    <li><strong>HM Land Registry title:</strong> £7 per title pull — names the registered owner.</li>
+    <li><strong>Property chain check:</strong> £25, one-off per transaction.</li>
+    <li><strong>Conveyancer:</strong> the conveyancer quotes you directly.</li>
+    <li><strong>Stamp duty:</strong> set by HMRC, varies by property price.</li>
   </ul>
-</section>
-
-<section aria-labelledby="other-costs">
-  <h2 id="other-costs">Other costs (full transparency)</h2>
-  <p>Conveyancers estimate you directly and PropXchain never marks that up. Searches are bought through PropXchain at the price shown.</p>
-  <ul>
-    <li><strong>Property searches: £50–£450</strong> — you pick the provider and pay the price shown.</li>
-    <li><strong>Conveyancer (reserved legal acts):</strong> quoted directly per transaction — compare and choose from the panel.</li>
-    <li><strong>Stamp duty:</strong> calculated by HMRC, varies by property price.</li>
-  </ul>
-  <p>You control all payments. No hidden fees.</p>
+  <p>You only pay for what you order, and you see the price before you pay.</p>
 </section>
 
 <section aria-labelledby="faq">
   <h2 id="faq">Frequently asked questions</h2>
 
-  <h3>Is it really free to start?</h3>
-  <p>Yes. Starter has no platform fee. You run your own transaction, pick your own providers, and see every price before you commit.</p>
+  <h3>Is PropXchain really free?</h3>
+  <p>Yes. Using PropXchain is free for buyers and sellers. There are no plans, no tiers and no platform fee.</p>
 
-  <h3>What does the £75 Premium tier add?</h3>
-  <p>An AI co-pilot for the whole transaction. It reads your HM Land Registry title and search results in plain English, flags the issues that matter, and turns the real complexity of your transaction into a tailored conveyancer quote request.</p>
+  <h3>So what do I pay for?</h3>
+  <p>Only the third-party items you choose to order: property searches, ID and AML checks, the £7 HM Land Registry title pull and the £25 property chain check. Each one is priced when you order, before you pay.</p>
 
   <h3>What about solicitor or conveyancer fees?</h3>
-  <p>The conveyancer quotes you directly per transaction. PropXchain never marks up their fee. You compare and choose from the panel, or invite your own.</p>
+  <p>The conveyancer quotes you directly for your transaction. You compare and choose from the panel, or invite your own.</p>
 
-  <h3>Are there any hidden fees?</h3>
-  <p>No. Starter is free. Premium is £75 per transaction for the AI co-pilot. Everything else — searches, your conveyancer — is priced up front, before you commit.</p>
+  <h3>Will it always be free?</h3>
+  <p>Everything on PropXchain is free today. We may add paid extras later. If we do, you will see the price before you pay.</p>
 </section>
 
 <p>Ready to start? Create your free account in two minutes. <a href="/register">Start free</a>.</p>
@@ -191,17 +182,17 @@ const pages = [
   },
   {
     route: 'sell-my-house',
-    title: 'Sell My House Online — Free to Start, No Estate Agent | PropXchain',
-    description: 'Sell your house online free: no platform fee, no estate agent markup. See every price up front, add the optional £75 AI co-pilot, and start in two minutes.',
+    title: 'Sell My House Online — Free to Use, No Estate Agent | PropXchain',
+    description: 'Sell your house online free: no platform fee, no estate agent fee. Pay only for the searches and checks you order, and start in two minutes.',
     main: `<main id="seo-fallback" role="main" aria-label="Sell my house online with PropXchain — summary">
 <p class="muted">Loading PropXchain…</p>
-<h1>Sell your house online — free to start</h1>
-<p>The simple, fast way to sell your house in the UK. No platform fee. No estate agent. No hidden markup. Complete in weeks, not months.</p>
+<h1>Sell your house online — free to use</h1>
+<p>The simple, fast way to sell your house in the UK. No platform fee. No estate agent fee. Complete in weeks, not months.</p>
 
 <section aria-labelledby="why">
   <h2 id="why">Why sell your house with PropXchain</h2>
   <ul>
-    <li><strong>Free to start</strong> — no platform fee, no monthly fees, no listing fees. Add the optional £75 AI co-pilot whenever you like.</li>
+    <li><strong>Free to use</strong> — no platform fee, no monthly fees, no listing fees. You only pay for the third-party items you order, like searches and the £7 title pull.</li>
     <li><strong>Save £2,000+ vs traditional</strong> — a typical UK sale costs £1,500–£2,500 in agent and conveyancing admin fees. PropXchain cuts the admin middleman.</li>
     <li><strong>Weeks, not months</strong> — UK conveyancing averages 20–24 weeks. PropXchain sellers complete in weeks because everyone sees the same live transaction.</li>
     <li><strong>You stay in control</strong> — order your own searches, invite your own buyer, pick your own CLC-verified conveyancer from the panel.</li>
@@ -215,8 +206,8 @@ const pages = [
     <li><strong>List your house</strong> — add the address, Oscar AI pulls HM Land Registry title automatically.</li>
     <li><strong>Complete the TA6 and TA10</strong> forms with Oscar's guidance. Save progress, come back anytime.</li>
     <li><strong>Invite your buyer</strong> — or let us match you. The buyer uses PropXchain free.</li>
-    <li><strong>Order searches directly</strong> — local authority, drainage, environmental. No solicitor markup.</li>
-    <li><strong>Appoint a conveyancer</strong> from the CLC-verified panel — quoted directly, never marked up.</li>
+    <li><strong>Order searches directly</strong> — local authority, drainage, environmental. Priced when you order.</li>
+    <li><strong>Appoint a conveyancer</strong> from the CLC-verified panel — quoted to you directly.</li>
     <li><strong>Exchange and complete</strong> through your conveyancers. PropXchain records the exchange and never holds your money.</li>
   </ol>
 </section>
@@ -224,7 +215,7 @@ const pages = [
 <section aria-labelledby="faq">
   <h2 id="faq">Sell your house FAQ</h2>
   <h3>How much does it cost to sell my house with PropXchain?</h3>
-  <p>Free to start — no platform fee. You pay approximately £50–£450 for searches (bought through PropXchain) and your conveyancer's quoted fee. The optional AI co-pilot is £75 per transaction. No estate agent fee.</p>
+  <p>PropXchain is free to use — no platform fee. You pay per item for what you order: searches (bought through PropXchain, priced when you order), the £7 HM Land Registry title pull, and your conveyancer's quoted fee. No estate agent fee.</p>
   <h3>Do I need an estate agent?</h3>
   <p>No. PropXchain is seller-led — you manage the listing, the buyer communication, and the progress. If you already have a buyer, it's the fastest, cheapest way to complete.</p>
   <h3>How long does it take to sell a house online?</h3>
@@ -237,11 +228,11 @@ const pages = [
   {
     route: 'find-a-conveyancer',
     title: 'Find a Conveyancer Online — Quoted Direct, CLC Verified | PropXchain',
-    description: 'Find an online conveyancer for your UK purchase or sale. CLC-verified firms quote directly on your actual transaction, with no markup or hidden costs.',
+    description: 'Find an online conveyancer for your UK purchase or sale. CLC-verified firms quote you directly on your actual transaction.',
     main: `<main id="seo-fallback" role="main" aria-label="Find a conveyancer with PropXchain — summary">
 <p class="muted">Loading PropXchain…</p>
 <h1>Find a conveyancer — quoted on your actual transaction</h1>
-<p>Every conveyancer on PropXchain's panel is CLC-verified, quotes you directly per transaction with no PropXchain markup, and uses the same shared live transaction view so you always know where things stand.</p>
+<p>Every conveyancer on PropXchain's panel is CLC-verified, quotes you directly per transaction, and uses the same shared live transaction view so you always know where things stand.</p>
 
 <section aria-labelledby="why">
   <h2 id="why">Why use a PropXchain conveyancer</h2>
@@ -333,7 +324,7 @@ const pages = [
   <h2 id="solution">Our solution</h2>
   <ul>
     <li>One live transaction, visible to every party, with Oscar AI explaining each step</li>
-    <li>You keep control of your providers and their published rates — no hidden platform markup</li>
+    <li>Free to use — you only pay for the searches and checks you order, priced when you order</li>
     <li>A shared, verifiable record of every milestone</li>
     <li>Complete transparency with real-time updates</li>
     <li>Fewer surprises, because everyone sees the same status</li>
@@ -357,7 +348,7 @@ const pages = [
   {
     route: 'faq',
     title: 'PropXchain FAQ — Pricing, Conveyancers, Security & What Gets Recorded',
-    description: 'Common PropXchain questions: the free Starter tier, the optional £75 AI co-pilot, search costs, CLC-verified conveyancers, e-signing and AML checks.',
+    description: 'Common PropXchain questions: free to use, what is paid per item, search costs, CLC-verified conveyancers, e-signing and AML checks.',
     jsonLd: buildFaqJsonLd(),
     main: faqMain,
   },

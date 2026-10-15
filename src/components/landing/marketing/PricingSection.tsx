@@ -2,11 +2,11 @@
 // Copyright (C) 2026 PropXchain Ltd
 
 /**
- * "Pricing" — Starter (Free, featured) / Premium (£75, coming soon) /
- * Enterprise (Custom).
+ * "Pricing" — Free to use (featured) / Paid per item / Enterprise (Custom).
+ * PropXchain is free; only third-party items are paid, priced when ordered.
  *
  * A tier CTA routes when it has a destination it can honour, and otherwise
- * scrolls to the report/notify section. Starter's '/register' is the one that
+ * scrolls to the report/notify section. The free card's '/register' is the one that
  * moves: while sign-ups are closed the /register route renders a "not yet"
  * notice, so offering it would be the offer-and-destination mismatch
  * config/registration.ts exists to prevent.
@@ -48,7 +48,7 @@ export function PricingSection({ onScrollTo }: PricingSectionProps): JSX.Element
           <span className="eyebrow">Pricing</span>
         </div>
         <h2 className="h-sec reveal">
-          One flat fee. <span className="key">No percentages.</span>
+          Free to use. <span className="key">Pay only for what you order.</span>
         </h2>
 
         <div className="px-g3 gap-5 mt-12 items-stretch">
@@ -76,7 +76,7 @@ export function PricingSection({ onScrollTo }: PricingSectionProps): JSX.Element
                     fontWeight: 600,
                   }}
                 >
-                  Popular
+                  Everything included
                 </span>
               )}
               <h3 className="font-display" style={{ fontWeight: 700, fontSize: '1.25rem', margin: 0, color: 'var(--fg)' }}>

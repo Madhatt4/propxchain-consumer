@@ -340,7 +340,7 @@ export const resourcePages = [
 <section aria-labelledby="pp-propxchain">
   <h2 id="pp-propxchain">How PropXchain assembles your pack</h2>
   <p>Add your address and PropXchain pulls your HM Land Registry title automatically. Guided, plain-English TA6 and TA10 forms auto-save as you go. You order searches from the provider you choose, through PropXchain, at the price shown up front. Everything lives in one shared transaction view with an on-chain audit trail, so your buyer and conveyancer see the same pack you do.</p>
-  <p>All of that is on the free Starter tier — no platform fee. The optional £75 AI co-pilot reads your title and search results in plain English, flags the issues that matter, and tailors your conveyancer quote request. See <a href="/pricing">pricing</a> or <a href="/sell-my-house">how to sell your house online</a>.</p>
+  <p>All of that is free — no platform fee. PropXchain's AI reads your title and search results in plain English, flags the issues that matter, and tailors your conveyancer quote request. See <a href="/pricing">pricing</a> or <a href="/sell-my-house">how to sell your house online</a>.</p>
 </section>
 
 <p>Ready to start your pack? <a href="/register">Create your free account</a>.</p>
@@ -448,7 +448,7 @@ export const resourcePages = [
 
 <section aria-labelledby="ct-propxchain">
   <h2 id="ct-propxchain">Where PropXchain fits</h2>
-  <p>Your transaction lives in one shared, real-time view: HM Land Registry title pulled at the start, guided forms stored as you complete them, searches tracked to the transaction, every milestone timestamped on-chain. The Starter tier is free with no platform fee; the optional £75 AI co-pilot reads your title and search results in plain English and flags issues before they become enquiries. See <a href="/pricing">pricing</a> or <a href="/sell-my-house">selling your house online</a>.</p>
+  <p>Your transaction lives in one shared, real-time view: HM Land Registry title pulled at the start, guided forms stored as you complete them, searches tracked to the transaction, every milestone timestamped on-chain. PropXchain is free to use, with no platform fee; its AI reads your title and search results in plain English and flags issues before they become enquiries. See <a href="/pricing">pricing</a> or <a href="/sell-my-house">selling your house online</a>.</p>
 </section>
 
 <p>Ready to take the waiting out of your move? <a href="/register">Start free</a>.</p>
@@ -507,7 +507,7 @@ export const resourcePages = [
 <section aria-labelledby="ba-heading">
   <h2 id="ba-heading">Where this is all heading</h2>
   <p>The HBSG also backs the Property Data Trust Framework, a data standard that lets verified property information move digitally between platforms, agents, conveyancers and lenders instead of being retyped at every step. The destination: information collected once, verified at source, trusted by everyone downstream.</p>
-  <p>That is the model PropXchain is built on. Guided forms capture your property information once, your HM Land Registry title is pulled automatically, and everything lives in one shared view with an on-chain audit trail. Starter is free with no platform fee; the optional £75 AI co-pilot reads your title and searches in plain English and tailors your conveyancer quote request. See <a href="/pricing">pricing</a> or <a href="/sell-my-house">selling your house online</a>.</p>
+  <p>That is the model PropXchain is built on. Guided forms capture your property information once, your HM Land Registry title is pulled automatically, and everything lives in one shared view with an on-chain audit trail. PropXchain is free to use, with no platform fee, and its AI reads your title and searches in plain English and tailors your conveyancer quote request. See <a href="/pricing">pricing</a> or <a href="/sell-my-house">selling your house online</a>.</p>
 </section>
 
 <p>Get ahead of where the industry is going. <a href="/register">Start free</a>.</p>
@@ -728,8 +728,8 @@ ${TA6_SECTIONS.map((s) => `      <tr><td>${s.n}. ${escHtml(s.title)}</td><td>${e
 
 <section aria-labelledby="t6-propxchain">
   <h2 id="t6-propxchain">Filling in your TA6 on PropXchain</h2>
-  <p>On the free Starter tier you can fill in your TA6 answers online, one section at a time, with a plain-English help card above each section. Each section saves as you finish it. When you are done you can export a PDF record of them for your conveyancer, and share them with buyers and their conveyancers through a read-only link that removes personal details.</p>
-  <p>PropXchain's version follows the 6th edition section by section and paraphrases the questions. The official Law Society wording is what governs your answers, and your conveyancer may still ask you to sign the official form through their supplier. See <a href="/pricing">pricing</a> for what is included in each tier.</p>
+  <p>On PropXchain you can fill in your TA6 answers online, free, one section at a time, with a plain-English help card above each section. Each section saves as you finish it. When you are done you can export a PDF record of them for your conveyancer, and share them with buyers and their conveyancers through a read-only link that removes personal details.</p>
+  <p>PropXchain's version follows the 6th edition section by section and paraphrases the questions. The official Law Society wording is what governs your answers, and your conveyancer may still ask you to sign the official form through their supplier. See <a href="/pricing">pricing</a> for what is free and what is paid per item.</p>
 </section>
 
 <p>Ready to get your TA6 done before you list? <a href="/register">Start free</a>.</p>

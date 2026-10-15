@@ -4,6 +4,22 @@ import { sendEnquiry } from '@/services/enquiry.service';
 import { logger } from '@/utils/logger';
 import { Logo } from '@/components/brand/Logo';
 
+const SALES_FREE_FEATURES: string[] = [
+  'Property pack with TA6 and TA10 forms',
+  'AI reads of your title and search results',
+  'Transaction tracking + on-chain audit',
+  'Document vault + verification',
+  'Conveyancer panel access',
+];
+
+const SALES_PAID_ITEMS: string[] = [
+  'Property searches — priced when you order',
+  'ID & AML checks — priced when you order',
+  'HM Land Registry title pull — £7',
+  'Property chain check — £25',
+  'Conveyancer — quoted to you directly',
+];
+
 const SalesPage: React.FC = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -249,103 +265,48 @@ const SalesPage: React.FC = () => {
 
         {/* Pricing Section */}
         <section className="mb-16">
-          <h2 className="text-3xl font-bold text-black dark:text-[#F1F5F9] mb-4 text-center">Simple, Transparent Pricing</h2>
-          <p className="text-gray-600 dark:text-[#94A3B8] text-center mb-8">Starter is free — pick your own providers and see every price up front. Premium is £75 per transaction for the AI co-pilot.</p>
+          <h2 className="text-3xl font-bold text-black dark:text-[#F1F5F9] mb-4 text-center">Free to use</h2>
+          <p className="text-gray-600 dark:text-[#94A3B8] text-center mb-8">PropXchain is free for buyers and sellers. No plans, no tiers, no platform fee. Third-party items are paid per item, priced when you order.</p>
 
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {/* Starter - Free + HMLR fees */}
-            <div className="bg-white dark:bg-[#0F1729] border border-gray-200 dark:border-[#1E293B] rounded-xl shadow-lg p-8">
-              <h3 className="text-2xl font-bold text-black dark:text-[#F1F5F9] mb-2">Starter</h3>
-              <p className="text-gray-700 dark:text-[#CBD5E1] mb-6">Self-serve. Pick your own providers and see every price up front. No platform fee.</p>
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            <div className="bg-black text-white rounded-xl shadow-xl p-8">
+              <h3 className="text-2xl font-bold mb-2">Free to use</h3>
+              <p className="text-gray-300 mb-6">Everything on the platform, for every party.</p>
               <div className="mb-6">
-                <span className="text-4xl font-bold text-black dark:text-[#F1F5F9]">Free</span>
-                <span className="text-gray-700 dark:text-[#CBD5E1]"> pay providers direct</span>
+                <span className="text-4xl font-bold">Free</span>
               </div>
               <ul className="space-y-3 mb-8">
-                <li className="flex items-start">
-                  <svg className="w-5 h-5 text-black dark:text-[#F1F5F9] mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span className="text-gray-700 dark:text-[#CBD5E1]">Transaction tracking + on-chain audit</span>
-                </li>
-                <li className="flex items-start">
-                  <svg className="w-5 h-5 text-black dark:text-[#F1F5F9] mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span className="text-gray-700 dark:text-[#CBD5E1]">HM Land Registry title pull — £7, names the registered owner</span>
-                </li>
-                <li className="flex items-start">
-                  <svg className="w-5 h-5 text-black dark:text-[#F1F5F9] mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span className="text-gray-700 dark:text-[#CBD5E1]">Document vault + verification</span>
-                </li>
-                <li className="flex items-start">
-                  <svg className="w-5 h-5 text-black dark:text-[#F1F5F9] mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span className="text-gray-700 dark:text-[#CBD5E1]">Conveyancer panel access</span>
-                </li>
-              </ul>
-              <button
-                onClick={() => navigate('/register')}
-                className="w-full px-6 py-3 border-2 border-black text-black rounded-lg hover:bg-black hover:text-white font-medium transition-all"
-              >
-                Get Started Free
-              </button>
-            </div>
-
-            {/* Premium - £75 */}
-            <div className="bg-black text-white rounded-xl shadow-xl p-8 relative">
-              <div className="absolute top-0 right-0 bg-white dark:bg-[#0F1729] text-black dark:text-[#F1F5F9] px-4 py-1 rounded-bl-lg rounded-tr-lg text-sm font-semibold">
-                POPULAR
-              </div>
-              <h3 className="text-2xl font-bold mb-2">Premium</h3>
-              <p className="text-gray-300 mb-6">An AI co-pilot for the whole transaction, on top of everything in Starter.</p>
-              <div className="mb-6">
-                <span className="text-4xl font-bold">£75</span>
-                <span className="text-gray-300">/transaction</span>
-              </div>
-              <ul className="space-y-3 mb-8">
-                <li className="flex items-start">
-                  <svg className="w-5 h-5 text-white mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span>Everything in Starter</span>
-                </li>
-                <li className="flex items-start">
-                  <svg className="w-5 h-5 text-white mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span>AI reads your HMLR title in plain English</span>
-                </li>
-                <li className="flex items-start">
-                  <svg className="w-5 h-5 text-white mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span>AI reads your search results, issues flagged</span>
-                </li>
-                <li className="flex items-start">
-                  <svg className="w-5 h-5 text-white mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span>Complexity-aware conveyancer quote request</span>
-                </li>
-                <li className="flex items-start">
-                  <svg className="w-5 h-5 text-white mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span>AI next-step cards + priority support</span>
-                </li>
+                {SALES_FREE_FEATURES.map((feature) => (
+                  <li key={feature} className="flex items-start">
+                    <svg className="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>{feature}</span>
+                  </li>
+                ))}
               </ul>
               <button
                 onClick={() => navigate('/register')}
                 className="w-full px-6 py-3 bg-white dark:bg-[#0F1729] text-black dark:text-[#F1F5F9] rounded-lg hover:bg-gray-200 dark:hover:bg-[#1E293B] font-medium"
               >
-                Get Started
+                Get Started Free
               </button>
             </div>
 
+            <div className="bg-white dark:bg-[#0F1729] border border-gray-200 dark:border-[#1E293B] rounded-xl shadow-lg p-8 text-black dark:text-[#F1F5F9]">
+              <h3 className="text-2xl font-bold mb-2">Paid per item</h3>
+              <p className="text-gray-700 dark:text-[#CBD5E1] mb-6">Third-party items you choose to order. You see the price before you pay.</p>
+              <ul className="space-y-3 mb-8 text-gray-700 dark:text-[#CBD5E1]">
+                {SALES_PAID_ITEMS.map((item) => (
+                  <li key={item} className="flex items-start">
+                    <svg className="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </section>
 

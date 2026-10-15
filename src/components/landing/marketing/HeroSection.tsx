@@ -253,7 +253,7 @@ export function HeroSection({ isDark, onToggleTheme, onScrollTo }: HeroSectionPr
       >
         <span><span style={{ color: 'var(--t)' }}>Free</span> platform, for everyone</span>
         <span><span style={{ color: 'var(--t)' }}>↑ £2,000</span> typical saving</span>
-        <span><span style={{ color: 'var(--t)' }}>AI co-pilot</span> premium tier — coming soon</span>
+        <span><span style={{ color: 'var(--t)' }}>AI title + search reads</span> included free</span>
       </div>
     </section>
   );

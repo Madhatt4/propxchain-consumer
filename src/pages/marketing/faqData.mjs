@@ -13,14 +13,16 @@
  * Types live in the sibling faqData.d.ts.
  *
  * Copy rules (do not contradict):
- *  - Starter is FREE, no platform fee. Premium is an optional £75 per
- *    transaction, paid by the SELLER. Buyers use PropXchain free.
- *  - Searches £50–£450, bought through PropXchain.
+ *  - PropXchain is FREE to use for every party (Marc, 2026-10-15). No plans,
+ *    no tiers, no platform fee.
+ *  - Third-party items are paid per item, priced when ordered: searches
+ *    (bought through PropXchain, sold with a margin — never say "at cost" or
+ *    "no mark-up"), ID & AML checks, the £7 title pull, the £25 chain check.
  *  - Conveyancers quote directly per transaction — never a fixed £ fee.
  *  - PropXchain is a coordination platform, NOT a conveyancer/ABS.
  *    Reserved legal acts are performed by CLC-verified conveyancers.
  *
- * The five Pricing answers marked "canonical" are reused verbatim from
+ * The Pricing answers marked "canonical" are reused verbatim from
  * src/pages/PricingPage.tsx — keep them in sync if either changes.
  */
 
@@ -61,27 +63,22 @@ export const FAQ_GROUPS = [
     items: [
       {
         // Canonical — verbatim from PricingPage.tsx
-        q: 'Is it really free to start?',
-        a: 'Yes. Starter has no platform fee. You run your own transaction, pick your own providers, and see every price before you commit.',
+        q: 'Is PropXchain really free?',
+        a: 'Yes. Using PropXchain is free for buyers and sellers. There are no plans, no tiers and no platform fee.',
       },
       {
         // Canonical — verbatim from PricingPage.tsx
-        q: 'What does the £75 Premium tier add?',
-        a: 'An AI co-pilot for the whole transaction. It reads your HM Land Registry title and your search results in plain English and flags the issues that actually matter, turns the real complexity of your transaction into a tailored conveyancer quote request, and gives you next-step cards that guide you through every stage. Same pricing underneath — you still see every provider\'s price before you commit.',
-      },
-      {
-        // Canonical — verbatim from PricingPage.tsx
-        q: 'How does the AI get me a better conveyancer quote?',
-        a: 'Conveyancers normally price for the average transaction because they cannot see yours yet. Premium feeds the conveyancer a quote request built from your actual title, your actual searches, and the material issues the AI surfaced — so they can quote on the real work instead of pricing in unknown risk. You often get a tighter quote; they get a more predictable job.',
+        q: 'So what do I pay for?',
+        a: 'Only the third-party items you choose to order: property searches, ID and AML checks, the £7 HM Land Registry title pull and the £25 property chain check. Each one is priced when you order, before you pay.',
       },
       {
         q: 'How do property searches work, and what do they cost?',
-        a: 'You order searches from inside your transaction — pick a provider and see the rate up front. A typical residential pack (local authority, drainage and water, environmental) costs £50–£450. Results land back in the transaction where you, your buyer and your conveyancer can all see them.',
+        a: 'You order searches from inside your transaction — pick a provider and see the price before you pay. Searches are bought through PropXchain and paid per item. Results land back in the transaction where you, your buyer and your conveyancer can all see them.',
       },
       {
         // Canonical — verbatim from PricingPage.tsx
-        q: 'Are there any hidden fees?',
-        a: 'No. Starter is free. Premium is £75 per transaction for the AI co-pilot. Your conveyancer quotes you direct and PropXchain never marks that up. Searches are paid at the rate shown before you commit.',
+        q: 'Will it always be free?',
+        a: 'Everything on PropXchain is free today. We may add paid extras later. If we do, you will see the price before you pay.',
       },
     ],
   },
@@ -96,7 +93,7 @@ export const FAQ_GROUPS = [
       {
         // Canonical — verbatim from PricingPage.tsx
         q: 'What about solicitor/conveyancer fees?',
-        a: 'The conveyancer quotes you directly per transaction. PropXchain never marks up their fee. You compare and choose from the panel, or invite your own.',
+        a: 'The conveyancer quotes you directly for your transaction. You compare and choose from the panel, or invite your own.',
       },
       {
         q: 'Can I use my own solicitor or conveyancer?',
@@ -128,11 +125,11 @@ export const FAQ_GROUPS = [
     items: [
       {
         q: 'Do buyers pay anything to use PropXchain?',
-        a: 'No. Buyers use PropXchain completely free. The optional £75 Premium AI co-pilot is paid by the seller — buyers are never charged a platform fee. A buyer’s usual costs (their own conveyancer if they appoint one, survey, lender fees) are paid direct to those providers, exactly as in any transaction.',
+        a: 'No. PropXchain is free to use for buyers and sellers — there is no platform fee. A buyer’s usual costs (their own conveyancer if they appoint one, survey, lender fees) are paid direct to those providers, exactly as in any transaction.',
       },
       {
         q: 'What happens if the sale falls through?',
-        a: 'The transaction is closed and the audit trail keeps a permanent record of what happened — useful if anything is disputed later. There is no platform fee to lose on the Starter tier. Searches you have already paid for are usually valid for around six months, so they can often be reused with a new buyer.',
+        a: 'The transaction is closed and the audit trail keeps a permanent record of what happened — useful if anything is disputed later. There is no platform fee to lose. Searches you have already paid for are usually valid for around six months, so they can often be reused with a new buyer.',
       },
     ],
   },

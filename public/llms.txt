@@ -1,6 +1,6 @@
 # PropXchain
 
-> PropXchain (propxchain.com, PropXchain Ltd, UK Companies House 17018978) is a UK online platform for selling or buying a home. It coordinates the conveyancing process on one shared record, so the seller, buyer, conveyancer and estate agent see the same live view of the transaction. Starting is free with no platform fee; an optional GBP 75 per-transaction AI co-pilot reads your HM Land Registry title and search results in plain English and tailors your conveyancer quote. PropXchain has a live, hosted MCP server at https://mcp.propxchain.com/mcp that any MCP client (claude.ai, Claude Desktop, Claude Code, ChatGPT, Cursor) can add as a custom connector.
+> PropXchain (propxchain.com, PropXchain Ltd, UK Companies House 17018978) is a UK online platform for selling or buying a home. It coordinates the conveyancing process on one shared record, so the seller, buyer, conveyancer and estate agent see the same live view of the transaction. PropXchain is free to use for buyers and sellers: no plans, no tiers, no platform fee. Third-party items are paid per item, priced when you order: property searches, ID and AML checks, the GBP 7 HM Land Registry title pull and the GBP 25 property chain check. Conveyancers quote directly. PropXchain has a live, hosted MCP server at https://mcp.propxchain.com/mcp that any MCP client (claude.ai, Claude Desktop, Claude Code, ChatGPT, Cursor) can add as a custom connector.
 
 Not to be confused with Propchain (PROPC), an unrelated crypto token and real-estate tokenisation project. PropXchain has no token, no coin and no ICO; it records SHA-256 hashes of transaction milestones on the Internet Computer (ICP) blockchain, and users pay no gas fees.
 
@@ -43,7 +43,7 @@ PropXchain is MCP-native. Every transaction a user can see in the web app can al
 - Legal forms: TA6 (Property Information), TA7 (Leasehold), TA10 (Fixtures and Fittings)
 - Contract exchange with dual solicitor signing
 - In-app messaging between transaction parties
-- Firm management and subscription tiers
+- Firm management
 
 ## Canister Architecture
 
@@ -59,7 +59,6 @@ Canisters deployed on IC mainnet:
 - Email Service (`5by6v-qyaaa-aaaaa-qc65a-cai`): Notification delivery
 - Firm Factory (`gcqvm-tiaaa-aaaaa-qdszq-cai`): Law firm management
 - Ledger Manager (`hty74-maaaa-aaaaa-qcxza-cai`): Financial and analytics tracking
-- Subscription Manager (`3jsrn-tqaaa-aaaaa-qddxq-cai`): Premium subscription management
 - Message Manager (`37una-maaaa-aaaaa-qd3mq-cai`): In-app messaging between parties
 - Oscar Canister (`khstc-3qaaa-aaaaa-qdyfq-cai`): AI assistant backend
 - Land Registry (`o4flv-xaaaa-aaaaa-qdaeq-cai`): UK Land Registry integration

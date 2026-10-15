@@ -94,7 +94,7 @@ export default function TmGroupQuoteSummary({
             <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
               Includes VAT
               {disbursement > 0
-                ? `, and ${pence(disbursement)} of Local Authority and water fees charged at cost`
+                ? `, and ${pence(disbursement)} of Local Authority and water fees`
                 : ''}
               . Quoted for this property, not an estimate.
             </p>

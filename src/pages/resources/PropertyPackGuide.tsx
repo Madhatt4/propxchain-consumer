@@ -131,9 +131,9 @@ const PropertyPackGuide: React.FC = () => (
       ]}
     />
     <GuideP>
-      All of that is on the free Starter tier; there is no platform fee. If
-      you want help reading what you have gathered, the optional £75 AI
-      co-pilot reads your title and search results in plain English, flags
+      All of that is free; there is no platform fee. If you want help
+      reading what you have gathered, PropXchain&apos;s AI reads your title
+      and search results in plain English, flags
       the issues that matter, and turns the real complexity of your
       transaction into a tailored conveyancer quote request. Details on{' '}
       <GuideLink to="/pricing">the pricing page</GuideLink>, and there is a
