@@ -13,3 +13,14 @@ export async function sha256Hex(file: File): Promise<string> {
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
 }
+
+/**
+ * SHA-256 of a UTF-8 string as lowercase hex, for anchoring personal data
+ * on-chain by digest instead of in plaintext.
+ */
+export async function sha256HexOfText(text: string): Promise<string> {
+  const bytes = new TextEncoder().encode(text);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', bytes);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+}

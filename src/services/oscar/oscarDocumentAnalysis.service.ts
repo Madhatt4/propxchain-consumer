@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { icpService } from '../icp.service';
 import { logger } from '../../utils/logger';
 import { getStorePrincipalId } from '../../stores/authStore';
+import { sha256HexOfText } from '../../utils/fileHash';
 import type {
   OscarIssue,
   DataMismatch,
@@ -411,7 +412,12 @@ class OscarDocumentAnalysisService {
           // widens to string[], which the generated type rejects.
           field: (issue.field ? [issue.field] : []) as [] | [string]
         })),
-        extractedData: JSON.stringify(analysisResult.extractedData),
+        // GDPR: extractedData holds names, passport numbers, dates of birth
+        // and addresses. Canister state is replicated and hard to erase, so only a
+        // SHA-256 digest of the JSON goes on-chain as an integrity anchor.
+        extractedData: await sha256HexOfText(
+          JSON.stringify(analysisResult.extractedData)
+        ),
         mismatches: analysisResult.mismatches.map((mismatch) => ({
           field: mismatch.field,
           expected: mismatch.expected,
