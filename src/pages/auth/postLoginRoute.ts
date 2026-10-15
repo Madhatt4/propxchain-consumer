@@ -42,9 +42,10 @@ export function getPostLoginRoute(fromPath?: string): string {
 
   const onboarded = authState.supabaseUser?.user_metadata?.propxchain_onboarded === true
     || localStorage.getItem('onboardingComplete') === 'true';
-  if (!onboarded) {
-    if (role === 'seller') return '/start-transaction';
-    if (role === 'buyer') return '/onboarding/join';
-  }
+  // Sellers are deliberately not funnelled here. The onboarded flag is only
+  // set by the paid route (PaymentSuccessPage), and Starter is free, so a
+  // Starter seller never gets it and would land on /start-transaction on
+  // every login. The dashboard carries its own "Start a transaction" action.
+  if (!onboarded && role === 'buyer') return '/onboarding/join';
   return '/post-login';
 }

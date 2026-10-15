@@ -30,9 +30,12 @@ describe('getPostLoginRoute', () => {
     expect(getPostLoginRoute()).toBe('/post-login');
   });
 
-  it('should send a non-onboarded seller to /start-transaction', () => {
+  it('should send a seller without the onboarded flag to /post-login, not /start-transaction', () => {
+    // Starter is free and never sets propxchain_onboarded, so the flag cannot
+    // gate a seller's landing page: every Starter seller would be funnelled
+    // into "Start a transaction" on every login.
     setAuth({ supabaseUser: { user_metadata: { role: 'seller' } } });
-    expect(getPostLoginRoute()).toBe('/start-transaction');
+    expect(getPostLoginRoute()).toBe('/post-login');
   });
 
   it('should send an II user to /dashboard', () => {
