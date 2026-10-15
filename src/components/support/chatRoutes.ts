@@ -60,7 +60,6 @@ export const NO_HELP_PREFIXES: readonly string[] = [
   '/forgot-password',
   '/quote',
   '/payment',
-  '/seller-fee',
   '/wizard',
   // Guided flows
   '/post-login',

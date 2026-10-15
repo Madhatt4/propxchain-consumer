@@ -8,7 +8,6 @@ import DashboardHeader from '../components/navigation/DashboardHeader';
 import { logger } from '@/utils/logger';
 import { useAuthStore } from '../stores/authStore';
 import { useMoveNarratorNotifications } from '../hooks/useMoveNarratorNotifications';
-import { useSubscription } from '../hooks/useSubscription';
 import type { DeliveredNotification } from '../services/moveNarratorNotifications';
 
 interface CanisterNotification {
@@ -61,14 +60,11 @@ const NotificationsPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<unknown>(null);
 
-  const { isPremium } = useSubscription();
   const {
-    notifications: narratorNotifsRaw,
+    notifications: narratorNotifs,
     markRead: markNarratorRead,
     markAllRead: markAllNarratorRead,
   } = useMoveNarratorNotifications();
-  // AI cards are a premium feature — hide them on the starter tier.
-  const narratorNotifs = isPremium ? narratorNotifsRaw : [];
 
   useEffect(() => {
     const loadData = async (): Promise<void> => {

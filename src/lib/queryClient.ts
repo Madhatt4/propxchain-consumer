@@ -86,12 +86,6 @@ export const queryKeys = {
     efficiency: (accountId: string) => [...queryKeys.ledger.all, 'efficiency', accountId] as const,
   },
 
-  // Subscription related queries
-  subscription: {
-    all: ['subscription'] as const,
-    info: () => [...queryKeys.subscription.all, 'info'] as const,
-  },
-
   // AI scan related queries (hmlr / search / survey)
   scans: {
     all: ['scans'] as const,

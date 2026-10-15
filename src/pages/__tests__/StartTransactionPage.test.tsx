@@ -63,22 +63,22 @@ describe('StartTransactionPage — buying or selling', () => {
     expect(mockNavigate).not.toHaveBeenCalled();
   });
 
-  it('should send a buyer to /join on the free path', () => {
+  it('should send a buyer to /join without recording any tier', () => {
     renderPage();
 
     fireEvent.click(screen.getByRole('button', { name: /continue as buyer/i }));
 
-    expect(localStorage.getItem('pendingTier')).toBe('starter');
+    expect(localStorage.getItem('pendingTier')).toBeNull();
     expect(localStorage.getItem('onboardingRole')).toBe('buyer');
     expect(mockNavigate).toHaveBeenCalledWith('/join');
   });
 
-  it('should send a seller to /create-transaction on the free path', () => {
+  it('should send a seller to /create-transaction without recording any tier', () => {
     renderPage();
 
     fireEvent.click(screen.getByRole('button', { name: /continue as seller/i }));
 
-    expect(localStorage.getItem('pendingTier')).toBe('starter');
+    expect(localStorage.getItem('pendingTier')).toBeNull();
     expect(localStorage.getItem('onboardingRole')).toBe('seller');
     expect(mockNavigate).toHaveBeenCalledWith('/create-transaction');
   });

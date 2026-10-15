@@ -21,19 +21,9 @@
  * bypasses `transaction_telemetry`'s. See the TRUST GAP comment at
  * `resolveTransactionRoster` below for what this roster does NOT prove.
  *
- * PREMIUM CHECK (controller ruling, 2026-08-29 — supersedes this file's
- * original fail-closed stub): `public.ai_scan_entitlements` — the SAME
- * shared-project table `_shared/scan-entitlement.ts`'s `isScanEntitled`
- * reads for search-scan/survey-scan/hmlr-scan — is the platform's one
- * real, already-used, server-side premium-entitlement table: default DENY
- * (absence of a row means not entitled), keyed by `user_id`, and
- * deliberately not derived from anything the client claims. It is a PROXY
- * for the £75 tier until a dedicated tier-specific source exists — swap
- * `isPremiumUser`'s query for that source in one line when it does. Fails
- * closed on any lookup error or missing row, same rationale as
- * `isScanEntitled`: an unavailable check must not become a free pass.
- * `filterPremiumRoster` takes the check as an injectable parameter so the
- * roster-filtering LOOP is unit-testable independently of this table.
+ * NO TIER FILTER (Marc, 2026-10-15): the platform is free, so the Narrator
+ * runs for every buyer/seller on the roster. The old premium filter read
+ * `ai_scan_entitlements` as a stand-in for the £75 tier; that read is gone.
  */
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
@@ -57,25 +47,23 @@ export interface RosterParty {
  * this table alone). So a row here is NOT proof the user is actually a party
  * to the transaction — it only proves they claimed to be.
  *
- * The exposure is bounded, not unbounded: exploiting it requires (1) an
- * authenticated Supabase account that (2) already holds an
- * `ai_scan_entitlements` row (the premium filter below still gates
- * delivery), and even then leaks only this transaction's blocker key +
- * urgency enum (never PII, never the drafted notification text) at the cost
- * of one Anthropic run plus a possible email/SMS send. `runMonitorFire`'s
- * `MAX_PREMIUM_PARTIES_PER_INVOCATION` cap is an INTERIM bound on how much
+ * The exposure is bounded, not unbounded: exploiting it requires an
+ * authenticated Supabase account, and leaks only this transaction's blocker
+ * key + urgency enum (never PII, never the drafted notification text) at the
+ * cost of one Anthropic run plus a possible email/SMS send. Since the premium
+ * filter was removed (2026-10-15) ANY account qualifies — previously it also
+ * needed an `ai_scan_entitlements` row — which makes the RLS fix below more
+ * pressing. `runMonitorFire`'s `MAX_PARTIES_PER_INVOCATION` cap is an
+ * INTERIM bound on how much
  * of that spend one fabricated roster row can trigger per invocation — it is
  * NOT the fix. The structural fix is RLS/authz on `transaction_party_roles`
  * itself (only a genuine party — or nobody client-writable — should be able
  * to insert); tracked on the DevOps board.
  */
 // `transaction_party_roles` is self-writable (see TRUST GAP above), so an
-// attacker can insert an unbounded number of rows against one transaction id
-// to force an unbounded number of sequential `ai_scan_entitlements` lookups
-// in `filterPremiumRoster` below (that loop runs BEFORE the
-// MAX_PREMIUM_PARTIES_PER_INVOCATION cap, so the cap alone doesn't bound it).
+// attacker can insert an unbounded number of rows against one transaction id.
 // 10 is generous for legitimate joint-owner rosters while still bounding the
-// per-invocation work an attacker can force.
+// rows read per invocation.
 const MAX_ROSTER_ROWS = 10;
 
 export async function resolveTransactionRoster(svc: SupabaseClient, txId: string): Promise<RosterParty[]> {
@@ -85,8 +73,8 @@ export async function resolveTransactionRoster(svc: SupabaseClient, txId: string
     .eq('transaction_id', txId)
     .in('role', ['buyer', 'seller'])
     // Oldest-first: genuine parties are recorded at transaction setup, so this
-    // sorts them ahead of any later self-inserted row before the premium cap
-    // (MAX_PREMIUM_PARTIES_PER_INVOCATION) picks who gets fired — reduces the
+    // sorts them ahead of any later self-inserted row before the cap
+    // (MAX_PARTIES_PER_INVOCATION) picks who gets fired — reduces the
     // cap-displacement risk noted on DevOps card 3463e5cd.
     .order('created_at', { ascending: true })
     .limit(MAX_ROSTER_ROWS);
@@ -100,38 +88,6 @@ export async function resolveTransactionRoster(svc: SupabaseClient, txId: string
     userId: r.user_id,
     role: r.role as 'buyer' | 'seller',
   }));
-}
-
-/**
- * `ai_scan_entitlements` is the platform's premium-entitlement table — a
- * proxy for the £75 tier until a dedicated tier source exists (one-line
- * swap when it does; see module header). Default DENY: a lookup error or
- * missing row is treated as not-premium, never premium.
- */
-export async function isPremiumUser(svc: SupabaseClient, userId: string): Promise<boolean> {
-  const { data, error } = await svc
-    .from('ai_scan_entitlements')
-    .select('user_id')
-    .eq('user_id', userId)
-    .maybeSingle();
-  if (error) {
-    console.error(`monitor_fire: premium entitlement lookup failed for ${userId}; denying:`, error.message);
-    return false;
-  }
-  return Boolean(data);
-}
-
-/** Injectable so the filtering loop is testable independently of `isPremiumUser`'s gap. */
-export async function filterPremiumRoster(
-  svc: SupabaseClient,
-  roster: RosterParty[],
-  isPremium: (svc: SupabaseClient, userId: string) => Promise<boolean> = isPremiumUser,
-): Promise<RosterParty[]> {
-  const kept: RosterParty[] = [];
-  for (const party of roster) {
-    if (await isPremium(svc, party.userId)) kept.push(party);
-  }
-  return kept;
 }
 
 interface Recipient {
@@ -232,7 +188,7 @@ function buildSyntheticFireInputs(
 }
 
 /**
- * Fire + bounded-poll + deliver a narration for ONE premium party. Returns
+ * Fire + bounded-poll + deliver a narration for ONE roster party. Returns
  * whether it fired (a session was started) — a poll/deliver failure AFTER a
  * successful fire still counts as fired (per-item isolation matches the
  * monitor's own chain-read tolerance). Never rejects: every failure is
@@ -273,7 +229,7 @@ export async function fireAndDeliverForParty(
 
 export interface MonitorFireResult {
   fired: number;
-  /** Present only when the premium roster exceeded the per-invocation cap (additive field — the monorepo caller reads only `.fired`). */
+  /** Present only when the roster exceeded the per-invocation cap (additive field — the monorepo caller reads only `.fired`). */
   skipped?: number;
 }
 
@@ -281,11 +237,11 @@ export interface MonitorFireResult {
 // `resolveTransactionRoster` — NOT primarily a performance cap, though it
 // also keeps worst-case concurrent runtime (POLL_ATTEMPTS x POLL_INTERVAL_MS
 // plus network overhead) comfortably inside edge-function wall-clock limits.
-const MAX_PREMIUM_PARTIES_PER_INVOCATION = 2;
+const MAX_PARTIES_PER_INVOCATION = 2;
 
 /**
- * Resolve the roster, filter to premium, cap at
- * `MAX_PREMIUM_PARTIES_PER_INVOCATION`, and fire the rest CONCURRENTLY via
+ * Resolve the roster, cap it at `MAX_PARTIES_PER_INVOCATION`, and fire those
+ * parties CONCURRENTLY via
  * `Promise.allSettled` (`fireAndDeliverForParty` never rejects, so this is
  * purely a runtime bound, not an error-isolation mechanism — that isolation
  * already lives inside `fireAndDeliverForParty` itself). `fireParty` is
@@ -304,10 +260,9 @@ export async function runMonitorFire(
   ) => Promise<boolean> = fireAndDeliverForParty,
 ): Promise<MonitorFireResult> {
   const roster = await resolveTransactionRoster(svc, request.txId);
-  const premiumRoster = await filterPremiumRoster(svc, roster);
 
-  const toFire = premiumRoster.slice(0, MAX_PREMIUM_PARTIES_PER_INVOCATION);
-  const skipped = premiumRoster.length - toFire.length;
+  const toFire = roster.slice(0, MAX_PARTIES_PER_INVOCATION);
+  const skipped = roster.length - toFire.length;
 
   const outcomes = await Promise.allSettled(toFire.map((party) => fireParty(svc, agent, request, party)));
   const fired = outcomes.filter((o) => o.status === 'fulfilled' && o.value === true).length;

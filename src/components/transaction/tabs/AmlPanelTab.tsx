@@ -12,7 +12,7 @@
  * check. The completed report drops into the Transaction Wallet — this panel
  * never grows a second sharing mechanism.
  */
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ShieldCheck } from 'lucide-react';
 import { amlProductRef, amlService } from '@/services/aml.service';
 import type { AmlCheck, AmlPersonalDetails, AmlPricing, AmlTier } from '@/services/aml.service';
@@ -24,8 +24,7 @@ import { stripePaymentService } from '@/services/stripePayment.service';
 import { vaultDocumentService } from '@/services/vaultDocument.service';
 import { transactionWalletService } from '@/services/transactionWallet.service';
 import { VAULT_SLOTS } from '@/types/vault.types';
-import { useSubscription } from '@/hooks/useSubscription';
-import { vaultFilesPerSlot, vaultTotalBytes } from '@/constants/subscriptionFeatures';
+import { VAULT_CAPS } from '@/constants/vaultLimits';
 import { FEATURE_FLAGS } from '@/config/features';
 import { logger } from '@/utils/logger';
 import type { TransactionTabProps } from './transactionTabs.config';
@@ -83,14 +82,6 @@ export function AmlPanelTab({ transactionId }: TransactionTabProps): JSX.Element
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [startingFor, setStartingFor] = useState<string | null>(null);
-  const { tier } = useSubscription();
-  // Memoised so it stays a stable dependency for fileReportIntoWallet's
-  // useCallback below — a fresh object every render would refire that
-  // effect (and re-hit listMyDocuments) on every unrelated re-render.
-  const caps = useMemo(
-    () => ({ maxFilesPerSlot: vaultFilesPerSlot(tier), maxTotalBytes: vaultTotalBytes(tier) }),
-    [tier],
-  );
 
   const refreshChecks = useCallback(async () => {
     try {
@@ -130,10 +121,10 @@ export function AmlPanelTab({ transactionId }: TransactionTabProps): JSX.Element
     const blob = await res.blob();
     const file = new File([blob], 'aml-report.pdf', { type: 'application/pdf' });
 
-    const doc = await vaultDocumentService.storeDocument(file, AML_REPORT_SLOT, caps, label);
+    const doc = await vaultDocumentService.storeDocument(file, AML_REPORT_SLOT, VAULT_CAPS, label);
     await transactionWalletService.send(transactionId, doc);
     await refreshChecks();
-  }, [transactionId, refreshChecks, caps]);
+  }, [transactionId, refreshChecks]);
 
   useEffect(() => {
     const mine = checks.find(

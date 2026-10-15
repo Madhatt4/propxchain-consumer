@@ -42,7 +42,6 @@ import { SalesPackTab } from '../components/transaction/tabs/SalesPackTab';
 import { usePackReadiness } from '../hooks/usePackReadiness';
 import MoveNarratorPreviewButton from '../components/transaction/MoveNarratorPreviewButton';
 import { useMoveNarratorNotifications } from '../hooks/useMoveNarratorNotifications';
-import { useSubscription } from '../hooks/useSubscription';
 import RestorePill from '../components/common/RestorePill';
 import { ConfirmEditDialog } from '../components/common/ConfirmEditDialog';
 import { icpService } from '../services/icp.service';
@@ -521,8 +520,8 @@ export default function TransactionFlowPage(): ReactElement {
     transaction?.postcode,
   );
 
-  // Move Narrator (premium push-on-blocker-change). Detection is gated on
-  // premium + a genuine change inside the hook; it re-checks whenever the
+  // Move Narrator (push-on-blocker-change), on for every user. Detection is
+  // gated on a genuine change inside the hook; it re-checks whenever the
   // invalidation key bumps (same trigger that refetches NextStepCard).
   useMoveNarrator({
     txId: id,
@@ -532,13 +531,11 @@ export default function TransactionFlowPage(): ReactElement {
     refreshKey: invalidationKey,
   });
 
-  // In the premium view the AI card supersedes the NextStepCard (they say the
-  // same thing). Show the AI card when premium and one has been delivered for
-  // this transaction; otherwise fall back to the NextStepCard so a premium user
-  // is never left without next-step guidance.
-  const { isPremium } = useSubscription();
+  // The AI card supersedes the NextStepCard (they say the same thing). Show it
+  // once one has been delivered for this transaction; until then fall back to
+  // the NextStepCard so nobody is left without next-step guidance.
   const { notifications: aiNotifs } = useMoveNarratorNotifications();
-  const hasAiCard = isPremium && aiNotifs.some((n) => n.txId === id);
+  const hasAiCard = aiNotifs.some((n) => n.txId === id);
 
   const completeStage = (stageId: string): void => {
     const el = stageRefs.current.get(stageId);
@@ -711,7 +708,7 @@ export default function TransactionFlowPage(): ReactElement {
             in the sidebar, so the next-step card stands alone here. */}
         {/* Admin-only: fire the Move Narrator on demand against the current
             state so the AI card appears in seconds, without needing a real
-            blocker change. For testing / demoing the premium push. */}
+            blocker change. For testing / demoing the push. */}
         {id && (
           <MoveNarratorPreviewButton
             txId={id}
@@ -724,12 +721,12 @@ export default function TransactionFlowPage(): ReactElement {
         )}
 
         {/* Move Narrator "where's my move?" AI card — surfaced inline (and as a
-            toast) the moment one is delivered, so premium customers see it in
-            context, not only in the notification bell. */}
+            toast) the moment one is delivered, so the user sees it in context,
+            not only in the notification bell. */}
         {id && <MoveNarratorBanner txId={id} className="mb-4" />}
 
-        {/* Premium with an AI card → the banner above replaces this; otherwise
-            (starter, or premium before the first AI card) show the NextStepCard. */}
+        {/* Once an AI card has arrived the banner above replaces this; before
+            that, show the NextStepCard. */}
         {id && !hasAiCard && (
           <div className="mb-4 [&>*]:!mb-0">
             <NextStepCard
@@ -744,8 +741,8 @@ export default function TransactionFlowPage(): ReactElement {
         )}
 
         {/* Stall attribution: who the deal is waiting on and for how long, with
-            the stage against its benchmark. Free for every tier, and shown
-            whichever of the next-step or AI cards is on screen. */}
+            the stage against its benchmark, shown whichever of the next-step or
+            AI cards is on screen. */}
         {id && <StallLine transactionId={id} refreshKey={invalidationKey} className="mb-4" />}
         {id && <SearchAgeLine transactionId={id} refreshKey={invalidationKey} className="mb-4" />}
         {/* Mortgage offer expiry: every party sees it once the buyer's offer is within a month of running out. */}
@@ -775,21 +772,12 @@ export default function TransactionFlowPage(): ReactElement {
           )}
           overview={(
             <>
-              {/* SellerFeeCard removed: the £75 fee is paid as a precondition
-                  to transaction creation (via /onboarding/payment or
-                  /create-transaction's Stripe redirect), so by the time the
-                  flow page renders, the fee has always been paid. Listing
-                  another property goes through /create-transaction which has
-                  its own payment flow. */}
-
               {resolvedStageId === SALES_PACK_TAB_ID ? (
                 <SalesPackTab
                   transactionId={id ?? ''}
                   uprn={uprn}
                   postcode={postcode ?? undefined}
                   propertyAddress={propertyAddress !== 'Unknown property' ? propertyAddress : undefined}
-                  locked={false}
-                  requiredTier="starter"
                   onGoToStage={selectStage}
                   readOnly={!canAct('salesPack', dealSide)}
                 />

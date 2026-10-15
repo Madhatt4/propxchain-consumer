@@ -1,41 +1,28 @@
 /**
  * Payment Success Page
- * Handles Stripe redirect after successful payment
+ * Handles the Stripe redirect after a successful add-on payment (HMLR title
+ * pull, VMC chain unlock, search order):
  * - Waits for auth store to initialize (restores ICP identity)
  * - Verifies session via Worker
- * - Creates transaction if pending
- * - Redirects to dashboard
+ * - Routes back to the transaction that started the checkout, else dashboard
+ *
+ * Creating a transaction is free (2026-10-15), so no checkout ends here with a
+ * transaction still to create.
  */
 
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Principal } from '@propxchain/core-client';
 import { stripePaymentService } from '@/services/stripePayment.service';
-import { icpService } from '@/services/icp.service';
-import { partyRoleService } from '@/services/partyRole.service';
 import { useAuthStore } from '@/stores/authStore';
-import { supabase } from '@/lib/supabase';
-import { claimPendingRightmoveData } from '@/utils/rightmoveStorage';
 import { loadSearchPendingState } from '@/services/searchCheckoutResume';
 import { loadChainUnlockPendingState } from '@/services/chainUnlockCheckoutResume';
 import { logger } from '@/utils/logger';
 
-interface PropertyDetails {
-  address: string;
-  postcode: string;
-  propertyType: 'freehold' | 'leasehold' | '';
-  titleNumber: string;
-  salePrice: number;
-  sellerCount: 1 | 2;
-}
-
 export default function PaymentSuccessPage(): React.ReactElement {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [status, setStatus] = useState<'verifying' | 'activating' | 'success' | 'error'>('verifying');
+  const [status, setStatus] = useState<'verifying' | 'success' | 'error'>('verifying');
   const [error, setError] = useState<string>('');
-  const [createdInviteCode, setCreatedInviteCode] = useState<string>('');
-  const [createdTransactionId, setCreatedTransactionId] = useState<string>('');
 
   const isInitialized = useAuthStore((s) => s.isInitialized);
 
@@ -162,93 +149,7 @@ export default function PaymentSuccessPage(): React.ReactElement {
         return;
       }
 
-      // Step 2a: Onboarding flow — seller paid before creating transaction
-      const isOnboarding = localStorage.getItem('onboardingFlow') === 'seller';
-      if (isOnboarding) {
-        localStorage.setItem('onboardingComplete', 'true');
-        // One-shot: CreateTransactionPage consumes this on first submit so
-        // the next new-transaction attempt correctly returns to Stripe.
-        localStorage.setItem('sellerFeePaidPending', 'true');
-        localStorage.removeItem('needsOnboarding');
-        localStorage.removeItem('onboardingFlow');
-        localStorage.removeItem('onboardingRole');
-        // Persist to Supabase user_metadata so LoginPage on a new session
-        // / device doesn't funnel the seller back to /onboarding/payment.
-        void supabase.auth.updateUser({
-          data: { propxchain_onboarded: true },
-        }).catch((err) => logger.warn('Failed to persist onboarded flag:', err));
-
-        setStatus('success');
-        setTimeout(() => {
-          navigate('/create-transaction', {
-            replace: true,
-            state: { message: 'Payment successful! Now list your property.' }
-          });
-        }, 2000);
-        return;
-      }
-
-      // Step 2b: Create pending transaction
-      const pendingTxJson = localStorage.getItem('pendingTransaction');
-      if (pendingTxJson) {
-        setStatus('activating');
-        logger.info('Creating pending transaction...');
-        const details: PropertyDetails = JSON.parse(pendingTxJson);
-
-        const userPrincipal = Principal.fromText(principalId);
-        const propertyId = `prop_${Date.now()}`;
-
-        const result = await (await icpService.requireTransactionManager()).createTransactionWithInvite(
-          propertyId,
-          details.address,
-          details.postcode,
-          details.titleNumber || '',
-          userPrincipal,
-          '',
-          BigInt(details.salePrice),
-          'sale',
-          'solicitor',
-          details.propertyType || 'freehold',
-          'residential',
-          'diy',
-          BigInt(0),
-          BigInt(0),
-          ''
-        );
-
-        if ('err' in result) {
-          throw new Error(result.err);
-        }
-
-        const [transactionId, inviteCode] = result.ok;
-        logger.info('Transaction created:', { transactionId, inviteCode });
-
-        // The creator gets no off-chain party row otherwise (nobody invites you
-        // to your own deal), so the chain-verified writer records it. Best-effort:
-        // the transaction page self-heals if this misses.
-        void partyRoleService.recordRoleFromChain(transactionId);
-
-        // Claim any Rightmove listing data stored before Stripe redirect
-        claimPendingRightmoveData(transactionId, {
-          address: details.address,
-          postcode: details.postcode,
-        });
-
-        // Store seller count
-        const txPartyCount = JSON.parse(localStorage.getItem('txPartyCount') || '{}');
-        txPartyCount[transactionId] = { sellerCount: details.sellerCount, buyerCount: 1 };
-        localStorage.setItem('txPartyCount', JSON.stringify(txPartyCount));
-
-        localStorage.removeItem('pendingTransaction');
-        localStorage.setItem('lastCreatedInviteCode', JSON.stringify({ transactionId, inviteCode }));
-
-        setCreatedTransactionId(transactionId);
-        setCreatedInviteCode(inviteCode);
-        setStatus('success');
-        return;
-      }
-
-      // No pending transaction — just go to dashboard
+      // Any other session type has nowhere specific to return to.
       setStatus('success');
       setTimeout(() => navigate('/dashboard', { replace: true }), 2000);
 
@@ -276,18 +177,6 @@ export default function PaymentSuccessPage(): React.ReactElement {
           </div>
         )}
 
-        {status === 'activating' && isInitialized && (
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-green-600 mx-auto mb-4"></div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-              Creating Your Transaction
-            </h2>
-            <p className="text-gray-600 dark:text-gray-300">
-              Setting up your property listing on the blockchain...
-            </p>
-          </div>
-        )}
-
         {status === 'success' && isInitialized && (
           <div className="text-center">
             <div className="text-green-600 mb-4">
@@ -298,49 +187,17 @@ export default function PaymentSuccessPage(): React.ReactElement {
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
               Payment Successful!
             </h2>
-            {createdInviteCode ? (
-              <div className="mb-4">
-                <p className="text-gray-600 dark:text-gray-300 mb-3">
-                  Your transaction has been created. Share this invite code with other parties:
-                </p>
-                <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3 mb-2">
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Transaction ID</p>
-                  <p className="font-mono text-sm text-gray-900 dark:text-white">{createdTransactionId}</p>
-                </div>
-                <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-3">
-                  <p className="text-xs text-blue-600 dark:text-blue-400">Invite Code</p>
-                  <p className="font-mono text-lg font-bold text-blue-700 dark:text-blue-300">{createdInviteCode}</p>
-                </div>
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(createdInviteCode);
-                  }}
-                  className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 underline mb-3"
-                >
-                  Copy invite code
-                </button>
-                <div className="mt-4">
-                  <button
-                    onClick={() => navigate('/dashboard', { replace: true })}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg"
-                  >
-                    Go to Dashboard
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div>
-                <p className="text-gray-600 dark:text-gray-300 mb-4">
-                  Payment confirmed! Redirecting to dashboard...
-                </p>
-                <button
-                  onClick={() => navigate('/dashboard', { replace: true })}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg"
-                >
-                  Go to Dashboard
-                </button>
-              </div>
-            )}
+            <div>
+              <p className="text-gray-600 dark:text-gray-300 mb-4">
+                Payment confirmed! Redirecting to dashboard...
+              </p>
+              <button
+                onClick={() => navigate('/dashboard', { replace: true })}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg"
+              >
+                Go to Dashboard
+              </button>
+            </div>
           </div>
         )}
 
@@ -355,8 +212,8 @@ export default function PaymentSuccessPage(): React.ReactElement {
               Payment Received
             </h2>
             <p className="text-gray-600 dark:text-gray-300 mb-4">
-              Your payment was successful but there was a problem creating the transaction.
-              Please create it manually from the dashboard.
+              Your payment was successful but we could not confirm it just now.
+              Your order is safe; open the transaction from the dashboard.
             </p>
             <p className="text-xs text-red-500 mb-4">{error}</p>
             <button

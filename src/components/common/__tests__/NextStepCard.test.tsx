@@ -20,11 +20,6 @@ vi.mock('@/utils/logger', () => ({
   logger: { info: vi.fn(), error: vi.fn(), warn: vi.fn() },
 }));
 
-let mockCanAccess = true;
-vi.mock('../../../hooks/useSubscription', () => ({
-  useCanAccessFeature: () => mockCanAccess,
-}));
-
 function rec(over: Partial<NextStepRecommendation> = {}): NextStepRecommendation {
   return {
     blocker: 'no_solicitor',
@@ -54,15 +49,6 @@ function rec(over: Partial<NextStepRecommendation> = {}): NextStepRecommendation
 describe('NextStepCard', () => {
   beforeEach(() => {
     mockGetNextStep.mockReset();
-    mockCanAccess = true;
-  });
-
-  it('renders nothing for users without next_step_recommendations entitlement', () => {
-    mockCanAccess = false;
-    mockGetNextStep.mockResolvedValue({ ok: rec() });
-    const { container } = render(<NextStepCard txId="tx_test" />);
-    expect(container.firstChild).toBeNull();
-    expect(mockGetNextStep).not.toHaveBeenCalled();
   });
 
   it('renders the loading skeleton initially', () => {

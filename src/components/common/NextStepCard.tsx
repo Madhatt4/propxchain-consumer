@@ -13,7 +13,6 @@ import {
   type NextStepUrgency,
 } from '../../services/next-step.service';
 import { useDismiss } from '../../hooks/useDismiss';
-import { useCanAccessFeature } from '../../hooks/useSubscription';
 import { useModalFocus } from '../../hooks/useModalFocus';
 import RestorePill from './RestorePill';
 
@@ -133,7 +132,6 @@ const NextStepCard: React.FC<NextStepCardProps> = ({
   minimisedPortalId,
 }) => {
   const isOverlay = presentation === 'overlay';
-  const canSeeCard = useCanAccessFeature('next_step_recommendations');
   // Resolved after mount — the slot belongs to the top bar, which may not be
   // in the DOM when this first renders.
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
@@ -147,7 +145,6 @@ const NextStepCard: React.FC<NextStepCardProps> = ({
   const cardRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    if (!canSeeCard) return;
     let active = true;
     setState({ status: 'loading' });
     void (async () => {
@@ -166,7 +163,7 @@ const NextStepCard: React.FC<NextStepCardProps> = ({
     return () => {
       active = false;
     };
-  }, [txId, refreshKey, manualBump, canSeeCard]);
+  }, [txId, refreshKey, manualBump]);
 
   // Escape minimises rather than closes: it is the recoverable one, and a modal
   // with no keyboard exit is a trap. Focus handling is shared with the AI card
@@ -181,8 +178,6 @@ const NextStepCard: React.FC<NextStepCardProps> = ({
     isOverlay && state.status === 'success' && dismissedTag !== MINIMISED_PREFIX + state.data?.blocker;
 
   useModalFocus(cardRef, isFloating, minimiseCurrent);
-
-  if (!canSeeCard) return null;
 
   const handleRefresh = (): void => {
     setState({ status: 'loading' });

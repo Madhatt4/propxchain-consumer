@@ -6,7 +6,6 @@ import { icpService } from '../../services/icp.service';
 import { useNavigate } from 'react-router-dom';
 import { logger } from '@/utils/logger';
 import { useMoveNarratorNotifications } from '../../hooks/useMoveNarratorNotifications';
-import { useSubscription } from '../../hooks/useSubscription';
 
 interface CanisterNotification {
   id: number;
@@ -53,16 +52,11 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ className = '' }) =
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
-  const { isPremium } = useSubscription();
   const {
-    notifications: narratorNotifsRaw,
+    notifications: narratorNotifs,
     markRead: markNarratorRead,
     markAllRead: markAllNarratorRead,
   } = useMoveNarratorNotifications();
-  // AI cards are a premium feature — hide them from the feed on the starter
-  // tier so the tier toggle shows a real difference everywhere, not just in
-  // the transaction view.
-  const narratorNotifs = isPremium ? narratorNotifsRaw : [];
 
   const fetchNotifications = async (): Promise<void> => {
     try {

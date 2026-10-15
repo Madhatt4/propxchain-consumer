@@ -21,8 +21,7 @@ import {
   type VaultDocument,
   type VaultSlotId,
 } from '../types/vault.types';
-import { useSubscription } from '../hooks/useSubscription';
-import { vaultFilesPerSlot, vaultTotalBytes } from '../constants/subscriptionFeatures';
+import { VAULT_CAPS } from '../constants/vaultLimits';
 import { logger } from '@/utils/logger';
 
 const emptyBySlot = (): Record<VaultSlotId, VaultDocument[]> => {
@@ -35,8 +34,6 @@ export default function MyDocumentsPage(): JSX.Element {
   const [bySlot, setBySlot] = useState<Record<VaultSlotId, VaultDocument[]>>(emptyBySlot);
   const [principal, setPrincipal] = useState('');
   const [loading, setLoading] = useState(true);
-  const { tier } = useSubscription();
-  const caps = { maxFilesPerSlot: vaultFilesPerSlot(tier), maxTotalBytes: vaultTotalBytes(tier) };
 
   useEffect(() => {
     let active = true;
@@ -105,7 +102,7 @@ export default function MyDocumentsPage(): JSX.Element {
                 slot={slot}
                 docs={bySlot[slot.id]}
                 principal={principal}
-                caps={caps}
+                caps={VAULT_CAPS}
                 onStored={handleStored}
                 onRemoved={handleRemoved}
                 onRelabelled={handleRelabelled}

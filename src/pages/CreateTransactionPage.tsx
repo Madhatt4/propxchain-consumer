@@ -4,14 +4,13 @@ import { Principal } from '@propxchain/core-client';
 import CreateTransactionForm from '../components/forms/CreateTransactionForm';
 import AppTopBar from '@/components/navigation/AppTopBar';
 import { icpService } from '../services/icp.service';
-import { stripePaymentService } from '../services/stripePayment.service';
 import { partyRoleService } from '../services/partyRole.service';
 import { logger } from '../utils/logger';
 import { usePrincipalId } from '../stores/authStore';
 
 import type { RightmovePropertyListing } from '@/types/rightmove.types';
 import type { PropertyListing, Tenure } from '@/types/listing.types';
-import { storeRightmoveData, storeTitleNumber, clearPendingRightmoveData } from '@/utils/rightmoveStorage';
+import { storeRightmoveData, storeTitleNumber } from '@/utils/rightmoveStorage';
 
 interface PropertyDetails {
   address: string;
@@ -35,156 +34,98 @@ const CreateTransactionPage: React.FC = () => {
 
     const pid = principalId || '';
 
-    // 2026-08-21, Marc: "lets make all free to launch". Creating a transaction
-    // no longer charges anything, so the default is 'starter' and the Stripe
-    // branch below is unreachable in normal use.
-    //
-    // This was the real paywall. The default used to be 'premium', so ANY direct
-    // navigation to /create-transaction -- a legacy link, a bookmark, a refresh --
-    // sent someone to Stripe for £75 before they had a transaction at all.
-    //
-    // Searches and HMLR pulls are untouched: they still charge, and they are
-    // where all current contribution comes from.
-    const pendingTier = localStorage.getItem('pendingTier') || 'starter';
-    const isStarter = pendingTier !== 'premium';
+    // Creating a transaction is free (2026-10-15): there is no fee to take
+    // first, so the transaction goes straight onto the canister. Searches,
+    // HMLR pulls and the chain unlock still charge at the point of use.
+    const userPrincipal = Principal.fromText(pid);
+    const propertyId = `prop_${Date.now()}`;
 
-    // One-shot "just came back from Stripe success for this attempt" flag.
-    // PaymentSuccessPage sets it; we consume it on first use so subsequent
-    // new transactions correctly redirect through Stripe again (£75 per
-    // transaction, per Marc). `onboardingComplete` is sticky across all
-    // future sessions, so it cannot be the gate here.
-    const justPaid = localStorage.getItem('sellerFeePaidPending') === 'true' &&
-                     !localStorage.getItem('pendingTransaction');
+    const result = await (await icpService.requireTransactionManager()).createTransactionWithInvite(
+      propertyId,
+      details.address,
+      details.postcode,
+      details.titleNumber || '',
+      userPrincipal,
+      '',
+      BigInt(details.salePrice),
+      'sale',
+      'solicitor',
+      details.propertyType || 'freehold',
+      'residential',
+      'diy',
+      BigInt(0),
+      BigInt(0),
+      ''
+    );
 
-    // Starter sellers take the same "create directly" path as the
-    // post-Stripe-success flow — they skip Stripe entirely.
-    if (justPaid || isStarter) {
-      localStorage.removeItem('sellerFeePaidPending');
-      if (isStarter) {
-        // Stamp the tier on the transaction-local store so downstream views
-        // can gate features. Cleared from pendingTier after creation below.
-        logger.info('Starter tier: creating transaction directly (no Stripe)');
-      } else {
-        logger.info('Post-payment onboarding: creating transaction directly');
-      }
-      const userPrincipal = Principal.fromText(pid);
-      const propertyId = `prop_${Date.now()}`;
-
-      const result = await (await icpService.requireTransactionManager()).createTransactionWithInvite(
-        propertyId,
-        details.address,
-        details.postcode,
-        details.titleNumber || '',
-        userPrincipal,
-        '',
-        BigInt(details.salePrice),
-        'sale',
-        'solicitor',
-        details.propertyType || 'freehold',
-        'residential',
-        'diy',
-        BigInt(0),
-        BigInt(0),
-        ''
-      );
-
-      if ('err' in result) {
-        throw new Error(result.err);
-      }
-
-      const [transactionId, inviteCode] = result.ok;
-      logger.info('Transaction created:', { transactionId, inviteCode });
-
-      // The creator gets no off-chain party row otherwise (nobody invites you
-      // to your own deal), so the chain-verified writer records it. Best-effort:
-      // the transaction page self-heals if this misses.
-      void partyRoleService.recordRoleFromChain(transactionId);
-
-      // Store listing data so Stage 1's PropertyDetailsForm can pre-fill on
-      // arrival — previously, manual entry left localStorage empty and the
-      // user had to retype address/postcode/tenure/price (bug #4).
-      if (details.rightmoveListing) {
-        storeRightmoveData(transactionId, details.rightmoveListing);
-      } else {
-        // Synthesise a PropertyListing from the entry-form fields so Stage 1
-        // sees the same shape it would from a real import. Fields we don't
-        // collect upfront (bedrooms, EPC, agent, etc.) are left blank and
-        // the user fills them in Stage 1.
-        const tenure: Tenure =
-          details.propertyType === 'freehold' ? 'freehold'
-          : details.propertyType === 'leasehold' ? 'leasehold'
-          : 'unknown';
-        const manualListing: PropertyListing = {
-          url: '',
-          listingId: `manual-${Date.now()}`,
-          source: 'manual',
-          address: details.address,
-          postcode: details.postcode,
-          price: details.salePrice,
-          propertyType: '',
-          bedrooms: 0,
-          tenure,
-          priceQualifier: '',
-          bathrooms: 0,
-          description: '',
-          keyFeatures: [],
-          images: [],
-          floorplanUrl: null,
-          epcRating: null,
-          agentName: '',
-          agentBranch: '',
-          agentLogoUrl: null,
-          councilTaxBand: null,
-          propertyPhrase: '',
-          provenance: {},
-        };
-        storeRightmoveData(transactionId, manualListing);
-      }
-
-      // Title number lives in its own localStorage key so Stage 1's
-      // PropertyDetailsForm can find it independently of the listing object.
-      if (details.titleNumber) {
-        storeTitleNumber(transactionId, details.titleNumber);
-      }
-
-      // Store party counts
-      const txPartyCount = JSON.parse(localStorage.getItem('txPartyCount') || '{}');
-      txPartyCount[transactionId] = { sellerCount: details.sellerCount, buyerCount: 1 };
-      localStorage.setItem('txPartyCount', JSON.stringify(txPartyCount));
-
-      // Stamp the tier per-transaction so feature gating can read it later.
-      // Cleared global pendingTier so a second create defaults back to Premium.
-      localStorage.setItem(`transactionTier_${transactionId}`, pendingTier);
-      localStorage.removeItem('pendingTier');
-
-      // Clear onboarding flags
-      localStorage.removeItem('needsOnboarding');
-
-      return { transactionId, inviteCode };
+    if ('err' in result) {
+      throw new Error(result.err);
     }
 
-    // Existing flow: store details and redirect to Stripe (Premium £75)
-    logger.info('Storing pending transaction and redirecting to Stripe checkout');
-    // Store Rightmove listing separately (pendingTransaction gets consumed on payment success).
-    // The else branch matters: this is a single global slot, so a listing left
-    // behind by an abandoned checkout would otherwise be claimed by THIS
-    // transaction on payment success, attaching another property's photos,
-    // address and price to it.
+    const [transactionId, inviteCode] = result.ok;
+    logger.info('Transaction created:', { transactionId, inviteCode });
+
+    // The creator gets no off-chain party row otherwise (nobody invites you
+    // to your own deal), so the chain-verified writer records it. Best-effort:
+    // the transaction page self-heals if this misses.
+    void partyRoleService.recordRoleFromChain(transactionId);
+
+    // Store listing data so Stage 1's PropertyDetailsForm can pre-fill on
+    // arrival — previously, manual entry left localStorage empty and the
+    // user had to retype address/postcode/tenure/price (bug #4).
     if (details.rightmoveListing) {
-      localStorage.setItem('pendingRightmoveListing', JSON.stringify(details.rightmoveListing));
+      storeRightmoveData(transactionId, details.rightmoveListing);
     } else {
-      clearPendingRightmoveData();
+      // Synthesise a PropertyListing from the entry-form fields so Stage 1
+      // sees the same shape it would from a real import. Fields we don't
+      // collect upfront (bedrooms, EPC, agent, etc.) are left blank and
+      // the user fills them in Stage 1.
+      const tenure: Tenure =
+        details.propertyType === 'freehold' ? 'freehold'
+        : details.propertyType === 'leasehold' ? 'leasehold'
+        : 'unknown';
+      const manualListing: PropertyListing = {
+        url: '',
+        listingId: `manual-${Date.now()}`,
+        source: 'manual',
+        address: details.address,
+        postcode: details.postcode,
+        price: details.salePrice,
+        propertyType: '',
+        bedrooms: 0,
+        tenure,
+        priceQualifier: '',
+        bathrooms: 0,
+        description: '',
+        keyFeatures: [],
+        images: [],
+        floorplanUrl: null,
+        epcRating: null,
+        agentName: '',
+        agentBranch: '',
+        agentLogoUrl: null,
+        councilTaxBand: null,
+        propertyPhrase: '',
+        provenance: {},
+      };
+      storeRightmoveData(transactionId, manualListing);
     }
-    localStorage.setItem('pendingTransaction', JSON.stringify(details));
 
-    await stripePaymentService.createCheckoutSession({
-      principalId: pid,
-      tier: 'premium',
-      amount: 75,
-    });
+    // Title number lives in its own localStorage key so Stage 1's
+    // PropertyDetailsForm can find it independently of the listing object.
+    if (details.titleNumber) {
+      storeTitleNumber(transactionId, details.titleNumber);
+    }
 
-    // createCheckoutSession redirects to Stripe — this won't execute
-    throw new Error('Redirecting to payment...');
+    // Store party counts
+    const txPartyCount = JSON.parse(localStorage.getItem('txPartyCount') || '{}');
+    txPartyCount[transactionId] = { sellerCount: details.sellerCount, buyerCount: 1 };
+    localStorage.setItem('txPartyCount', JSON.stringify(txPartyCount));
+
+    // Clear onboarding flags
+    localStorage.removeItem('needsOnboarding');
+
+    return { transactionId, inviteCode };
   };
 
   const handleBack = () => {

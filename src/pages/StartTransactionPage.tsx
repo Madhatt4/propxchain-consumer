@@ -16,21 +16,15 @@ type Role = 'buyer' | 'seller';
  * Shown when a user clicks "Start transaction" on the dashboard.
  *
  * Estate agents get their own first question (are you acting for a seller?).
- * Everyone else picks buying or selling. The portal is free, so there is no
- * plan to choose: the choice is stored as the free ('starter') path, which
- * skips Stripe and sends sellers to the property-details flow and buyers to
- * the invite-code page. The Premium picker that used to sit in front of this
- * is hidden for now (the subscription tiers behind it are still in use).
- *
- * localStorage.pendingTier is still written so downstream views can gate
- * features (AI brief, conveyancer quotes, search ordering).
+ * Everyone else picks buying or selling. The platform is free, so there is
+ * no plan to choose: sellers go to the property-details flow and buyers to the
+ * invite-code page.
  */
 export default function StartTransactionPage(): JSX.Element {
   const navigate = useNavigate();
   const isAgent = usePortalKinds().includes('agent');
 
   const handleRole = (role: Role): void => {
-    localStorage.setItem('pendingTier', 'starter');
     // Chosen per transaction. Do NOT shortcut on onboardingRole: authStore
     // rewrites that key from the account's user_metadata.role on every login,
     // so a buyer-role account would skip this question.

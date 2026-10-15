@@ -7,8 +7,8 @@
  * "dialog". This is the piece that makes the attribute honest.
  *
  * Extracted because two surfaces now float the same way (NextStepCard and the
- * Move Narrator AI card, which supersedes it on premium). Two copies of focus
- * handling drift, and the tier toggle is exactly where that drift would show.
+ * Move Narrator AI card, which supersedes it once delivered). Two copies of
+ * focus handling drift, and the hand-over between them is where it would show.
  */
 
 import { useEffect, type RefObject } from 'react';

@@ -7,8 +7,6 @@ vi.mock('@/utils/logger', () => ({
 }));
 vi.mock('../../components/navigation/DashboardSidebar', () => ({ default: () => <nav /> }));
 vi.mock('../../components/navigation/DashboardHeader', () => ({ default: () => <header /> }));
-vi.mock('../../components/subscription/UpgradePrompt', () => ({ default: () => <div /> }));
-vi.mock('../../hooks/useSubscription', () => ({ useCanAccessFeature: () => true }));
 vi.mock('../../stores/authStore', () => ({
   useAuthStore: { getState: () => ({ principalId: 'principal-me', isAuthenticated: true }) },
 }));

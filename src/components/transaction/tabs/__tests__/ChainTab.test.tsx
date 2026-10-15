@@ -36,8 +36,6 @@ const BASE_PROPS: TransactionTabProps = {
   transactionId: 'tx-1',
   uprn: '38192980',
   propertyAddress: '1 Cobblestone Corner, Liverpool',
-  locked: false,
-  requiredTier: 'starter',
 };
 
 const SAMPLE_RESULT: ChainResult = {

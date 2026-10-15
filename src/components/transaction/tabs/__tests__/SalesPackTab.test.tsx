@@ -45,8 +45,6 @@ function renderTab(onGoToStage?: (stageId: string) => void, readOnly?: boolean):
     <MemoryRouter>
       <SalesPackTab
         transactionId="tx-1"
-        locked={false}
-        requiredTier="starter"
         onGoToStage={onGoToStage}
         readOnly={readOnly}
       />

@@ -40,7 +40,7 @@ export function validateVaultFile(file: File): string | null {
   return null;
 }
 
-/** Tier-derived limits the caller passes in (see subscriptionFeatures). */
+/** Wallet limits the caller passes in (see constants/vaultLimits). */
 export interface VaultCaps {
   maxFilesPerSlot: number;
   maxTotalBytes: number;

@@ -4,8 +4,6 @@ import AppTopBar from '@/components/navigation/AppTopBar';
 import NextStepCard from '@/components/common/NextStepCard';
 import { PhaseChecklist } from '@/components/transaction/PhaseChecklist';
 import { icpService } from '../services/icp.service';
-import { useCanAccessFeature } from '../hooks/useSubscription';
-import UpgradePrompt from '../components/subscription/UpgradePrompt';
 import { useAuthStore } from '../stores/authStore';
 import { PHASE_LABELS, PHASE_ORDER } from '../services/phase';
 import { overallProgress } from '../services/phaseChecklistLoader';
@@ -17,9 +15,6 @@ const AnalyticsPage: React.FC = () => {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
   const [analytics, setAnalytics] = useState<DealAnalytics | null>(null);
-
-  // Check subscription access - analytics requires Premium tier
-  const canAccessAnalytics = useCanAccessFeature('analytics');
 
   useEffect(() => {
     const loadData = async () => {
@@ -53,19 +48,6 @@ const AnalyticsPage: React.FC = () => {
       active = false;
     };
   }, [selectedId]);
-
-  // Show upgrade prompt if user doesn't have analytics access
-  if (!canAccessAnalytics) {
-    return (
-      <div className="min-h-screen bg-[var(--bg-main)]">
-        <AppTopBar title="Analytics" backTo="/dashboard" backLabel="Back to dashboard" />
-        <main className="px-4 sm:px-6 lg:px-8 py-8">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">Transaction Analytics</h2>
-          <UpgradePrompt feature="analytics" />
-        </main>
-      </div>
-    );
-  }
 
   const checklist = analytics?.checklist ?? null;
   const progressPct = checklist ? Math.round(overallProgress(checklist) * 100) : 0;

@@ -28,10 +28,6 @@ vi.mock('@/utils/logger', () => ({
   logger: { info: vi.fn(), error: vi.fn(), warn: vi.fn() },
 }));
 
-vi.mock('../../../hooks/useSubscription', () => ({
-  useCanAccessFeature: () => true,
-}));
-
 function rec(over: Partial<NextStepRecommendation> = {}): NextStepRecommendation {
   return {
     blocker: 'no_solicitor',

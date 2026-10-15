@@ -14,38 +14,25 @@ describe('moveNarrator.detection — evaluateTrigger', () => {
     const decision = evaluateTrigger({
       currentBlocker: 'no_solicitor',
       lastBlocker: null,
-      isPremium: true,
     });
 
     // Assert
     expect(decision).toBe('update_only');
   });
 
-  it('should fire when a premium user\'s blocker changes to a real blocker', () => {
+  it('should fire for every user when the blocker changes to a real blocker', () => {
     const decision = evaluateTrigger({
       currentBlocker: 'hmlr_not_fetched',
       lastBlocker: 'no_solicitor',
-      isPremium: true,
     });
 
     expect(decision).toBe('fire');
-  });
-
-  it('should never fire for a free-tier user, only record the change', () => {
-    const decision = evaluateTrigger({
-      currentBlocker: 'hmlr_not_fetched',
-      lastBlocker: 'no_solicitor',
-      isPremium: false,
-    });
-
-    expect(decision).toBe('update_only');
   });
 
   it('should be a no-op when the blocker is unchanged (dedup)', () => {
     const decision = evaluateTrigger({
       currentBlocker: 'no_solicitor',
       lastBlocker: 'no_solicitor',
-      isPremium: true,
     });
 
     expect(decision).toBe('noop');
@@ -55,7 +42,6 @@ describe('moveNarrator.detection — evaluateTrigger', () => {
     const decision = evaluateTrigger({
       currentBlocker: NO_BLOCKER,
       lastBlocker: 'hmlr_not_fetched',
-      isPremium: true,
     });
 
     expect(decision).toBe('update_only');
@@ -65,7 +51,6 @@ describe('moveNarrator.detection — evaluateTrigger', () => {
     const decision = evaluateTrigger({
       currentBlocker: '',
       lastBlocker: 'no_solicitor',
-      isPremium: true,
     });
 
     expect(decision).toBe('noop');

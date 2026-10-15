@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardSidebar from '../components/navigation/DashboardSidebar';
 import DashboardHeader from '../components/navigation/DashboardHeader';
-import { useCanAccessFeature } from '../hooks/useSubscription';
-import UpgradePrompt from '../components/subscription/UpgradePrompt';
 import { logger } from '@/utils/logger';
 import { CANISTER_IDS } from '@/config/canisterIds';
 import { useAuthStore } from '../stores/authStore';
@@ -60,9 +58,6 @@ const BlockchainLedgerPage: React.FC = () => {
   const [selectedTransaction, setSelectedTransaction] = useState<string | null>(null);
   const [verificationHash, setVerificationHash] = useState('');
   const [loading, setLoading] = useState(true);
-
-  // Check subscription access - blockchain_ledger requires Individual tier
-  const canAccessBlockchainLedger = useCanAccessFeature('blockchain_ledger');
 
   // Theme classes for dark mode
   const themeClasses = {
@@ -239,25 +234,6 @@ const BlockchainLedgerPage: React.FC = () => {
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-gray-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className={themeClasses.textPrimary}>Loading blockchain ledger...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Show upgrade prompt if user doesn't have blockchain ledger access
-  if (!canAccessBlockchainLedger) {
-    return (
-      <div className={`min-h-screen ${themeClasses.pageBg}`}>
-        <DashboardHeader
-          user={currentUser}
-          title="PropXchain"
-          subtitle="Blockchain Ledger"
-        />
-        <div className="flex">
-          <DashboardSidebar activeRoute="/dashboard/blockchain-ledger" />
-          <main className="flex-1 px-4 sm:px-6 lg:px-8 py-8">
-            <UpgradePrompt feature="blockchain_ledger" />
-          </main>
         </div>
       </div>
     );

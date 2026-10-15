@@ -58,8 +58,8 @@ export default function OnboardingKycPage(): JSX.Element {
   };
 
   const handleContinue = (): void => {
-    // Sellers pick Starter or Premium at the tier picker; buyers are
-    // always Starter and go straight to the invite-code page.
+    // Sellers choose buying or selling next; buyers go straight to the
+    // invite-code page.
     navigate(role === 'seller' ? '/start-transaction' : '/onboarding/join');
   };
 

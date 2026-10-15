@@ -17,7 +17,7 @@ import { categoryLabel } from './enquiryLabels';
 import { CheckResultView } from './CheckResultView';
 
 interface Props { transactionId: string; parentId?: string; onRaised: (e: Enquiry) => void }
-type CheckState = { kind: 'idle' } | { kind: 'checking' } | { kind: 'done'; result: CheckResult } | { kind: 'premium' } | { kind: 'unavailable' };
+type CheckState = { kind: 'idle' } | { kind: 'checking' } | { kind: 'done'; result: CheckResult } | { kind: 'unavailable' };
 
 function leadInFor(r: CheckResult): string {
   if (r.covered.length) return 'The pack already covers this:';
@@ -40,9 +40,8 @@ export function EnquiryComposer({ transactionId, parentId, onRaised }: Props): J
     try {
       const r = await checkEnquiry({ transactionId, category, question: trimmed });
       setCheck({ kind: 'done', result: r.check.result });
-    } catch (e) {
-      if (e instanceof EnquiryError && e.status === 402) setCheck({ kind: 'premium' });
-      else setCheck({ kind: 'unavailable' });
+    } catch {
+      setCheck({ kind: 'unavailable' });
     }
   };
   const raise = async (): Promise<void> => {
@@ -72,7 +71,6 @@ export function EnquiryComposer({ transactionId, parentId, onRaised }: Props): J
         </label>
       </div>
       {check.kind === 'done' && <CheckResultView result={check.result} leadIn={leadInFor(check.result)} />}
-      {check.kind === 'premium' && <p className="text-sm text-muted-foreground">The pack check is part of the seller's Premium tier. You can still raise the enquiry.</p>}
       {check.kind === 'unavailable' && <p className="text-sm text-muted-foreground">The pack check is not available right now. You can still raise the enquiry.</p>}
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
       <div className="flex flex-wrap gap-2">

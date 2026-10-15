@@ -24,10 +24,6 @@ vi.mock('../../services/icp.service', () => ({
     getUserPrincipal: vi.fn().mockResolvedValue('principal-abc'),
   },
 }));
-// Keep the tier source simple and offline.
-vi.mock('../../hooks/useSubscription', () => ({
-  useSubscription: () => ({ tier: 'starter' }),
-}));
 const listLegacy = vi.fn();
 vi.mock('@/services/vaultMigration.service', () => ({
   vaultMigrationService: {
@@ -70,7 +66,7 @@ describe('MyDocumentsPage', () => {
     expect(await screen.findAllByText('(buyers)')).toHaveLength(2); // Decision in Principle + Mortgage Offer
   });
 
-  it('should show a stored document returned by the service', async () => {
+  it('should show a stored document against the 30-file cap every user gets', async () => {
     listMyDocuments.mockResolvedValue([
       {
         id: 'row-7',
@@ -89,6 +85,6 @@ describe('MyDocumentsPage', () => {
       </MemoryRouter>,
     );
     expect(await screen.findByText(/aaaaaaaa…aaaaaaaa/)).toBeInTheDocument();
-    expect(screen.getByText('1 / 10')).toBeInTheDocument();
+    expect(screen.getByText('1 / 30')).toBeInTheDocument();
   });
 });

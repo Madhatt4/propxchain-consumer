@@ -60,7 +60,7 @@ function safeCancelPath(candidate?: string): string | undefined {
 export interface CreateSessionParams {
   principalId: string;
   tier: string;
-  amount: number; // GBP (e.g., 75)
+  amount: number; // GBP (e.g., 7)
   /** Same-origin path Stripe's back/cancel link returns to. Defaults to the current page. */
   cancelPath?: string;
 }
@@ -91,11 +91,11 @@ export interface VerifySessionResult {
   verified: boolean;
   principalId: string;
   tier: string;
-  amountPaid: number; // Pence (e.g., 7500)
+  amountPaid: number; // Pence (e.g., 700)
   sessionId: string;
   // Present on search-order checkouts (type: 'search' posted to /create-session
-  // by prepareSearchCheckoutSession); absent/undefined on premium-tier and
-  // HMLR-pull sessions, which are distinguished via `tier` instead.
+  // by prepareSearchCheckoutSession); absent/undefined on HMLR-pull and
+  // add-on sessions, which are distinguished via `tier` instead.
   type?: string;
   /** The search provider a search-order session was priced against. */
   provider?: string | null;
@@ -122,15 +122,6 @@ class StripePaymentService {
       logger.error('Invalid Stripe redirect URL');
       throw new Error('Invalid payment redirect URL');
     }
-  }
-
-  /**
-   * Create a Stripe Checkout session and redirect to payment
-   */
-  async createCheckoutSession(params: CreateSessionParams): Promise<void> {
-    const { sessionId, url } = await this.prepareCheckoutSession(params);
-    void sessionId; // unused by the fire-and-forget variant
-    window.location.href = url;
   }
 
   /**

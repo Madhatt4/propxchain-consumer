@@ -26,7 +26,7 @@ const ROW = {
   status: 'raised', transcribed: false, source_document_id: null, ledger_pending: true,
   created_at: '2026-09-05T10:00:00Z', raised_at: '2026-09-05T10:00:00Z', answered_at: null, closed_at: null, updated_at: '2026-09-05T10:00:00Z',
 };
-const props = { transactionId: 'tx_1', locked: false, requiredTier: 'starter' as const };
+const props = { transactionId: 'tx_1' };
 
 describe('EnquiriesTab', () => {
   beforeEach(() => { mockList.mockReset(); mockParty.mockReset(); });

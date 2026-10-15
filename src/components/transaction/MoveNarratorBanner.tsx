@@ -6,7 +6,7 @@
  * card inline in the open transaction (not only in the notification bell) and
  * pops a toast the moment a new one is delivered.
  *
- * Premium customers get a Narrator card when a transaction's blocker changes
+ * Every user gets a Narrator card when a transaction's blocker changes
  * (see useMoveNarrator). The card lives in the local notifications store; this
  * banner renders the newest one for the open transaction in context, so it's
  * visible without opening the bell.
@@ -16,7 +16,6 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Minus, Sparkles, X } from 'lucide-react';
 
 import { useToast } from '@/hooks/use-toast';
-import { useSubscription } from '../../hooks/useSubscription';
 import { useMoveNarratorNotifications } from '../../hooks/useMoveNarratorNotifications';
 import { useDismiss } from '../../hooks/useDismiss';
 import { useModalFocus } from '../../hooks/useModalFocus';
@@ -32,14 +31,13 @@ interface MoveNarratorBannerProps {
 const MoveNarratorBanner: React.FC<MoveNarratorBannerProps> = ({ txId, className = '' }) => {
   const { notifications, markRead } = useMoveNarratorNotifications();
   const { toast } = useToast();
-  const { isPremium } = useSubscription();
   const [dismissed, setDismissed] = useState<Set<string>>(() => new Set());
   const seenRef = useRef<Set<string> | null>(null);
   const { dismissedTag: minimisedTag, dismiss: minimise, restore } = useDismiss(`moveNarrator:${txId}`);
   const dialogRef = useRef<HTMLElement>(null);
 
   const txCards = notifications.filter((n) => n.txId === txId);
-  const openCard = isPremium ? txCards.find((n) => !dismissed.has(n.id)) : undefined;
+  const openCard = txCards.find((n) => !dismissed.has(n.id));
   const isFloating = Boolean(openCard) && minimisedTag !== MINIMISED_PREFIX + openCard?.id;
   const minimiseOpen = useCallback((): void => {
     if (openCard) minimise(MINIMISED_PREFIX + openCard.id);
@@ -47,10 +45,7 @@ const MoveNarratorBanner: React.FC<MoveNarratorBannerProps> = ({ txId, className
   useModalFocus(dialogRef, isFloating, minimiseOpen);
 
   // Toast on genuinely new cards. Seed the seen-set on first render so existing
-  // cards don't toast on mount — only ones delivered while this is open do. The
-  // AI card is a premium feature, so on the starter tier we keep the seen-set
-  // current (no toast replay if the tier is later switched to premium) but
-  // never toast or render.
+  // cards don't toast on mount — only ones delivered while this is open do.
   useEffect(() => {
     if (seenRef.current === null) {
       seenRef.current = new Set(txCards.map((n) => n.id));
@@ -59,12 +54,10 @@ const MoveNarratorBanner: React.FC<MoveNarratorBannerProps> = ({ txId, className
     for (const card of txCards) {
       if (seenRef.current.has(card.id)) continue;
       seenRef.current.add(card.id);
-      if (isPremium) toast({ title: `✨ ${card.title}`, description: card.body });
+      toast({ title: `✨ ${card.title}`, description: card.body });
     }
-  }, [txCards, toast, isPremium]);
+  }, [txCards, toast]);
 
-  // Premium-only: a starter user must not see the AI card, even if one was
-  // delivered earlier while premium (so the tier toggle shows a real difference).
   const card = openCard;
   if (!card) return null;
 

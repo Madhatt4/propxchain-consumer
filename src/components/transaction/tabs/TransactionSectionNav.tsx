@@ -26,15 +26,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
-import { Lock, Menu, ShieldCheck, X } from 'lucide-react';
+import { Menu, ShieldCheck, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { SubscriptionTier } from '@/constants/subscriptionFeatures';
 import { TRANSACTION_NAV_SLOT_ID } from '../flow/TopBar';
 import { TRANSACTION_TABS } from './transactionTabs.config';
 
 export interface TransactionSectionNavProps {
   activeId: string;
-  isUnlocked: (tier: SubscriptionTier) => boolean;
   select: (id: string) => void;
   /** Drives the audit link, which leaves the shell for its own route. */
   transactionId: string;
@@ -60,7 +58,6 @@ const ICON = 'h-4 w-4 shrink-0';
 /** The sections themselves, plus the audit link, shared by menu and drawer. */
 function SectionList({
   activeId,
-  isUnlocked,
   select,
   transactionId,
 }: SectionListProps): JSX.Element {
@@ -68,7 +65,6 @@ function SectionList({
     <>
       {TRANSACTION_TABS.map((tab) => {
         const Icon = tab.icon;
-        const unlocked = isUnlocked(tab.minTier);
         const isActive = tab.id === activeId;
         return (
           <button
@@ -77,7 +73,7 @@ function SectionList({
             aria-current={isActive ? 'true' : undefined}
             aria-label={`Open ${tab.label}`}
             onClick={() => select(tab.id)}
-            className={cn(ITEM, isActive ? ITEM_ACTIVE : ITEM_IDLE, !unlocked && 'opacity-60')}
+            className={cn(ITEM, isActive ? ITEM_ACTIVE : ITEM_IDLE)}
           >
             <Icon
               className={cn(
@@ -86,7 +82,6 @@ function SectionList({
               )}
             />
             {tab.label}
-            {!unlocked && <Lock className="ml-auto h-3 w-3 shrink-0" />}
           </button>
         );
       })}

@@ -57,10 +57,6 @@ vi.mock('@/services/transactionWallet.service', () => ({
   transactionWalletService: { send: (...a: unknown[]) => mockSend(...a) },
 }));
 
-vi.mock('@/hooks/useSubscription', () => ({
-  useSubscription: () => ({ tier: 'premium' }),
-}));
-
 const mockEnsureMyRole = vi.fn();
 vi.mock('@/services/partyRole.service', () => ({
   partyRoleService: { ensureMyRoleFromChain: (...a: unknown[]) => mockEnsureMyRole(...a) },
@@ -80,7 +76,7 @@ const PRICING = {
 function renderTab(): void {
   render(
     <MemoryRouter initialEntries={['/transaction/TX-1/flow?tab=aml']}>
-      <AmlPanelTab transactionId="TX-1" locked={false} requiredTier="starter" />
+      <AmlPanelTab transactionId="TX-1" />
     </MemoryRouter>,
   );
 }
@@ -354,6 +350,8 @@ describe('AmlPanelTab', () => {
     renderTab();
 
     await waitFor(() => expect(mockStoreDocument).toHaveBeenCalled());
+    // Everyone files against the same wallet limits — there is no tier.
+    expect(mockStoreDocument.mock.calls[0][2]).toEqual({ maxFilesPerSlot: 30, maxTotalBytes: 1024 * 1024 * 1024 });
     expect(mockSend).toHaveBeenCalledWith('TX-1', { id: 'doc-1' });
   });
 

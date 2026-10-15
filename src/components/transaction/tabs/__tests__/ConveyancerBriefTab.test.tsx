@@ -33,7 +33,7 @@ const DRAFT: ConveyancerBriefDraft = {
 };
 
 function renderTab(): void {
-  render(<ConveyancerBriefTab transactionId="tx-1" locked={false} requiredTier="starter" />);
+  render(<ConveyancerBriefTab transactionId="tx-1" />);
 }
 
 beforeEach(() => {
@@ -217,7 +217,7 @@ describe('ConveyancerBriefTab', () => {
     mockGet.mockResolvedValueOnce(null);
     mockCompose.mockRejectedValueOnce(new ConveyancerBriefError(429, 'rate_limited', 60));
     const { rerender } = render(
-      <ConveyancerBriefTab transactionId="tx-1" locked={false} requiredTier="starter" />,
+      <ConveyancerBriefTab transactionId="tx-1" />,
     );
 
     fireEvent.click(await screen.findByRole('button', { name: /compose brief/i }));
@@ -226,7 +226,7 @@ describe('ConveyancerBriefTab', () => {
     // Switching to a different transaction re-runs the initial load — the
     // stale banner from tx-1 must not linger next to tx-2's fresh draft.
     mockGet.mockResolvedValueOnce(DRAFT);
-    rerender(<ConveyancerBriefTab transactionId="tx-2" locked={false} requiredTier="starter" />);
+    rerender(<ConveyancerBriefTab transactionId="tx-2" />);
 
     expect(await screen.findByText(DRAFT.subject)).toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();

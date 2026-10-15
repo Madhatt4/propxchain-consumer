@@ -110,7 +110,7 @@ const activeGrant = {
   expiresAt: null,
 };
 
-const props = { transactionId: 'tx1', locked: false, requiredTier: 'starter' as const };
+const props = { transactionId: 'tx1' };
 
 function renderTab(): void {
   render(
