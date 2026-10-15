@@ -50,7 +50,13 @@ function canvasCodec(type: string): ImageCodec {
           const canvas = document.createElement('canvas');
           canvas.width = to.width;
           canvas.height = to.height;
-          canvas.getContext('2d')?.drawImage(bitmap, 0, 0, to.width, to.height);
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            bitmap.close();
+            // Throwing uploads the original instead of a blank copy.
+            return Promise.reject(new Error('no 2d canvas context'));
+          }
+          ctx.drawImage(bitmap, 0, 0, to.width, to.height);
           bitmap.close();
           return new Promise((resolve, reject) => {
             canvas.toBlob(
