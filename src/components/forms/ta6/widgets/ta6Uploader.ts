@@ -16,8 +16,11 @@ import { supabase } from '../../../../lib/supabase';
 import { onChainFileName, storageObjectName } from '../../../../lib/onChainDocument';
 import { classifyDocument, describeClassification } from '../../../../services/docClassify.service';
 import type { DocClassification, DocFinding, DocScanContext } from '../../../../services/docClassify.service';
+import { decideFact } from '../../../../services/documentFacts.service';
+import type { DocFact, FactDecision, FactDecisionResult } from '../../../../services/documentFacts.service';
 import { icpService } from '../../../../services/icp.service';
 import { generateFileHash } from '../../../../utils/hashGenerator';
+import { shrinkImageForUpload } from '../../../../utils/imageShrink';
 
 export const TA6_ATTACHMENT_DOC_TYPE = 'ta6_attachment';
 
@@ -48,6 +51,10 @@ export interface TA6Upload {
    * re-extracted server-side; nothing was kept from the first pass.
    */
   rescan?: (context: DocScanContext) => Promise<DocFinding[] | null>;
+  /** Suggested certificate facts, settled with the classification; empty when there are none. */
+  facts?: Promise<DocFact[]>;
+  /** Confirm or reject one suggested fact on this transaction (documentFacts.service). */
+  decide?: (factId: string, decision: FactDecision) => Promise<FactDecisionResult>;
 }
 
 /** The findings, or null when the scan did not run or could not read the file. */
@@ -63,7 +70,10 @@ function findingsOf(classification: DocClassification | null): DocFinding[] | nu
 export function makeTa6Uploader(
   transactionId: string,
 ): (file: File, context?: DocScanContext) => Promise<TA6Upload> {
-  return async (file: File, context?: DocScanContext): Promise<TA6Upload> => {
+  return async (picked: File, context?: DocScanContext): Promise<TA6Upload> => {
+    // A phone photo is shrunk first so the certificate check can read it; the
+    // hash, the stored bytes and the on-chain proof are all of the shrunk copy.
+    const file = await shrinkImageForUpload(picked);
     const contentType = file.type || 'application/octet-stream';
     await requireSession();
     const fileHash = await generateFileHash(file);
@@ -77,7 +87,10 @@ export function makeTa6Uploader(
     const findings = classification.then(findingsOf);
     const rescan = (next: DocScanContext): Promise<DocFinding[] | null> =>
       classifyDocument(transactionId, path, next).then(findingsOf);
-    return { documentId, advisory, classification, findings, rescan };
+    const facts = classification.then((c) => c?.facts ?? []);
+    const decide = (factId: string, decision: FactDecision): Promise<FactDecisionResult> =>
+      decideFact(transactionId, factId, decision);
+    return { documentId, advisory, classification, findings, rescan, facts, decide };
   };
 }
 
