@@ -8,8 +8,9 @@ import type { ImageCodec, Size } from '../imageShrink';
 
 function codecFor(size: Size, drawn = new Blob(['small'], { type: 'image/jpeg' })) {
   const draw = vi.fn().mockResolvedValue(drawn);
-  const codec: ImageCodec = { decode: vi.fn().mockResolvedValue({ size, draw }) };
-  return { codec, draw };
+  const release = vi.fn();
+  const codec: ImageCodec = { decode: vi.fn().mockResolvedValue({ size, draw, release }) };
+  return { codec, draw, release };
 }
 
 const photo = (type = 'image/jpeg') =>
@@ -42,12 +43,13 @@ describe('shrinkImageForUpload', () => {
     expect(await result.text()).toBe('small');
   });
 
-  it('should return the original file when it is already small enough', async () => {
+  it('should return the original file, and free the decoded image, when it is already small enough', async () => {
     const original = photo('image/png');
-    const { codec, draw } = codecFor({ width: 1200, height: 900 });
+    const { codec, draw, release } = codecFor({ width: 1200, height: 900 });
 
     expect(await shrinkImageForUpload(original, codec)).toBe(original);
     expect(draw).not.toHaveBeenCalled();
+    expect(release).toHaveBeenCalledOnce();
   });
 
   it('should not touch a PDF or a HEIC', async () => {

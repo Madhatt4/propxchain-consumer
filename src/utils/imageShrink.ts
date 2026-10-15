@@ -35,7 +35,8 @@ export function targetSize(size: Size): Size | null {
 
 /** Browser drawing, injected so the decision logic is testable without a canvas. */
 export interface ImageCodec {
-  decode(file: File): Promise<{ size: Size; draw: (to: Size) => Promise<Blob> }>;
+  /** `draw` releases the decoded image; `release` frees it when nothing is drawn. */
+  decode(file: File): Promise<{ size: Size; draw: (to: Size) => Promise<Blob>; release: () => void }>;
 }
 
 function canvasCodec(type: string): ImageCodec {
@@ -44,6 +45,7 @@ function canvasCodec(type: string): ImageCodec {
       const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
       return {
         size: { width: bitmap.width, height: bitmap.height },
+        release: () => bitmap.close(),
         draw: (to) => {
           const canvas = document.createElement('canvas');
           canvas.width = to.width;
@@ -69,7 +71,10 @@ export async function shrinkImageForUpload(file: File, codec?: ImageCodec): Prom
   try {
     const decoded = await (codec ?? canvasCodec(file.type)).decode(file);
     const to = targetSize(decoded.size);
-    if (!to) return file;
+    if (!to) {
+      decoded.release();
+      return file;
+    }
     const blob = await decoded.draw(to);
     return new File([blob], file.name, { type: file.type, lastModified: file.lastModified });
   } catch {
