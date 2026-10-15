@@ -1,6 +1,7 @@
 import React from 'react';
 
 import { Section05AlterationTypes } from './Section05AlterationTypes';
+import { SUGGESTED_WINDOWS } from './factsPrefill';
 import { Section05Documents } from './Section05Documents';
 import { Section05Solar } from './Section05Solar';
 import { ResponseField } from './widgets/ResponseField';
@@ -47,6 +48,7 @@ export const Section05: React.FC<TA6SectionProps<TA6Section5Alterations>> = ({
   onChange,
   readOnly,
   uploadFile,
+  suggestedRefs,
 }) => {
   const setResponse = (key: Section5ResponseKey) => (next: TA6ResponseValue): void => {
     onChange({ ...value, [key]: next });
@@ -70,6 +72,7 @@ export const Section05: React.FC<TA6SectionProps<TA6Section5Alterations>> = ({
         value={value.q5_1Alterations}
         onChange={(q5_1Alterations) => onChange({ ...value, q5_1Alterations })}
         readOnly={readOnly}
+        windowsSuggested={suggestedRefs?.has(SUGGESTED_WINDOWS) ?? false}
       />
       <Section05Documents
         value={value.q5_2Documents}

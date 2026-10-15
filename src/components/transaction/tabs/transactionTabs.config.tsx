@@ -10,7 +10,7 @@
  * open to every user: the platform is free (2026-10-15), so there is no tier.
  */
 import type { ComponentType } from 'react';
-import { LayoutDashboard, MapPin, Link2, Wallet, Sparkles, ShieldCheck, Mail, MessageSquare, ClipboardCheck, FileSearch } from 'lucide-react';
+import { LayoutDashboard, MapPin, Link2, Wallet, Sparkles, ShieldCheck, Mail, MessageSquare, ClipboardCheck, FileSearch, FileCheck2 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { ChainTab } from './ChainTab';
 import { PropertyTab } from './PropertyTab';
@@ -21,6 +21,7 @@ import { ConveyancerBriefTab } from './ConveyancerBriefTab';
 import { EnquiriesTab } from './EnquiriesTab';
 import { BuyerPackTab } from './BuyerPackTab';
 import { SearchesTab } from './SearchesTab';
+import { CertificatesTab } from './CertificatesTab';
 
 /** Data passed to every tab component. */
 export interface TransactionTabContext {
@@ -75,4 +76,7 @@ export const TRANSACTION_TABS: TransactionTabDef[] = [
   // The deal's search orders, which are back, and the buyer-side sign-off
   // (review M23, 2026-09-27). Readable by every party; signing is server-gated.
   { id: 'searches', label: 'Searches', icon: FileSearch, kind: 'component', Component: SearchesTab },
+  // What the seller's certificates say, confirmed by the seller from uploads
+  // (document facts, 2026-10-15). Readable by every party on the deal.
+  { id: 'certificates', label: 'Certificates', icon: FileCheck2, kind: 'component', Component: CertificatesTab },
 ];

@@ -6,6 +6,8 @@ import React from 'react';
 import { AnswerButtons } from './widgets/AnswerButtons';
 import { DocumentSlot } from './widgets/DocumentSlot';
 import { PromptHeader } from './widgets/PromptHeader';
+import { SuggestedBadge } from './widgets/SuggestedBadge';
+import { SUGGESTED_EICR } from './factsPrefill';
 import { ResponseField } from './widgets/ResponseField';
 import { OptionalTextField } from './widgets/TextFields';
 import { SECTION_11_PROMPTS } from '../../../lib/ta6-prompts/section11';
@@ -53,7 +55,7 @@ const CertificatesQuestion: React.FC<ElectricsProps> = ({
 };
 
 /** 11.3 — EICR answer + report date + attachment (shown once relevant). */
-const EicrQuestion: React.FC<ElectricsProps> = ({ value, onChange, readOnly, uploadFile }) => {
+const EicrQuestion: React.FC<ElectricsProps> = ({ value, onChange, readOnly, uploadFile, suggestedRefs }) => {
   const showFollowUp =
     value.q11_3Eicr === 'yes' ||
     value.q11_3Report.status !== 'not-answered' ||
@@ -62,6 +64,7 @@ const EicrQuestion: React.FC<ElectricsProps> = ({ value, onChange, readOnly, upl
   return (
     <div className="space-y-2">
       <PromptHeader refCode="11.3" prompt={promptFor('11.3')} />
+      {suggestedRefs?.has(SUGGESTED_EICR) && <SuggestedBadge />}
       <AnswerButtons
         value={value.q11_3Eicr}
         onChange={(q11_3Eicr) => onChange({ ...value, q11_3Eicr })}

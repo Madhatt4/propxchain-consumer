@@ -11,7 +11,7 @@ vi.mock('../icp.service', () => ({
 }));
 vi.mock('../../utils/logger', () => ({ logger: { warn: vi.fn(), info: vi.fn(), error: vi.fn() } }));
 
-import { decideFact, factLabel } from '../documentFacts.service';
+import { decideFact, factLabel, loadCurrentFacts } from '../documentFacts.service';
 
 const HASH = 'a'.repeat(64);
 const ROW = { fact_key: 'gas_safety.passed', value: 'true', source_sha256: HASH };
@@ -82,5 +82,51 @@ describe('decideFact', () => {
       decision: 'confirmed',
       anchored: false,
     });
+  });
+});
+
+describe('loadCurrentFacts', () => {
+  beforeEach(() => mockRpc.mockReset());
+
+  it('should map the current facts for the transaction', async () => {
+    mockRpc.mockResolvedValue({
+      data: [
+        {
+          fact_key: 'epc.band',
+          value: 'C',
+          method: 'jev',
+          status: 'confirmed',
+          storage_path: 'transactions/tx/ta6/abc.jpg',
+          checked_at: '2026-10-15T09:00:00Z',
+          decided_at: '2026-10-15T10:00:00Z',
+        },
+      ],
+      error: null,
+    });
+
+    const facts = await loadCurrentFacts('tx-1');
+
+    expect(mockRpc).toHaveBeenCalledWith('document_facts_current', { p_transaction_id: 'tx-1' });
+    expect(facts).toEqual([
+      {
+        factKey: 'epc.band',
+        value: 'C',
+        method: 'jev',
+        status: 'confirmed',
+        storagePath: 'transactions/tx/ta6/abc.jpg',
+        checkedAt: '2026-10-15T09:00:00Z',
+        decidedAt: '2026-10-15T10:00:00Z',
+      },
+    ]);
+  });
+
+  it('should resolve empty, never reject, when the database errors or the client throws', async () => {
+    mockRpc.mockResolvedValueOnce({ data: null, error: { message: 'boom' } });
+    expect(await loadCurrentFacts('tx-1')).toEqual([]);
+
+    mockRpc.mockImplementationOnce(() => {
+      throw new Error('no client');
+    });
+    expect(await loadCurrentFacts('tx-1')).toEqual([]);
   });
 });
