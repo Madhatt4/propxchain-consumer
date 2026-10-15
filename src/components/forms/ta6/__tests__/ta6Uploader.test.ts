@@ -83,10 +83,19 @@ describe('makeTa6Uploader', () => {
 
     expect(mockUpload).toHaveBeenCalledWith(
       'transactions/tx_1/ta6/abcdef123456.pdf',
-      file,
+      expect.any(ArrayBuffer),
       expect.anything(),
     );
     expect(mockClassify).toHaveBeenCalledWith('tx_1', 'transactions/tx_1/ta6/abcdef123456.pdf', undefined);
+  });
+
+  it("should send the file's bytes rather than the File, which iOS Safari dropped as multipart", async () => {
+    const upload = makeTa6Uploader('tx_1');
+
+    await upload(file);
+
+    const body = mockUpload.mock.calls[0][1] as ArrayBuffer;
+    expect(new Uint8Array(body)).toEqual(new Uint8Array(await file.arrayBuffer()));
   });
 
   it('should send the slot context with the classification and return its findings', async () => {

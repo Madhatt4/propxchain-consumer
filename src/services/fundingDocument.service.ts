@@ -27,6 +27,7 @@
 
 import { supabase } from '../lib/supabase';
 import { onChainFileName, storageObjectName } from '../lib/onChainDocument';
+import { uploadBody } from '../lib/uploadBody';
 import { icpService } from './icp.service';
 import { generateFileHash } from '../utils/hashGenerator';
 import { getBackendDocumentName } from '../constants/documentTypes';
@@ -148,7 +149,7 @@ class FundingDocumentService {
 
     const { error } = await supabase.storage
       .from(STORAGE_BUCKET)
-      .upload(path, file, { contentType, upsert: true });
+      .upload(path, await uploadBody(file), { contentType, upsert: true });
 
     if (error) {
       throw new Error(`Secure upload failed: ${error.message}`);

@@ -21,6 +21,7 @@ import type { DocFact, FactDecision, FactDecisionResult } from '../../../../serv
 import { icpService } from '../../../../services/icp.service';
 import { generateFileHash } from '../../../../utils/hashGenerator';
 import { shrinkImageForUpload } from '../../../../utils/imageShrink';
+import { uploadBody } from '../../../../lib/uploadBody';
 
 export const TA6_ATTACHMENT_DOC_TYPE = 'ta6_attachment';
 
@@ -119,7 +120,7 @@ async function uploadBytes(
 
   const { error } = await supabase.storage
     .from(STORAGE_BUCKET)
-    .upload(path, file, { contentType, upsert: true });
+    .upload(path, await uploadBody(file), { contentType, upsert: true });
 
   if (error) {
     throw new Error(`Secure upload failed: ${error.message}`);
