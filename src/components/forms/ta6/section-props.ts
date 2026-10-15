@@ -16,4 +16,6 @@ export interface TA6SectionProps<T> {
   onChange: (next: T) => void;
   readOnly: boolean;
   uploadFile?: TA6UploadFile;
+  /** Answers filled from a confirmed certificate fact (factsPrefill.ts), shown with a badge. */
+  suggestedRefs?: ReadonlySet<string>;
 }

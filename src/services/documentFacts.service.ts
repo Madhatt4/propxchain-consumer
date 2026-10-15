@@ -112,3 +112,54 @@ export async function decideFact(
     return { decision, anchored: false };
   }
 }
+
+/** One fact as document_facts_current() returns it: the newest confirmed, else the newest suggestion. */
+export interface CurrentFact {
+  factKey: string;
+  value: string;
+  method: DocFactMethod;
+  status: 'suggested' | 'confirmed';
+  /** The bucket-relative path of the file the fact was read from. */
+  storagePath: string;
+  checkedAt: string;
+  decidedAt: string | null;
+}
+
+interface CurrentFactRow {
+  fact_key: string;
+  value: string;
+  method: DocFactMethod;
+  status: 'suggested' | 'confirmed';
+  storage_path: string;
+  checked_at: string;
+  decided_at: string | null;
+}
+
+/**
+ * What counts for each fact on this transaction, as the reader is allowed to
+ * see it (the table's party-read policy applies). Empty on any failure: the
+ * facts are an enhancement, never an error the page should show.
+ */
+export async function loadCurrentFacts(transactionId: string): Promise<CurrentFact[]> {
+  let rows: CurrentFactRow[];
+  try {
+    const { data, error } = await supabase.rpc('document_facts_current', { p_transaction_id: transactionId });
+    if (error || !Array.isArray(data)) {
+      if (error) logger.warn('Document facts unavailable:', error);
+      return [];
+    }
+    rows = data as CurrentFactRow[];
+  } catch (err) {
+    logger.warn('Document facts request failed:', err);
+    return [];
+  }
+  return rows.map((r) => ({
+    factKey: r.fact_key,
+    value: r.value,
+    method: r.method,
+    status: r.status,
+    storagePath: r.storage_path,
+    checkedAt: r.checked_at,
+    decidedAt: r.decided_at,
+  }));
+}

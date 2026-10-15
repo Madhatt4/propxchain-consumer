@@ -28,6 +28,8 @@ export interface ActiveSectionProps {
   onChange: (next: TA6PropertyInformation) => void;
   readOnly: boolean;
   uploadFile?: TA6UploadFile;
+  /** Answers filled from confirmed certificate facts, for the badge. */
+  suggestedRefs?: ReadonlySet<string>;
 }
 
 export function ActiveSection({
@@ -36,8 +38,9 @@ export function ActiveSection({
   onChange,
   readOnly,
   uploadFile,
+  suggestedRefs,
 }: ActiveSectionProps): ReactElement | null {
-  const common = { readOnly, uploadFile };
+  const common = { readOnly, uploadFile, suggestedRefs };
   switch (step) {
     case 1:
       return <Section01 value={form.section1} onChange={(section1) => onChange({ ...form, section1 })} {...common} />;

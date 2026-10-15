@@ -1,6 +1,7 @@
 import React from 'react';
 
 import { PromptHeader } from './widgets/PromptHeader';
+import { SuggestedBadge } from './widgets/SuggestedBadge';
 import { OptionalTextField } from './widgets/TextFields';
 import { SECTION_05_PROMPTS } from '../../../lib/ta6-prompts/section05';
 import type { TA6AlterationTypes } from '../../../types/ta6.types';
@@ -25,6 +26,8 @@ export interface Section05AlterationTypesProps {
   value: TA6AlterationTypes;
   onChange: (next: TA6AlterationTypes) => void;
   readOnly: boolean;
+  /** The windows tick came from a confirmed FENSA certificate (factsPrefill.ts). */
+  windowsSuggested?: boolean;
 }
 
 /**
@@ -36,6 +39,7 @@ export const Section05AlterationTypes: React.FC<Section05AlterationTypesProps> =
   value,
   onChange,
   readOnly,
+  windowsSuggested = false,
 }) => (
   <fieldset className="space-y-3">
     <PromptHeader refCode="5.1" prompt={SECTION_05_PROMPTS.find((p) => p.ref === '5.1')} />
@@ -49,7 +53,14 @@ export const Section05AlterationTypes: React.FC<Section05AlterationTypesProps> =
             disabled={readOnly}
             className="mt-0.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
           />
-          {label}
+          <span>
+            {label}
+            {field === 'windowsPost2002' && windowsSuggested && (
+              <span className="ml-2 inline-block">
+                <SuggestedBadge />
+              </span>
+            )}
+          </span>
         </label>
       ))}
     </div>
