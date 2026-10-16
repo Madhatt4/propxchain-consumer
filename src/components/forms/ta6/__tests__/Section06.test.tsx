@@ -26,7 +26,6 @@ describe('Section06 consents context', () => {
     // Arrange
     const uploadFile = vi.fn().mockResolvedValue({
       documentId: '9',
-      advisory: Promise.resolve(null),
       classification: Promise.resolve(null),
       findings: Promise.resolve([]),
     });

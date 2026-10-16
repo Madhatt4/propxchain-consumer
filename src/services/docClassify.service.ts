@@ -149,8 +149,7 @@ export const DOC_TYPE_CONFIDENCE_AT = 0.6;
 /** Below this yes-probability the document probably is not about this property. */
 export const MATCHES_PROPERTY_AT = 0.5;
 
-const UNSURE_LINE = "We couldn't confirm what this document is. Your conveyancer will check it.";
-const UNREADABLE_LINE = "We couldn't read the text in this file. Your conveyancer will check it.";
+const CONVEYANCER_LINE = 'This is an automatic check. Your conveyancer still reviews the document.';
 
 /** Plain-English names for the function's option keys, with their article. */
 const DOC_TYPE_LABELS: Readonly<Record<string, string>> = {
@@ -232,14 +231,70 @@ export function propertyCaveat(result: DocClassification): string | null {
   return 'It may not be for this property.';
 }
 
-/** The one quiet line the slot shows under an attachment. */
-export function describeClassification(result: DocClassification): string {
-  if (result.unreadable) return UNREADABLE_LINE;
-  if (result.docType === 'other' || result.confidence < DOC_TYPE_CONFIDENCE_AT) return UNSURE_LINE;
+/** How the scan went, for the colour and icon of the verdict card. */
+export type ScanTone = 'ok' | 'caution' | 'unknown';
 
-  const parts = [`Reads as ${docTypeLabel(result.docType)}.`];
-  const caveat = propertyCaveat(result);
-  if (caveat) parts.push(caveat);
-  if (result.inDate === false) parts.push('It looks out of date.');
-  return parts.join(' ');
+/** The verdict the TA6 slot shows under an attachment: one headline, then a line per thing checked. */
+export interface ScanSummary {
+  tone: ScanTone;
+  headline: string;
+  details: string[];
+}
+
+/** What the scan says about whose property this is, and whether that needs the seller's attention. */
+function propertyLine(result: DocClassification): { text: string; caution: boolean } | null {
+  const check = result.propertyCheck;
+  if (check?.postcodeMatches === true && check.expectedPostcode) {
+    return { text: `It gives this property's postcode, ${check.expectedPostcode}.`, caution: false };
+  }
+  if (check?.postcodeMatches === false && check.expectedPostcode) {
+    const found = check.foundPostcodes.join(' and ');
+    return {
+      text: `It gives postcode ${found}, not this property's ${check.expectedPostcode}. Check it's the right document.`,
+      caution: true,
+    };
+  }
+  if (result.matchesProperty === null) return null;
+  if (result.matchesProperty >= MATCHES_PROPERTY_AT) {
+    return { text: "It looks like it's for this property.", caution: false };
+  }
+  if (check && check.foundPostcodes.length === 0) {
+    return {
+      text: "It names no postcode, so we couldn't tie it to this property. Check the address on it is yours.",
+      caution: true,
+    };
+  }
+  return { text: "It doesn't seem to name this property. Check the address on it is yours.", caution: true };
+}
+
+/** The verdict card for one scanned upload. */
+export function describeScan(result: DocClassification): ScanSummary {
+  if (result.unreadable) {
+    return {
+      tone: 'unknown',
+      headline: "We couldn't read this file.",
+      details: [
+        'It may be a scan with no text in it, or a photo that is blurred or too small. A clearer photo or the original PDF will help.',
+        CONVEYANCER_LINE,
+      ],
+    };
+  }
+  if (result.docType === 'other' || result.confidence < DOC_TYPE_CONFIDENCE_AT) {
+    return { tone: 'unknown', headline: "We couldn't tell what this document is.", details: [CONVEYANCER_LINE] };
+  }
+
+  const details: string[] = [];
+  let caution = false;
+  const property = propertyLine(result);
+  if (property) {
+    details.push(property.text);
+    caution = caution || property.caution;
+  }
+  if (result.inDate === true) details.push('It looks in date.');
+  if (result.inDate === false) {
+    details.push('It looks out of date, so you may need a newer one.');
+    caution = true;
+  }
+  details.push(CONVEYANCER_LINE);
+  return { tone: caution ? 'caution' : 'ok', headline: `This reads as ${docTypeLabel(result.docType)}.`, details };
 }
