@@ -3,7 +3,8 @@
 // A 15-step stepper matching the official Law Society form 1:1. Each section
 // renders inside a SectionCard with its own Save button; saving serialises the
 // WHOLE form (the canister stores one record) but only clears that section's
-// dirty flag. An acknowledgment gate blocks editing until the seller confirms
+// dirty flag. Attaching a file saves straight away (useAttachmentAutosave).
+// An acknowledgment gate blocks editing until the seller confirms
 // they understand PropXchain paraphrases the official wording. Section 1 is
 // prefilled from the listing when empty, with its jurisdiction derived from the
 // postcode. Cross-reference anomalies arrive via the `anomalies` prop and are
@@ -19,6 +20,7 @@ import { FormExportButton } from './FormExportButton';
 import { AcknowledgmentGate } from './ta6/AcknowledgmentGate';
 import { ActiveSection } from './ta6/ActiveSection';
 import { buildInitial, openingStep } from './ta6/formSeed';
+import { useAttachmentAutosave } from './ta6/useAttachmentAutosave';
 import { useFactsPrefill } from './ta6/useFactsPrefill';
 import { SectionHelpCard } from './ta6/SectionHelpCard';
 import { StepAnomalyFlag } from './ta6/StepAnomalyFlag';
@@ -73,7 +75,7 @@ const TA6Form = ({
   anomalies = [],
   initialStep,
 }: TA6FormProps): ReactElement => {
-  const [{ form: seedForm, prefilled }] = useState(() =>
+  const [{ form: seedForm, prefilled, savedAt }] = useState(() =>
     buildInitial(initialData, propertyAddress, postcode, listing),
   );
   const [formData, setFormData] = useState<TA6PropertyInformation>(seedForm);
@@ -83,11 +85,12 @@ const TA6Form = ({
   );
   const [savingStep, setSavingStep] = useState<number | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
-  // Confirmed certificate facts fill blank answers once, marked "suggested".
-  const suggestedRefs = useFactsPrefill(transactionId, readOnly, {
+  // Confirmed certificate facts fill blank answers, marked "suggested".
+  const { suggested: suggestedRefs, refresh: refreshFacts } = useFactsPrefill(transactionId, readOnly, {
     form: formData,
     setForm: setFormData,
     setDirtySteps,
+    savedAt,
   });
 
   const steps = useMemo<StepperStep[]>(
@@ -133,6 +136,9 @@ const TA6Form = ({
       setSavingStep(null);
     }
   };
+
+  // Attaching a file saves the form; confirming a fact on it fills answers now.
+  const uploadAndSave = useAttachmentAutosave(uploadFile, formData, handleSaveSection, refreshFacts);
 
   if (hasAcknowledged === false && !readOnly && onAcknowledge) {
     return <AcknowledgmentGate onAcknowledge={onAcknowledge} />;
@@ -221,7 +227,7 @@ const TA6Form = ({
           form={formData}
           onChange={handleSectionChange}
           readOnly={readOnly}
-          uploadFile={uploadFile}
+          uploadFile={uploadAndSave}
           suggestedRefs={suggestedRefs}
         />
       </SectionCard>
