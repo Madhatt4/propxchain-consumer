@@ -23,6 +23,7 @@ function fact(factKey: string, overrides: Partial<CurrentFact> = {}): CurrentFac
     storagePath: 'transactions/tx/ta6/abc.jpg',
     checkedAt: '2026-10-15T09:00:00.000Z',
     decidedAt: '2026-10-15T10:00:00.000Z',
+    validUntil: null,
     ...overrides,
   };
 }
@@ -48,6 +49,21 @@ describe('CertificatesTab', () => {
     render(<CertificatesTab transactionId="tx-1" />);
 
     expect(await screen.findByText('Gas safety record is in date (as of 15 Oct 2026)')).toBeTruthy();
+  });
+
+  it('should give a dated certificate its last valid day and flag one that has run out', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-16T09:00:00Z'));
+    mockLoad.mockResolvedValue([
+      fact('gas_safety.in_date', { validUntil: '2027-03-01' }),
+      fact('eicr.in_date', { validUntil: '2026-10-01' }),
+    ]);
+
+    render(<CertificatesTab transactionId="tx-1" />);
+
+    expect(await screen.findByText('Gas safety record is in date until 1 Mar 2027')).toBeTruthy();
+    expect(screen.getByText('Electrical report ran out on 1 Oct 2026').className).toContain('text-amber-700');
+    vi.useRealTimers();
   });
 
   it('should not show a suggestion the seller has not confirmed', async () => {

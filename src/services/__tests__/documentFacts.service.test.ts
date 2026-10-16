@@ -11,7 +11,7 @@ vi.mock('../icp.service', () => ({
 }));
 vi.mock('../../utils/logger', () => ({ logger: { warn: vi.fn(), info: vi.fn(), error: vi.fn() } }));
 
-import { decideFact, factLabel, loadCurrentFacts } from '../documentFacts.service';
+import { decideFact, factLabel, hasLapsed, loadCurrentFacts } from '../documentFacts.service';
 
 const HASH = 'a'.repeat(64);
 const ROW = { fact_key: 'gas_safety.passed', value: 'true', source_sha256: HASH };
@@ -34,6 +34,24 @@ describe('factLabel', () => {
     expect(factLabel({ factKey: 'gas_safety.in_date', value: 'true', method: 'code' })).toBe(
       'Gas safety record is in date',
     );
+  });
+
+  it('should give the last valid day, read afresh against today, when it is known', () => {
+    const now = new Date('2026-10-16T08:00:00Z');
+    const fact = { factKey: 'gas_safety.in_date', value: 'true', method: 'jev' as const };
+
+    expect(factLabel({ ...fact, validUntil: '2027-03-01' }, now)).toBe('Gas safety record is in date until 1 Mar 2027');
+    expect(factLabel({ ...fact, validUntil: '2026-10-16' }, now)).toBe('Gas safety record is in date until 16 Oct 2026');
+    expect(factLabel({ ...fact, validUntil: '2026-10-15' }, now)).toBe('Gas safety record ran out on 15 Oct 2026');
+  });
+});
+
+describe('hasLapsed', () => {
+  it('should count the last valid day as still in date', () => {
+    const now = new Date('2026-10-16T23:30:00Z');
+
+    expect(hasLapsed('2026-10-16', now)).toBe(false);
+    expect(hasLapsed('2026-10-15', now)).toBe(true);
   });
 });
 
@@ -100,6 +118,16 @@ describe('loadCurrentFacts', () => {
           checked_at: '2026-10-15T09:00:00Z',
           decided_at: '2026-10-15T10:00:00Z',
         },
+        {
+          fact_key: 'gas_safety.in_date',
+          value: 'true',
+          method: 'code',
+          status: 'confirmed',
+          storage_path: 'transactions/tx/ta6/def.pdf',
+          checked_at: '2026-10-15T09:00:00Z',
+          decided_at: '2026-10-15T10:00:00Z',
+          valid_until: '2027-03-01',
+        },
       ],
       error: null,
     });
@@ -116,6 +144,17 @@ describe('loadCurrentFacts', () => {
         storagePath: 'transactions/tx/ta6/abc.jpg',
         checkedAt: '2026-10-15T09:00:00Z',
         decidedAt: '2026-10-15T10:00:00Z',
+        validUntil: null,
+      },
+      {
+        factKey: 'gas_safety.in_date',
+        value: 'true',
+        method: 'code',
+        status: 'confirmed',
+        storagePath: 'transactions/tx/ta6/def.pdf',
+        checkedAt: '2026-10-15T09:00:00Z',
+        decidedAt: '2026-10-15T10:00:00Z',
+        validUntil: '2027-03-01',
       },
     ]);
   });

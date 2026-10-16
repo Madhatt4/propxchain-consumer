@@ -31,6 +31,8 @@ export interface DocFact {
   /** Null when code read it from the document's text; Jev's certainty for a photo. */
   confidence: number | null;
   method: DocFactMethod;
+  /** On an in-date fact: the certificate's last valid day, `YYYY-MM-DD`, when it could be read. */
+  validUntil?: string | null;
 }
 
 export type FactDecision = 'confirmed' | 'rejected';
@@ -62,12 +64,47 @@ const YES_NO_LABELS: Readonly<Record<string, readonly [yes: string, no: string]>
   ],
 };
 
+/** What each dated certificate is called when its last valid day is known. */
+const DATED_NAMES: Readonly<Record<string, string>> = {
+  'gas_safety.in_date': 'Gas safety record',
+  'eicr.in_date': 'Electrical report',
+  'epc.in_date': 'EPC',
+};
+
+const DAY = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+
+/** `YYYY-MM-DD` as "30 Oct 2026". */
+export function formatDay(isoDay: string): string {
+  return DAY.format(new Date(`${isoDay.slice(0, 10)}T00:00:00Z`));
+}
+
+/** Today's UTC calendar day as `YYYY-MM-DD`, the shape valid_until is compared in. */
+export function todayIso(now: Date = new Date()): string {
+  return now.toISOString().slice(0, 10);
+}
+
+/** True once the last valid day has passed: a certificate is valid for the whole of that day. */
+export function hasLapsed(validUntil: string, now: Date = new Date()): boolean {
+  return validUntil.slice(0, 10) < todayIso(now);
+}
+
 /**
- * The fact in the seller's words. A photo's in-date is Jev's judgement on the
- * day it was checked, so it says so (decision Q19).
+ * The fact in the seller's words. An in-date fact with a known last valid
+ * day is read afresh against today, so a confirmed certificate that has
+ * since run out says so (decision Q25, 2026-10-16). Without a day, a photo's
+ * in-date is Jev's judgement on the day it was checked (decision Q19).
  */
-export function factLabel(fact: Pick<DocFact, 'factKey' | 'value' | 'method'>): string {
+export function factLabel(
+  fact: Pick<DocFact, 'factKey' | 'value' | 'method' | 'validUntil'>,
+  now: Date = new Date(),
+): string {
   if (fact.factKey === 'epc.band') return `EPC rating ${fact.value}`;
+  const dated = DATED_NAMES[fact.factKey];
+  if (dated && fact.validUntil) {
+    return hasLapsed(fact.validUntil, now)
+      ? `${dated} ran out on ${formatDay(fact.validUntil)}`
+      : `${dated} is in date until ${formatDay(fact.validUntil)}`;
+  }
   const pair = YES_NO_LABELS[fact.factKey];
   if (!pair) return `${fact.factKey}: ${fact.value}`;
   const label = fact.value === 'true' ? pair[0] : pair[1];
@@ -123,6 +160,8 @@ export interface CurrentFact {
   storagePath: string;
   checkedAt: string;
   decidedAt: string | null;
+  /** On an in-date fact: the certificate's last valid day, when it could be read. */
+  validUntil: string | null;
 }
 
 interface CurrentFactRow {
@@ -133,6 +172,7 @@ interface CurrentFactRow {
   storage_path: string;
   checked_at: string;
   decided_at: string | null;
+  valid_until?: string | null;
 }
 
 /**
@@ -161,5 +201,6 @@ export async function loadCurrentFacts(transactionId: string): Promise<CurrentFa
     storagePath: r.storage_path,
     checkedAt: r.checked_at,
     decidedAt: r.decided_at,
+    validUntil: r.valid_until ?? null,
   }));
 }
