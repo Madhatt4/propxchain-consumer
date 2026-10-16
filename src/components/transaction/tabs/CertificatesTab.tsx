@@ -13,7 +13,7 @@
 import { useEffect, useState } from 'react';
 import { FileCheck2 } from 'lucide-react';
 
-import { factLabel, loadCurrentFacts } from '@/services/documentFacts.service';
+import { factLabel, hasLapsed, loadCurrentFacts } from '@/services/documentFacts.service';
 import type { CurrentFact } from '@/services/documentFacts.service';
 import type { TransactionTabProps } from './transactionTabs.config';
 
@@ -32,8 +32,13 @@ function confirmedOn(fact: CurrentFact): string {
   return fact.decidedAt ? `confirmed ${DATE.format(new Date(fact.decidedAt))}` : 'confirmed';
 }
 
-/** A photo's in-date is a judgement on the day it was checked, so the line says which day. */
+/**
+ * A certificate with a known last valid day says so, read afresh against
+ * today (factLabel). Without one, a photo's in-date is a judgement on the
+ * day it was checked, so the line says which day.
+ */
 function lineFor(fact: CurrentFact): string {
+  if (fact.validUntil) return factLabel(fact);
   const label = factLabel({ ...fact, method: 'code' });
   if (fact.method === 'jev' && fact.factKey.endsWith('.in_date')) {
     return `${label} (as of ${DATE.format(new Date(fact.checkedAt))})`;
@@ -84,7 +89,15 @@ export function CertificatesTab({ transactionId }: TransactionTabProps): JSX.Ele
           <ul className="mt-2 space-y-1">
             {group.facts.map((fact) => (
               <li key={fact.factKey} className="flex flex-wrap justify-between gap-2 text-sm">
-                <span className="text-gray-800 dark:text-slate-200">{lineFor(fact)}</span>
+                <span
+                  className={
+                    fact.validUntil && hasLapsed(fact.validUntil)
+                      ? 'font-medium text-amber-700 dark:text-amber-400'
+                      : 'text-gray-800 dark:text-slate-200'
+                  }
+                >
+                  {lineFor(fact)}
+                </span>
                 <span className="text-xs text-gray-500 dark:text-slate-400">{confirmedOn(fact)}</span>
               </li>
             ))}

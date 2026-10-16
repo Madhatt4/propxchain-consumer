@@ -21,6 +21,7 @@ function fact(factKey: string, overrides: Partial<CurrentFact> = {}): CurrentFac
     storagePath: 'transactions/tx/ta6/abc.jpg',
     checkedAt: AFTER,
     decidedAt: AFTER,
+    validUntil: null,
     ...overrides,
   };
 }
