@@ -13,6 +13,7 @@
  * (ADR 0003). Oscar AI never sees wallet files.
  */
 import { supabase } from '../lib/supabase';
+import { uploadBody } from '../lib/uploadBody';
 import { icpService } from './icp.service';
 import { generateFileHash } from '../utils/hashGenerator';
 import {
@@ -239,7 +240,7 @@ class VaultDocumentService {
     const objectPath = walletObjectPath(userId, input.slotId, input.fileHash, input.mimeType);
     const { error: upErr } = await supabase.storage
       .from(WALLET_BUCKET)
-      .upload(objectPath, input.blob, { contentType: input.mimeType, upsert: false });
+      .upload(objectPath, await uploadBody(input.blob), { contentType: input.mimeType, upsert: false });
     if (upErr && !isDuplicateObject(upErr.message)) {
       throw new Error(`Upload failed: ${upErr.message}`);
     }
