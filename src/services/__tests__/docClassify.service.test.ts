@@ -19,7 +19,7 @@ vi.mock('../../lib/supabase', () => ({
 
 import {
   classifyDocument,
-  describeClassification,
+  describeScan,
   docTypeLabel,
   type DocClassification,
 } from '../docClassify.service';
@@ -71,83 +71,86 @@ describe('docClassify.service', () => {
     });
   });
 
-  describe('describeClassification', () => {
-    it('should name the document type when the classification is confident', () => {
-      expect(describeClassification(EPC)).toBe('Reads as an Energy Performance Certificate.');
+  describe('describeScan', () => {
+    const CONVEYANCER = 'This is an automatic check. Your conveyancer still reviews the document.';
+
+    it('should name the type, confirm the property and date, and read as all clear', () => {
+      expect(describeScan(EPC)).toEqual({
+        tone: 'ok',
+        headline: 'This reads as an Energy Performance Certificate.',
+        details: ["It looks like it's for this property.", 'It looks in date.', CONVEYANCER],
+      });
     });
 
-    it('should say the text could not be read for an unreadable file', () => {
-      expect(
-        describeClassification({ ...EPC, unreadable: true, docType: 'other', confidence: 0 }),
-      ).toBe("We couldn't read the text in this file. Your conveyancer will check it.");
+    it('should say the file could not be read, and how to fix it, for an unreadable file', () => {
+      const scan = describeScan({ ...EPC, unreadable: true, docType: 'other', confidence: 0 });
+      expect(scan.tone).toBe('unknown');
+      expect(scan.headline).toBe("We couldn't read this file.");
+      expect(scan.details[0]).toMatch(/clearer photo or the original PDF/);
     });
 
-    it('should not name a type below the confidence threshold', () => {
-      expect(describeClassification({ ...EPC, confidence: 0.55 })).toBe(
-        "We couldn't confirm what this document is. Your conveyancer will check it.",
-      );
+    it('should not name a type below the confidence threshold or when the answer is other', () => {
+      for (const result of [{ ...EPC, confidence: 0.55 }, { ...EPC, docType: 'other', confidence: 0.9 }]) {
+        expect(describeScan(result)).toEqual({
+          tone: 'unknown',
+          headline: "We couldn't tell what this document is.",
+          details: [CONVEYANCER],
+        });
+      }
     });
 
-    it('should not name a type when the answer is other', () => {
-      expect(describeClassification({ ...EPC, docType: 'other', confidence: 0.9 })).toBe(
-        "We couldn't confirm what this document is. Your conveyancer will check it.",
-      );
+    it('should caution when the document probably is not about this property', () => {
+      const scan = describeScan({ ...EPC, matchesProperty: 0.2 });
+      expect(scan.tone).toBe('caution');
+      expect(scan.details[0]).toBe("It doesn't seem to name this property. Check the address on it is yours.");
     });
 
-    it('should add a property warning when the document probably is not about this property', () => {
-      expect(describeClassification({ ...EPC, matchesProperty: 0.2 })).toBe(
-        'Reads as an Energy Performance Certificate. It may not be for this property.',
-      );
-    });
-
-    it('should say which postcode the document gives when the function found a different one', () => {
-      expect(
-        describeClassification({
-          ...EPC,
-          matchesProperty: 0.07,
-          propertyCheck: { expectedPostcode: 'SG19 2LA', foundPostcodes: ['SG19 1AB', 'SG18 0AB'], postcodeMatches: false },
-        }),
-      ).toBe(
-        "Reads as an Energy Performance Certificate. It gives postcode SG19 1AB and SG18 0AB, not this transaction's SG19 2LA.",
+    it('should say which postcode the document gives when it differs from the property', () => {
+      const scan = describeScan({
+        ...EPC,
+        matchesProperty: 0.07,
+        propertyCheck: { expectedPostcode: 'SG19 2LA', foundPostcodes: ['SG19 1AB', 'SG18 0AB'], postcodeMatches: false },
+      });
+      expect(scan.tone).toBe('caution');
+      expect(scan.details[0]).toBe(
+        "It gives postcode SG19 1AB and SG18 0AB, not this property's SG19 2LA. Check it's the right document.",
       );
     });
 
     it('should say the document names no postcode when that is why it could not be tied to the property', () => {
-      expect(
-        describeClassification({
-          ...EPC,
-          matchesProperty: 0.1,
-          propertyCheck: { expectedPostcode: 'SG19 2LA', foundPostcodes: [], postcodeMatches: null },
-        }),
-      ).toBe("Reads as an Energy Performance Certificate. It names no postcode, so we couldn't tie it to this property.");
+      const scan = describeScan({
+        ...EPC,
+        matchesProperty: 0.1,
+        propertyCheck: { expectedPostcode: 'SG19 2LA', foundPostcodes: [], postcodeMatches: null },
+      });
+      expect(scan.tone).toBe('caution');
+      expect(scan.details[0]).toMatch(/^It names no postcode/);
     });
 
-    it('should add no property caveat when the postcode matches even if the probability is low', () => {
-      expect(
-        describeClassification({
-          ...EPC,
-          matchesProperty: 0.3,
-          propertyCheck: { expectedPostcode: 'SG19 2LA', foundPostcodes: ['SG19 2LA'], postcodeMatches: true },
-        }),
-      ).toBe('Reads as an Energy Performance Certificate. It may not be for this property.');
+    it('should trust a matching postcode over a low probability', () => {
+      const scan = describeScan({
+        ...EPC,
+        matchesProperty: 0.3,
+        propertyCheck: { expectedPostcode: 'SG19 2LA', foundPostcodes: ['SG19 2LA'], postcodeMatches: true },
+      });
+      expect(scan.tone).toBe('ok');
+      expect(scan.details[0]).toBe("It gives this property's postcode, SG19 2LA.");
     });
 
-    it('should add a date warning when the document is out of date', () => {
-      expect(describeClassification({ ...EPC, inDate: false })).toBe(
-        'Reads as an Energy Performance Certificate. It looks out of date.',
-      );
+    it('should caution when the document is out of date', () => {
+      const scan = describeScan({ ...EPC, inDate: false });
+      expect(scan.tone).toBe('caution');
+      expect(scan.details).toContain('It looks out of date, so you may need a newer one.');
     });
 
-    it('should add nothing when the property match and date are unknown', () => {
-      expect(describeClassification({ ...EPC, matchesProperty: null, inDate: null })).toBe(
-        'Reads as an Energy Performance Certificate.',
-      );
+    it('should say nothing about property or date when both are unknown', () => {
+      expect(describeScan({ ...EPC, matchesProperty: null, inDate: null }).details).toEqual([CONVEYANCER]);
     });
 
     it('should name a completed Law Society form', () => {
-      expect(describeClassification({ ...EPC, docType: 'ta6_form' })).toBe('Reads as a completed TA6 form.');
-      expect(describeClassification({ ...EPC, docType: 'ta10_form' })).toBe('Reads as a completed TA10 form.');
-      expect(describeClassification({ ...EPC, docType: 'ta7_form' })).toBe('Reads as a completed TA7 form.');
+      expect(describeScan({ ...EPC, docType: 'ta6_form' }).headline).toBe('This reads as a completed TA6 form.');
+      expect(describeScan({ ...EPC, docType: 'ta10_form' }).headline).toBe('This reads as a completed TA10 form.');
+      expect(describeScan({ ...EPC, docType: 'ta7_form' }).headline).toBe('This reads as a completed TA7 form.');
     });
 
     it('should expose the label with its article for other copy to reuse', () => {
@@ -157,9 +160,7 @@ describe('docClassify.service', () => {
     });
 
     it('should fall back to a plain label for a type it has no wording for', () => {
-      expect(describeClassification({ ...EPC, docType: 'warranty_scheme' })).toBe(
-        'Reads as a warranty scheme.',
-      );
+      expect(describeScan({ ...EPC, docType: 'warranty_scheme' }).headline).toBe('This reads as a warranty scheme.');
     });
   });
 });

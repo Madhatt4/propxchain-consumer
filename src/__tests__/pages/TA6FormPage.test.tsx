@@ -28,7 +28,6 @@ vi.mock('@/services/icp.service', () => ({
 vi.mock('@/components/forms/ta6/widgets/ta6Uploader', () => ({
   makeTa6Uploader: () => async () => ({
     documentId: 'doc-1',
-    advisory: Promise.resolve(null),
     classification: Promise.resolve(null),
   }),
 }));

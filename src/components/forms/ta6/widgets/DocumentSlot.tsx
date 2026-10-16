@@ -1,12 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { AlertTriangle, Paperclip } from 'lucide-react';
+import { AlertTriangle, Loader2, Paperclip } from 'lucide-react';
 
 import { FactSuggestions } from './FactSuggestions';
 import { PromptHeader } from './PromptHeader';
+import { ScanVerdict, type ScanState } from './ScanVerdict';
 import { SegmentedButtons } from './SegmentedButtons';
 import { DOCUMENT_STATUS_LABELS, DOCUMENT_STATUS_OPTIONS } from './types';
 import type { TA6PromptEntry, TA6DocumentStatusChoice } from './types';
 import type { TA6Upload } from './ta6Uploader';
+import { describeScan } from '../../../../services/docClassify.service';
 import type { DocClassification, DocFinding, DocScanContext } from '../../../../services/docClassify.service';
 import type { DocFact } from '../../../../services/documentFacts.service';
 import type { TA6DocumentValue } from '../../../../types/ta6.types';
@@ -19,7 +21,7 @@ export interface DocumentSlotProps {
   value: TA6DocumentValue;
   onChange: (value: TA6DocumentValue) => void;
   readOnly?: boolean;
-  /** Resolves a picked file to its documentId plus an advisory line — wire via makeTa6Uploader. */
+  /** Resolves a picked file to its documentId plus its classification — wire via makeTa6Uploader. */
   onUpload?: (file: File, context?: DocScanContext) => Promise<TA6Upload>;
   /** What the upload was classified as, once known. Advisory: never called for a failed classification. */
   onClassified?: (classification: DocClassification) => void;
@@ -72,12 +74,12 @@ const AttachedControls: React.FC<AttachedControlsProps> = ({
 }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [advisory, setAdvisory] = useState<string | null>(null);
+  const [scan, setScan] = useState<ScanState>({ phase: 'idle' });
   const [findings, setFindings] = useState<DocFinding[]>([]);
   const [facts, setFacts] = useState<DocFact[]>([]);
   const decide = useRef<TA6Upload['decide']>(undefined);
-  // Which pick the pending advisory belongs to: a late answer about an
-  // earlier file must not overwrite the line for the file now attached.
+  // Which pick the pending scan belongs to: a late answer about an earlier
+  // file must not overwrite the verdict for the file now attached.
   const pickSeq = useRef(0);
   // The re-scan handle for the file uploaded in this session, if any. A slot
   // restored from the saved form has none: its stored findings are read by
@@ -96,12 +98,13 @@ const AttachedControls: React.FC<AttachedControlsProps> = ({
     const seq = ++pickSeq.current;
     setIsUploading(true);
     setUploadError(null);
-    setAdvisory(null);
+    setScan({ phase: 'idle' });
     setFindings([]);
     setFacts([]);
     try {
       const upload = scanContext ? await onUpload(file, scanContext) : await onUpload(file);
       latest.current.onUploaded(upload.documentId);
+      setScan({ phase: 'scanning' });
       rescan.current = upload.rescan;
       decide.current = upload.decide;
       upload.facts?.then(
@@ -117,18 +120,19 @@ const AttachedControls: React.FC<AttachedControlsProps> = ({
         },
         () => undefined,
       );
-      // Advisory only: it lands after the id and a failure shows nothing.
-      upload.advisory.then(
-        (line) => {
-          if (pickSeq.current === seq) setAdvisory(line);
-        },
-        () => undefined,
-      );
       upload.classification.then(
         (classification) => {
-          if (classification && pickSeq.current === seq) latest.current.onClassified?.(classification);
+          if (pickSeq.current !== seq) return;
+          if (!classification) {
+            setScan({ phase: 'failed' });
+            return;
+          }
+          setScan({ phase: 'done', summary: describeScan(classification) });
+          latest.current.onClassified?.(classification);
         },
-        () => undefined,
+        () => {
+          if (pickSeq.current === seq) setScan({ phase: 'failed' });
+        },
       );
     } catch (err) {
       setUploadError(err instanceof Error ? err.message : 'Upload failed');
@@ -182,12 +186,13 @@ const AttachedControls: React.FC<AttachedControlsProps> = ({
         </label>
       )}
       {isUploading && (
-        <span className="text-sm font-medium text-teal-600 dark:text-teal-400">Uploading...</span>
+        <span className="inline-flex items-center gap-1.5 text-sm font-medium text-teal-600 dark:text-teal-400">
+          <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+          Uploading...
+        </span>
       )}
       {uploadError && <span className="text-sm text-red-600">{uploadError}</span>}
-      {advisory && (
-        <span className="basis-full text-xs text-gray-500 dark:text-slate-400">{advisory}</span>
-      )}
+      <ScanVerdict refCode={refCode} state={scan} />
       <FindingsList refCode={refCode} findings={findings} />
       {!readOnly && decide.current && (
         <FactSuggestions refCode={refCode} facts={facts} decide={decide.current} />

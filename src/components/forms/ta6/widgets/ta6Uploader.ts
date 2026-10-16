@@ -14,7 +14,7 @@
 
 import { supabase } from '../../../../lib/supabase';
 import { onChainFileName, storageObjectName } from '../../../../lib/onChainDocument';
-import { classifyDocument, describeClassification } from '../../../../services/docClassify.service';
+import { classifyDocument } from '../../../../services/docClassify.service';
 import type { DocClassification, DocFinding, DocScanContext } from '../../../../services/docClassify.service';
 import { decideFact } from '../../../../services/documentFacts.service';
 import type { DocFact, FactDecision, FactDecisionResult } from '../../../../services/documentFacts.service';
@@ -33,12 +33,10 @@ export interface TA6Upload {
   /** The document_storage documentId (stringified Nat) that TA6DocumentValue.documentId stores. */
   documentId: string;
   /**
-   * The quiet advisory line about what was uploaded, settled after the id so
-   * "Document attached" never waits on it. Null when classification is
-   * unavailable; the slot then shows nothing extra.
+   * What was uploaded, settled after the id so "Document attached" never
+   * waits on it. Null when classification is unavailable; the slot then says
+   * the automatic check could not run. 5.2 also prefills its kind from it.
    */
-  advisory: Promise<string | null>;
-  /** The classification behind the line, for a slot that can act on it (5.2 prefills its kind). */
   classification: Promise<DocClassification | null>;
   /**
    * The consents scan's findings for a slot that sent a context: the list for
@@ -84,14 +82,13 @@ export function makeTa6Uploader(
     icpService.emitDocumentUploadedEvent(transactionId, TA6_ATTACHMENT_DOC_TYPE, fileHash);
     // classifyDocument never rejects: every failure is a null.
     const classification = classifyDocument(transactionId, path, context);
-    const advisory = classification.then((c) => (c ? describeClassification(c) : null));
     const findings = classification.then(findingsOf);
     const rescan = (next: DocScanContext): Promise<DocFinding[] | null> =>
       classifyDocument(transactionId, path, next).then(findingsOf);
     const facts = classification.then((c) => c?.facts ?? []);
     const decide = (factId: string, decision: FactDecision): Promise<FactDecisionResult> =>
       decideFact(transactionId, factId, decision);
-    return { documentId, advisory, classification, findings, rescan, facts, decide };
+    return { documentId, classification, findings, rescan, facts, decide };
   };
 }
 

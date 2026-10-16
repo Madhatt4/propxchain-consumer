@@ -10,6 +10,7 @@ import { DocumentSlot } from '../widgets/DocumentSlot';
 import { SectionCard } from '../widgets/SectionCard';
 import { OptionalTextField } from '../widgets/TextFields';
 import type { TA6PromptEntry } from '../widgets/types';
+import type { DocClassification } from '../../../../services/docClassify.service';
 
 // Shape matches the ADR 0009 paraphrase bundle (src/lib/ta6-prompts).
 const prompt: TA6PromptEntry = {
@@ -178,7 +179,6 @@ describe('DocumentSlot', () => {
     const onChange = vi.fn();
     const onUpload = vi.fn().mockResolvedValue({
       documentId: '99',
-      advisory: Promise.resolve(null),
       classification: Promise.resolve(null),
     });
     render(
@@ -202,13 +202,40 @@ describe('DocumentSlot', () => {
     expect(onUpload).toHaveBeenCalledWith(file);
   });
 
-  it('should show the advisory line once the classification resolves', async () => {
-    // Arrange
-    const onUpload = vi.fn().mockResolvedValue({
-      documentId: '99',
-      advisory: Promise.resolve('Reads as an Energy Performance Certificate.'),
-      classification: Promise.resolve(null),
+  it('should show a checking spinner while the scan runs, then the verdict card', async () => {
+    // Arrange: the scan settles only when the test says so.
+    let settle: (c: DocClassification | null) => void = () => {};
+    const classification = new Promise<DocClassification | null>((resolve) => {
+      settle = resolve;
     });
+    const onUpload = vi.fn().mockResolvedValue({ documentId: '99', classification });
+    render(
+      <DocumentSlot
+        refCode="4.2"
+        prompt={prompt}
+        value={{ status: 'attached', documentId: null }}
+        onChange={() => {}}
+        onUpload={onUpload}
+      />,
+    );
+    const file = new File(['pdf-bytes'], 'epc.pdf', { type: 'application/pdf' });
+
+    // Act
+    fireEvent.change(screen.getByLabelText('4.2 attachment'), { target: { files: [file] } });
+
+    // Assert: checking first, then the verdict replaces it.
+    await waitFor(() => expect(screen.getByText(/Checking your document/)).toBeInTheDocument());
+    settle({ docType: 'epc', confidence: 0.97, inDate: false, matchesProperty: 0.9, unreadable: false });
+    await waitFor(() =>
+      expect(screen.getByText('This reads as an Energy Performance Certificate.')).toBeInTheDocument(),
+    );
+    expect(screen.getByText('It looks out of date, so you may need a newer one.')).toBeInTheDocument();
+    expect(screen.queryByText(/Checking your document/)).not.toBeInTheDocument();
+  });
+
+  it('should say the automatic check could not run when classification is unavailable', async () => {
+    // Arrange
+    const onUpload = vi.fn().mockResolvedValue({ documentId: '99', classification: Promise.resolve(null) });
     render(
       <DocumentSlot
         refCode="4.2"
@@ -225,53 +252,22 @@ describe('DocumentSlot', () => {
 
     // Assert
     await waitFor(() =>
-      expect(screen.getByText('Reads as an Energy Performance Certificate.')).toBeInTheDocument(),
+      expect(screen.getByText("We couldn't check this document automatically.")).toBeInTheDocument(),
     );
+    expect(screen.queryByText(/Checking your document/)).not.toBeInTheDocument();
   });
 
-  it('should show nothing extra when the advisory is null', async () => {
-    // Arrange
-    const onChange = vi.fn();
-    const onUpload = vi.fn().mockResolvedValue({
-      documentId: '99',
-      advisory: Promise.resolve(null),
-      classification: Promise.resolve(null),
+  it('should ignore a late scan from an earlier upload once a newer file is picked', async () => {
+    // Arrange: file A's scan settles after file B's.
+    let settleA: (c: DocClassification | null) => void = () => {};
+    const scanA = new Promise<DocClassification | null>((resolve) => {
+      settleA = resolve;
     });
-    render(
-      <DocumentSlot
-        refCode="4.2"
-        prompt={prompt}
-        value={{ status: 'attached', documentId: null }}
-        onChange={onChange}
-        onUpload={onUpload}
-      />,
-    );
-    const file = new File(['pdf-bytes'], 'epc.pdf', { type: 'application/pdf' });
-
-    // Act
-    fireEvent.change(screen.getByLabelText('4.2 attachment'), { target: { files: [file] } });
-
-    // Assert
-    await waitFor(() =>
-      expect(onChange).toHaveBeenCalledWith({ status: 'attached', documentId: '99' }),
-    );
-    expect(screen.queryByText(/Reads as|conveyancer will check/)).not.toBeInTheDocument();
-  });
-
-  it('should ignore a late advisory from an earlier upload once a newer file is picked', async () => {
-    // Arrange: file A's advisory settles after file B's.
-    let resolveA: (line: string | null) => void = () => {};
-    const advisoryA = new Promise<string | null>((resolve) => {
-      resolveA = resolve;
-    });
+    const lease: DocClassification = { docType: 'lease', confidence: 0.9, inDate: null, matchesProperty: 0.9, unreadable: false };
     const onUpload = vi
       .fn()
-      .mockResolvedValueOnce({ documentId: '1', advisory: advisoryA, classification: Promise.resolve(null) })
-      .mockResolvedValueOnce({
-        documentId: '2',
-        advisory: Promise.resolve('Reads as a lease.'),
-        classification: Promise.resolve(null),
-      });
+      .mockResolvedValueOnce({ documentId: '1', classification: scanA })
+      .mockResolvedValueOnce({ documentId: '2', classification: Promise.resolve(lease) });
     render(
       <DocumentSlot
         refCode="4.2"
@@ -287,13 +283,13 @@ describe('DocumentSlot', () => {
     fireEvent.change(input, { target: { files: [new File(['a'], 'a.pdf')] } });
     await waitFor(() => expect(screen.queryByText('Uploading...')).not.toBeInTheDocument());
     fireEvent.change(input, { target: { files: [new File(['b'], 'b.pdf')] } });
-    await waitFor(() => expect(screen.getByText('Reads as a lease.')).toBeInTheDocument());
-    resolveA('Reads as an Energy Performance Certificate.');
+    await waitFor(() => expect(screen.getByText('This reads as a lease.')).toBeInTheDocument());
+    settleA({ docType: 'epc', confidence: 0.97, inDate: true, matchesProperty: 0.9, unreadable: false });
 
-    // Assert: B's line survives A's late answer.
+    // Assert: B's verdict survives A's late answer.
     await waitFor(() => expect(onUpload).toHaveBeenCalledTimes(2));
-    expect(screen.getByText('Reads as a lease.')).toBeInTheDocument();
-    expect(screen.queryByText('Reads as an Energy Performance Certificate.')).not.toBeInTheDocument();
+    expect(screen.getByText('This reads as a lease.')).toBeInTheDocument();
+    expect(screen.queryByText('This reads as an Energy Performance Certificate.')).not.toBeInTheDocument();
   });
 
   it('should hand the settled classification to onClassified', async () => {
@@ -302,7 +298,6 @@ describe('DocumentSlot', () => {
     const onClassified = vi.fn();
     const onUpload = vi.fn().mockResolvedValue({
       documentId: '99',
-      advisory: Promise.resolve('Reads as an Energy Performance Certificate.'),
       classification: Promise.resolve(classification),
     });
     render(

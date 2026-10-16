@@ -27,7 +27,6 @@ function classified(docType: string, confidence = 0.9): DocClassification {
 function uploader(classification: DocClassification | null) {
   return vi.fn().mockResolvedValue({
     documentId: '9',
-    advisory: Promise.resolve(null),
     classification: Promise.resolve(classification),
   });
 }

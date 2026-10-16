@@ -14,7 +14,6 @@ const CONFIRM_PASSED = 'Confirm: Every gas appliance passed';
 function upload(facts: DocFact[], decide: TA6Upload['decide']): TA6Upload {
   return {
     documentId: '42',
-    advisory: Promise.resolve(null),
     classification: Promise.resolve(null),
     facts: Promise.resolve(facts),
     decide,

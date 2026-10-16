@@ -15,7 +15,6 @@ const CONDITIONS: DocFinding = { key: 'conditions_outstanding', label: 'Carries 
 function upload(findings: DocFinding[] | null, rescan?: TA6Upload['rescan']): TA6Upload {
   return {
     documentId: '99',
-    advisory: Promise.resolve(null),
     classification: Promise.resolve(null),
     findings: Promise.resolve(findings),
     rescan,

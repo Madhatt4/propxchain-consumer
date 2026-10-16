@@ -5,8 +5,8 @@ import type { TA6Upload } from './widgets/ta6Uploader';
 import type { DocScanContext } from '../../../services/docClassify.service';
 
 /**
- * Resolves a picked file to its document_storage documentId plus an advisory
- * line (DocumentSlot uploads). A 5.2 or 6.1 slot also passes its context so
+ * Resolves a picked file to its document_storage documentId plus its
+ * classification (DocumentSlot uploads). A 5.2 or 6.1 slot also passes its context so
  * the consents scan runs on the upload.
  */
 export type TA6UploadFile = (file: File, context?: DocScanContext) => Promise<TA6Upload>;

@@ -60,13 +60,12 @@ describe('makeTa6Uploader', () => {
     });
   });
 
-  it('should return the document id and an advisory line for the upload', async () => {
+  it('should return the document id and the classification of the upload', async () => {
     const upload = makeTa6Uploader('tx_1');
 
     const result = await upload(file);
 
     expect(result.documentId).toBe('7');
-    expect(await result.advisory).toBe('Reads as an Energy Performance Certificate.');
     expect(await result.classification).toEqual({
       docType: 'epc',
       confidence: 0.97,
@@ -131,14 +130,13 @@ describe('makeTa6Uploader', () => {
     expect(found).toEqual([]);
   });
 
-  it('should resolve the advisory to null when classification is unavailable', async () => {
+  it('should still return the document id when classification is unavailable', async () => {
     mockClassify.mockResolvedValue(null);
     const upload = makeTa6Uploader('tx_1');
 
     const result = await upload(file);
 
     expect(result.documentId).toBe('7');
-    expect(await result.advisory).toBeNull();
     expect(await result.classification).toBeNull();
   });
 
