@@ -8,6 +8,7 @@ import { SegmentedButtons } from './SegmentedButtons';
 import { DOCUMENT_STATUS_LABELS, DOCUMENT_STATUS_OPTIONS } from './types';
 import type { TA6PromptEntry, TA6DocumentStatusChoice } from './types';
 import type { TA6Upload } from './ta6Uploader';
+import { SLOT_EXPECTATIONS } from '../slotExpectations';
 import { describeScan } from '../../../../services/docClassify.service';
 import type { DocClassification, DocFinding, DocScanContext } from '../../../../services/docClassify.service';
 import type { DocFact } from '../../../../services/documentFacts.service';
@@ -127,7 +128,7 @@ const AttachedControls: React.FC<AttachedControlsProps> = ({
             setScan({ phase: 'failed' });
             return;
           }
-          setScan({ phase: 'done', summary: describeScan(classification) });
+          setScan({ phase: 'done', summary: describeScan(classification, SLOT_EXPECTATIONS[refCode]) });
           latest.current.onClassified?.(classification);
         },
         () => {

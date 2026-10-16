@@ -257,6 +257,29 @@ describe('DocumentSlot', () => {
     expect(screen.queryByText(/Checking your document/)).not.toBeInTheDocument();
   });
 
+  it('should point out an electrical report attached to the heating question', async () => {
+    // Arrange: Marc's 16 Oct upload, an EICR in 11.4.
+    const eicr: DocClassification = { docType: 'eicr', confidence: 0.95, inDate: true, matchesProperty: 0.9, unreadable: false };
+    const onUpload = vi.fn().mockResolvedValue({ documentId: '42', classification: Promise.resolve(eicr) });
+    render(
+      <DocumentSlot
+        refCode="11.4.doc"
+        prompt={prompt}
+        value={{ status: 'attached', documentId: null }}
+        onChange={() => {}}
+        onUpload={onUpload}
+      />,
+    );
+
+    // Act
+    fireEvent.change(screen.getByLabelText('11.4.doc attachment'), { target: { files: [new File(['x'], 'eicr.png')] } });
+
+    // Assert
+    await waitFor(() =>
+      expect(screen.getByText(/This question asks for the heating installation certificate/)).toBeInTheDocument(),
+    );
+  });
+
   it('should ignore a late scan from an earlier upload once a newer file is picked', async () => {
     // Arrange: file A's scan settles after file B's.
     let settleA: (c: DocClassification | null) => void = () => {};

@@ -95,8 +95,9 @@ export type DocFindingKey =
 
 export interface DocPropertyCheck {
   expectedPostcode: string | null;
+  /** The postcodes read off a PDF. For a photo, only this property's when Jev saw it: Jev compares, it does not read another out. */
   foundPostcodes: string[];
-  /** True when the transaction's postcode is in the document, false when others are and it is not, null when either side is empty. */
+  /** True when the transaction's postcode is the document's, false when the document gives another, null when either side is empty or unclear. */
   postcodeMatches: boolean | null;
 }
 
@@ -241,6 +242,14 @@ export interface ScanSummary {
   details: string[];
 }
 
+/** What a TA6 question asks to have attached, so a document attached to the wrong question can be pointed out. */
+export interface SlotExpectation {
+  /** The doc-classify types that answer the question. Anything outside the list is only remarked on when confidently typed. */
+  docTypes: readonly string[];
+  /** What the question asks for, worded to follow "This question asks for". */
+  asksFor: string;
+}
+
 /** What the scan says about whose property this is, and whether that needs the seller's attention. */
 function propertyLine(result: DocClassification): { text: string; caution: boolean } | null {
   const check = result.propertyCheck;
@@ -248,11 +257,11 @@ function propertyLine(result: DocClassification): { text: string; caution: boole
     return { text: `It gives this property's postcode, ${check.expectedPostcode}.`, caution: false };
   }
   if (check?.postcodeMatches === false && check.expectedPostcode) {
-    const found = check.foundPostcodes.join(' and ');
-    return {
-      text: `It gives postcode ${found}, not this property's ${check.expectedPostcode}. Check it's the right document.`,
-      caution: true,
-    };
+    // A photo's check says the postcode differs without reading it out.
+    const text = check.foundPostcodes.length > 0
+      ? `It gives postcode ${check.foundPostcodes.join(' and ')}, not this property's ${check.expectedPostcode}.`
+      : `It shows a different postcode from this property's ${check.expectedPostcode}.`;
+    return { text: `${text} Check it's the right document.`, caution: true };
   }
   if (result.matchesProperty === null) return null;
   if (result.matchesProperty >= MATCHES_PROPERTY_AT) {
@@ -267,8 +276,12 @@ function propertyLine(result: DocClassification): { text: string; caution: boole
   return { text: "It doesn't seem to name this property. Check the address on it is yours.", caution: true };
 }
 
-/** The verdict card for one scanned upload. */
-export function describeScan(result: DocClassification): ScanSummary {
+/**
+ * The verdict card for one scanned upload. `expects` is what the slot asks
+ * for; a confidently typed document that is not one of those gets a line
+ * saying so, since the right paperwork on the wrong question helps no one.
+ */
+export function describeScan(result: DocClassification, expects?: SlotExpectation): ScanSummary {
   if (result.unreadable) {
     return {
       tone: 'unknown',
@@ -285,6 +298,10 @@ export function describeScan(result: DocClassification): ScanSummary {
 
   const details: string[] = [];
   let caution = false;
+  if (expects && !expects.docTypes.includes(result.docType)) {
+    details.push(`This question asks for ${expects.asksFor}. Did you mean to attach it to a different question?`);
+    caution = true;
+  }
   const property = propertyLine(result);
   if (property) {
     details.push(property.text);

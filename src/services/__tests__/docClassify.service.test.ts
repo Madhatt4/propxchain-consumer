@@ -162,5 +162,38 @@ describe('docClassify.service', () => {
     it('should fall back to a plain label for a type it has no wording for', () => {
       expect(describeScan({ ...EPC, docType: 'warranty_scheme' }).headline).toBe('This reads as a warranty scheme.');
     });
+
+    it('should say when a photo shows a different postcode it could not read out', () => {
+      const scan = describeScan({
+        ...EPC,
+        matchesProperty: 0.1,
+        propertyCheck: { expectedPostcode: 'SG19 2TR', foundPostcodes: [], postcodeMatches: false },
+      });
+      expect(scan.tone).toBe('caution');
+      expect(scan.details[0]).toBe("It shows a different postcode from this property's SG19 2TR. Check it's the right document.");
+    });
+
+    describe('with what the question asks for', () => {
+      const HEATING = { docTypes: ['gas_safety', 'building_regs_certificate'], asksFor: 'the heating installation certificate' };
+
+      it('should point out a document that answers a different question, first', () => {
+        const scan = describeScan({ ...EPC, docType: 'eicr' }, HEATING);
+        expect(scan.tone).toBe('caution');
+        expect(scan.details[0]).toBe(
+          'This question asks for the heating installation certificate. Did you mean to attach it to a different question?',
+        );
+      });
+
+      it('should say nothing about the question when the document answers it', () => {
+        const scan = describeScan({ ...EPC, docType: 'gas_safety' }, HEATING);
+        expect(scan.tone).toBe('ok');
+        expect(scan.details.some((line) => line.startsWith('This question asks for'))).toBe(false);
+      });
+
+      it('should not second-guess a document it could not type', () => {
+        const scan = describeScan({ ...EPC, docType: 'other', confidence: 0.9 }, HEATING);
+        expect(scan.details.some((line) => line.startsWith('This question asks for'))).toBe(false);
+      });
+    });
   });
 });
