@@ -104,7 +104,7 @@ describe('vaultDocumentService.storeDocument', () => {
     expect(args[6]).toBe('proofOfId');
     expect(mockUpload).toHaveBeenCalledWith(
       'wallet/uid-1/proofOfId-aaaaaaaaaaaa.pdf',
-      file,
+      expect.any(ArrayBuffer),
       { contentType: 'application/pdf', upsert: false },
     );
     expect(doc).toEqual(docFromRow());
@@ -230,7 +230,7 @@ describe('vaultDocumentService.importAnchored', () => {
   it('should upload + insert without calling the canister', async () => {
     mockFrom.mockReturnValueOnce(chain({ data: row, error: null }));
     const doc = await vaultDocumentService.importAnchored({
-      blob: new Blob(['x']),
+      blob: new Blob([new Uint8Array([37, 80, 68, 70])]),
       slotId: 'proofOfId',
       fileHash: 'a'.repeat(64),
       blockchainId: 7,
@@ -240,9 +240,11 @@ describe('vaultDocumentService.importAnchored', () => {
     expect(registerDocumentProof).not.toHaveBeenCalled();
     expect(mockUpload).toHaveBeenCalledWith(
       'wallet/uid-1/proofOfId-aaaaaaaaaaaa.pdf',
-      expect.any(Blob),
+      expect.any(ArrayBuffer),
       { contentType: 'application/pdf', upsert: false },
     );
+    // The bytes, not the Blob: supabase-js sends a Blob as multipart, which iOS Safari dropped.
+    expect(Array.from(new Uint8Array(mockUpload.mock.calls[0][1]))).toEqual([37, 80, 68, 70]);
     expect(doc.id).toBe('row-1');
   });
 });
