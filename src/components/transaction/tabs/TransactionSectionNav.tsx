@@ -21,13 +21,18 @@
  * The list is generated from TRANSACTION_TABS, so the registry stays the one
  * place a section is declared. Blockchain audit sits at the foot of both menu
  * and drawer: it is a route of its own rather than a section, so it renders as
- * a link and never takes the active state.
+ * a link and never takes the active state. The menu itself is the shared
+ * navigation/SectionMenu.
  */
 import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Link } from 'react-router-dom';
 import { Menu, ShieldCheck, X } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import {
+  SectionMenu,
+  SectionMenuHeading,
+  SectionMenuList,
+  type SectionMenuFooterLink,
+} from '@/components/navigation/SectionMenu';
 import { TRANSACTION_NAV_SLOT_ID } from '../flow/TopBar';
 import { TRANSACTION_TABS } from './transactionTabs.config';
 
@@ -42,80 +47,26 @@ export interface TransactionSectionNavProps {
 
 type SectionListProps = Omit<TransactionSectionNavProps, 'isDesktop'>;
 
-/** One metric for menu and drawer alike: 44px clears the touch-target floor in
- *  the drawer, and reads as a comfortable dashboard row in the menu. */
-const ITEM =
-  'flex min-h-[44px] w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[13px] font-semibold transition-colors';
-
-const ITEM_IDLE =
-  'text-gray-600 hover:bg-teal-500/[0.06] hover:text-teal-700 dark:text-slate-300 dark:hover:text-teal-300';
-
-const ITEM_ACTIVE =
-  'bg-gradient-to-r from-teal-500/15 to-teal-500/[0.04] text-teal-700 shadow-[inset_3px_0_0_0_#0d9488] dark:text-teal-300';
-
-const ICON = 'h-4 w-4 shrink-0';
-
-/** The sections themselves, plus the audit link, shared by menu and drawer. */
-function SectionList({
-  activeId,
-  select,
-  transactionId,
-}: SectionListProps): JSX.Element {
-  return (
-    <>
-      {TRANSACTION_TABS.map((tab) => {
-        const Icon = tab.icon;
-        const isActive = tab.id === activeId;
-        return (
-          <button
-            key={tab.id}
-            type="button"
-            aria-current={isActive ? 'true' : undefined}
-            aria-label={`Open ${tab.label}`}
-            onClick={() => select(tab.id)}
-            className={cn(ITEM, isActive ? ITEM_ACTIVE : ITEM_IDLE)}
-          >
-            <Icon
-              className={cn(
-                ICON,
-                isActive ? 'text-teal-600 dark:text-teal-400' : 'text-gray-400 dark:text-slate-500',
-              )}
-            />
-            {tab.label}
-          </button>
-        );
-      })}
-
-      {/* Foot of the list in the drawer. In the auto-height menu mt-auto has no
-          free space to push against, so it simply follows the last section. */}
-      {transactionId ? (
-        <div className="mt-auto border-t border-gray-200 pt-2 dark:border-slate-700/40">
-          <Link
-            to={`/transaction/${transactionId}/audit`}
-            className={cn(ITEM, ITEM_IDLE)}
-            aria-label="View the blockchain audit trail"
-          >
-            <ShieldCheck className={cn(ICON, 'text-gray-400 dark:text-slate-500')} />
-            Blockchain audit
-          </Link>
-        </div>
-      ) : null}
-    </>
-  );
+function auditLink(transactionId: string): SectionMenuFooterLink | undefined {
+  return transactionId
+    ? {
+        to: `/transaction/${transactionId}/audit`,
+        label: 'Blockchain audit',
+        ariaLabel: 'View the blockchain audit trail',
+        icon: ShieldCheck,
+      }
+    : undefined;
 }
 
-/** Persistent left menu, lg and up. */
-function SideMenu(props: SectionListProps): JSX.Element {
+/** The sections themselves, plus the audit link, shared by menu and drawer. */
+function SectionList({ activeId, select, transactionId }: SectionListProps): JSX.Element {
   return (
-    <nav
-      aria-label="Transaction sections"
-      className="sticky top-[96px] hidden w-[232px] shrink-0 flex-col gap-1 self-start rounded-2xl border border-gray-200 bg-white p-2.5 shadow-sm dark:border-slate-700/40 dark:bg-white/[0.03] lg:flex"
-    >
-      <p className="px-3 pb-1.5 pt-1 text-[9px] font-bold uppercase tracking-[0.15em] text-gray-400 dark:text-slate-500">
-        Transaction
-      </p>
-      <SectionList {...props} />
-    </nav>
+    <SectionMenuList
+      items={TRANSACTION_TABS}
+      activeId={activeId}
+      onSelect={select}
+      footerLink={auditLink(transactionId)}
+    />
   );
 }
 
@@ -152,9 +103,7 @@ function SectionDrawer({
         className="fixed left-0 top-0 z-50 flex h-full w-72 flex-col gap-1 overflow-y-auto bg-white p-4 shadow-lg dark:bg-[#0b1226]"
       >
         <div className="mb-2 flex items-center justify-between">
-          <p className="px-2 text-[9px] font-bold uppercase tracking-[0.15em] text-gray-400 dark:text-slate-500">
-            Transaction
-          </p>
+          <SectionMenuHeading className="px-2">Transaction</SectionMenuHeading>
           <button
             type="button"
             onClick={onClose}
@@ -214,7 +163,14 @@ export function TransactionSectionNav({
 
   return (
     <>
-      <SideMenu {...listProps} />
+      <SectionMenu
+        heading="Transaction"
+        ariaLabel="Transaction sections"
+        items={TRANSACTION_TABS}
+        activeId={listProps.activeId}
+        onSelect={listProps.select}
+        footerLink={auditLink(listProps.transactionId)}
+      />
       {slot && createPortal(opener, slot)}
       {isOpen && <SectionDrawer {...listProps} select={choose} onClose={close} />}
     </>
