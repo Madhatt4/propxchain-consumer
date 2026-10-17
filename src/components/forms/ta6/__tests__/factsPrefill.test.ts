@@ -32,7 +32,7 @@ function form(overrides: (f: TA6PropertyInformation) => TA6PropertyInformation =
 
 describe('prefillTa6FromFacts', () => {
   it('should answer a blank 11.3 Yes from a confirmed EICR fact', () => {
-    const result = prefillTa6FromFacts(form(), [fact('eicr.satisfactory')]);
+    const result = prefillTa6FromFacts(form(), [fact('eicr.satisfactory')], EDITED);
 
     expect(result.form.section11.q11_3Eicr).toBe('yes');
     expect(result.suggested).toEqual([SUGGESTED_EICR]);
@@ -41,14 +41,14 @@ describe('prefillTa6FromFacts', () => {
   it('should never change an 11.3 the seller already answered', () => {
     const answered = form((f) => ({ ...f, section11: { ...f.section11, q11_3Eicr: 'no' } }));
 
-    const result = prefillTa6FromFacts(answered, [fact('eicr.in_date')]);
+    const result = prefillTa6FromFacts(answered, [fact('eicr.in_date')], EDITED);
 
     expect(result.form.section11.q11_3Eicr).toBe('no');
     expect(result.suggested).toEqual([]);
   });
 
   it('should tick replacement windows from a confirmed FENSA certificate when 5.1 is untouched', () => {
-    const result = prefillTa6FromFacts(form(), [fact('fensa.present')]);
+    const result = prefillTa6FromFacts(form(), [fact('fensa.present')], EDITED);
 
     expect(result.form.section5.q5_1Alterations.windowsPost2002).toBe(true);
     expect(result.suggested).toEqual([SUGGESTED_WINDOWS]);
@@ -60,16 +60,25 @@ describe('prefillTa6FromFacts', () => {
       section5: { ...f.section5, q5_1Alterations: { ...f.section5.q5_1Alterations, extension: true } },
     }));
 
-    const result = prefillTa6FromFacts(touched, [fact('fensa.present')]);
+    const result = prefillTa6FromFacts(touched, [fact('fensa.present')], EDITED);
 
     expect(result.form.section5.q5_1Alterations.windowsPost2002).toBe(false);
     expect(result.suggested).toEqual([]);
   });
 
-  it('should ignore a fact confirmed before the seller last edited the form, so an untick sticks', () => {
-    const result = prefillTa6FromFacts(form(), [fact('eicr.in_date', { decidedAt: BEFORE })]);
+  it('should ignore a fact confirmed before the form was last saved, so an untick sticks', () => {
+    const result = prefillTa6FromFacts(form(), [fact('eicr.in_date', { decidedAt: BEFORE })], EDITED);
 
     expect(result.form.section11.q11_3Eicr).toBe('not-answered');
+  });
+
+  it('should use every confirmed fact on a form that has never been saved', () => {
+    // A fresh form's lastModifiedAt is the moment the page opened; it must not hide earlier confirmations.
+    const fresh = { ...emptyTA6Form(), lastModifiedAt: new Date().toISOString() };
+
+    const result = prefillTa6FromFacts(fresh, [fact('eicr.in_date', { decidedAt: BEFORE })], null);
+
+    expect(result.form.section11.q11_3Eicr).toBe('yes');
   });
 
   it('should ignore suggestions the seller has not confirmed, and gas and EPC facts entirely', () => {
@@ -77,7 +86,7 @@ describe('prefillTa6FromFacts', () => {
       fact('eicr.in_date', { status: 'suggested', decidedAt: null }),
       fact('gas_safety.passed'),
       fact('epc.band', { value: 'C' }),
-    ]);
+    ], EDITED);
 
     expect(result.suggested).toEqual([]);
     expect(result.form).toEqual(form());
