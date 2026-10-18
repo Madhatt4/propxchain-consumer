@@ -38,7 +38,7 @@
     <!-- Canonical -->
     <link rel="canonical" href="https://propxchain.com/" />
     
-    <title>PropXchain: Sell or Buy Your Home Online Free · UK Conveyancing</title>
+    <title>PropXchain: Sell or Buy Your Home Online, Free to Use</title>
 
     <!-- Fonts are loaded non-render-blocking: fetch via media="print" then flip
          to all on load. Every family ships display=swap, so text paints
@@ -310,8 +310,10 @@
         #seo-fallback p,#seo-fallback li{margin:.35rem 0}
         #seo-fallback ul{padding-left:1.25rem}
         #seo-fallback .muted{color:#64748b;font-size:.9rem}
+        #seo-site-nav{display:none;font-family:system-ui,-apple-system,sans-serif;max-width:72ch;margin:0 auto 4rem;padding:0 1.5rem}
+        #seo-site-nav ul{list-style:none;padding:0;display:flex;flex-wrap:wrap;gap:.5rem 1.25rem}
       </style>
-      <noscript><style>#seo-fallback{display:block!important}</style></noscript>
+      <noscript><style>#seo-fallback,#seo-site-nav{display:block!important}</style></noscript>
       <main id="seo-fallback" role="main" aria-label="Loading PropXchain. Summary for assistive technology and search crawlers">
         <p class="muted">Loading PropXchain…</p>
         <h1>Sell or buy your home on PropXchain. Free to use.</h1>
@@ -413,6 +415,24 @@
           <p><strong>JavaScript is required to use the PropXchain app.</strong> Please enable JavaScript in your browser. The content above is a summary of what the app provides.</p>
         </noscript>
       </main>
+      <!-- Site-wide links for non-JS crawlers. Sits outside <main> so the
+           prerender scripts carry it unchanged onto every prerendered route. -->
+      <nav id="seo-site-nav" aria-label="PropXchain site">
+        <ul>
+          <li><a href="/">Home</a></li>
+          <li><a href="/how-it-works">How it works</a></li>
+          <li><a href="/features">Features</a></li>
+          <li><a href="/pricing">Pricing</a></li>
+          <li><a href="/sell-my-house">Sell my house</a></li>
+          <li><a href="/find-a-conveyancer">Find a conveyancer</a></li>
+          <li><a href="/resources">Help &amp; Support guides</a></li>
+          <li><a href="/faq">FAQ</a></li>
+          <li><a href="/about">About</a></li>
+          <li><a href="/news/">News &amp; Press</a></li>
+          <li><a href="/agent">Connect your AI assistant</a></li>
+          <li><a href="/support">Support</a></li>
+        </ul>
+      </nav>
     </div>
     <script>
       // Clear stale service workers from old deployments that cache outdated content

@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Connect PropXchain to Claude, ChatGPT or any AI assistant (MCP)</title>
+    <title>Connect PropXchain to Claude, ChatGPT or Any AI (MCP)</title>
     <meta
       name="description"
       content="PropXchain has a hosted MCP server at https://mcp.propxchain.com/mcp. Add it as a custom connector in Claude, ChatGPT, Cursor or any MCP client."
@@ -69,7 +69,7 @@
         letter-spacing: -0.01em;
         margin: 56px 0 16px;
       }
-      h3 {
+      .step h2 {
         font-family: "DM Sans", sans-serif;
         font-weight: 600;
         font-size: 15px;
@@ -198,7 +198,7 @@
 
       <div class="step">
         <div class="step-num">Step 1</div>
-        <h3>Add the connector</h3>
+        <h2>Add the connector</h2>
         <p>The PropXchain MCP server URL:</p>
         <div class="copy-block" data-copy><code>https://mcp.propxchain.com/mcp</code></div>
         <ul>
@@ -211,13 +211,13 @@
 
       <div class="step">
         <div class="step-num">Step 2</div>
-        <h3>Approve with your email</h3>
+        <h2>Approve with your email</h2>
         <p>Your AI app opens <strong>auth.propxchain.com</strong>. Enter your PropXchain email and the 6-digit code we send you. The connection lasts 30 days, and you can remove it at any time.</p>
       </div>
 
       <div class="step">
         <div class="step-num">Step 3</div>
-        <h3>Use it on a transaction</h3>
+        <h2>Use it on a transaction</h2>
         <p>Open any of your transactions on <a href="https://propxchain.com">propxchain.com</a> and click <strong>Get AI assistance</strong>. You'll get a prompt with that transaction's invite code to paste into your assistant. It calls <code>propxchain_join_transaction_as_bot</code>, reads the transaction state, and walks you through what's outstanding. Any party can remove the assistant from the transaction's bot panel.</p>
       </div>
 

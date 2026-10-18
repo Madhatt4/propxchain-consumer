@@ -18,8 +18,15 @@ import {
   LLC_MIGRATION,
   SEARCHES_AT_A_GLANCE,
 } from '../src/pages/resources/searchesGuideData.mjs';
+import { CATEGORY_OVERVIEWS } from '../src/pages/resources/categoryOverviews.mjs';
 
 const escHtml = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+/** Pillar-page meta description, shared with the React page via categoryOverviews.mjs. */
+const categoryDescription = (slug) => CATEGORY_OVERVIEWS[slug].metaDescription;
+/** Pillar-page overview paragraphs, shared with the React page via categoryOverviews.mjs. */
+const categoryOverview = (slug) =>
+  CATEGORY_OVERVIEWS[slug].overview.map((p) => `<p>${escHtml(p)}</p>`).join('\n');
 
 const SITE = 'https://propxchain.com';
 const ORG = { '@type': 'Organization', name: 'PropXchain Ltd', url: SITE };
@@ -80,8 +87,8 @@ function withJsonLd(page) {
 export const resourcePages = [
   {
     route: 'resources',
-    title: 'Help & Support — Plain-English Home Moving Guides · PropXchain',
-    description: 'Plain-English guides to selling and buying a home in England and Wales, organised by where you are in the transaction: selling, buying, searches, and where the industry is heading. No jargon, no sales pitch.',
+    title: 'Help & Support — Home Moving Guides · PropXchain',
+    description: 'Plain-English guides to selling and buying a home in England and Wales: selling, buying, searches, and where the industry is heading. No jargon.',
     main: `<main id="seo-fallback" role="main" aria-label="PropXchain Help &amp; Support — hub">
 <p class="muted">Loading PropXchain…</p>
 <h1>Help &amp; Support</h1>
@@ -125,11 +132,12 @@ export const resourcePages = [
   {
     route: 'resources/getting-started',
     title: 'Getting Started Guides · PropXchain',
-    description: 'Registering and signing in, whichever kind of account you need.',
+    description: categoryDescription('getting-started'),
     main: `<main id="seo-fallback" role="main" aria-label="PropXchain Getting Started guides">
 <p class="muted">Loading PropXchain…</p>
 <h1>Getting Started</h1>
 <p>Registering and signing in, whichever kind of account you need.</p>
+${categoryOverview('getting-started')}
   <h2><a href="/resources/getting-started/how-to-sign-in">How to sign in, by account type</a></h2>
   <p>Sellers, buyers, conveyancers, developers and estate agents each register through a different door. What each one asks for, and the three ways to sign back in once you have an account.</p>
 </main>`.replace(
@@ -143,11 +151,12 @@ export const resourcePages = [
   {
     route: 'resources/selling',
     title: 'Selling Guides · PropXchain',
-    description: 'The seller-side journey, from listing to completion.',
+    description: categoryDescription('selling'),
     main: `<main id="seo-fallback" role="main" aria-label="PropXchain Selling guides">
 <p class="muted">Loading PropXchain…</p>
 <h1>Selling</h1>
 <p>The seller-side journey, from listing to completion.</p>
+${categoryOverview('selling')}
   <h2><a href="/resources/selling/what-is-a-property-pack">What is a sales pack?</a></h2>
   <p>Title register, searches, TA6, EPC: the documents every buyer eventually needs, gathered before you list rather than after you accept an offer. The government calls it a sales pack — you may know it as a property pack. Why upfront information sells houses faster, and what actually goes in one.</p>
   <h2><a href="/resources/selling/property-information-forms-explained">TA6, TA10 and TA7 explained</a></h2>
@@ -164,11 +173,12 @@ export const resourcePages = [
   {
     route: 'resources/buying',
     title: 'Buying Guides · PropXchain',
-    description: 'The buyer-side journey, from agreement in principle to keys.',
+    description: categoryDescription('buying'),
     main: `<main id="seo-fallback" role="main" aria-label="PropXchain Buying guides">
 <p class="muted">Loading PropXchain…</p>
 <h1>Buying</h1>
 <p>The buyer-side journey, from agreement in principle to keys.</p>
+${categoryOverview('buying')}
   <h2><a href="/resources/buying/how-long-does-conveyancing-take">How long does conveyancing take?</a></h2>
   <p>A realistic stage-by-stage timeline for England and Wales, the delays that genuinely cost weeks (searches, chains, enquiry ping-pong), and what sellers and buyers can do to shorten the wait.</p>
 </main>`.replace(
@@ -181,11 +191,12 @@ export const resourcePages = [
   {
     route: 'resources/searches-and-legal',
     title: 'Searches & Legal Guides · PropXchain',
-    description: 'The technical middle of the transaction, where most delay happens.',
+    description: categoryDescription('searches-and-legal'),
     main: `<main id="seo-fallback" role="main" aria-label="PropXchain Searches &amp; Legal guides">
 <p class="muted">Loading PropXchain…</p>
 <h1>Searches &amp; Legal</h1>
 <p>The technical middle of the transaction, where most delay happens.</p>
+${categoryOverview('searches-and-legal')}
   <h2><a href="/resources/searches-and-legal/property-searches-explained">Property searches explained</a></h2>
   <p>Local authority, drainage, environmental, coal: the searches a conveyancer orders before you can exchange, what each one actually tells you, why the list changes depending on where the house is, and how long they stay valid.</p>
 </main>`.replace(
@@ -198,11 +209,12 @@ export const resourcePages = [
   {
     route: 'resources/industry-and-reform',
     title: 'Industry & Reform Guides · PropXchain',
-    description: 'Where home moving is heading: data, reform, and upfront information.',
+    description: categoryDescription('industry-and-reform'),
     main: `<main id="seo-fallback" role="main" aria-label="PropXchain Industry &amp; Reform guides">
 <p class="muted">Loading PropXchain…</p>
 <h1>Industry &amp; Reform</h1>
 <p>Where home moving is heading: data, reform, and upfront information.</p>
+${categoryOverview('industry-and-reform')}
   <h2><a href="/resources/industry-and-reform/baspi-explained">BASPI explained</a></h2>
   <p>The Buyer's and Seller's Property Information form is the industry's blueprint for upfront information. What it covers, how it relates to the TA6 and material information rules, and where home moving is heading.</p>
 </main>`.replace(
@@ -219,8 +231,8 @@ export const resourcePages = [
     published: '2026-09-04',
     modified: '2026-09-04',
     crumb: 'How to sign in, by account type',
-    title: 'How to Sign In to PropXchain — Sellers, Buyers, Conveyancers, Developers, Agents · PropXchain',
-    description: 'Sellers, buyers, conveyancers, developers and estate agents each register through a different door. What each one asks for, and the three ways to sign back in once you have an account.',
+    title: 'How to Sign In to PropXchain, by Account Type',
+    description: 'Sellers, buyers, conveyancers, developers and estate agents each register through a different door. What each asks for, and three ways to sign back in.',
     main: `<main id="seo-fallback" role="main" aria-label="How to sign in, by account type — guide">
 <p class="muted">Loading PropXchain…</p>
 <h1>How to sign in, by account type</h1>
@@ -297,8 +309,8 @@ export const resourcePages = [
     published: '2026-06-12',
     modified: '2026-08-14',
     crumb: 'What is a sales pack?',
-    title: 'What Is a Sales Pack? Upfront Property Information Explained · PropXchain',
-    description: 'A sales pack (also called a property pack) gathers the title register, searches, TA6 and EPC before a house is listed, so buyers see the full picture on day one. What goes in one, why upfront information speeds up sales, and how PropXchain assembles yours.',
+    title: 'What Is a Sales Pack or Property Pack? · PropXchain',
+    description: 'A sales pack (or property pack) gathers the title, searches, TA6 and EPC before you list. What goes in one, and why upfront information speeds up a sale.',
     main: `<main id="seo-fallback" role="main" aria-label="What is a sales pack — guide">
 <p class="muted">Loading PropXchain…</p>
 <h1>What is a sales pack?</h1>
@@ -353,8 +365,8 @@ export const resourcePages = [
     published: '2026-06-12',
     modified: '2026-09-27',
     crumb: 'How long does conveyancing take?',
-    title: 'How Long Does Conveyancing Take in England & Wales? 2026 Timeline · PropXchain',
-    description: 'Rightmove puts the average at 167 days from sale agreed to completion. A week-by-week conveyancing timeline for England and Wales, what slows it down, and how to speed it up.',
+    title: 'How Long Does Conveyancing Take? 2026 Timeline · PropXchain',
+    description: 'Rightmove puts the average at 167 days from sale agreed to completion. A week-by-week timeline for England and Wales, and how to speed it up.',
     main: `<main id="seo-fallback" role="main" aria-label="How long does conveyancing take — guide">
 <p class="muted">Loading PropXchain…</p>
 <h1>How long does conveyancing take?</h1>
@@ -461,7 +473,7 @@ export const resourcePages = [
     published: '2026-06-12',
     modified: '2026-06-12',
     crumb: 'BASPI explained',
-    title: 'What Is BASPI? Property Information Form Explained · PropXchain',
+    title: 'What Is BASPI? The Property Form Explained · PropXchain',
     description: 'BASPI in plain English: what the Buyer’s and Seller’s Property Information form asks, how it fits with the TA6, and what it means if you are selling a home.',
     main: `<main id="seo-fallback" role="main" aria-label="BASPI explained — guide">
 <p class="muted">Loading PropXchain…</p>
@@ -520,9 +532,9 @@ export const resourcePages = [
     published: '2026-06-12',
     modified: '2026-09-27',
     crumb: 'Property searches explained',
-    title: 'Property Searches Explained: What Searches Are Done When Buying a House · PropXchain',
+    title: 'Property Searches Explained: What Gets Checked · PropXchain',
     description:
-      'Which searches are done when you buy a house in England and Wales, what each tells you, how long local searches take, what they cost, and whether you need them if buying with cash.',
+      'Which searches are done when you buy a house in England and Wales, what each tells you, how long they take, what they cost, and if cash buyers need them.',
     main: `<main id="seo-fallback" role="main" aria-label="Property searches explained">
 <p class="muted">Loading PropXchain…</p>
 <h1>Property searches explained</h1>
@@ -610,9 +622,9 @@ ${SEARCHES_AT_A_GLANCE.map((s) => `      <tr><td>${escHtml(s.name)}</td><td>${es
     catName: 'Selling',
     published: '2026-06-12',
     modified: '2026-08-21',
-    title: 'TA6, TA10 and TA7 Explained: the Seller’s Property Information Forms · PropXchain',
+    title: 'TA6, TA10 and TA7 Forms Explained for Sellers · PropXchain',
     description:
-      'The three forms every seller fills in, what each one asks, why your answers are legally binding representations rather than opinions, and the questions people most often get wrong.',
+      'The three forms every seller fills in, what each one asks, and why your answers are legally binding representations rather than opinions.',
     main: `<main id="seo-fallback" role="main" aria-label="TA6, TA10 and TA7 explained">
 <p class="muted">Loading PropXchain…</p>
 <h1>TA6, TA10 and TA7 explained</h1>
@@ -668,8 +680,8 @@ ${SEARCHES_AT_A_GLANCE.map((s) => `      <tr><td>${escHtml(s.name)}</td><td>${es
     published: '2026-09-27',
     modified: '2026-09-27',
     crumb: 'The TA6 form explained',
-    title: 'TA6 Form Explained: the 6th Edition, Section by Section · PropXchain',
-    description: 'The TA6 Property Information Form (6th edition) replaced older editions on 30 March 2026. What each of its 15 sections asks, what to have ready, and how to fill it in online free.',
+    title: 'TA6 Form Explained: the 6th Edition · PropXchain',
+    description: 'The TA6 Property Information Form (6th edition) replaced older editions on 30 March 2026. What each of its 15 sections asks and what to have ready.',
     main: `<main id="seo-fallback" role="main" aria-label="The TA6 form explained — guide">
 <p class="muted">Loading PropXchain…</p>
 <h1>The TA6 form explained</h1>

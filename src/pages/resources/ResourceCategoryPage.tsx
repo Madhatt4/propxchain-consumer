@@ -13,6 +13,7 @@ import React, { useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import MarketingShell from '../marketing/MarketingShell';
 import { liveCategories, publishedInCategory } from './resourcesMeta';
+import { CATEGORY_OVERVIEWS } from './categoryOverviews';
 import {
   ArticleRowList,
   HelpBreadcrumb,
@@ -51,6 +52,7 @@ const ResourceCategoryPage: React.FC = () => {
   if (!match) return <NotFound />;
 
   const articles = publishedInCategory(match.slug);
+  const overview = CATEGORY_OVERVIEWS[match.slug]?.overview ?? [];
 
   return (
     <MarketingShell>
@@ -62,6 +64,14 @@ const ResourceCategoryPage: React.FC = () => {
         <p className="mt-5 max-w-[42rem] font-[DM_Sans] text-lg leading-relaxed text-[#4B5563] dark:text-[#94A3B8]">
           {match.description}
         </p>
+        {overview.map((paragraph) => (
+          <p
+            key={paragraph}
+            className="mt-4 max-w-[42rem] font-[DM_Sans] text-base leading-relaxed text-[#4B5563] dark:text-[#94A3B8]"
+          >
+            {paragraph}
+          </p>
+        ))}
 
         <div className="mt-8">
           <SectionPills label="Other sections" mode="route" current={match.slug} />
