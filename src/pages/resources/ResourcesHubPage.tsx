@@ -59,7 +59,7 @@ const CategorySection: React.FC<{ category: ResourceCategory; index: number }> =
 
 const ResourcesHubPage: React.FC = () => {
   useEffect(() => {
-    document.title = 'Help & Support — Plain-English Home Moving Guides · PropXchain';
+    document.title = 'Help & Support — Home Moving Guides · PropXchain';
     window.scrollTo(0, 0);
   }, []);
 

@@ -7,18 +7,20 @@
  *
  * Humans with JS are served the SPA at the real path /route by BrowserRouter; the pre-React
  * script in index.html. Bots without JS read the route-specific content.
+ *
+ * `pages` is exported so tests can check the metadata; the dist/ writes only
+ * run when this file is executed directly (`node scripts/prerender-marketing.mjs`).
  */
 
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { FAQ_GROUPS, buildFaqJsonLd } from '../src/pages/marketing/faqData.mjs';
 
 import { resourcePages } from './prerender-resources.mjs';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const DIST = join(__dirname, '..', 'dist');
-const template = readFileSync(join(DIST, 'index.html'), 'utf8');
+const __filename = fileURLToPath(import.meta.url);
+const DIST = join(dirname(__filename), '..', 'dist');
 
 const escapeHtml = (s) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -41,7 +43,7 @@ ${group.items.map((item) => `  <h3>${escapeHtml(item.q)}</h3>\n  <p>${escapeHtml
 <p>Still have questions? <a href="/support">Talk to us</a> or <a href="/register">create a free account</a>.</p>
 </main>`;
 
-const pages = [
+export const pages = [
   {
     route: 'how-it-works',
     title: 'How PropXchain Works — Six-Step Conveyancing Guide',
@@ -127,7 +129,7 @@ const pages = [
   },
   {
     route: 'pricing',
-    title: 'PropXchain Pricing — Free to Use, Pay Only for What You Order',
+    title: 'PropXchain Pricing — Free, Pay Only for What You Order',
     description: 'PropXchain is free to use: no plans, no tiers, no platform fee. Searches, ID checks and the £7 title pull are paid per item, priced when you order.',
     main: `<main id="seo-fallback" role="main" aria-label="PropXchain pricing — summary">
 <p class="muted">Loading PropXchain…</p>
@@ -181,7 +183,7 @@ const pages = [
   },
   {
     route: 'sell-my-house',
-    title: 'Sell My House Online — Free to Use, No Estate Agent | PropXchain',
+    title: 'Sell My House Online — Free, No Estate Agent | PropXchain',
     description: 'Sell your house online free: no platform fee, no estate agent fee. Pay only for the searches and checks you order, and start in two minutes.',
     main: `<main id="seo-fallback" role="main" aria-label="Sell my house online with PropXchain — summary">
 <p class="muted">Loading PropXchain…</p>
@@ -226,7 +228,7 @@ const pages = [
   },
   {
     route: 'find-a-conveyancer',
-    title: 'Find a Conveyancer Online — Quoted Direct, CLC Verified | PropXchain',
+    title: 'Find a Conveyancer Online — CLC Verified | PropXchain',
     description: 'Find an online conveyancer for your UK purchase or sale. CLC-verified firms quote you directly on your actual transaction.',
     main: `<main id="seo-fallback" role="main" aria-label="Find a conveyancer with PropXchain — summary">
 <p class="muted">Loading PropXchain…</p>
@@ -346,56 +348,125 @@ const pages = [
   },
   {
     route: 'faq',
-    title: 'PropXchain FAQ — Pricing, Conveyancers, Security & What Gets Recorded',
+    title: 'PropXchain FAQ — Pricing, Conveyancers & Security',
     description: 'Common PropXchain questions: free to use, what is paid per item, search costs, CLC-verified conveyancers, e-signing and AML checks.',
     jsonLd: buildFaqJsonLd(),
     main: faqMain,
   },
+  {
+    route: 'register',
+    title: 'Create Your Free Account · PropXchain',
+    description: 'Create a free PropXchain account as a seller or buyer, or apply as a conveyancer, developer or estate agent. Sign up with Google, Microsoft or email.',
+    main: `<main id="seo-fallback" role="main" aria-label="Create a PropXchain account — summary">
+<p class="muted">Loading PropXchain…</p>
+<h1>Create your free PropXchain account</h1>
+<p>Sellers and buyers use PropXchain free: no plans, no tiers, no platform fee. You only pay for the third-party items you order, such as searches and ID checks, each priced when you order.</p>
+
+<section aria-labelledby="account-types">
+  <h2 id="account-types">Choose your account</h2>
+  <h3>Property sellers and buyers</h3>
+  <p>Register on this page with Google, Microsoft, or an email address and password, and say whether you are selling or buying. On the email route, a verification email activates the account.</p>
+  <h3>Conveyancers and solicitors</h3>
+  <p>Apply to the panel at <a href="/register/conveyancer">propxchain.com/register/conveyancer</a> with your firm's CLC practice ID.</p>
+  <h3>Property developers</h3>
+  <p>Register at <a href="/register/developer">propxchain.com/register/developer</a> with your Companies House number.</p>
+  <h3>Estate agents</h3>
+  <p>Register at <a href="/register/estate-agent">propxchain.com/register/estate-agent</a> with your agency, branch and redress scheme details.</p>
+</section>
+
+<section aria-labelledby="next">
+  <h2 id="next">What happens next</h2>
+  <p>Once your account is active you land in your dashboard, where you can add your property, work through the guided TA6 and TA10 forms, and invite the other parties to the transaction. A conveyancer firm that is not found in PropXchain's snapshot of the CLC register can still apply: the account is marked unverified and checked manually within 24 hours.</p>
+</section>
+
+<p>Already have an account? <a href="/login">Sign in</a>. Step-by-step help for every account type: <a href="/resources/getting-started/how-to-sign-in">how to sign in, by account type</a>.</p>
+</main>`,
+  },
+  {
+    route: 'support',
+    title: 'Contact Support · PropXchain',
+    description: 'Get help with PropXchain: email support with a reply within 24 hours, plain-English guides to buying and selling, and answers to common questions.',
+    main: `<main id="seo-fallback" role="main" aria-label="PropXchain support — summary">
+<p class="muted">Loading PropXchain…</p>
+<h1>PropXchain support</h1>
+<p>Questions about a transaction, your account or what something costs? Email <a href="mailto:info@propxchain.com">info@propxchain.com</a> and we reply within 24 hours, or use the support form on this page.</p>
+
+<section aria-labelledby="topics">
+  <h2 id="topics">What we can help with</h2>
+  <ul>
+    <li><strong>Your account:</strong> registering, signing in with Google, Microsoft, email or Internet Identity, and resetting a forgotten password.</li>
+    <li><strong>Your transaction:</strong> adding your property, completing the TA6 and TA10 forms, and inviting your buyer, seller or conveyancer.</li>
+    <li><strong>Orders:</strong> property searches, ID and AML checks and the HM Land Registry title pull, each priced before you pay.</li>
+    <li><strong>Your AI assistant:</strong> connecting PropXchain to Claude, ChatGPT or another MCP client (<a href="/agent">setup guide</a>).</li>
+  </ul>
+</section>
+
+<section aria-labelledby="self-help">
+  <h2 id="self-help">Find an answer yourself</h2>
+  <ul>
+    <li><a href="/faq">Frequently asked questions</a>: pricing, conveyancers, security and what gets recorded.</li>
+    <li><a href="/resources">Help &amp; Support guides</a>: plain-English guides to selling, buying, searches and the property forms.</li>
+    <li><a href="/resources/getting-started/how-to-sign-in">How to sign in, by account type</a>: registering and signing back in.</li>
+    <li><a href="/pricing">Pricing</a>: what is free and what is paid per item.</li>
+  </ul>
+</section>
+
+<p>For anything about the legal work on your sale or purchase, speak to your conveyancer, who remains responsible for it.</p>
+</main>`,
+  },
   ...resourcePages,
 ];
 
-let written = 0;
-for (const page of pages) {
-  let html = template;
+function prerender() {
+  const template = readFileSync(join(DIST, 'index.html'), 'utf8');
+  let written = 0;
+  for (const page of pages) {
+    let html = template;
 
-  // Swap <title>
-  html = html.replace(/<title>[\s\S]*?<\/title>/, `<title>${page.title}</title>`);
-  // Swap meta description
-  html = html.replace(/<meta name="description" content="[^"]*"/, `<meta name="description" content="${page.description}"`);
-  // Swap OG + Twitter title + description + url
-  html = html.replace(/<meta property="og:title" content="[^"]*"/, `<meta property="og:title" content="${page.title}"`);
-  html = html.replace(/<meta property="og:description" content="[^"]*"/, `<meta property="og:description" content="${page.description}"`);
-  html = html.replace(/<meta property="og:url" content="[^"]*"/, `<meta property="og:url" content="https://propxchain.com/${page.route}"`);
-  html = html.replace(/<meta name="twitter:title" content="[^"]*"/, `<meta name="twitter:title" content="${page.title}"`);
-  html = html.replace(/<meta name="twitter:description" content="[^"]*"/, `<meta name="twitter:description" content="${page.description}"`);
-  html = html.replace(/<meta name="twitter:url" content="[^"]*"/, `<meta name="twitter:url" content="https://propxchain.com/${page.route}"`);
-  // Swap canonical
-  html = html.replace(/<link rel="canonical" href="[^"]*"/, `<link rel="canonical" href="https://propxchain.com/${page.route}"`);
+    // Swap <title>
+    html = html.replace(/<title>[\s\S]*?<\/title>/, `<title>${page.title}</title>`);
+    // Swap meta description
+    html = html.replace(/<meta name="description" content="[^"]*"/, `<meta name="description" content="${page.description}"`);
+    // Swap OG + Twitter title + description + url
+    html = html.replace(/<meta property="og:title" content="[^"]*"/, `<meta property="og:title" content="${page.title}"`);
+    html = html.replace(/<meta property="og:description" content="[^"]*"/, `<meta property="og:description" content="${page.description}"`);
+    html = html.replace(/<meta property="og:url" content="[^"]*"/, `<meta property="og:url" content="https://propxchain.com/${page.route}"`);
+    html = html.replace(/<meta name="twitter:title" content="[^"]*"/, `<meta name="twitter:title" content="${page.title}"`);
+    html = html.replace(/<meta name="twitter:description" content="[^"]*"/, `<meta name="twitter:description" content="${page.description}"`);
+    html = html.replace(/<meta name="twitter:url" content="[^"]*"/, `<meta name="twitter:url" content="https://propxchain.com/${page.route}"`);
+    // Swap canonical
+    html = html.replace(/<link rel="canonical" href="[^"]*"/, `<link rel="canonical" href="https://propxchain.com/${page.route}"`);
 
-  // Inject optional route-specific structured data (e.g. FAQPage) into the head
-  if (page.jsonLd) {
-    if (page.jsonLd['@type'] === 'FAQPage') {
-      // Google allows one FAQPage block per page — drop the template's site-wide one
-      html = html.replace(
-        /<script type="application\/ld\+json">(?:(?!<\/script>)[\s\S])*?"@type"\s*:\s*"FAQPage"[\s\S]*?<\/script>\s*/,
-        '',
-      );
+    // Inject optional route-specific structured data (e.g. FAQPage) into the head
+    if (page.jsonLd) {
+      if (page.jsonLd['@type'] === 'FAQPage') {
+        // Google allows one FAQPage block per page — drop the template's site-wide one
+        html = html.replace(
+          /<script type="application\/ld\+json">(?:(?!<\/script>)[\s\S])*?"@type"\s*:\s*"FAQPage"[\s\S]*?<\/script>\s*/,
+          '',
+        );
+      }
+      const json = JSON.stringify(page.jsonLd).replace(/</g, '\\u003C');
+      html = html.replace('</head>', `<script type="application/ld+json">${json}</script>\n  </head>`);
     }
-    const json = JSON.stringify(page.jsonLd).replace(/</g, '\\u003C');
-    html = html.replace('</head>', `<script type="application/ld+json">${json}</script>\n  </head>`);
-  }
 
-  // Swap the static fallback <main>
-  const mainRegex = /<main id="seo-fallback"[\s\S]*?<\/main>/;
-  if (!mainRegex.test(html)) {
-    throw new Error(`Prerender template missing <main id="seo-fallback"> — cannot substitute for /${page.route}`);
-  }
-  html = html.replace(mainRegex, page.main);
+    // Swap the static fallback <main>
+    const mainRegex = /<main id="seo-fallback"[\s\S]*?<\/main>/;
+    if (!mainRegex.test(html)) {
+      throw new Error(`Prerender template missing <main id="seo-fallback"> — cannot substitute for /${page.route}`);
+    }
+    html = html.replace(mainRegex, page.main);
 
-  const outDir = join(DIST, page.route);
-  mkdirSync(outDir, { recursive: true });
-  writeFileSync(join(outDir, 'index.html'), html);
-  written++;
-  console.log(`  ✓ dist/${page.route}/index.html  (${html.length} bytes)`);
+    const outDir = join(DIST, page.route);
+    mkdirSync(outDir, { recursive: true });
+    writeFileSync(join(outDir, 'index.html'), html);
+    written++;
+    console.log(`  ✓ dist/${page.route}/index.html  (${html.length} bytes)`);
+  }
+  console.log(`Prerendered ${written} marketing routes.`);
 }
-console.log(`Prerendered ${written} marketing routes.`);
+
+// Lower-cased because Windows may report the drive letter in either case.
+if (process.argv[1] && resolve(process.argv[1]).toLowerCase() === __filename.toLowerCase()) {
+  prerender();
+}

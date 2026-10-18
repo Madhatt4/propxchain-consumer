@@ -117,7 +117,7 @@ export const RESOURCES: ResourceArticle[] = [
     category: 'getting-started',
     planNumber: null,
     title: 'How to sign in, by account type',
-    documentTitle: 'How to Sign In to PropXchain — Sellers, Buyers, Conveyancers, Developers, Agents · PropXchain',
+    documentTitle: 'How to Sign In to PropXchain, by Account Type',
     teaser:
       'Sellers, buyers, conveyancers, developers and estate agents each register through a different door. What each one asks for, and the three ways to sign back in once you have an account.',
     readingTime: '4 min read',
@@ -131,7 +131,7 @@ export const RESOURCES: ResourceArticle[] = [
     planNumber: null,
     title: 'What is a sales pack?',
     documentTitle:
-      'What Is a Sales Pack? Upfront Property Information Explained · PropXchain',
+      'What Is a Sales Pack or Property Pack? · PropXchain',
     teaser:
       'Title register, searches, TA6, EPC: the documents every buyer eventually needs, gathered before you list rather than after you accept an offer. The government calls it a sales pack — you may know it as a property pack. Why upfront information sells houses faster, and what actually goes in one.',
     readingTime: '6 min read',
@@ -144,7 +144,7 @@ export const RESOURCES: ResourceArticle[] = [
     planNumber: 10,
     title: 'TA6, TA10 and TA7 explained',
     documentTitle:
-      'TA6, TA10 and TA7 Explained: the Seller’s Property Information Forms · PropXchain',
+      'TA6, TA10 and TA7 Forms Explained for Sellers · PropXchain',
     teaser:
       'The three forms every seller fills in, what each one asks, why your answers are legally binding representations rather than opinions, and the questions people most often get wrong.',
     readingTime: '7 min read',
@@ -157,7 +157,7 @@ export const RESOURCES: ResourceArticle[] = [
     planNumber: null,
     title: 'The TA6 form explained',
     documentTitle:
-      'TA6 Form Explained: the 6th Edition, Section by Section · PropXchain',
+      'TA6 Form Explained: the 6th Edition · PropXchain',
     teaser:
       'The TA6 Property Information Form (6th edition), in use since 30 March 2026: what changed, what each of the 15 sections asks, what to have ready, and how to answer without creating problems later.',
     readingTime: '8 min read',
@@ -187,7 +187,7 @@ export const RESOURCES: ResourceArticle[] = [
     planNumber: null,
     title: 'How long does conveyancing take?',
     documentTitle:
-      'How Long Does Conveyancing Take in England & Wales? 2026 Timeline · PropXchain',
+      'How Long Does Conveyancing Take? 2026 Timeline · PropXchain',
     teaser:
       'About five and a half months on average. A week-by-week timeline for England and Wales, the delays that genuinely cost weeks, and what sellers and buyers can do to shorten the wait.',
     readingTime: '9 min read',
@@ -213,7 +213,7 @@ export const RESOURCES: ResourceArticle[] = [
     planNumber: 23,
     title: 'Property searches explained',
     documentTitle:
-      'Property Searches Explained: What Searches Are Done When Buying a House · PropXchain',
+      'Property Searches Explained: What Gets Checked · PropXchain',
     teaser:
       'Local authority, drainage, environmental, coal: the searches a conveyancer orders before you can exchange, what each one actually tells you, why the list changes depending on where the house is, and how long they stay valid.',
     readingTime: '10 min read',
@@ -244,7 +244,7 @@ export const RESOURCES: ResourceArticle[] = [
     planNumber: null,
     title: 'BASPI explained',
     documentTitle:
-      'What Is BASPI? Property Information Form Explained · PropXchain',
+      'What Is BASPI? The Property Form Explained · PropXchain',
     teaser:
       'The Buyer’s and Seller’s Property Information form is the industry’s blueprint for upfront information. What it covers, how it relates to the TA6 and material information rules, and where home moving is heading.',
     readingTime: '6 min read',
