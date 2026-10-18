@@ -18,6 +18,7 @@
 import { useState, type MouseEvent } from 'react';
 import { Link } from 'react-router-dom';
 
+import { Wordmark } from '@/components/brand/Wordmark';
 import { SIGN_IN_URL } from '@/components/auth/SignInDialog';
 import { IS_REGISTRATION_OPEN } from '@/config/registration';
 
@@ -43,13 +44,8 @@ export function MarketingNav({ isDark, onToggleTheme, onScrollTo }: MarketingNav
   return (
     <div className="relative">
       <nav className="liquid-glass rounded-md px-5 py-3 flex items-center justify-between gap-6">
-        <Link
-          to="/"
-          aria-label="PropXchain"
-          className="font-display"
-          style={{ fontWeight: 700, fontSize: '1.5rem', letterSpacing: '-0.02em', color: 'var(--fg)' }}
-        >
-          Prop<span style={{ color: 'var(--t)' }}>X</span>chain
+        <Link to="/" aria-label="PropXchain">
+          <Wordmark className="text-[1.5rem] text-[color:var(--fg)]" accentClassName="text-[color:var(--t)]" />
         </Link>
 
         <div className="hidden md:flex items-center gap-7">
