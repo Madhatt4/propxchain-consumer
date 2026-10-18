@@ -10,9 +10,11 @@
 // 11.4 (heating) is left alone: a gas safety record is not a service record
 // (Q24). The EPC has no TA6 question at all.
 //
-// Blanks only, and only from a fact the seller confirmed AFTER they last edited
-// the form: without that, a seller who unticks a suggestion would find it
-// ticked again on the next load.
+// Blanks only, and only from a fact the seller confirmed AFTER the form was
+// last saved: without that, a seller who unticks a suggestion would find it
+// ticked again on the next load. A form never saved has no such edit to
+// protect, so every confirmed fact counts (an unsaved form's lastModifiedAt is
+// the moment the page opened, which hid every earlier confirmation, 16 Oct).
 
 import type { CurrentFact } from '../../../services/documentFacts.service';
 import type { TA6PropertyInformation } from '../../../types/ta6.types';
@@ -39,8 +41,13 @@ function alterationsUntouched(form: TA6PropertyInformation): boolean {
   return otherDetails === null && Object.values(ticks).every((ticked) => ticked === false);
 }
 
-export function prefillTa6FromFacts(form: TA6PropertyInformation, facts: CurrentFact[]): FactsPrefill {
-  const usable = confirmedSince(facts, form.lastModifiedAt ?? null);
+/** `savedAt`: when the stored form was last edited, null when it has never been saved. */
+export function prefillTa6FromFacts(
+  form: TA6PropertyInformation,
+  facts: CurrentFact[],
+  savedAt: string | null,
+): FactsPrefill {
+  const usable = confirmedSince(facts, savedAt);
   const suggested: string[] = [];
   let next = form;
 

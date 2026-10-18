@@ -24,13 +24,16 @@ function isNewShape(data: TA6PropertyInformation | null | undefined): data is TA
 
 // §1 prefill: fill an untouched address from the listing props and derive its
 // jurisdiction from the postcode. Returns the (possibly) patched form plus
-// whether a prefill happened, so the shell can flag §1 dirty and show a banner.
+// whether a prefill happened, so the shell can flag §1 dirty and show a banner,
+// and when the stored form was last edited (null when there is none: a fresh
+// form's lastModifiedAt is only the moment it was built).
 export function buildInitial(
   initialData: TA6PropertyInformation | null | undefined,
   propertyAddress?: string,
   postcode?: string | null,
   listing?: PropertyListing | null,
-): { form: TA6PropertyInformation; prefilled: boolean } {
+): { form: TA6PropertyInformation; prefilled: boolean; savedAt: string | null } {
+  const savedAt = isNewShape(initialData) ? initialData.lastModifiedAt : null;
   const base = isNewShape(initialData) ? initialData : emptyTA6Form();
   const addr = (propertyAddress ?? '').trim();
   let form = base;
@@ -53,5 +56,5 @@ export function buildInitial(
     const pc = form.section1.postcode.trim();
     if (pc) form = { ...form, jurisdiction: jurisdictionFromPostcode(pc) ?? form.jurisdiction };
   }
-  return { form, prefilled };
+  return { form, prefilled, savedAt };
 }
