@@ -10,7 +10,7 @@
 // postcode. Cross-reference anomalies arrive via the `anomalies` prop and are
 // placed on the section whose number leads each ref.
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { ReactElement } from 'react';
 import { ExternalLink } from 'lucide-react';
 
@@ -23,6 +23,8 @@ import { buildInitial, openingStep } from './ta6/formSeed';
 import { useAttachmentAutosave } from './ta6/useAttachmentAutosave';
 import { useFactsPrefill } from './ta6/useFactsPrefill';
 import { SectionHelpCard } from './ta6/SectionHelpCard';
+import { AttachmentTypesContext } from './ta6/widgets/attachmentTypes';
+import { loadAttachmentTypes } from '../../services/attachmentTypes.service';
 import { StepAnomalyFlag } from './ta6/StepAnomalyFlag';
 import type { StepAnomaly } from './ta6/StepAnomalyFlag';
 import { StepperNav } from './ta6/StepperNav';
@@ -92,6 +94,18 @@ const TA6Form = ({
     setDirtySteps,
     savedAt,
   });
+
+  // What each stored attachment was read as, so a slot can name it after a reload.
+  const [attachmentTypes, setAttachmentTypes] = useState<ReadonlyMap<string, string>>(new Map());
+  useEffect(() => {
+    let active = true;
+    void loadAttachmentTypes(transactionId).then((types) => {
+      if (active) setAttachmentTypes(types);
+    });
+    return () => {
+      active = false;
+    };
+  }, [transactionId]);
 
   const steps = useMemo<StepperStep[]>(
     () =>
@@ -222,14 +236,16 @@ const TA6Form = ({
             ))}
           </div>
         )}
-        <ActiveSection
-          step={activeStep}
-          form={formData}
-          onChange={handleSectionChange}
-          readOnly={readOnly}
-          uploadFile={uploadAndSave}
-          suggestedRefs={suggestedRefs}
-        />
+        <AttachmentTypesContext.Provider value={attachmentTypes}>
+          <ActiveSection
+            step={activeStep}
+            form={formData}
+            onChange={handleSectionChange}
+            readOnly={readOnly}
+            uploadFile={uploadAndSave}
+            suggestedRefs={suggestedRefs}
+          />
+        </AttachmentTypesContext.Provider>
       </SectionCard>
 
       {saveError && (
