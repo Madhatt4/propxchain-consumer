@@ -418,6 +418,113 @@ export const pages = [
 <p>For anything about the legal work on your sale or purchase, speak to your conveyancer, who remains responsible for it.</p>
 </main>`,
   },
+  {
+    route: 'login',
+    title: 'Sign In · PropXchain',
+    description: 'Sign in to PropXchain with Google, Microsoft, your email and password, or Internet Identity. One account per email, whichever way you registered.',
+    main: `<main id="seo-fallback" role="main" aria-label="Sign in to PropXchain — summary">
+<p class="muted">Loading PropXchain…</p>
+<h1>Sign in to PropXchain</h1>
+<p>The same sign-in page works for every kind of account: sellers, buyers, conveyancers, developers and estate agents. Once you are signed in you land in your dashboard, with each of your transactions, its documents and its progress in one place.</p>
+
+<section aria-labelledby="methods">
+  <h2 id="methods">Three ways to sign in</h2>
+  <ul>
+    <li><strong>Continue with Google or Microsoft:</strong> one click, no password to remember. If the address you sign in with already has a PropXchain account, you are signed straight in; nothing new is created.</li>
+    <li><strong>Continue with email:</strong> enter the email and password you registered with.</li>
+    <li><strong>Continue with Internet Identity:</strong> passkey-based sign-in, for anyone who registered that way. It is a separate identity from an email or Google account, not interchangeable with either.</li>
+  </ul>
+</section>
+
+<section aria-labelledby="forgotten">
+  <h2 id="forgotten">Forgotten how you registered?</h2>
+  <p>Try email first. If that address already has an account, PropXchain tells you rather than creating a duplicate, and "Forgot password" on the sign-in screen resets it.</p>
+</section>
+
+<p>New to PropXchain? <a href="/register">Create a free account</a>. Step-by-step help: <a href="/resources/getting-started/how-to-sign-in">how to sign in, by account type</a>.</p>
+</main>`,
+  },
+  {
+    route: 'register/conveyancer',
+    title: 'Join the Conveyancer Panel · PropXchain',
+    description: 'Apply to the PropXchain conveyancer panel with your CLC practice ID. Panel firms join free and quote each transaction directly from a ready-made brief.',
+    main: `<main id="seo-fallback" role="main" aria-label="Join the PropXchain conveyancer panel — summary">
+<p class="muted">Loading PropXchain…</p>
+<h1>Join the PropXchain conveyancer panel</h1>
+<p>Conveyancers on the CLC-verified panel join free and quote each job per transaction, from a brief that arrives with the HM Land Registry title pulled, searches returned and any enquiries surfaced by AI document review.</p>
+
+<section aria-labelledby="apply">
+  <h2 id="apply">How to apply</h2>
+  <ol>
+    <li>Enter your firm's CLC practice ID, which you can find on the Council for Licensed Conveyancers register. PropXchain looks the firm up and fills in the name.</li>
+    <li>If the firm is not found in PropXchain's snapshot of the register, you can still continue: the account is marked unverified and checked manually within 24 hours.</li>
+    <li>Enter your email and a password, confirm it, and apply to the panel.</li>
+    <li>Click the link in the verification email, then sign in.</li>
+  </ol>
+</section>
+
+<section aria-labelledby="work">
+  <h2 id="work">How you work on PropXchain</h2>
+  <p>You see the same live transaction as the seller, the buyer and the other side's conveyancer, so updates arrive without chasing. You remain responsible for the legal work, and completion funds move between the conveyancers as they do today: PropXchain never holds client money.</p>
+</section>
+
+<p>Already registered? <a href="/login">Sign in</a>. More: <a href="/find-a-conveyancer">how buyers and sellers find a conveyancer</a>.</p>
+</main>`,
+  },
+  {
+    route: 'register/developer',
+    title: 'Register as a Property Developer · PropXchain',
+    description: 'Create a PropXchain developer account with your Companies House number. The company is looked up live, so your account starts business-verified.',
+    main: `<main id="seo-fallback" role="main" aria-label="Register as a property developer — summary">
+<p class="muted">Loading PropXchain…</p>
+<h1>Register as a property developer</h1>
+<p>Developer accounts are business-verified against Companies House when you sign up, so the other parties to your transactions can see who they are dealing with.</p>
+
+<section aria-labelledby="steps">
+  <h2 id="steps">How to register</h2>
+  <ol>
+    <li>Enter your Companies House number. PropXchain looks the company up live and fills in its name, status and registered address.</li>
+    <li>A dissolved company cannot sign up. If the lookup fails because of a network problem, you can continue and the account is marked unverified instead.</li>
+    <li>Enter your email and a password, confirm it, and create your developer account.</li>
+    <li>Click the link in the verification email, then sign in.</li>
+  </ol>
+</section>
+
+<section aria-labelledby="after">
+  <h2 id="after">After you register</h2>
+  <p>Each sale runs as its own live transaction, shared with the buyer and both conveyancers, with every milestone recorded as it happens. Searches and checks are ordered per transaction and priced before you pay.</p>
+</section>
+
+<p>Already registered? <a href="/login">Sign in</a>. Selling your own home instead? <a href="/register">Create a free seller account</a>.</p>
+</main>`,
+  },
+  {
+    route: 'register/estate-agent',
+    title: 'Register as an Estate Agent · PropXchain',
+    description: 'Create a PropXchain estate agent account with your agency, branch and redress scheme details, and follow every sale on one live transaction view.',
+    main: `<main id="seo-fallback" role="main" aria-label="Register as an estate agent — summary">
+<p class="muted">Loading PropXchain…</p>
+<h1>Register as an estate agent</h1>
+<p>Estate agents on PropXchain see real-time progress for every listing: the same live transaction the seller, the buyer and both conveyancers work from, so you can answer "where are we?" without chasing anyone.</p>
+
+<section aria-labelledby="steps">
+  <h2 id="steps">How to register</h2>
+  <ol>
+    <li>Enter your agency name and branch.</li>
+    <li>Choose your redress scheme (The Property Redress Scheme or The Property Ombudsman) and enter your membership number.</li>
+    <li>Add your Companies House number if you have one. It is optional and does not block sign-up either way.</li>
+    <li>Enter your email and a password, confirm it, and create the account. Click the link in the verification email, then sign in.</li>
+  </ol>
+</section>
+
+<section aria-labelledby="why">
+  <h2 id="why">Why agents use it</h2>
+  <p>Sales fall through most often when something unexpected surfaces late. When the title, searches and property information forms are gathered upfront and every party sees the same status, problems surface while there is still time to fix them.</p>
+</section>
+
+<p>Already registered? <a href="/login">Sign in</a>. Read more: <a href="/resources/selling/what-is-a-property-pack">what is a sales pack?</a></p>
+</main>`,
+  },
   ...resourcePages,
 ];
 
