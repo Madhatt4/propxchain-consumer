@@ -94,7 +94,8 @@ interface FormCompletion {
 function answeredShare<T>(record: T, measure: (r: T) => number): number | undefined {
   try {
     return measure(record);
-  } catch {
+  } catch (err) {
+    logger.warn('[stage3] saved form could not be measured; showing it as filled:', err);
     return undefined;
   }
 }
