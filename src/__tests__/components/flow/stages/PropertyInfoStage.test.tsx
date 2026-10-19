@@ -13,6 +13,8 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { PropertyInfoStage } from '../../../../components/transaction/flow/stages/PropertyInfoStage';
 import type { StageConfig } from '../../../../types/stage.types';
+import { emptyTA6Form } from '../../../../types/ta6.types';
+import { emptyTA10Form } from '../../../../types/ta10.types';
 
 const mockGetTA6 = vi.fn();
 const mockGetTA10 = vi.fn();
@@ -103,35 +105,55 @@ describe('PropertyInfoStage hydration', () => {
   });
 
   it('should still show an online form when the summary cannot be read', async () => {
-    mockGetTA6.mockResolvedValue({ section1: {} });
+    mockGetTA6.mockResolvedValue(emptyTA6Form());
     mockGetTA10.mockResolvedValue(null);
     mockGetTransaction.mockRejectedValue(new Error('offline'));
 
     renderStage();
 
-    expect(await screen.findByText(/Filled online/)).toBeInTheDocument();
+    expect(await screen.findByText('Saved online — 0% answered')).toBeInTheDocument();
   });
 
-  it('should show a TA6 saved on chain as filled online on an active stage, before submission', async () => {
-    mockGetTA6.mockResolvedValue({ section1: {} });
+  it('should show a part-answered TA6 as in progress with a way back in, before submission', async () => {
+    // Marc, 19 Oct: a 2% TA6 read "Filled online — Previously saved" with no button to continue it.
+    mockGetTA6.mockResolvedValue(emptyTA6Form());
     mockGetTA10.mockResolvedValue(null);
 
     renderStage();
 
     await waitFor(() => expect(mockGetTA6).toHaveBeenCalledWith('tx_1'));
-    expect(await screen.findByText(/Filled online/)).toBeInTheDocument();
+    expect(await screen.findByText('Saved online — 0% answered')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Continue form' })).toBeInTheDocument();
     // TA10 is still owed, so the stage cannot be submitted yet.
     expect(screen.queryByText('Submit All Forms & Continue')).not.toBeInTheDocument();
   });
 
-  it('should offer submission once every required form is saved on chain', async () => {
+  it('should tick a fully answered online form and still offer to edit it', async () => {
+    mockGetTA6.mockResolvedValue(null);
+    mockGetTA10.mockResolvedValue(emptyTA10Form);
+
+    renderStage();
+
+    expect(await screen.findByText('Filled online — every question answered')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Edit form' })).toBeInTheDocument();
+  });
+
+  it('should keep showing a record it cannot measure as filled online', async () => {
     mockGetTA6.mockResolvedValue({ section1: {} });
-    mockGetTA10.mockResolvedValue({ rooms: [] });
+    mockGetTA10.mockResolvedValue(null);
+
+    renderStage();
+
+    expect(await screen.findByText('Filled online')).toBeInTheDocument();
+  });
+
+  it('should offer submission once every required form is saved on chain', async () => {
+    mockGetTA6.mockResolvedValue(emptyTA6Form());
+    mockGetTA10.mockResolvedValue(emptyTA10Form);
 
     renderStage();
 
     expect(await screen.findByText('Submit All Forms & Continue')).toBeInTheDocument();
-    expect(screen.getAllByText(/Filled online/)).toHaveLength(2);
   });
 
   it('should leave forms unticked when nothing is saved on chain', async () => {
@@ -141,7 +163,7 @@ describe('PropertyInfoStage hydration', () => {
     renderStage();
 
     await waitFor(() => expect(mockGetTA10).toHaveBeenCalled());
-    expect(screen.queryByText(/Filled online/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Filled online|Saved online/)).not.toBeInTheDocument();
     expect(screen.getAllByText('Fill form online')).toHaveLength(2);
   });
 });
