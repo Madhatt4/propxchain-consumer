@@ -84,6 +84,10 @@ function withJsonLd(page) {
   };
 }
 
+// SEO LIMITS — `title` ≤ 60 characters including the " · PropXchain" suffix,
+// `description` 70–160 characters. Article titles must also equal the
+// matching `documentTitle` in src/pages/resources/resourcesMeta.ts.
+// Enforced by src/__tests__/seoMetaLengths.test.ts.
 export const resourcePages = [
   {
     route: 'resources',

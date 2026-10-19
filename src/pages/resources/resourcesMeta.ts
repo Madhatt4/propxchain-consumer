@@ -49,6 +49,7 @@ export interface PublishedArticle {
   category: CategorySlug;
   planNumber: number | null;
   title: string;
+  /** Browser/search title: ≤ 60 characters including " · PropXchain"; must equal the prerender title. */
   documentTitle: string;
   teaser: string;
   readingTime: string;
