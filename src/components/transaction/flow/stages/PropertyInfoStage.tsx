@@ -8,6 +8,9 @@ import { CompletedFormRejectedError, uploadCompletedForm } from '@/services/comp
 import { sha256Hex } from '@/utils/fileHash';
 import { logger } from '@/utils/logger';
 import type { StageConfig } from '../../../../types/stage.types';
+import { calculateTA6Completion } from '../../../../types/ta6.types';
+import { calculateTA10Completion } from '../../../../types/ta10.types';
+import { calculateTA7Completion } from '../../../../types/ta7.types';
 import type { Tenure } from '../../../../types/listing.types';
 import ExplainerCard from '../../../explainer/ExplainerCard';
 import ExplainerModal from '../../../explainer/ExplainerModal';
@@ -74,11 +77,27 @@ type CompletionMethod = 'online' | 'uploaded' | null;
 
 interface FormCompletion {
   method: CompletionMethod;
-  detail: string | null; // filename for upload, ISO date for online
+  detail: string | null; // filename for upload
+  /** An online form's share of answered questions, 0-100, from its calculate*Completion. */
+  answered?: number;
   /** What the AI check made of an uploaded PDF, shown under the file name. Null for online forms and restored uploads. */
   check?: string | null;
   /** What the scan found in an uploaded PDF's answers, as labels. Empty when clean or not scanned. */
   findings?: string[];
+}
+
+/**
+ * A saved online form's answered share, or undefined when its record is not
+ * in the shape the calculator reads (a legacy record): that form keeps
+ * showing as filled, as it did before progress was shown.
+ */
+function answeredShare<T>(record: T, measure: (r: T) => number): number | undefined {
+  try {
+    return measure(record);
+  } catch (err) {
+    logger.warn('[stage3] saved form could not be measured; showing it as filled:', err);
+    return undefined;
+  }
 }
 
 /**
@@ -172,9 +191,9 @@ export function PropertyInfoStage({ stage, onComplete, transactionId, postcode, 
         if (cancelled) return;
         const fromUpload: FormCompletion = { method: 'uploaded', detail: 'PDF uploaded earlier' };
         setCompletions((prev) => ({
-          ta6: ta6 ? { method: 'online', detail: 'Previously saved' } : uploaded.ta6 ? fromUpload : prev.ta6,
-          ta10: ta10 ? { method: 'online', detail: 'Previously saved' } : uploaded.ta10 ? fromUpload : prev.ta10,
-          ta7: ta7 ? { method: 'online', detail: 'Previously saved' } : prev.ta7,
+          ta6: ta6 ? { method: 'online', detail: null, answered: answeredShare(ta6, calculateTA6Completion) } : uploaded.ta6 ? fromUpload : prev.ta6,
+          ta10: ta10 ? { method: 'online', detail: null, answered: answeredShare(ta10, (r) => calculateTA10Completion(r).percentage) } : uploaded.ta10 ? fromUpload : prev.ta10,
+          ta7: ta7 ? { method: 'online', detail: null, answered: answeredShare(ta7, (r) => calculateTA7Completion(r).percentage) } : prev.ta7,
         }));
       } catch (err) {
         logger.warn('[stage3] hydrate failed:', err);
@@ -308,6 +327,11 @@ export function PropertyInfoStage({ stage, onComplete, transactionId, postcode, 
       {FORMS.map((form) => {
         const completion = completions[form.id];
         const isComplete = completion.method !== null;
+        // Saved online but not every question answered yet: shown as in
+        // progress, with a way back in, not ticked off as done (Marc, 19 Oct:
+        // a 2% TA6 read "Filled online" with no button to continue it).
+        const inProgress = completion.method === 'online' && (completion.answered ?? 100) < 100;
+        const isDone = isComplete && !inProgress;
         const uploadFindings = completion.method === 'uploaded' ? (completion.findings ?? storedFindings[form.id] ?? []) : [];
         const isUploadingThis = uploading === form.id;
 
@@ -315,31 +339,37 @@ export function PropertyInfoStage({ stage, onComplete, transactionId, postcode, 
           <div
             key={form.id}
             className={`rounded-lg border transition-colors ${
-              isComplete
+              isDone
                 ? 'border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20'
-                : 'border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50'
+                : inProgress
+                  ? 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20'
+                  : 'border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50'
             }`}
           >
             {/* Header row */}
             <div className="flex items-center gap-3 px-4 py-3">
               <div className={`w-6 h-6 rounded flex items-center justify-center shrink-0 ${
-                isComplete ? 'bg-emerald-500 text-white' : 'bg-gray-200 dark:bg-slate-700 text-gray-500 dark:text-slate-400'
+                isDone ? 'bg-emerald-500 text-white' : 'bg-gray-200 dark:bg-slate-700 text-gray-500 dark:text-slate-400'
               }`}>
-                {isComplete ? <Check className="h-3.5 w-3.5" /> : <FileText className="h-3.5 w-3.5" />}
+                {isDone ? <Check className="h-3.5 w-3.5" /> : <FileText className="h-3.5 w-3.5" />}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <p className={`text-sm font-medium ${isComplete ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-800 dark:text-gray-200'}`}>
+                  <p className={`text-sm font-medium ${isDone ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-800 dark:text-gray-200'}`}>
                     {form.label}
                   </p>
                   {!form.required && (
                     <span className="text-xs text-gray-400 dark:text-slate-500 bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">Optional</span>
                   )}
                 </div>
-                {isComplete ? (
+                {inProgress ? (
+                  <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
+                    {`Saved online — ${completion.answered}% answered`}
+                  </p>
+                ) : isComplete ? (
                   <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-0.5">
                     {completion.method === 'online'
-                      ? `Filled online — ${completion.detail}`
+                      ? completion.answered === undefined ? 'Filled online' : 'Filled online — every question answered'
                       : `Uploaded: ${completion.detail}`}
                   </p>
                 ) : (
@@ -395,11 +425,10 @@ export function PropertyInfoStage({ stage, onComplete, transactionId, postcode, 
               </div>
             )}
 
-            {/* Action buttons. In edit mode they remain visible even when
-                the form is "complete" so the user can revise it. The Fill
-                online button changes copy from "Fill form online" to
-                "Edit form" once a form is already saved. */}
-            {(!isComplete || isEditing) && !readOnly && !viewerIsBuyer && (
+            {/* Action buttons: always for a form not started or saved online
+                (an online form is continued or edited on its page), and in
+                edit mode for an uploaded one so it can be replaced. */}
+            {(!isComplete || isEditing || completion.method === 'online') && !readOnly && !viewerIsBuyer && (
               <div className="px-4 pb-3 flex gap-2">
                 <button
                   type="button"
@@ -425,7 +454,7 @@ export function PropertyInfoStage({ stage, onComplete, transactionId, postcode, 
                   className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-teal-300 dark:border-teal-700 bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-300 text-xs font-medium hover:bg-teal-100 dark:hover:bg-teal-900/30 transition-colors disabled:opacity-50"
                 >
                   <PenLine className="h-3.5 w-3.5" />
-                  {isComplete ? 'Edit form' : 'Fill form online'}
+                  {inProgress ? 'Continue form' : isComplete ? 'Edit form' : 'Fill form online'}
                 </button>
 
                 <button
@@ -437,7 +466,7 @@ export function PropertyInfoStage({ stage, onComplete, transactionId, postcode, 
                   {isUploadingThis ? (
                     <><div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-gray-500" /> Uploading…</>
                   ) : (
-                    <><Upload className="h-3.5 w-3.5" /> {isComplete ? 'Replace upload' : 'Upload completed form'}</>
+                    <><Upload className="h-3.5 w-3.5" /> {completion.method === 'uploaded' ? 'Replace upload' : 'Upload completed form'}</>
                   )}
                 </button>
 
