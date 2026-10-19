@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import { AlertTriangle, Loader2, Paperclip } from 'lucide-react';
 
+import { AttachmentTypesContext } from './attachmentTypes';
 import { FactSuggestions } from './FactSuggestions';
 import { PromptHeader } from './PromptHeader';
 import { ScanVerdict, type ScanState } from './ScanVerdict';
@@ -9,7 +10,7 @@ import { DOCUMENT_STATUS_LABELS, DOCUMENT_STATUS_OPTIONS } from './types';
 import type { TA6PromptEntry, TA6DocumentStatusChoice } from './types';
 import type { TA6Upload } from './ta6Uploader';
 import { SLOT_EXPECTATIONS } from '../slotExpectations';
-import { describeScan } from '../../../../services/docClassify.service';
+import { confidentTypeName, describeScan } from '../../../../services/docClassify.service';
 import type { DocClassification, DocFinding, DocScanContext } from '../../../../services/docClassify.service';
 import type { DocFact } from '../../../../services/documentFacts.service';
 import type { TA6DocumentValue } from '../../../../types/ta6.types';
@@ -76,6 +77,9 @@ const AttachedControls: React.FC<AttachedControlsProps> = ({
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [scan, setScan] = useState<ScanState>({ phase: 'idle' });
+  // What this session's upload was read as; the stored type covers a reload.
+  const [sessionType, setSessionType] = useState<{ documentId: string; name: string } | null>(null);
+  const storedTypes = useContext(AttachmentTypesContext);
   const [findings, setFindings] = useState<DocFinding[]>([]);
   const [facts, setFacts] = useState<DocFact[]>([]);
   const decide = useRef<TA6Upload['decide']>(undefined);
@@ -105,6 +109,7 @@ const AttachedControls: React.FC<AttachedControlsProps> = ({
     try {
       const upload = scanContext ? await onUpload(file, scanContext) : await onUpload(file);
       latest.current.onUploaded(upload.documentId);
+      setSessionType(null);
       setScan({ phase: 'scanning' });
       rescan.current = upload.rescan;
       decide.current = upload.decide;
@@ -129,6 +134,8 @@ const AttachedControls: React.FC<AttachedControlsProps> = ({
             return;
           }
           setScan({ phase: 'done', summary: describeScan(classification, SLOT_EXPECTATIONS[refCode]) });
+          const name = confidentTypeName(classification);
+          if (name) setSessionType({ documentId: upload.documentId, name });
           latest.current.onClassified?.(classification);
         },
         () => {
@@ -156,12 +163,17 @@ const AttachedControls: React.FC<AttachedControlsProps> = ({
     );
   }, [contextKey, scanContext]);
 
+  // The chip names the document once it has been read, so the seller can see what is attached.
+  const typeName = documentId
+    ? (sessionType?.documentId === documentId ? sessionType.name : storedTypes.get(documentId)) ?? null
+    : null;
+
   return (
     <div className="flex flex-wrap items-center gap-3">
       {documentId && (
         <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
           <Paperclip className="h-3.5 w-3.5" aria-hidden="true" />
-          {`Document attached (#${documentId})`}
+          {`${typeName ?? 'Document attached'} (#${documentId})`}
         </span>
       )}
       {!readOnly && onUpload && (

@@ -213,6 +213,18 @@ export function docTypeLabel(docType: string): string {
   return DOC_TYPE_LABELS[docType] ?? `a ${docType.replace(/_/g, ' ')}`;
 }
 
+/** The kind as a name, without its article: "Energy Performance Certificate", "Electrical installation condition report". */
+export function docTypeName(docType: string): string {
+  const bare = docTypeLabel(docType).replace(/^an? /, '');
+  return bare.charAt(0).toUpperCase() + bare.slice(1);
+}
+
+/** The type name when the classification is firm enough to name it, else null (the same bar as describeScan). */
+export function confidentTypeName(result: Pick<DocClassification, 'docType' | 'confidence' | 'unreadable'>): string | null {
+  if (result.unreadable || result.docType === 'other' || result.confidence < DOC_TYPE_CONFIDENCE_AT) return null;
+  return docTypeName(result.docType);
+}
+
 /**
  * Why the document may not be for this property, in the seller's words, or
  * null when nothing says so. The postcode fact is preferred over the bare

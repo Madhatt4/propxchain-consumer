@@ -1,3 +1,4 @@
+import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
@@ -7,10 +8,12 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { AnswerButtons } from '../widgets/AnswerButtons';
 import { ResponseField } from '../widgets/ResponseField';
 import { DocumentSlot } from '../widgets/DocumentSlot';
+import { AttachmentTypesContext } from '../widgets/attachmentTypes';
 import { SectionCard } from '../widgets/SectionCard';
 import { OptionalTextField } from '../widgets/TextFields';
 import type { TA6PromptEntry } from '../widgets/types';
 import type { DocClassification } from '../../../../services/docClassify.service';
+import type { TA6DocumentValue } from '../../../../types/ta6.types';
 
 // Shape matches the ADR 0009 paraphrase bundle (src/lib/ta6-prompts).
 const prompt: TA6PromptEntry = {
@@ -172,6 +175,35 @@ describe('DocumentSlot', () => {
 
     // Assert
     expect(screen.getByText('Document attached (#42)')).toBeInTheDocument();
+  });
+
+  it('should name a stored attachment by what it was read as, after a reload', () => {
+    // Arrange / Act
+    render(
+      <AttachmentTypesContext.Provider value={new Map([['48', 'Electrical installation condition report']])}>
+        <DocumentSlot refCode="11.3.doc" prompt={prompt} value={{ status: 'attached', documentId: '48' }} onChange={() => {}} />
+      </AttachmentTypesContext.Provider>,
+    );
+
+    // Assert
+    expect(screen.getByText('Electrical installation condition report (#48)')).toBeInTheDocument();
+  });
+
+  it('should name a fresh upload once the scan has read it', async () => {
+    // Arrange: the parent stores the id the slot reports, as the real form does.
+    const eicr: DocClassification = { docType: 'eicr', confidence: 0.95, inDate: true, matchesProperty: 0.9, unreadable: false };
+    const onUpload = vi.fn().mockResolvedValue({ documentId: '48', classification: Promise.resolve(eicr) });
+    const Harness = (): React.ReactElement => {
+      const [value, setValue] = React.useState<TA6DocumentValue>({ status: 'attached', documentId: null });
+      return <DocumentSlot refCode="11.3.doc" prompt={prompt} value={value} onChange={setValue} onUpload={onUpload} />;
+    };
+    render(<Harness />);
+
+    // Act
+    fireEvent.change(screen.getByLabelText('11.3.doc attachment'), { target: { files: [new File(['x'], 'eicr.png')] } });
+
+    // Assert
+    expect(await screen.findByText('Electrical installation condition report (#48)')).toBeInTheDocument();
   });
 
   it('should run onUpload and store the resolved documentId when a file is picked', async () => {
