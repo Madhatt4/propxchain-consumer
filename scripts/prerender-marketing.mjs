@@ -43,6 +43,10 @@ ${group.items.map((item) => `  <h3>${escapeHtml(item.q)}</h3>\n  <p>${escapeHtml
 <p>Still have questions? <a href="/support">Talk to us</a> or <a href="/register">create a free account</a>.</p>
 </main>`;
 
+// SEO LIMITS — the most common audit failure on this site. Every `title` must
+// be ≤ 60 characters INCLUDING any " · PropXchain" / " | PropXchain" suffix,
+// and every `description` 70–160 characters. Count before you commit;
+// src/__tests__/seoMetaLengths.test.ts fails the build otherwise.
 export const pages = [
   {
     route: 'how-it-works',
