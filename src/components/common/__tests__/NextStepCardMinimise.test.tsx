@@ -255,6 +255,9 @@ describe('NextStepCard — overlay focus handling', () => {
   it('should keep Tab inside the card — aria-modal is a promise', async () => {
     render(<NextStepCard txId="tx-1" presentation="overlay" />);
     const card = await screen.findByTestId('next-step-card');
+    // The card is in the DOM before its effects run; focus landing on it is
+    // the signal the keydown trap is attached, so wait for that, not the node.
+    await waitFor(() => expect(card).toHaveFocus());
     const focusable = card.querySelectorAll<HTMLElement>('button:not([disabled])');
     const last = focusable[focusable.length - 1];
 
@@ -267,6 +270,7 @@ describe('NextStepCard — overlay focus handling', () => {
   it('should wrap backwards from the first element to the last', async () => {
     render(<NextStepCard txId="tx-1" presentation="overlay" />);
     const card = await screen.findByTestId('next-step-card');
+    await waitFor(() => expect(card).toHaveFocus());
     const focusable = card.querySelectorAll<HTMLElement>('button:not([disabled])');
 
     focusable[0].focus();
