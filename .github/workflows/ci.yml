@@ -20,6 +20,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          # Depth 2 so HEAD^1 exists: on a PR, HEAD is the merge commit and
+          # HEAD^1 the base tip, so the migration-grants diff is just the PR.
+          fetch-depth: 2
 
       - name: Setup pnpm
         uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5
@@ -29,6 +33,17 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
+
+      - name: Check new public tables grant explicitly
+        # From 30 Oct 2026 Supabase no longer grants new public tables to the
+        # Data API, rebuilds from these migrations included. Each added or
+        # modified migration that creates a public table must grant
+        # service_role in the same file, and every anon grant must say why.
+        # The self-test runs the good/bad fixtures first so a broken checker
+        # cannot pass silently.
+        run: |
+          node scripts/check-migration-grants.mjs --self-test
+          node scripts/check-migration-grants.mjs --base HEAD^1
 
       - name: Install
         run: pnpm install --frozen-lockfile
