@@ -2,8 +2,8 @@
 // Copyright (C) 2026 PropXchain Ltd
 
 /**
- * Single source of truth for the PropXchain brand lockup. Use this everywhere a
- * logo is shown so the mark stays consistent across the site.
+ * The PropXchain glass lockup image. The signed-in top bar and the landing
+ * page use the type-set `Wordmark` instead; this stays on the other pages.
  *
  * The lockup is the glass render — house, wordmark and tagline together on its
  * own dark ground — so it reads as a self-contained tile rather than a

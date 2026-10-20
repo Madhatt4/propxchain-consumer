@@ -28,7 +28,7 @@ import {
   User,
   Wallet,
 } from 'lucide-react';
-import { Logo } from '@/components/brand/Logo';
+import { Wordmark } from '@/components/brand/Wordmark';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -182,7 +182,7 @@ export const AppTopBar: React.FC<AppTopBarProps> = ({
         </div>
 
         <div className="col-start-1 row-start-1 flex items-center gap-2 sm:col-start-2 sm:justify-self-center">
-          <Logo variant="mark" tone={isDark ? 'onDark' : 'onLight'} to={null} className="h-[34px] w-auto sm:h-[38px]" />
+          <Wordmark className="text-[22px] text-[var(--text-main)] sm:text-[24px]" />
         </div>
 
         <div className="col-start-2 row-start-1 flex items-center gap-0.5 justify-self-end sm:col-start-3">

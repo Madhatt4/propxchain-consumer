@@ -10,6 +10,7 @@
 import type { MouseEvent } from 'react';
 import { Link } from 'react-router-dom';
 
+import { Wordmark } from '@/components/brand/Wordmark';
 import { NAV_LINKS } from './data';
 
 interface SiteFooterProps {
@@ -31,9 +32,7 @@ export function SiteFooter({ onScrollTo }: SiteFooterProps): JSX.Element {
       style={{ padding: '3rem 3.5rem', background: 'var(--ink2)', borderTop: '1px solid var(--card-border)' }}
     >
       <div className="wrap flex flex-wrap items-center justify-between gap-6">
-        <span className="font-display" style={{ fontWeight: 700, fontSize: '1.2rem', letterSpacing: '-0.02em', color: 'var(--fg)' }}>
-          Prop<span style={{ color: 'var(--t)' }}>X</span>chain
-        </span>
+        <Wordmark className="text-[1.2rem] text-[color:var(--fg)]" accentClassName="text-[color:var(--t)]" />
 
         <div className="flex flex-wrap gap-6">
           {NAV_LINKS.map((link) => (
