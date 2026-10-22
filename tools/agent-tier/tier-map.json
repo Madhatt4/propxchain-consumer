@@ -1,7 +1,8 @@
 {
   "$comment": [
     "Danger-tier map for agent workers in propxchain-consumer. glob -> tier.",
-    "highest matching tier wins; unmatched is tier 3; approved by Marc 2026-10-21"
+    "highest matching tier wins; unmatched is tier 3; approved by Marc 2026-10-21",
+    "Tightened 2026-10-22: served discovery/identity files, CSP headers, admin pages, wallet/signing pages and auth utilities are not agent work."
   ],
 
   "rules": [
@@ -40,6 +41,7 @@
     { "tier": 2, "glob": "src/contexts/**" },
     { "tier": 2, "glob": "src/router/**" },
     { "tier": 2, "glob": "supabase/**" },
+    { "tier": 2, "glob": "src/lib/supabase.ts" },
 
     { "tier": 3, "glob": ".github/**" },
     { "tier": 3, "glob": ".env*" },
@@ -56,6 +58,13 @@
     { "tier": 3, "glob": "src/components/providers/**" },
     { "tier": 3, "glob": "src/components/admin/**" },
     { "tier": 3, "glob": ".mcp.json" },
-    { "tier": 3, "glob": ".claude/**" }
+    { "tier": 3, "glob": ".claude/**" },
+    { "tier": 3, "glob": "public/.well-known/**" },
+    { "tier": 3, "glob": "public/.ic-assets.json5" },
+    { "tier": 3, "glob": "src/pages/admin/**" },
+    { "tier": 3, "glob": "src/pages/WalletProofPage.tsx" },
+    { "tier": 3, "glob": "src/pages/ExchangeSigningPage.tsx" },
+    { "tier": 3, "glob": "src/utils/auth.ts" },
+    { "tier": 3, "glob": "src/utils/oauthSignUpIntent.ts" }
   ]
 }

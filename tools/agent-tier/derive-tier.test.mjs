@@ -34,6 +34,16 @@ describe('tierForPath — classification', () => {
     ['android/app/build.gradle', 3],
     ['README.md', 0],
     ['unknown/thing.bin', 3],
+    // Tightened 2026-10-22: served identity files, CSP, admin, wallet/signing, auth utils.
+    ['public/.well-known/ii-alternative-origins', 3],
+    ['public/.ic-assets.json5', 3],
+    ['src/pages/admin/SagasPage.tsx', 3],
+    ['src/pages/WalletProofPage.tsx', 3],
+    ['src/utils/auth.ts', 3],
+    ['src/lib/supabase.ts', 2],
+    // Regression: ordinary public assets and pages stay tier 1.
+    ['public/favicon.ico', 1],
+    ['src/pages/AboutPage.tsx', 1],
   ];
 
   for (const [path, expected] of cases) {
