@@ -67,11 +67,11 @@ IDs, the Supabase project and the Cloudflare Worker URLs are read from the
 environment at build time. There is no offline mode: flows that need a
 canister or a Worker need it configured.
 
-Every migration in `supabase/migrations` that creates a public table grants on
-it explicitly in the same file: `service_role` always, `authenticated` if the
-app uses the table, `anon` only with an `-- anon: <reason>` comment. Supabase
-stopped auto-granting new public tables on 30 Oct 2026; CI enforces this with
-`scripts/check-migration-grants.mjs`.
+Every migration in `supabase/migrations` that creates a public table must
+grant privileges on that table explicitly, in the same file: `service_role`
+always, `authenticated` if the app uses the table, `anon` only with an
+`-- anon: <reason>` comment. Supabase stopped auto-granting new public tables
+on 30 Oct 2026; CI enforces this with `scripts/check-migration-grants.mjs`.
 
 ## Deployment
 
