@@ -1,21 +1,20 @@
-// Run: node --test tools/agent-tier/derive-tier.test.mjs
+// Run: npx vitest run tools/agent-tier/derive-tier.test.mjs
 //
 // The fail-closed behaviour is the security-critical property here: an
 // unmatched path MUST resolve to the highest tier. If this suite ever goes
 // green with an unmatched path returning 0, agent autonomy has silently
 // widened to cover code nobody classified.
 
-import { test, describe } from 'node:test';
-import assert from 'node:assert/strict';
+import { describe, it, expect } from 'vitest';
 import { tierForPath, UNMATCHED_TIER } from './derive-tier.mjs';
 
 describe('tierForPath — fail-closed default', () => {
-  test('should resolve an unmatched path to the highest tier', () => {
+  it('should resolve an unmatched path to the highest tier', () => {
     const result = tierForPath('unknown/thing.bin');
 
-    assert.equal(result.tier, UNMATCHED_TIER);
-    assert.equal(result.tier, 3);
-    assert.match(result.rule, /unmatched/);
+    expect(result.tier).toBe(UNMATCHED_TIER);
+    expect(result.tier).toBe(3);
+    expect(result.rule).toMatch(/unmatched/);
   });
 });
 
@@ -47,8 +46,8 @@ describe('tierForPath — classification', () => {
   ];
 
   for (const [path, expected] of cases) {
-    test(`should classify ${path} as tier ${expected}`, () => {
-      assert.equal(tierForPath(path).tier, expected);
+    it(`should classify ${path} as tier ${expected}`, () => {
+      expect(tierForPath(path).tier).toBe(expected);
     });
   }
 });
