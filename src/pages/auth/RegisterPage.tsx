@@ -22,7 +22,7 @@ const registerSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   role: z.enum(['seller', 'buyer', 'solicitor'], {
-    required_error: 'Please select a role',
+    error: 'Please select a role',
   }),
 });
 
