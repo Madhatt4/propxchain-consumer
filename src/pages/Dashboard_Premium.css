@@ -3,8 +3,6 @@
 
 :root {
   /* Light Mode Color Palette (Default) */
-  --primary: #0d9488;
-  --primary-dark: #0f766e;
   --bg-main: #f5f5f4;
   --bg-card: #ffffff;
   --bg-section: #e7e5e4;
@@ -31,8 +29,6 @@
 
 /* Dark Mode Color Palette */
 .dark {
-  --primary: #6366F1;
-  --primary-dark: #4F46E5;
   --bg-main: #0F172A;
   --bg-card: #1E293B;
   --bg-section: #334155;
@@ -89,7 +85,7 @@
 }
 
 .logo-icon {
-  color: var(--primary);
+  color: var(--px-primary);
 }
 
 .nav-item {
@@ -113,7 +109,7 @@
 .nav-item.active {
   background: var(--bg-section);
   color: var(--text-main);
-  border-left: 3px solid var(--primary);
+  border-left: 3px solid var(--px-primary);
 }
 
 .nav-badge {
@@ -240,7 +236,7 @@
 }
 
 .toggle-switch.active {
-  background: var(--primary);
+  background: var(--px-primary);
 }
 
 .toggle-switch.active::after {
@@ -249,8 +245,8 @@
 
 .share-btn {
   background: transparent;
-  color: var(--primary);
-  border: 1.5px solid var(--primary);
+  color: var(--px-primary);
+  border: 1.5px solid var(--px-primary);
   padding: 8px 16px;
   border-radius: 8px;
   cursor: pointer;
@@ -260,7 +256,7 @@
 }
 
 .share-btn:hover {
-  background: var(--primary);
+  background: var(--px-primary);
   color: white;
 }
 
@@ -310,7 +306,7 @@
 }
 
 .stage-name {
-  color: var(--primary);
+  color: var(--px-primary);
 }
 
 .estimated-completion {
@@ -325,7 +321,7 @@
 .big-percent {
   font-size: 2rem;
   font-weight: 800;
-  color: var(--primary);
+  color: var(--px-primary);
 }
 
 .health-label {
@@ -358,7 +354,7 @@
   top: 12px;
   left: 0;
   height: 4px;
-  background: var(--primary);
+  background: var(--px-primary);
   z-index: 1;
   transition: width 0.5s ease;
 }
@@ -385,13 +381,13 @@
 }
 
 .step.completed .step-dot {
-  border-color: var(--primary);
-  background: var(--primary);
+  border-color: var(--px-primary);
+  background: var(--px-primary);
   color: white;
 }
 
 .step.active .step-dot {
-  border-color: var(--primary);
+  border-color: var(--px-primary);
   background: var(--bg-card);
   box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.2);
 }
@@ -403,7 +399,7 @@
 }
 
 .step.active .step-label {
-  color: var(--primary);
+  color: var(--px-primary);
 }
 
 /* DASHBOARD GRID - Balanced 2-column layout */
@@ -743,7 +739,7 @@
 }
 
 .activity-dot.recent {
-  background: var(--primary);
+  background: var(--px-primary);
 }
 
 .activity-text {
@@ -936,7 +932,7 @@
 .profile-dropdown-avatar {
   width: 48px;
   height: 48px;
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  background: linear-gradient(135deg, var(--px-primary) 0%, var(--px-primary-hover) 100%);
   color: white;
   border-radius: 50%;
   display: flex;

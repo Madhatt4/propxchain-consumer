@@ -24,7 +24,7 @@
 }
 
 .premium-logo-icon {
-  color: var(--primary, #0d9488);
+  color: var(--px-primary, #0d9488);
 }
 
 .premium-nav-item {
@@ -48,7 +48,7 @@
 .premium-nav-item.active {
   background: var(--bg-section, #e7e5e4);
   color: var(--text-main, #1c1917);
-  border-left: 3px solid var(--primary, #0d9488);
+  border-left: 3px solid var(--px-primary, #0d9488);
 }
 
 .premium-nav-badge {

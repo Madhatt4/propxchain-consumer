@@ -10,7 +10,8 @@
     --card-foreground: 0 0% 9%;
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 9%;
-    --primary: 0 0% 13%;
+    /* Teal #0D9488 (DESIGN.md --primary), as HSL channels for Tailwind opacity modifiers. */
+    --primary: 175 84% 32%;
     --primary-foreground: 0 0% 98%;
     --secondary: 0 0% 96%;
     --secondary-foreground: 0 0% 9%;
@@ -26,7 +27,7 @@
     --warning-foreground: 26 83.3% 14.1%;
     --border: 0 0% 90%;
     --input: 0 0% 90%;
-    --ring: 0 0% 13%;
+    --ring: 175 84% 32%;
     --radius: 0.5rem;
     /* Staged dashboard brand colours */
     --brand: 172 66% 26%;
@@ -69,7 +70,8 @@
     --card-foreground: 0 0% 98%;
     --popover: 0 0% 9%;
     --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 80%;
+    /* Teal #14B8A6 (DESIGN.md dark --primary); text on it stays near-black for contrast. */
+    --primary: 173 80% 40%;
     --primary-foreground: 0 0% 9%;
     --secondary: 0 0% 18%;
     --secondary-foreground: 0 0% 98%;
@@ -85,7 +87,7 @@
     --warning-foreground: 26 83.3% 14.1%;
     --border: 0 0% 18%;
     --input: 0 0% 18%;
-    --ring: 0 0% 50%;
+    --ring: 173 80% 40%;
 
     /* PropXchain brand tokens — dark mode (per DESIGN.md). */
     --px-primary: #14B8A6;

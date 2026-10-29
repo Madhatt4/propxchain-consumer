@@ -413,7 +413,7 @@ const TransactionDetailTabs: React.FC<TransactionDetailTabsProps> = ({
               padding: '12px 16px',
               background: activeTab === tab.id ? 'var(--bg-section)' : 'transparent',
               border: 'none',
-              borderBottom: activeTab === tab.id ? '2px solid var(--primary)' : '2px solid transparent',
+              borderBottom: activeTab === tab.id ? '2px solid var(--px-primary)' : '2px solid transparent',
               color: activeTab === tab.id ? 'var(--text-main)' : 'var(--text-secondary)',
               fontSize: '13px',
               fontWeight: 600,
@@ -1071,7 +1071,7 @@ const TransactionDetailTabs: React.FC<TransactionDetailTabsProps> = ({
                         <div style={{ background: 'var(--bg-card)', padding: '10px', borderRadius: '6px' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                             <span style={{ color: 'var(--text-muted)', fontSize: '11px' }}>Blockchain Hash:</span>
-                            <span style={{ color: 'var(--primary)', fontSize: '10px' }}>⛓️ On-chain</span>
+                            <span style={{ color: 'var(--px-primary)', fontSize: '10px' }}>⛓️ On-chain</span>
                           </div>
                           <div style={{ color: 'var(--text-secondary)', fontSize: '11px', fontFamily: 'monospace', wordBreak: 'break-all' }}>
                             {(doc as any).fileHash || 'Hash not available'}
@@ -1116,11 +1116,11 @@ const TransactionDetailTabs: React.FC<TransactionDetailTabsProps> = ({
                   left: '4px',
                   width: '14px',
                   height: '14px',
-                  background: 'var(--primary)',
+                  background: 'var(--px-primary)',
                   borderRadius: '50%',
                   border: '2px solid var(--bg-card)'
                 }} />
-                <div style={{ background: 'var(--bg-section)', borderRadius: '8px', padding: '16px', borderLeft: '3px solid var(--primary)' }}>
+                <div style={{ background: 'var(--bg-section)', borderRadius: '8px', padding: '16px', borderLeft: '3px solid var(--px-primary)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '8px' }}>
                     <div>
                       <h4 style={{ color: 'var(--text-main)', fontSize: '14px', margin: 0 }}>
@@ -1223,7 +1223,7 @@ const TransactionDetailTabs: React.FC<TransactionDetailTabsProps> = ({
                         <div style={{ marginTop: '4px' }}>
                           <span style={{
                             background: 'var(--bg-card)',
-                            color: 'var(--primary)',
+                            color: 'var(--px-primary)',
                             padding: '2px 8px',
                             borderRadius: '4px',
                             fontSize: '11px',
