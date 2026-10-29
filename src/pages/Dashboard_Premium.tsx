@@ -737,10 +737,12 @@ const Dashboard_PremiumContent: React.FC = () => {
                   <Link2 size={18} strokeWidth={2} />
                   Join transaction
                 </button>
+                {/* On mobile the sticky footer below carries Start once there
+                    are cards; with none, this is the only route to it. */}
                 <button
                   type="button"
                   onClick={() => navigate('/start-transaction')}
-                  className="hidden h-11 items-center gap-2 rounded-lg border-none bg-[#0D9488] px-[18px] text-sm font-medium text-white transition-colors duration-200 ease-out hover:bg-[#0F766E] sm:flex"
+                  className={`${transactions.length === 0 ? 'flex' : 'hidden sm:flex'} h-11 items-center gap-2 rounded-lg border-none bg-[#0D9488] px-[18px] text-sm font-medium text-white transition-colors duration-200 ease-out hover:bg-[#0F766E]`}
                 >
                   <Plus size={18} strokeWidth={2} />
                   Start transaction
