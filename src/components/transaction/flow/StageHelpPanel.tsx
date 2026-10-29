@@ -22,7 +22,7 @@ export function StageHelpPanel({ stageId, onClose }: StageHelpPanelProps): React
     >
       <div className="flex items-start justify-between gap-2 mb-3">
         <div className="flex items-center gap-2">
-          <HelpCircle size={18} style={{ color: 'var(--primary)' }} />
+          <HelpCircle size={18} style={{ color: 'var(--px-primary)' }} />
           <h3
             className="font-semibold text-sm"
             style={{ color: 'var(--text)', fontFamily: 'DM Sans, sans-serif' }}
