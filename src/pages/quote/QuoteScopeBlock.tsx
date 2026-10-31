@@ -5,7 +5,12 @@
  * No prices: PropXchain itemises the work, the conveyancer prices every line.
  * Provenance is shown on every item because a checkable claim carries weight and
  * a bare assertion does not.
+ *
+ * Enquiry items are held on the stored scope but never shown (Marc, 2026-10-31):
+ * a firm sees what the documents say, through the search summary, and no canned
+ * enquiries.
  */
+import SearchSummaryBlock from './SearchSummaryBlock';
 import type { QuoteScope, ScopeItem } from '@/types/quoteScope.types';
 
 interface QuoteScopeBlockProps {
@@ -14,7 +19,6 @@ interface QuoteScopeBlockProps {
 
 const GROUPS: ReadonlyArray<{ category: ScopeItem['category']; heading: string }> = [
   { category: 'supplement', heading: 'Supplements' },
-  { category: 'enquiry', heading: 'Enquiries' },
   { category: 'task', heading: 'Tasks' },
 ];
 
@@ -34,19 +38,26 @@ function ScopeRow({ item }: { item: ScopeItem }): JSX.Element {
 export default function QuoteScopeBlock({ scope }: QuoteScopeBlockProps): JSX.Element | null {
   if (!scope) return null;
 
+  const visibleItems = scope.items.filter((i) => i.category !== 'enquiry');
+  const isNothingFound = scope.items.length === 0 && !scope.searchSummary;
+
   return (
     <div className="mb-8">
-      <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
-        Pre-identified Scope
-      </h2>
+      {scope.searchSummary && <SearchSummaryBlock summary={scope.searchSummary} />}
 
-      {scope.items.length === 0 ? (
+      {(visibleItems.length > 0 || isNothingFound) && (
+        <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
+          Pre-identified Scope
+        </h2>
+      )}
+
+      {isNothingFound ? (
         <p className="text-sm text-gray-500">
           No scope items were identified automatically for this file.
         </p>
       ) : (
         GROUPS.map(({ category, heading }) => {
-          const items = scope.items.filter((i) => i.category === category);
+          const items = visibleItems.filter((i) => i.category === category);
           if (items.length === 0) return null;
           return (
             <div key={category} className="mb-5">

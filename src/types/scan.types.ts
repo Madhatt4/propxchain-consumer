@@ -50,6 +50,36 @@ export interface ScanRunResult {
   result: ScanResult;
 }
 
+// --- Shared search scans (server-built, read by every party) -----------------
+
+export type SharedScanStatus = 'pending' | 'complete' | 'unsupported' | 'error';
+
+/** Something a search document itself states, and where it states it. */
+export interface SharedScanFlag {
+  statement: string;
+  searchName: string;
+  location?: string;
+}
+
+/**
+ * A `search_scans` row with scope 'shared'. Deliberately has no user id: other
+ * parties can read that column on the row, and it is nobody's business but the
+ * orderer's.
+ */
+export interface SharedSearchScan {
+  id: string;
+  provider: string;
+  providerOrderId: string | null;
+  status: SharedScanStatus;
+  explainer: string;
+  flags: SharedScanFlag[];
+  /** What could not be read. Kept apart from flags: a flag is what a document says. */
+  warnings: string[];
+  personalFindingsCount: number;
+  /** Only ever non-null for the person who ordered the search (RLS). */
+  personalFindings: ScanFinding[] | null;
+}
+
 // --- HMLR scan (the odd one out — a DIFFERENT shape we normalise) -------------
 
 export type HmlrFindingCategory =
