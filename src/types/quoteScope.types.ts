@@ -12,9 +12,32 @@ export interface ScopeItem {
   confidence: 'high' | 'medium' | 'low';
 }
 
+export interface SearchSummaryFlag {
+  statement: string;
+  searchName: string;
+  location?: string;
+}
+
+export interface SearchSummarySection {
+  provider: string;
+  explainer: string;
+  flags: SearchSummaryFlag[];
+}
+
+/** A shared scan's own words. Reported, not interpreted: nothing here is a line to price. */
+export interface SearchSummary {
+  sections: SearchSummarySection[];
+  truncated: boolean;
+}
+
+export const SEARCH_SUMMARY_HEADING = 'Search results summary (automated)';
+export const SEARCH_SUMMARY_NOTICE = 'An automated summary of the delivered searches, not legal advice.';
+export const SEARCH_SUMMARY_TRUNCATED_NOTICE = 'Part of this summary was left out for length.';
+
 export interface QuoteScope {
   items: ScopeItem[];
   notAvailable: string[];
   derivedAt: string;
   schemaVersion: number;
+  searchSummary?: SearchSummary;
 }

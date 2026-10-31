@@ -25,6 +25,7 @@
 
 import { supabase } from '../lib/supabase';
 import { logger } from '../utils/logger';
+import type { SharedSearchScan } from '../types/scan.types';
 
 /** One attachment on a returned product, in the shape `search-scan` expects. */
 export interface OneSearchScanAttachment {
@@ -166,4 +167,18 @@ export async function fetchReturnedOneSearchResults(
       bundle: parseOneSearchResultsXml(row.results_xml ?? ''),
     }))
     .filter((r) => r.bundle.products.some((p) => p.attachments.some((a) => a.contentBase64)));
+}
+
+/**
+ * Returned searches the shared scan has not picked up. A search with a shared
+ * scan runs itself, so it no longer needs a button.
+ */
+export function withoutSharedScan(
+  returned: ReturnedOneSearchSearch[],
+  sharedScans: ReadonlyArray<Pick<SharedSearchScan, 'provider' | 'providerOrderId'>>,
+): ReturnedOneSearchSearch[] {
+  const scanned = new Set(
+    sharedScans.filter((s) => s.provider === 'onesearch').map((s) => s.providerOrderId),
+  );
+  return returned.filter((r) => !scanned.has(r.id));
 }

@@ -23,7 +23,15 @@ import {
   fetchReturnedOneSearchResults,
   type ReturnedOneSearchSearch,
 } from '../services/onesearchResults';
-import { normalizeHmlrToContract, type ScanResult, type ScanRunResult } from '../types/scan.types';
+import { fetchSharedSearchScans } from '../services/sharedSearchScans';
+import {
+  normalizeHmlrToContract,
+  type ScanResult,
+  type ScanRunResult,
+  type SharedSearchScan,
+} from '../types/scan.types';
+
+const SHARED_SCAN_POLL_MS = 30 * 1000;
 
 /**
  * Read the AI HMLR scan for a transaction's already-pulled register. Resolves
@@ -56,6 +64,22 @@ export function useReturnedOneSearchResults(
     queryKey: [...queryKeys.scans.all, 'onesearch-returned', transactionId],
     queryFn: () => fetchReturnedOneSearchResults(transactionId),
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+/**
+ * The shared search scans on this transaction. Polls only while one is still
+ * being scanned, so a summary appears without anyone refreshing the page.
+ */
+export function useSharedSearchScans(
+  transactionId: string,
+): UseQueryResult<SharedSearchScan[]> {
+  return useQuery({
+    queryKey: queryKeys.scans.shared(transactionId),
+    queryFn: () => fetchSharedSearchScans(transactionId),
+    staleTime: 60 * 1000,
+    refetchInterval: (query) =>
+      query.state.data?.some((s) => s.status === 'pending') ? SHARED_SCAN_POLL_MS : false,
   });
 }
 

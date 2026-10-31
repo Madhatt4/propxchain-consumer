@@ -3,7 +3,11 @@
 
 import { describe, it, expect } from 'vitest';
 
-import { parseOneSearchResultsXml } from '../onesearchResults';
+import {
+  parseOneSearchResultsXml,
+  withoutSharedScan,
+  type ReturnedOneSearchSearch,
+} from '../onesearchResults';
 
 // Mirrors the real <SearchResultsSend> OneSearch pushed for invoice E26573713:
 // default OSCRE namespace on the envelope, xmlns="" reset on <SearchOrder>, and
@@ -135,5 +139,38 @@ describe('parseOneSearchResultsXml', () => {
   it('should return no products for malformed XML or an empty string', () => {
     expect(parseOneSearchResultsXml('<SearchResultsSend><oops').products).toEqual([]);
     expect(parseOneSearchResultsXml('').products).toEqual([]);
+  });
+});
+
+describe('withoutSharedScan', () => {
+  const returned = (id: string): ReturnedOneSearchSearch => ({
+    id,
+    ourReference: `PXC-${id}`,
+    supplierReference: null,
+    productCodes: [],
+    returnedAt: '2026-10-30T00:00:00Z',
+    bundle: { products: [] },
+  });
+
+  it('should drop an order that has a shared scan and keep the rest', () => {
+    const result = withoutSharedScan(
+      [returned('a'), returned('b')],
+      [{ provider: 'onesearch', providerOrderId: 'a' }],
+    );
+
+    expect(result.map((r) => r.id)).toEqual(['b']);
+  });
+
+  it('should ignore a shared scan from another provider with the same id', () => {
+    const result = withoutSharedScan(
+      [returned('a')],
+      [{ provider: 'groundsure', providerOrderId: 'a' }],
+    );
+
+    expect(result).toHaveLength(1);
+  });
+
+  it('should return everything when there are no shared scans', () => {
+    expect(withoutSharedScan([returned('a')], [])).toHaveLength(1);
   });
 });
