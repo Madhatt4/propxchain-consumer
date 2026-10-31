@@ -7,24 +7,25 @@
  * through the shared ScanResultCard. Title/HMLR reads the warmed server cache;
  * Survey scans a single manually-uploaded PDF.
  *
- * Searches prefers the provider's own returned results when they exist: an
- * ordered OneSearch search comes back to `onesearch_orders` and can be scanned
- * in place, so nobody has to spot that it arrived or re-upload a document we
- * already hold. Manual upload stays as the fallback for searches ordered
- * outside the platform.
+ * A search ordered through the platform is scanned on the server when it comes
+ * back, and every party reads that one result (SharedSearchScans). What stays
+ * here is private to whoever runs it: a PDF upload, for searches ordered outside
+ * the platform, and a returned OneSearch search with no shared scan.
  */
 import { useState } from 'react';
 import type { TransactionTabProps } from './transactionTabs.config';
 import { ScanResultCard } from '@/components/transaction/scans/ScanResultCard';
+import { SharedSearchScans } from '@/components/transaction/scans/SharedSearchScans';
 import { ScanTriggerButton } from '@/components/transaction/scans/ScanTriggerButton';
 import {
   useHmlrScan,
   useReturnedOneSearchResults,
   useSearchScan,
+  useSharedSearchScans,
   useSurveyScan,
 } from '@/hooks/useScan';
 import { fileToBase64 } from '@/services/scan.service';
-import type { ReturnedOneSearchSearch } from '@/services/onesearchResults';
+import { withoutSharedScan, type ReturnedOneSearchSearch } from '@/services/onesearchResults';
 import type { ScanRunResult } from '@/types/scan.types';
 
 function mutationError(isError: boolean, err: Error | null, data?: ScanRunResult | null): string | null {
@@ -67,10 +68,14 @@ function returnedLabel(returned: ReturnedOneSearchSearch): string {
 function SearchPanel({ transactionId, propertyRef }: FilePanelProps): JSX.Element {
   const scan = useSearchScan();
   const { data: returnedSearches } = useReturnedOneSearchResults(transactionId);
+  const { data: sharedScans, isLoading: isSharedLoading } = useSharedSearchScans(transactionId);
   const [label, setLabel] = useState<string | null>(null);
 
-  // Most recent first (the query orders by updated_at desc).
-  const returned = returnedSearches?.[0];
+  // Most recent first (the query orders by updated_at desc). Held back until the
+  // shared scans are known, or the button flashes up for a search that has one.
+  const returned = isSharedLoading
+    ? undefined
+    : withoutSharedScan(returnedSearches ?? [], sharedScans ?? [])[0];
 
   const onFile = async (file: File): Promise<void> => {
     setLabel(`Scanning ${file.name}`);
@@ -103,12 +108,12 @@ function SearchPanel({ transactionId, propertyRef }: FilePanelProps): JSX.Elemen
   const description =
     label ??
     (returned
-      ? `${returnedLabel(returned)} Scan them, or upload a different search PDF.`
-      : 'Upload your completed search PDF (LLC1 / CON29 / environmental) to scan it.');
+      ? `${returnedLabel(returned)} Scan them, or upload a different search PDF. Only you will see the result.`
+      : 'Upload a search PDF (LLC1 / CON29 / environmental) to scan it. Only you will see the result.');
 
   return (
     <ScanResultCard
-      heading="Property searches"
+      heading="Property searches: private to you"
       description={description}
       trigger={
         <>
@@ -120,7 +125,7 @@ function SearchPanel({ transactionId, propertyRef }: FilePanelProps): JSX.Elemen
             />
           )}
           <ScanTriggerButton
-            label={returned ? 'Upload a PDF instead' : 'Scan a PDF'}
+            label={returned ? 'Upload a PDF instead' : 'Upload a PDF'}
             isRunning={scan.isPending}
             onFile={(f) => void onFile(f)}
           />
@@ -177,10 +182,10 @@ export function AiScansTab({ transactionId, uprn, postcode }: TransactionTabProp
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
         AI reads your documents and explains them in plain English, with a separate list for your
-        conveyancer. It's free, and personal data is never shown here — only shared with your
-        conveyancer.
+        conveyancer. It's free.
       </p>
       <HmlrPanel transactionId={transactionId} />
+      <SharedSearchScans transactionId={transactionId} />
       <SearchPanel transactionId={transactionId} propertyRef={propertyRef} />
       <SurveyPanel transactionId={transactionId} propertyRef={propertyRef} />
     </div>
