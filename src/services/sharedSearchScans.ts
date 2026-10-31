@@ -66,7 +66,8 @@ function toWarnings(raw: unknown): string[] {
 /**
  * The orderer's personal findings, by scan id. RLS returns only the caller's
  * own, so anyone else gets an empty map and sees the count. A failure here falls
- * back to the same view: nothing on the shared row depends on it.
+ * back to the same view: nothing on the shared row depends on it. The log carries
+ * the error code alone, so that no value from this table can reach it.
  */
 async function fetchPersonalFindings(scanIds: string[]): Promise<Map<string, ScanFinding[]>> {
   if (scanIds.length === 0) return new Map();
@@ -74,7 +75,11 @@ async function fetchPersonalFindings(scanIds: string[]): Promise<Map<string, Sca
     .from('search_scan_personal_findings')
     .select('scan_id, findings')
     .in('scan_id', scanIds);
-  if (error || !data) return new Map();
+  if (error) {
+    logger.error('Failed to read personal search findings:', error.code);
+    return new Map();
+  }
+  if (!data) return new Map();
   return new Map(
     (data as PersonalFindingsRow[])
       .filter((row) => Array.isArray(row.findings))

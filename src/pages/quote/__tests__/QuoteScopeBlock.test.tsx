@@ -92,11 +92,12 @@ describe('QuoteScopeBlock', () => {
     expect(screen.getByText(/No scope items were identified/)).toBeInTheDocument();
   });
 
-  it('should not claim nothing was found when the only items are hidden enquiries', () => {
+  it('should render the empty state when the only items are hidden enquiries', () => {
     const onlyEnquiries: QuoteScope = { ...scope, items: [scope.items[1]] };
     render(<QuoteScopeBlock scope={onlyEnquiries} />);
-    expect(screen.queryByText(/No scope items were identified/)).not.toBeInTheDocument();
-    expect(screen.queryByText('Pre-identified Scope')).not.toBeInTheDocument();
+    expect(screen.getByText('Pre-identified Scope')).toBeInTheDocument();
+    expect(screen.getByText(/No scope items were identified/)).toBeInTheDocument();
+    expect(screen.queryByText('Flood risk — confirm insurability')).not.toBeInTheDocument();
   });
 
   describe('search summary', () => {
@@ -139,6 +140,12 @@ describe('QuoteScopeBlock', () => {
 
     it('should show the summary alone when there are no other items', () => {
       render(<QuoteScopeBlock scope={{ ...scope, items: [], searchSummary }} />);
+      expect(screen.getByText(SEARCH_SUMMARY_HEADING)).toBeInTheDocument();
+      expect(screen.queryByText(/No scope items were identified/)).not.toBeInTheDocument();
+    });
+
+    it('should show the summary alone when the only items are hidden enquiries', () => {
+      render(<QuoteScopeBlock scope={{ ...scope, items: [scope.items[1]], searchSummary }} />);
       expect(screen.getByText(SEARCH_SUMMARY_HEADING)).toBeInTheDocument();
       expect(screen.queryByText(/No scope items were identified/)).not.toBeInTheDocument();
     });

@@ -39,7 +39,7 @@ export default function QuoteScopeBlock({ scope }: QuoteScopeBlockProps): JSX.El
   if (!scope) return null;
 
   const visibleItems = scope.items.filter((i) => i.category !== 'enquiry');
-  const isNothingFound = scope.items.length === 0 && !scope.searchSummary;
+  const isNothingFound = visibleItems.length === 0 && !scope.searchSummary;
 
   return (
     <div className="mb-8">

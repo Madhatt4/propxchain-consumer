@@ -32,6 +32,7 @@ vi.mock('../../lib/supabase', () => ({
 }));
 vi.mock('../../utils/logger', () => ({ logger: { error: vi.fn() } }));
 
+import { logger } from '../../utils/logger';
 import { fetchSharedSearchScans } from '../sharedSearchScans';
 
 const ROW = {
@@ -57,6 +58,7 @@ const FINDING = {
 describe('fetchSharedSearchScans', () => {
   beforeEach(() => {
     db.from.mockClear();
+    vi.mocked(logger.error).mockClear();
     db.selected.length = 0;
     db.filters.length = 0;
     db.scans = { data: [ROW], error: null };
@@ -128,6 +130,25 @@ describe('fetchSharedSearchScans', () => {
     const [scan] = await fetchSharedSearchScans('tx_1');
 
     expect(scan.personalFindings).toBeNull();
+    expect(scan.personalFindingsCount).toBe(2);
+  });
+
+  it('should log a failed personal findings read by its code alone', async () => {
+    db.personal = { data: null, error: { code: '42501', message: 'Alex Synthetic' } };
+
+    await fetchSharedSearchScans('tx_1');
+
+    expect(logger.error).toHaveBeenCalledTimes(1);
+    expect(JSON.stringify(vi.mocked(logger.error).mock.calls)).toContain('42501');
+    expect(JSON.stringify(vi.mocked(logger.error).mock.calls)).not.toContain('Alex Synthetic');
+  });
+
+  it('should log nothing when a non-orderer gets no personal findings', async () => {
+    db.personal = { data: [], error: null };
+
+    await fetchSharedSearchScans('tx_1');
+
+    expect(logger.error).not.toHaveBeenCalled();
   });
 
   it('should not ask for personal findings when a scan has none', async () => {

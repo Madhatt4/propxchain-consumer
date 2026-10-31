@@ -161,6 +161,17 @@ describe('AiScansTab searches', () => {
     expect(screen.getByText(/Applicant: Alex Synthetic/)).toBeInTheDocument();
   });
 
+  it('should show the count and no empty heading when the personal details list is empty', async () => {
+    svc.fetchSharedSearchScans.mockResolvedValue([
+      scan({ personalFindingsCount: 2, personalFindings: [] }),
+    ]);
+
+    renderTab();
+
+    expect(await screen.findByText(/2 details that identify a person are/)).toBeInTheDocument();
+    expect(screen.queryByText(/only you can see these/)).not.toBeInTheDocument();
+  });
+
   it('should word nothing as an enquiry or a next step', async () => {
     svc.fetchSharedSearchScans.mockResolvedValue([
       scan({ personalFindingsCount: 1 }),

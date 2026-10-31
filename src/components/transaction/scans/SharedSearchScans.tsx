@@ -94,7 +94,7 @@ function PersonalDetails({ findings }: { findings: ScanFinding[] }): JSX.Element
 }
 
 function PersonalCount({ scan }: { scan: SharedSearchScan }): JSX.Element | null {
-  if (scan.personalFindings) return <PersonalDetails findings={scan.personalFindings} />;
+  if (scan.personalFindings?.length) return <PersonalDetails findings={scan.personalFindings} />;
   const count = scan.personalFindingsCount;
   if (count === 0) return null;
   return (
