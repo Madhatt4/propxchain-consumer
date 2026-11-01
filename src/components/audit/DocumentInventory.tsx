@@ -7,10 +7,14 @@ import { FileText, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { useThemeClasses } from '../../hooks/useThemeClasses';
 import { icpService } from '../../services/icp.service';
 import { logger } from '@/utils/logger';
+import DocumentStatusList from '../documents/DocumentStatusList';
+import type { DocumentStatusRow } from '@/lib/documentStatus';
 import type { DocumentAuditEntry } from '../../services/transactionAudit';
 
 interface DocumentInventoryProps {
   documents: DocumentAuditEntry[];
+  /** On the deal but not openable by this viewer: named by category only. */
+  withheld?: DocumentStatusRow[];
 }
 
 type VerifyState = 'idle' | 'verifying' | 'pass' | 'fail';
@@ -37,7 +41,7 @@ function formatDate(ns: number): string {
   });
 }
 
-const DocumentInventory: React.FC<DocumentInventoryProps> = ({ documents }) => {
+const DocumentInventory: React.FC<DocumentInventoryProps> = ({ documents, withheld = [] }) => {
   const theme = useThemeClasses();
   const [verifyStates, setVerifyStates] = useState<Record<number, VerifyState>>({});
 
@@ -63,7 +67,7 @@ const DocumentInventory: React.FC<DocumentInventoryProps> = ({ documents }) => {
     }
   }, [verifyStates]);
 
-  if (documents.length === 0) {
+  if (documents.length === 0 && withheld.length === 0) {
     return (
       <div className={`text-center py-8 ${theme.textTertiary}`}>
         No documents uploaded yet
@@ -118,6 +122,7 @@ const DocumentInventory: React.FC<DocumentInventoryProps> = ({ documents }) => {
           </div>
         );
       })}
+      <DocumentStatusList rows={withheld} />
     </div>
   );
 };

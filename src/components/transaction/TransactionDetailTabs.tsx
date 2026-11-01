@@ -4,7 +4,7 @@
  * Now with multi-party support for N buyers and N sellers
  */
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Transaction, Document } from '../../types/transaction.types';
 import { icpService } from '../../services/icp.service';
 import { recordOnBehalf } from '@/services/onBehalf';
@@ -24,6 +24,9 @@ import { getStorePrincipalId } from '@/stores/authStore';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 import { ChevronDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import DocumentStatusList from '@/components/documents/DocumentStatusList';
+import { hiddenDocumentStatuses, statusProgressDocuments, type DocumentStatusRow } from '@/lib/documentStatus';
+import { mapWithConcurrency } from '@/lib/mapWithConcurrency';
 import LegalTab from './LegalTab';
 import type { SolicitorRecord } from '../../types/solicitor.types';
 
@@ -38,6 +41,8 @@ interface PartyInfo {
   email?: string;
   role: string;
 }
+
+const ACTIVITY_LOG_CONCURRENCY = 4;
 
 type TabType = 'checklist' | 'documents' | 'ta6' | 'ta10' | 'ta7' | 'chain' | 'legal' | 'activity';
 
@@ -64,7 +69,12 @@ const TransactionDetailTabs: React.FC<TransactionDetailTabsProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('checklist');
   const [documents, setDocuments] = useState<Document[]>([]);
+  // Documents on this deal the viewer cannot open: category only, never a filename.
+  const [hiddenStatus, setHiddenStatus] = useState<DocumentStatusRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [documentsFailed, setDocumentsFailed] = useState(false);
+  // Reads take seconds, so a reply can land after this panel has moved to another deal.
+  const currentTransactionId = useRef(transaction.id);
   const [blockchainActivity, setBlockchainActivity] = useState<BlockchainActivity[]>([]);
   const [currentUserRole, setCurrentUserRole] = useState<'seller' | 'buyer' | null>(null);
   const [sellerInfo, setSellerInfo] = useState<PartyInfo | null>(null);
@@ -154,56 +164,76 @@ const TransactionDetailTabs: React.FC<TransactionDetailTabsProps> = ({
     loadPartyInfo();
   }, [transaction]);
 
-  // Load documents for this transaction
-  useEffect(() => {
-    const loadDocuments = async () => {
-      try {
-        setLoading(true);
-        await icpService.initialize();
-        const txDocs = await icpService.getDocumentsByTransaction(transaction.id);
-        setDocuments(txDocs || []);
-      } catch (error) {
-        logger.error('Error loading documents:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadDocuments();
+  // After the list: a status failure leaves the last lines up, never breaks the list.
+  const refreshHiddenStatus = useCallback(async (txDocs: Document[]): Promise<void> => {
+    const transactionId = transaction.id;
+    try {
+      const status = await icpService.getDocumentStatus(transactionId);
+      if (currentTransactionId.current !== transactionId) return;
+      setHiddenStatus(hiddenDocumentStatuses(status, txDocs.map(d => d.uploadedAtNs)));
+    } catch (error) {
+      logger.warn('Could not load document status:', error);
+    }
   }, [transaction.id]);
 
-  // Load blockchain activity
+  const loadDocuments = useCallback(async (): Promise<void> => {
+    const transactionId = transaction.id;
+    const isCurrent = (): boolean => currentTransactionId.current === transactionId;
+    setLoading(true);
+    setDocumentsFailed(false);
+    try {
+      await icpService.initialize();
+      const txDocs = await icpService.getDocumentsByTransaction(transactionId);
+      if (!isCurrent()) return;
+      setDocuments(txDocs || []);
+      void refreshHiddenStatus(txDocs || []);
+    } catch (error) {
+      logger.error('Error loading documents:', error);
+      if (isCurrent()) setDocumentsFailed(true);
+    } finally {
+      if (isCurrent()) setLoading(false);
+    }
+  }, [transaction.id, refreshHiddenStatus]);
+
+  // Load documents for this transaction. The clearing lives here, not in
+  // loadDocuments: another deal's rows must go, but a retry keeps this deal's.
   useEffect(() => {
+    currentTransactionId.current = transaction.id;
+    setDocuments([]);
+    setHiddenStatus([]);
+    void loadDocuments();
+  }, [transaction.id, loadDocuments]);
+
+  // Load blockchain activity, only once the Activity tab is open. Each document
+  // is one update call of about two seconds, so a few run at a time.
+  useEffect(() => {
+    let isCancelled = false;
+
     const loadActivity = async () => {
       try {
-        // Get audit logs for documents in this transaction (using rate-limited service method)
-        const activity: BlockchainActivity[] = [];
-
-        for (const doc of documents) {
-          if (doc.storageDocumentId) {
-            try {
-              const logs = await icpService.getAuditLogs(doc.storageDocumentId);
-              if (logs && Array.isArray(logs)) {
-                logs.forEach((log: any) => {
-                  activity.push({
-                    id: `${log.id}`,
-                    action: log.action,
-                    timestamp: new Date(Number(log.timestamp) / 1000000).toISOString(),
-                    actor: log.actorPrincipal?.toString()?.slice(0, 12) + '...' || 'Unknown',
-                    hash: log.metadata?.match(/Hash: ([a-f0-9]+)/)?.[1]?.slice(0, 16) + '...',
-                    metadata: log.metadata
-                  });
-                });
-              }
-            } catch (e) {
-              logger.warn('Could not load audit logs for doc:', doc.id);
-            }
+        const withStorageId = documents.filter(doc => doc.storageDocumentId);
+        const perDocument = await mapWithConcurrency(withStorageId, ACTIVITY_LOG_CONCURRENCY, async (doc): Promise<BlockchainActivity[]> => {
+          try {
+            const logs = await icpService.fetchDocumentAuditLogs(doc.storageDocumentId as number);
+            if (!logs || !Array.isArray(logs)) return [];
+            return logs.map((log: any) => ({
+              id: `${log.id}`,
+              action: log.action,
+              timestamp: new Date(Number(log.timestamp) / 1000000).toISOString(),
+              actor: log.actorPrincipal?.toString()?.slice(0, 12) + '...' || 'Unknown',
+              hash: log.metadata?.match(/Hash: ([a-f0-9]+)/)?.[1]?.slice(0, 16) + '...',
+              metadata: log.metadata
+            }));
+          } catch (e) {
+            logger.warn('Could not load audit logs for doc:', doc.id);
+            return [];
           }
-        }
+        });
 
         // Sort by timestamp descending
+        const activity = perDocument.flat();
         activity.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-        setBlockchainActivity(activity.slice(0, 20)); // Limit to 20 most recent
+        if (!isCancelled) setBlockchainActivity(activity.slice(0, 20)); // Limit to 20 most recent
       } catch (error) {
         logger.error('Error loading blockchain activity:', error);
       }
@@ -212,12 +242,21 @@ const TransactionDetailTabs: React.FC<TransactionDetailTabsProps> = ({
     if (documents.length > 0 && activeTab === 'activity') {
       loadActivity();
     }
+
+    return () => {
+      isCancelled = true;
+    };
   }, [documents, activeTab]);
 
   // Define checklist items based on transaction type
   // Uses DOCUMENT_TYPES storageKeys to match what DocumentUpload uses
   const getChecklistItems = (): ChecklistItem[] => {
     const items: ChecklistItem[] = [];
+    // A party's list leaves out what they cannot open, so a tick also counts
+    // the status rows: the seller still sees that the buyer's funds arrived.
+    const hiddenTypes = new Set(statusProgressDocuments(hiddenStatus, transaction.id).map(d => d.type));
+    const isReceived = (storageKey: string): boolean =>
+      hiddenTypes.has(storageKey) || documents.some(d => d.type === storageKey);
 
     // Seller documents - using storageKeys from DOCUMENT_TYPES
     // NOTE: AML documents (Proof of Identity / Proof of Address) are intentionally
@@ -228,28 +267,28 @@ const TransactionDetailTabs: React.FC<TransactionDetailTabsProps> = ({
     items.push({
       id: DOCUMENT_TYPES.TITLE_DEEDS.storageKey,
       label: DOCUMENT_TYPES.TITLE_DEEDS.displayName,
-      completed: documents.some(d => d.type === DOCUMENT_TYPES.TITLE_DEEDS.storageKey),
+      completed: isReceived(DOCUMENT_TYPES.TITLE_DEEDS.storageKey),
       category: 'seller',
       documentType: DOCUMENT_TYPES.TITLE_DEEDS.storageKey
     });
     items.push({
       id: DOCUMENT_TYPES.ENERGY_PERFORMANCE_CERTIFICATE.storageKey,
       label: DOCUMENT_TYPES.ENERGY_PERFORMANCE_CERTIFICATE.displayName,
-      completed: documents.some(d => d.type === DOCUMENT_TYPES.ENERGY_PERFORMANCE_CERTIFICATE.storageKey),
+      completed: isReceived(DOCUMENT_TYPES.ENERGY_PERFORMANCE_CERTIFICATE.storageKey),
       category: 'seller',
       documentType: DOCUMENT_TYPES.ENERGY_PERFORMANCE_CERTIFICATE.storageKey
     });
     items.push({
       id: DOCUMENT_TYPES.TA6_PROPERTY_INFORMATION_FORM.storageKey,
       label: DOCUMENT_TYPES.TA6_PROPERTY_INFORMATION_FORM.displayName,
-      completed: documents.some(d => d.type === DOCUMENT_TYPES.TA6_PROPERTY_INFORMATION_FORM.storageKey),
+      completed: isReceived(DOCUMENT_TYPES.TA6_PROPERTY_INFORMATION_FORM.storageKey),
       category: 'seller',
       documentType: DOCUMENT_TYPES.TA6_PROPERTY_INFORMATION_FORM.storageKey
     });
     items.push({
       id: DOCUMENT_TYPES.TA10_FITTINGS_CONTENTS.storageKey,
       label: DOCUMENT_TYPES.TA10_FITTINGS_CONTENTS.displayName,
-      completed: documents.some(d => d.type === DOCUMENT_TYPES.TA10_FITTINGS_CONTENTS.storageKey),
+      completed: isReceived(DOCUMENT_TYPES.TA10_FITTINGS_CONTENTS.storageKey),
       category: 'seller',
       documentType: DOCUMENT_TYPES.TA10_FITTINGS_CONTENTS.storageKey
     });
@@ -262,14 +301,14 @@ const TransactionDetailTabs: React.FC<TransactionDetailTabsProps> = ({
     items.push({
       id: DOCUMENT_TYPES.PROOF_OF_FUNDS.storageKey,
       label: DOCUMENT_TYPES.PROOF_OF_FUNDS.displayName,
-      completed: documents.some(d => d.type === DOCUMENT_TYPES.PROOF_OF_FUNDS.storageKey),
+      completed: isReceived(DOCUMENT_TYPES.PROOF_OF_FUNDS.storageKey),
       category: 'buyer',
       documentType: DOCUMENT_TYPES.PROOF_OF_FUNDS.storageKey
     });
     items.push({
       id: DOCUMENT_TYPES.MORTGAGE_AGREEMENT.storageKey,
       label: DOCUMENT_TYPES.MORTGAGE_AGREEMENT.displayName,
-      completed: documents.some(d => d.type === DOCUMENT_TYPES.MORTGAGE_AGREEMENT.storageKey),
+      completed: isReceived(DOCUMENT_TYPES.MORTGAGE_AGREEMENT.storageKey),
       category: 'buyer',
       documentType: DOCUMENT_TYPES.MORTGAGE_AGREEMENT.storageKey
     });
@@ -278,14 +317,14 @@ const TransactionDetailTabs: React.FC<TransactionDetailTabsProps> = ({
     items.push({
       id: DOCUMENT_TYPES.SURVEY_REPORT.storageKey,
       label: DOCUMENT_TYPES.SURVEY_REPORT.displayName,
-      completed: documents.some(d => d.type === DOCUMENT_TYPES.SURVEY_REPORT.storageKey),
+      completed: isReceived(DOCUMENT_TYPES.SURVEY_REPORT.storageKey),
       category: 'shared',
       documentType: DOCUMENT_TYPES.SURVEY_REPORT.storageKey
     });
     items.push({
       id: DOCUMENT_TYPES.LAND_REGISTRY_CONFIRMATION.storageKey,
       label: DOCUMENT_TYPES.LAND_REGISTRY_CONFIRMATION.displayName,
-      completed: documents.some(d => d.type === DOCUMENT_TYPES.LAND_REGISTRY_CONFIRMATION.storageKey),
+      completed: isReceived(DOCUMENT_TYPES.LAND_REGISTRY_CONFIRMATION.storageKey),
       category: 'shared',
       documentType: DOCUMENT_TYPES.LAND_REGISTRY_CONFIRMATION.storageKey
     });
@@ -303,6 +342,7 @@ const TransactionDetailTabs: React.FC<TransactionDetailTabsProps> = ({
       await icpService.initialize();
       const txDocs = await icpService.getDocumentsByTransaction(transaction.id);
       setDocuments(txDocs || []);
+      void refreshHiddenStatus(txDocs || []);
       logger.info('✅ Documents reloaded from blockchain after upload - activity log will update');
     } catch (error) {
       logger.error('Error reloading documents after upload:', error);
@@ -358,6 +398,7 @@ const TransactionDetailTabs: React.FC<TransactionDetailTabsProps> = ({
       try {
         const txDocs = await icpService.getDocumentsByTransaction(transaction.id);
         setDocuments(txDocs || []);
+        void refreshHiddenStatus(txDocs || []);
       } catch (reloadError) {
         logger.error('Error reloading documents after delete:', reloadError);
       }
@@ -994,7 +1035,18 @@ const TransactionDetailTabs: React.FC<TransactionDetailTabsProps> = ({
                   <div style={{ marginBottom: '12px' }}>⏳</div>
                   Loading documents...
                 </div>
-              ) : documents.length === 0 ? (
+              ) : documentsFailed && documents.length === 0 ? (
+                <div role="alert" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)', background: 'var(--bg-section)', borderRadius: '8px' }}>
+                  <p style={{ margin: '0 0 12px 0' }}>We couldn't load your documents.</p>
+                  <button
+                    type="button"
+                    onClick={() => void loadDocuments()}
+                    style={{ minHeight: '44px', padding: '8px 16px', background: 'transparent', border: '1px solid var(--border-color)', borderRadius: '8px', color: 'var(--text-main)', cursor: 'pointer' }}
+                  >
+                    Try again
+                  </button>
+                </div>
+              ) : documents.length === 0 && hiddenStatus.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)', background: 'var(--bg-section)', borderRadius: '8px' }}>
                   <div style={{ fontSize: '32px', marginBottom: '12px' }}>📄</div>
                   <p style={{ margin: '0 0 8px 0' }}>No documents uploaded yet</p>
@@ -1085,6 +1137,7 @@ const TransactionDetailTabs: React.FC<TransactionDetailTabsProps> = ({
                   ))}
                 </div>
               )}
+              {!loading && <DocumentStatusList rows={hiddenStatus} />}
             </div>
           </div>
         )}

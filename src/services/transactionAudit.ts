@@ -8,6 +8,7 @@
 import { icpService } from './icp.service';
 import { supabase } from '../lib/supabase';
 import { logger } from '@/utils/logger';
+import { hiddenDocumentStatuses, toDocumentStatusRows, type DocumentStatusRow } from '@/lib/documentStatus';
 
 // ============================================
 // TYPES
@@ -86,6 +87,8 @@ export interface AuditReport {
   property: Record<string, unknown> | null;
   parties: AuditParty[];
   documents: DocumentAuditEntry[];
+  /** On this deal, but this viewer cannot open them: no name, hash or uploader. */
+  withheldDocuments: DocumentStatusRow[];
   verifications: Record<string, unknown>[];
   blockchainEventLog: AuditEvent[];
   landRegistry: Record<string, unknown> | null;
@@ -324,9 +327,10 @@ function crossReferencePayments(
 function computeIntegrity(
   crossRefs: CrossReferenceResult[],
   canisterAvailability: Record<string, boolean>,
-  documents: DocumentAuditEntry[]
+  documents: DocumentAuditEntry[],
+  withheldDocuments: DocumentStatusRow[]
 ): IntegrityVerification {
-  const allDocsVerified = documents.length === 0 || documents.every(d => d.verified);
+  const allDocsVerified = [...documents, ...withheldDocuments].every(d => d.verified);
 
   const hasDiscrepancy = crossRefs.some(cr => !cr.matchedOnChain);
   const hasWarning = crossRefs.some(
@@ -419,6 +423,7 @@ export async function fetchAuditReport(transactionId: string): Promise<AuditRepo
   const [
     txResult,
     docsResult,
+    statusResult,
     eventsResult,
     chainResult,
     efficiencyResult,
@@ -427,7 +432,10 @@ export async function fetchAuditReport(transactionId: string): Promise<AuditRepo
     // 1. Transaction record (includes LandRegistryIntegration)
     icpService.transactionManager?.getTransaction(transactionId),
     // 2. Document inventory
-    icpService.documentStorageActor?.getTransactionDocuments(transactionId),
+    icpService.documentStorageActor?.fetchTransactionDocuments(transactionId),
+    // 2b. Every document on the deal, by category: the inventory above is only
+    // what this viewer can open, so this is how the report stays complete.
+    icpService.documentStorageActor?.fetchTransactionDocumentStatus(transactionId),
     // 3. Audit event timeline (guarded — see eventsQuery above)
     eventsQuery,
     // 4. Chain position
@@ -462,8 +470,13 @@ export async function fetchAuditReport(transactionId: string): Promise<AuditRepo
   }
 
   // Extract documents
+  // Either read missing means the inventory may be short, so the report must
+  // say so: an absent actor resolves to undefined rather than rejecting.
   let documents: DocumentAuditEntry[] = [];
-  canisterAvailability['document_storage'] = docsResult.status === 'fulfilled';
+  let withheldDocuments: DocumentStatusRow[] = [];
+  const docsRead = docsResult.status === 'fulfilled' && docsResult.value !== undefined;
+  const statusRead = statusResult.status === 'fulfilled' && statusResult.value !== undefined;
+  canisterAvailability['document_storage'] = docsRead && statusRead;
 
   if (docsResult.status === 'fulfilled' && docsResult.value) {
     const docs = docsResult.value as unknown as Array<Record<string, unknown>>;
@@ -478,8 +491,21 @@ export async function fetchAuditReport(transactionId: string): Promise<AuditRepo
       verified: Boolean(doc.verified),
       verificationStatus: doc.verified ? 'verified' as const : 'pending' as const,
     }));
-  } else if (docsResult.status === 'rejected') {
+  }
+  if (docsResult.status === 'rejected') {
     errors['document_storage'] = String(docsResult.reason);
+  } else if (statusResult.status === 'rejected') {
+    errors['document_storage'] = String(statusResult.reason);
+  } else if (!docsRead || !statusRead) {
+    errors['document_storage'] = 'Document storage was not available';
+  }
+
+  if (docsRead && statusResult.status === 'fulfilled' && statusResult.value) {
+    const listed = (docsResult.value ?? []) as unknown as Array<Record<string, unknown>>;
+    withheldDocuments = hiddenDocumentStatuses(
+      toDocumentStatusRows(statusResult.value),
+      listed.map(doc => String(doc.uploadedAt)),
+    );
   }
 
   // Extract events
@@ -580,7 +606,7 @@ export async function fetchAuditReport(transactionId: string): Promise<AuditRepo
 
   // Phase 3: Cross-reference and integrity
   const crossRefs = crossReferencePayments(payments, blockchainEventLog);
-  const integrity = computeIntegrity(crossRefs, canisterAvailability, documents);
+  const integrity = computeIntegrity(crossRefs, canisterAvailability, documents, withheldDocuments);
 
   // Assemble report (without hash)
   const reportWithoutHash: Omit<AuditReport, 'reportHash'> = {
@@ -604,6 +630,7 @@ export async function fetchAuditReport(transactionId: string): Promise<AuditRepo
     property: null,
     parties,
     documents,
+    withheldDocuments,
     verifications: [],
     blockchainEventLog,
     landRegistry,

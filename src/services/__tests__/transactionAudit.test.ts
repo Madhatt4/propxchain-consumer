@@ -10,7 +10,8 @@ import { icpService } from '../icp.service';
 // ============================================
 
 const mockGetTransaction = vi.fn();
-const mockGetTransactionDocuments = vi.fn();
+const mockFetchTransactionDocuments = vi.fn();
+const mockFetchDocumentStatus = vi.fn();
 const mockGetEventsByTransaction = vi.fn();
 const mockGetTransactionChain = vi.fn();
 const mockGetBlockchainEfficiencyMetrics = vi.fn();
@@ -24,7 +25,8 @@ vi.mock('../icp.service', () => ({
       getHmlrFetch: (...args: unknown[]) => mockGetHmlrFetch(...args),
     },
     documentStorageActor: {
-      getTransactionDocuments: (...args: unknown[]) => mockGetTransactionDocuments(...args),
+      fetchTransactionDocuments: (...args: unknown[]) => mockFetchTransactionDocuments(...args),
+      fetchTransactionDocumentStatus: (...args: unknown[]) => mockFetchDocumentStatus(...args),
     },
     ledgerManager: {
       getEventsByTransaction: (...args: unknown[]) => mockGetEventsByTransaction(...args),
@@ -104,7 +106,8 @@ function setupCanisterDefaults(): void {
     landRegistryIntegration: { titleNumber: 'HD123456' },
   }]);
   mockGetHmlrFetch.mockResolvedValue({ ok: [] });
-  mockGetTransactionDocuments.mockResolvedValue([
+  mockFetchDocumentStatus.mockResolvedValue([]);
+  mockFetchTransactionDocuments.mockResolvedValue([
     {
       id: 1n,
       fileName: 'title-deed.pdf',
@@ -192,9 +195,72 @@ describe('fetchAuditReport', () => {
     }
   });
 
+  describe('document inventory for a party', () => {
+    const LISTED_AT = 1_793_000_000_000_000_001n;
+    const HIDDEN_AT = 1_793_000_000_000_000_002n;
+    const listedDoc = { id: 1n, fileName: 'title.pdf', fileHash: 'ab', fileSize: 1n, uploadedAt: LISTED_AT, verified: true };
+
+    it('should report a document the party cannot open as withheld, with no filename', async () => {
+      // Arrange
+      mockFetchTransactionDocuments.mockResolvedValue([listedDoc]);
+      mockFetchDocumentStatus.mockResolvedValue([
+        { category: 'title', verified: true, uploadedAt: LISTED_AT },
+        { category: 'funds', verified: true, uploadedAt: HIDDEN_AT },
+      ]);
+
+      // Act
+      const report = await fetchAuditReport(TX_ID);
+
+      // Assert
+      expect(report.documents).toHaveLength(1);
+      expect(report.withheldDocuments).toEqual([
+        { category: 'funds', verified: true, uploadedAtNs: String(HIDDEN_AT) },
+      ]);
+    });
+
+    it('should not call all documents verified when a withheld one is not', async () => {
+      // Arrange
+      mockFetchTransactionDocuments.mockResolvedValue([listedDoc]);
+      mockFetchDocumentStatus.mockResolvedValue([{ category: 'funds', verified: false, uploadedAt: HIDDEN_AT }]);
+
+      // Act
+      const report = await fetchAuditReport(TX_ID);
+
+      // Assert
+      expect(report.integrityVerification.documentHashesVerified).toBe(false);
+    });
+
+    it('should flag document storage when the status read fails, not under-report quietly', async () => {
+      // Arrange
+      mockFetchTransactionDocuments.mockResolvedValue([listedDoc]);
+      mockFetchDocumentStatus.mockRejectedValue(new Error('status down'));
+
+      // Act
+      const report = await fetchAuditReport(TX_ID);
+
+      // Assert
+      expect(report.documents).toHaveLength(1);
+      expect(report.errors['document_storage']).toContain('status down');
+      expect(report.integrityVerification.canisterAvailability['document_storage']).toBe(false);
+    });
+
+    it('should not list everything as withheld when the document read fails', async () => {
+      // Arrange
+      mockFetchTransactionDocuments.mockRejectedValue(new Error('list down'));
+      mockFetchDocumentStatus.mockResolvedValue([{ category: 'title', verified: true, uploadedAt: LISTED_AT }]);
+
+      // Act
+      const report = await fetchAuditReport(TX_ID);
+
+      // Assert
+      expect(report.withheldDocuments).toEqual([]);
+      expect(report.errors['document_storage']).toContain('list down');
+    });
+  });
+
   it('should set error for each failed canister section', async () => {
     mockGetTransaction.mockRejectedValue(new Error('TX canister down'));
-    mockGetTransactionDocuments.mockRejectedValue(new Error('Doc canister down'));
+    mockFetchTransactionDocuments.mockRejectedValue(new Error('Doc canister down'));
     mockGetEventsByTransaction.mockRejectedValue(new Error('Ledger down'));
 
     const report = await fetchAuditReport(TX_ID);

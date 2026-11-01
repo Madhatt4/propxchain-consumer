@@ -22,6 +22,7 @@ import { icpService } from './icp.service';
 import { generateFileHash } from '../utils/hashGenerator';
 import { supabase } from '../lib/supabase';
 import { logger } from '../utils/logger';
+import { hiddenDocumentStatuses } from '../lib/documentStatus';
 import type { DocClassification, DocFinding } from './docClassify.service';
 
 export type CompletedFormId = 'ta6' | 'ta10' | 'ta7';
@@ -143,7 +144,18 @@ interface StoredDocumentRow {
   id: string;
   type: string;
   storageLocation: string;
+  uploadedAtNs?: string;
 }
+
+// document_storage's category for each form's canonical docType, where one
+// identifies the form. "ta7" is not a category it knows, so a TA7 falls under
+// "other" with every unrecognised file: gating on that would block a withdrawal
+// for good over any hidden file, so a TA7 has no hidden-copy check.
+const FORM_STATUS_CATEGORY: Readonly<Record<CompletedFormId, string | null>> = {
+  ta6: 'ta6',
+  ta10: 'ta10',
+  ta7: null,
+};
 
 const SUPABASE_LOCATION = /^supabase:\/\/([^/]+)\/(.+)$/;
 
@@ -180,9 +192,19 @@ export async function withdrawCompletedForm(
   formId: CompletedFormId,
 ): Promise<WithdrawnCompletedForm> {
   const wanted = canonicalUploadDocType(formId);
-  const rows = ((await icpService.getDocumentsByTransaction(transactionId)) as StoredDocumentRow[]).filter(
-    (row) => row.type === wanted,
-  );
+  const visible = (await icpService.getDocumentsByTransaction(transactionId)) as StoredDocumentRow[];
+
+  // The list holds only what this caller can open, so a copy another party
+  // uploaded is absent from it. Clearing the flag then would read as removed
+  // while that PDF stays on record, so stop here and change nothing.
+  const status = await icpService.getDocumentStatus(transactionId);
+  const hidden = hiddenDocumentStatuses(status, visible.map((row) => row.uploadedAtNs));
+  const formCategory = FORM_STATUS_CATEGORY[formId];
+  if (formCategory !== null && hidden.some((row) => row.category === formCategory)) {
+    throw new Error('Only the person who uploaded this form can remove it.');
+  }
+
+  const rows = visible.filter((row) => row.type === wanted);
 
   let removed = 0;
   for (const row of rows) {

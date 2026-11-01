@@ -1,3 +1,4 @@
+import type { DocumentStatusRow } from '@/lib/documentStatus';
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2025 PropXchain Ltd
 
@@ -83,6 +84,8 @@ export interface SplitPanelState {
   transactionsError: string | null;
   /** Documents for selected transaction */
   transactionDocuments: DocumentProofInfo[];
+  /** Documents on that transaction the viewer cannot open: category only */
+  hiddenDocumentStatus: DocumentStatusRow[];
   /** Loading state for documents fetch */
   documentsLoading: boolean;
   /** Error message if documents fetch failed */
@@ -104,6 +107,7 @@ export type SplitPanelAction =
   | { type: 'SET_TRANSACTIONS_ERROR'; payload: string | null }
   | { type: 'REFRESH_TRANSACTIONS' }
   | { type: 'SET_DOCUMENTS'; payload: DocumentProofInfo[] }
+  | { type: 'SET_HIDDEN_DOCUMENT_STATUS'; payload: DocumentStatusRow[] }
   | { type: 'SET_DOCUMENTS_LOADING'; payload: boolean }
   | { type: 'SET_DOCUMENTS_ERROR'; payload: string | null }
   | { type: 'SET_DOCUMENTS_LAST_UPDATED'; payload: number };
@@ -124,6 +128,8 @@ export interface SplitPanelContextType {
   transactionsError: string | null;
   /** Documents for selected transaction */
   transactionDocuments: DocumentProofInfo[];
+  /** Documents on that transaction the viewer cannot open: category only */
+  hiddenDocumentStatus: DocumentStatusRow[];
   /** Loading state for documents */
   documentsLoading: boolean;
   /** Error message if documents failed to load */

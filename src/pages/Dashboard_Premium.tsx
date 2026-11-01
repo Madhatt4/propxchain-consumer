@@ -27,6 +27,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { SplitPanelProvider, useSplitPanel } from '../contexts/SplitPanelContext';
 import type { DocumentProofInfo } from '../types/splitPanel.types';
 import { NewDocumentBadge } from '@/components/documents/NewDocumentBadge';
+import { statusProgressDocuments } from '@/lib/documentStatus';
 import { getNewDocumentCount } from '@/utils/documentAcknowledgment';
 import { useActiveTransactionStore } from '../stores/activeTransactionStore';
 import { useAuthStore, usePrincipalId, useIsAuthenticated } from '../stores/authStore';
@@ -79,6 +80,7 @@ const Dashboard_PremiumContent: React.FC = () => {
     transactions,
     refreshTransactions,
     transactionDocuments: contextDocuments,
+    hiddenDocumentStatus,
     refreshDocuments,
     setSelectedTransaction: setContextTransaction,
   } = useSplitPanel();
@@ -470,10 +472,11 @@ const Dashboard_PremiumContent: React.FC = () => {
     if (status === 'active') {
       // Use contextDocuments when this is the selected transaction
       const isSelected = selectedTransaction?.id === tx.id;
-      if (isSelected && contextDocuments && contextDocuments.length > 0) {
-        const docs = contextDocuments.map((d) => ({
-          type: d.docType || '',
-        }));
+      if (isSelected && contextDocuments && (contextDocuments.length > 0 || hiddenDocumentStatus.length > 0)) {
+        const docs = [
+          ...contextDocuments.map((d) => ({ type: d.docType || '' })),
+          ...statusProgressDocuments(hiddenDocumentStatus, String(tx.id)).map((d) => ({ type: d.type })),
+        ];
         const partyCounts = getPartyCountsForTransaction(tx.id);
         const sellerReq = getRequiredDocumentsForRole('seller', tx, partyCounts.sellerCount);
         const buyerReq = getRequiredDocumentsForRole('buyer', tx, partyCounts.buyerCount);
@@ -1016,10 +1019,13 @@ const Dashboard_PremiumContent: React.FC = () => {
 
               // Use contextDocuments directly (fresh from canister via SplitPanel context)
               // Each doc has docType (canister field) — match against equivalence groups
-              const validDocs = (contextDocuments || []).map((d) => ({
-                type: d.docType || '',
-                uploadedBy: d.uploadedBy?.toString?.() || d.uploadedBy || '',
-              }));
+              const validDocs = [
+                ...(contextDocuments || []).map((d) => ({
+                  type: d.docType || '',
+                  uploadedBy: d.uploadedBy?.toString?.() || d.uploadedBy || '',
+                })),
+                ...statusProgressDocuments(hiddenDocumentStatus, String(selectedTransaction.id)),
+              ];
 
               // Match uploaded docs against required using equivalence groups
               const countUploaded = (requiredDocs: typeof sellerRequired): number => {
@@ -1100,7 +1106,7 @@ const Dashboard_PremiumContent: React.FC = () => {
                         Your To-Do List
                       </h3>
                       <div className="space-y-3">
-                        {buildChecklist('seller', selectedTransaction, contextDocuments).map((item, i) => (
+                        {buildChecklist('seller', selectedTransaction, [...contextDocuments, ...statusProgressDocuments(hiddenDocumentStatus, String(selectedTransaction.id))]).map((item, i) => (
                           <div key={i} className="flex items-start gap-3 p-3 bg-stone-200 dark:bg-gray-900 rounded-lg">
                             <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
                               item.done ? 'bg-green-500 text-white' : 'bg-gray-300 dark:bg-gray-700'
@@ -1275,7 +1281,7 @@ const Dashboard_PremiumContent: React.FC = () => {
                       </h3>
                       <div className="space-y-3">
                         {[
-                          ...buildChecklist('buyer', selectedTransaction, contextDocuments),
+                          ...buildChecklist('buyer', selectedTransaction, [...contextDocuments, ...statusProgressDocuments(hiddenDocumentStatus, String(selectedTransaction.id))]),
                           { label: 'Review seller\'s property forms', desc: 'Check TA6 and TA10 in the tabs', icon: '\u{1F4CB}', done: false },
                         ].map((item, i) => (
                           <div key={i} className="flex items-start gap-3 p-3 bg-stone-200 dark:bg-gray-900 rounded-lg">

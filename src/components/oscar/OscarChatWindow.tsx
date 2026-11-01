@@ -4,10 +4,13 @@ import { logger } from '../../utils/logger';
 import { getStorePrincipalId } from '../../stores/authStore';
 import { oscarService } from '../../services/oscar/oscarService';
 import { icpService } from '../../services/icp.service';
+import { mapWithConcurrency } from '../../lib/mapWithConcurrency';
 import { OscarMessage } from './OscarMessage';
 import { OscarInput } from './OscarInput';
 import { OscarSuggestions } from './OscarSuggestions';
 import type { Message, ChatResponse, TransactionSummaryInput } from '../../types/oscar.types';
+
+const OSCAR_DOC_READ_CONCURRENCY = 3;
 
 interface ConversationContext {
   type?: 'transaction' | 'document' | 'message';
@@ -206,14 +209,15 @@ const OscarChatWindow: React.FC<OscarChatWindowProps> = ({
   const loadAllUserDocuments = async (transactions: TransactionSummaryInput[]) => {
     try {
       await icpService.ensureDocumentStorageActor();
-      const allDocs: DocumentOption[] = [];
 
-      for (const tx of transactions) {
+      // Update calls, so a few at a time: a one-by-one loop keeps the picker
+      // waiting about two seconds per deal.
+      const perTransaction = await mapWithConcurrency(transactions, OSCAR_DOC_READ_CONCURRENCY, async (tx): Promise<DocumentOption[]> => {
         try {
-          const docs = await (await icpService.requireDocumentStorage()).getTransactionDocuments(tx.id);
-          const onChainDocs = (docs || [])
-            .filter((doc: any) => doc.storageLocation === 'onchain' && Number(doc.uploadedChunks) > 0)
-            .map((doc: any) => ({
+          const docs = await icpService.fetchTransactionDocuments(tx.id);
+          return (docs || [])
+            .filter((doc) => doc.storageLocation === 'onchain' && Number(doc.uploadedChunks) > 0)
+            .map((doc) => ({
               id: Number(doc.id),
               fileName: doc.fileName,
               docType: doc.docType || 'Document',
@@ -221,11 +225,12 @@ const OscarChatWindow: React.FC<OscarChatWindowProps> = ({
               transactionId: tx.id,
               propertyAddress: tx.propertyAddress,
             }));
-          allDocs.push(...onChainDocs);
         } catch (err) {
           logger.warn(`Failed to load documents for transaction ${tx.id}:`, err);
+          return [];
         }
-      }
+      });
+      const allDocs = perTransaction.flat();
 
       setAllUserDocuments(allDocs);
 

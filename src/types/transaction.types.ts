@@ -56,6 +56,8 @@ export interface Document {
   mimeType: string;
   uploadedBy: string;
   uploadedAt: string;
+  /** Exact canister timestamp: pairs a listed document with its status row. */
+  uploadedAtNs?: string;
   status: DocumentStatus;
   verifiedBy?: string;
   verifiedAt?: string;

@@ -4,7 +4,7 @@
  * Features: Transaction list, detail view, documents, progress tracking, seller controls
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import DashboardSidebar from '../components/navigation/DashboardSidebar';
 import DashboardHeader from '../components/navigation/DashboardHeader';
@@ -23,6 +23,8 @@ import { cn } from '@/lib/utils';
 import '../styles/dashboard.css';
 import { logger } from '@/utils/logger';
 import { isCompletedStatus } from '@/types/transactionStatus';
+import DocumentStatusList from '@/components/documents/DocumentStatusList';
+import { hiddenDocumentStatuses, statusProgressDocuments, type DocumentStatusRow } from '@/lib/documentStatus';
 
 interface User {
   id: string;
@@ -43,6 +45,10 @@ const DashboardModern: React.FC = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [documents, setDocuments] = useState<Document[]>([]);
+  // Documents on the deal this viewer cannot open: category only, never a filename.
+  const [hiddenStatus, setHiddenStatus] = useState<DocumentStatusRow[]>([]);
+  // Reads take seconds, so a reply can land after the user has moved to another deal.
+  const selectedTxIdRef = useRef<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
   const [currentUserRole, setCurrentUserRole] = useState<'seller' | 'buyer' | null>(null);
@@ -258,6 +264,12 @@ const DashboardModern: React.FC = () => {
   const handleSelectTransaction = async (tx: Transaction) => {
     try {
       logger.info('Selecting transaction:', tx.id);
+      if (selectedTxIdRef.current !== tx.id) {
+        // Another deal's documents must not carry over to this one.
+        selectedTxIdRef.current = tx.id;
+        setDocuments([]);
+        setHiddenStatus([]);
+      }
       setSelectedTransaction(tx);
       setSearchParams({ tx: tx.id });
 
@@ -295,15 +307,25 @@ const DashboardModern: React.FC = () => {
       // Load documents for this transaction
       try {
         if (typeof icpService.getDocumentsByTransaction === 'function') {
-          const txDocuments = await icpService.getDocumentsByTransaction(Number(tx.id));
+          // The id is the canister's Text id ("tx_..."): Number() here made it NaN.
+          const txDocuments = await icpService.getDocumentsByTransaction(String(tx.id));
+          if (selectedTxIdRef.current !== tx.id) return;
           setDocuments(txDocuments || []);
+          // A failed status read leaves the last rows up for this deal.
+          const status = await icpService.getDocumentStatus(String(tx.id)).catch((err: unknown) => {
+            logger.warn('Could not load document status:', err);
+            return null;
+          });
+          if (status && selectedTxIdRef.current === tx.id) {
+            setHiddenStatus(hiddenDocumentStatuses(status, (txDocuments || []).map((d: Document) => d.uploadedAtNs)));
+          }
         } else {
           logger.warn('getDocumentsByTransaction not available in icpService');
           setDocuments([]);
         }
       } catch (err) {
         logger.warn('Could not load documents from blockchain:', err);
-        setDocuments([]);
+        if (selectedTxIdRef.current === tx.id) setDocuments([]);
       }
     } catch (error) {
       logger.error('Error selecting transaction:', error);
@@ -311,12 +333,14 @@ const DashboardModern: React.FC = () => {
   };
 
   const handleBackToList = () => {
+    selectedTxIdRef.current = null;
     setSelectedTransaction(null);
     setSearchParams({});
     setCurrentUserRole(null);
     setInviteCode('');
     setBuyers([]);
     setDocuments([]);
+    setHiddenStatus([]);
   };
 
   const handleStartTransaction = async (type?: string) => {
@@ -511,7 +535,10 @@ const DashboardModern: React.FC = () => {
   };
 
   const getCategoryDocumentSummary = (category: 'seller' | 'buyer' | 'shared') => {
-    const categoryDocs = getDocumentsByCategory(category);
+    const categoryDocs = [
+      ...getDocumentsByCategory(category),
+      ...statusProgressDocuments(hiddenStatus, String(selectedTransaction?.id ?? '')).filter(d => d.category === category),
+    ];
     const uploaded = categoryDocs.filter(d => d.status === 'uploaded' || d.uploadedAt).length;
     const total = categoryDocs.length;
     const percentage = total > 0 ? Math.round((uploaded / total) * 100) : 0;
@@ -1049,6 +1076,7 @@ const DashboardModern: React.FC = () => {
                     </div>
                   </div>
                 </div>
+                <DocumentStatusList rows={hiddenStatus} />
               </CardContent>
             </Card>
           </main>
