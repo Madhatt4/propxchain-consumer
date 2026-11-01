@@ -70,7 +70,7 @@ describe('documentStatusLines', () => {
   });
 
   it('should fall back to a neutral label for a category it does not know', () => {
-    expect(documentStatusLines([row('brand-new-category', '1')])).toEqual(['Other document: received']);
+    expect(documentStatusLines([row('brand-new-category', '1')])).toEqual(['Additional document: received']);
   });
 });
 
@@ -91,5 +91,13 @@ describe('statusProgressDocuments', () => {
     const [doc] = statusProgressDocuments([row('other', '1793000000000000000')], 'tx_1');
 
     expect(doc.type).toBe('other');
+  });
+});
+
+describe('statusProgressDocuments checklist ticks', () => {
+  it('should not tick the Land Registry confirmation from a register extract', () => {
+    const [extract] = statusProgressDocuments([row('hmlr', '100')], 'tx_1');
+
+    expect(extract.type).not.toBe('landRegistryConfirmation');
   });
 });

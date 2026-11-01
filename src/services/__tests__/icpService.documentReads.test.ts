@@ -15,6 +15,7 @@ vi.mock('@/utils/logger', () => ({
 }));
 
 import { icpService } from '../icp.service';
+import { useAuthStore } from '../../stores/authStore';
 
 type Internals = {
   _documentStorageActor: Record<string, ReturnType<typeof vi.fn>> | null;
@@ -47,6 +48,7 @@ describe('icpService document reads', () => {
   beforeEach(() => {
     Object.values(actor).forEach((fn) => fn.mockReset());
     readConfigs.length = 0;
+    useAuthStore.setState({ principalId: 'alice' });
     vi.spyOn(icpService, 'ensureDocumentStorageActor').mockResolvedValue(undefined);
     internals._documentStorageActor = actor;
   });
@@ -91,10 +93,26 @@ describe('icpService document reads', () => {
     await icpService.fetchTransactionDocuments('tx_2');
 
     expect(readConfigs.map((config) => config?.cacheKey)).toEqual([
-      'fetchTransactionDocuments:tx_1',
-      'fetchTransactionDocuments:tx_1',
-      'fetchTransactionDocuments:tx_2',
+      'fetchTransactionDocuments:alice:tx_1',
+      'fetchTransactionDocuments:alice:tx_1',
+      'fetchTransactionDocuments:alice:tx_2',
     ]);
+  });
+
+  it('should not share a read between two callers on the same deal', async () => {
+    // Arrange
+    actor.fetchTransactionDocuments.mockResolvedValue([]);
+    actor.fetchTransactionDocumentStatus.mockResolvedValue([]);
+
+    // Act: a logout and login between two reads of one deal.
+    await icpService.fetchTransactionDocuments('tx_1');
+    await icpService.getDocumentStatus('tx_1');
+    useAuthStore.setState({ principalId: 'bob' });
+    await icpService.fetchTransactionDocuments('tx_1');
+    await icpService.getDocumentStatus('tx_1');
+
+    // Assert
+    expect(new Set(readConfigs.map((config) => config?.cacheKey)).size).toBe(4);
   });
 
   it('should return status rows with the timestamp as an exact string', async () => {

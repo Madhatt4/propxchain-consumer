@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardKPICard from '../components/dashboard/DashboardKPICard';
 import TransactionProgressTimeline from '../components/dashboard/TransactionProgressTimeline';
@@ -9,7 +9,7 @@ import ChainView from '../components/ChainView';
 import MobileNavMenu from '../components/navigation/MobileNavMenu';
 import { useThemeClasses } from '../hooks/useThemeClasses';
 import { useTheme } from '../contexts/ThemeContext';
-import { hiddenDocumentStatuses, statusProgressDocuments } from '@/lib/documentStatus';
+import { hiddenDocumentStatuses, statusProgressDocuments, type DocumentStatusRow } from '@/lib/documentStatus';
 import { Transaction, Document as TxDocument, Milestone } from '../types/transaction.types';
 import { logger } from '@/utils/logger';
 import { usePrincipalId, useIsAuthenticated, getStorePrincipalId } from '../stores/authStore';
@@ -29,6 +29,8 @@ const DashboardPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<'my-transaction' | 'full-chain'>('my-transaction');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [txDocuments, setTxDocuments] = useState<TxDocument[]>([]);
+  // Per deal, so a failed status read can show the last good rows for that deal.
+  const lastHiddenStatus = useRef(new Map<string, DocumentStatusRow[]>());
   const themeClasses = useThemeClasses();
   const { isDark } = useTheme();
 
@@ -101,25 +103,38 @@ const DashboardPage: React.FC = () => {
 
   // Load actual documents from blockchain for the active transaction
   useEffect(() => {
-    if (!activeTransaction?.id) {
+    const transactionId = activeTransaction?.id;
+    if (!transactionId) {
       setTxDocuments([]);
       return;
     }
+    let isCancelled = false;
     const loadDocs = async (): Promise<void> => {
       try {
         const { icpService } = await import('../services/icp.service');
         await icpService.initialize();
-        const docs: TxDocument[] = (await icpService.getDocumentsByTransaction(activeTransaction.id)) || [];
+        const docs: TxDocument[] = (await icpService.getDocumentsByTransaction(transactionId)) || [];
         // The list leaves out what this viewer cannot open, such as a title
         // uploaded by their agent, but the progress below must still count it.
-        const status = await icpService.getDocumentStatus(activeTransaction.id).catch(() => []);
-        const hidden = hiddenDocumentStatuses(status, docs.map((d) => d.uploadedAtNs));
-        setTxDocuments([...docs, ...statusProgressDocuments(hidden, activeTransaction.id)]);
+        const status = await icpService.getDocumentStatus(transactionId).catch((err: unknown) => {
+          logger.warn('Could not load document status:', err);
+          return null;
+        });
+        if (isCancelled) return;
+        const hidden = status
+          ? hiddenDocumentStatuses(status, docs.map((d) => d.uploadedAtNs))
+          : (lastHiddenStatus.current.get(transactionId) ?? []);
+        lastHiddenStatus.current.set(transactionId, hidden);
+        setTxDocuments([...docs, ...statusProgressDocuments(hidden, transactionId)]);
       } catch (err) {
         logger.error('Error loading documents for dashboard:', err);
+        if (!isCancelled) setTxDocuments([]);
       }
     };
     loadDocs();
+    return () => {
+      isCancelled = true;
+    };
   }, [activeTransaction?.id]);
 
   // Show loading state until user data is loaded

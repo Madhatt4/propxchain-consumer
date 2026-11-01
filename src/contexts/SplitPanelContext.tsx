@@ -232,8 +232,12 @@ export const SplitPanelProvider: React.FC<SplitPanelProviderProps> = ({
   // Ref for document polling interval - prevents stale closure issues
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Reads take seconds, so a reply can land after the user has moved to another deal.
+  const selectedTransactionIdRef = useRef<string | null>(null);
+
   // Load documents for a transaction - CRITICAL: empty dependency array to prevent infinite re-renders
   const loadDocuments = useCallback(async (transactionId: string) => {
+    const isSelected = (): boolean => selectedTransactionIdRef.current === transactionId;
     dispatch({ type: 'SET_DOCUMENTS_LOADING', payload: true });
     try {
       await icpService.ensureDocumentStorageActor();
@@ -254,6 +258,7 @@ export const SplitPanelProvider: React.FC<SplitPanelProviderProps> = ({
           return null;
         }),
       ]);
+      if (!isSelected()) return;
 
       // Transform to DocumentProofInfo (Principal to string for display)
       const transformedDocs = (docs || []).map((doc) => ({
@@ -272,10 +277,11 @@ export const SplitPanelProvider: React.FC<SplitPanelProviderProps> = ({
       dispatch({ type: 'SET_DOCUMENTS_LAST_UPDATED', payload: Date.now() });
       dispatch({ type: 'SET_DOCUMENTS_ERROR', payload: null });
     } catch (error: unknown) {
+      if (!isSelected()) return;
       const msg = error instanceof Error ? error.message : 'Failed to load documents';
       dispatch({ type: 'SET_DOCUMENTS_ERROR', payload: msg });
     } finally {
-      dispatch({ type: 'SET_DOCUMENTS_LOADING', payload: false });
+      if (isSelected()) dispatch({ type: 'SET_DOCUMENTS_LOADING', payload: false });
     }
   }, []); // EMPTY DEPENDENCY ARRAY - dispatch is stable from useReducer
 
@@ -290,13 +296,13 @@ export const SplitPanelProvider: React.FC<SplitPanelProviderProps> = ({
   // Polls every 30 seconds when tab is visible, pauses when hidden
   useEffect(() => {
     const txId = state.selectedTransaction?.id;
-    // Another deal's status lines must not carry over to this one.
+    selectedTransactionIdRef.current = txId ?? null;
+    // Another deal's documents and status lines must not carry over to this
+    // one. Its reader no longer clears the loading flag either.
+    dispatch({ type: 'SET_DOCUMENTS', payload: [] });
     dispatch({ type: 'SET_HIDDEN_DOCUMENT_STATUS', payload: [] });
-    if (!txId) {
-      // Clear documents when no transaction selected
-      dispatch({ type: 'SET_DOCUMENTS', payload: [] });
-      return;
-    }
+    dispatch({ type: 'SET_DOCUMENTS_LOADING', payload: false });
+    if (!txId) return;
 
     // stopPolling clears the interval, preventing stale closure issues
     // because the interval callback captures txId at creation time.

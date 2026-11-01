@@ -74,7 +74,7 @@ const WithheldSection: React.FC<{ rows: DocumentStatusRow[] }> = ({ rows }) => (
       Held by other parties. This report can confirm they were received, but not name or check them.
     </p>
     <ul style={{ fontSize: '12px' }}>
-      {documentStatusLines(rows).map(line => <li key={line}>{line}</li>)}
+      {documentStatusLines(rows).map((line, index) => <li key={index}>{line}</li>)}
     </ul>
   </div>
 );

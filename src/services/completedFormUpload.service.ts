@@ -147,13 +147,14 @@ interface StoredDocumentRow {
   uploadedAtNs?: string;
 }
 
-// document_storage's category for each form's canonical docType. "ta7" is not a
-// category it knows, so a TA7 falls under "other": a hidden "other" row stops a
-// TA7 withdrawal even if it is some other file. Blocking is the safe mistake.
-const FORM_STATUS_CATEGORY: Readonly<Record<CompletedFormId, string>> = {
+// document_storage's category for each form's canonical docType, where one
+// identifies the form. "ta7" is not a category it knows, so a TA7 falls under
+// "other" with every unrecognised file: gating on that would block a withdrawal
+// for good over any hidden file, so a TA7 has no hidden-copy check.
+const FORM_STATUS_CATEGORY: Readonly<Record<CompletedFormId, string | null>> = {
   ta6: 'ta6',
   ta10: 'ta10',
-  ta7: 'other',
+  ta7: null,
 };
 
 const SUPABASE_LOCATION = /^supabase:\/\/([^/]+)\/(.+)$/;
@@ -198,7 +199,8 @@ export async function withdrawCompletedForm(
   // while that PDF stays on record, so stop here and change nothing.
   const status = await icpService.getDocumentStatus(transactionId);
   const hidden = hiddenDocumentStatuses(status, visible.map((row) => row.uploadedAtNs));
-  if (hidden.some((row) => row.category === FORM_STATUS_CATEGORY[formId])) {
+  const formCategory = FORM_STATUS_CATEGORY[formId];
+  if (formCategory !== null && hidden.some((row) => row.category === formCategory)) {
     throw new Error('Only the person who uploaded this form can remove it.');
   }
 

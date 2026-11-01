@@ -241,6 +241,19 @@ describe('withdrawCompletedForm', () => {
     expect(mockUnrecord).toHaveBeenCalledWith('tx_1', 'ta7');
   });
 
+  it('should withdraw a TA7 when an unrelated hidden document sits in the other category', async () => {
+    // Arrange: a solicitor's Land Registry confirmation reports as "other".
+    mockGetDocuments.mockResolvedValue([]);
+    mockGetDocumentStatus.mockResolvedValue([{ category: 'other', verified: false, uploadedAtNs: '100' }]);
+
+    // Act
+    const result = await withdrawCompletedForm('tx_1', 'ta7');
+
+    // Assert
+    expect(result).toEqual({ removed: 0 });
+    expect(mockUnrecord).toHaveBeenCalledWith('tx_1', 'ta7');
+  });
+
   it('should change nothing when another party uploaded a copy this caller cannot see', async () => {
     // Arrange: a joint seller's list omits the other seller's TA6 PDF.
     mockGetDocuments.mockResolvedValue([ta10Pdf]);

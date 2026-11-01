@@ -2400,13 +2400,15 @@ class ICPService {
   /**
    * The party-gated list: documents this caller can open, plus their uploads.
    * An update call of about two seconds, and several views ask at once when a
-   * deal opens, so concurrent asks for one deal share a single call.
+   * deal opens, so concurrent asks for one deal by one caller share a single
+   * call. The answer depends on the caller, so the key does too: a logout and
+   * login inside the window must not share a result.
    */
   private readTransactionDocuments(transactionId: string): Promise<TransactionDocumentRows> {
     return wrapReadCall(async () => {
       await this.ensureDocumentStorageActor();
       return this.dsActor.fetchTransactionDocuments(transactionId);
-    }, { cacheKey: `fetchTransactionDocuments:${transactionId}` });
+    }, { cacheKey: `fetchTransactionDocuments:${getStorePrincipalId() ?? 'anonymous'}:${transactionId}` });
   }
 
   /**
@@ -2417,7 +2419,7 @@ class ICPService {
     return wrapReadCall(async () => {
       await this.ensureDocumentStorageActor();
       return toDocumentStatusRows(await this.dsActor.fetchTransactionDocumentStatus(transactionId));
-    }, { cacheKey: `fetchTransactionDocumentStatus:${transactionId}` });
+    }, { cacheKey: `fetchTransactionDocumentStatus:${getStorePrincipalId() ?? 'anonymous'}:${transactionId}` });
   }
 
   /**

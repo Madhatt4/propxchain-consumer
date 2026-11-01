@@ -30,6 +30,9 @@ interface CategoryDisplay {
 
 // Keys are access_matrix.mo's categoryLabel values. "other" is deliberately not
 // tied to a checklist item: it is every docType the canister does not recognise.
+// "hmlr" is not tied to landRegistryConfirmation either: the canister files that
+// upload under "other", and "hmlr" is the register extract a title pull stores,
+// so a tick from it would claim a confirmation nobody uploaded.
 const CATEGORIES: Readonly<Record<string, CategoryDisplay>> = {
   funds: { label: 'Buyer funds', side: 'buyer', docType: 'proofOfFunds' },
   mortgage: { label: 'Mortgage offer', side: 'buyer', docType: 'mortgageAgreement' },
@@ -45,7 +48,7 @@ const CATEGORIES: Readonly<Record<string, CategoryDisplay>> = {
   address: { label: 'Proof of address', side: 'shared' },
   credential: { label: 'Professional credentials', side: 'shared' },
   aml: { label: 'AML check', side: 'shared' },
-  other: { label: 'Other document', side: 'shared' },
+  other: { label: 'Additional document', side: 'shared' },
 };
 
 function displayFor(category: string): CategoryDisplay {

@@ -4,7 +4,7 @@
  * Now with multi-party support for N buyers and N sellers
  */
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Transaction, Document } from '../../types/transaction.types';
 import { icpService } from '../../services/icp.service';
 import { recordOnBehalf } from '@/services/onBehalf';
@@ -72,6 +72,9 @@ const TransactionDetailTabs: React.FC<TransactionDetailTabsProps> = ({
   // Documents on this deal the viewer cannot open: category only, never a filename.
   const [hiddenStatus, setHiddenStatus] = useState<DocumentStatusRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [documentsFailed, setDocumentsFailed] = useState(false);
+  // Reads take seconds, so a reply can land after this panel has moved to another deal.
+  const currentTransactionId = useRef(transaction.id);
   const [blockchainActivity, setBlockchainActivity] = useState<BlockchainActivity[]>([]);
   const [currentUserRole, setCurrentUserRole] = useState<'seller' | 'buyer' | null>(null);
   const [sellerInfo, setSellerInfo] = useState<PartyInfo | null>(null);
@@ -163,33 +166,43 @@ const TransactionDetailTabs: React.FC<TransactionDetailTabsProps> = ({
 
   // After the list: a status failure leaves the last lines up, never breaks the list.
   const refreshHiddenStatus = useCallback(async (txDocs: Document[]): Promise<void> => {
+    const transactionId = transaction.id;
     try {
-      const status = await icpService.getDocumentStatus(transaction.id);
+      const status = await icpService.getDocumentStatus(transactionId);
+      if (currentTransactionId.current !== transactionId) return;
       setHiddenStatus(hiddenDocumentStatuses(status, txDocs.map(d => d.uploadedAtNs)));
     } catch (error) {
       logger.warn('Could not load document status:', error);
     }
   }, [transaction.id]);
 
-  // Load documents for this transaction
-  useEffect(() => {
-    const loadDocuments = async () => {
-      try {
-        setLoading(true);
-        setHiddenStatus([]);
-        await icpService.initialize();
-        const txDocs = await icpService.getDocumentsByTransaction(transaction.id);
-        setDocuments(txDocs || []);
-        void refreshHiddenStatus(txDocs || []);
-      } catch (error) {
-        logger.error('Error loading documents:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadDocuments();
+  const loadDocuments = useCallback(async (): Promise<void> => {
+    const transactionId = transaction.id;
+    const isCurrent = (): boolean => currentTransactionId.current === transactionId;
+    setLoading(true);
+    setDocumentsFailed(false);
+    try {
+      await icpService.initialize();
+      const txDocs = await icpService.getDocumentsByTransaction(transactionId);
+      if (!isCurrent()) return;
+      setDocuments(txDocs || []);
+      void refreshHiddenStatus(txDocs || []);
+    } catch (error) {
+      logger.error('Error loading documents:', error);
+      if (isCurrent()) setDocumentsFailed(true);
+    } finally {
+      if (isCurrent()) setLoading(false);
+    }
   }, [transaction.id, refreshHiddenStatus]);
+
+  // Load documents for this transaction. The clearing lives here, not in
+  // loadDocuments: another deal's rows must go, but a retry keeps this deal's.
+  useEffect(() => {
+    currentTransactionId.current = transaction.id;
+    setDocuments([]);
+    setHiddenStatus([]);
+    void loadDocuments();
+  }, [transaction.id, loadDocuments]);
 
   // Load blockchain activity, only once the Activity tab is open. Each document
   // is one update call of about two seconds, so a few run at a time.
@@ -1021,6 +1034,17 @@ const TransactionDetailTabs: React.FC<TransactionDetailTabsProps> = ({
                 <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
                   <div style={{ marginBottom: '12px' }}>⏳</div>
                   Loading documents...
+                </div>
+              ) : documentsFailed && documents.length === 0 ? (
+                <div role="alert" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)', background: 'var(--bg-section)', borderRadius: '8px' }}>
+                  <p style={{ margin: '0 0 12px 0' }}>We couldn't load your documents.</p>
+                  <button
+                    type="button"
+                    onClick={() => void loadDocuments()}
+                    style={{ minHeight: '44px', padding: '8px 16px', background: 'transparent', border: '1px solid var(--border-color)', borderRadius: '8px', color: 'var(--text-main)', cursor: 'pointer' }}
+                  >
+                    Try again
+                  </button>
                 </div>
               ) : documents.length === 0 && hiddenStatus.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)', background: 'var(--bg-section)', borderRadius: '8px' }}>

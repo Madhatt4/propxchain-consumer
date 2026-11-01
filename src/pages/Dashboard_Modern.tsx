@@ -4,7 +4,7 @@
  * Features: Transaction list, detail view, documents, progress tracking, seller controls
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import DashboardSidebar from '../components/navigation/DashboardSidebar';
 import DashboardHeader from '../components/navigation/DashboardHeader';
@@ -47,6 +47,8 @@ const DashboardModern: React.FC = () => {
   const [documents, setDocuments] = useState<Document[]>([]);
   // Documents on the deal this viewer cannot open: category only, never a filename.
   const [hiddenStatus, setHiddenStatus] = useState<DocumentStatusRow[]>([]);
+  // Reads take seconds, so a reply can land after the user has moved to another deal.
+  const selectedTxIdRef = useRef<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
   const [currentUserRole, setCurrentUserRole] = useState<'seller' | 'buyer' | null>(null);
@@ -262,6 +264,12 @@ const DashboardModern: React.FC = () => {
   const handleSelectTransaction = async (tx: Transaction) => {
     try {
       logger.info('Selecting transaction:', tx.id);
+      if (selectedTxIdRef.current !== tx.id) {
+        // Another deal's documents must not carry over to this one.
+        selectedTxIdRef.current = tx.id;
+        setDocuments([]);
+        setHiddenStatus([]);
+      }
       setSelectedTransaction(tx);
       setSearchParams({ tx: tx.id });
 
@@ -301,17 +309,23 @@ const DashboardModern: React.FC = () => {
         if (typeof icpService.getDocumentsByTransaction === 'function') {
           // The id is the canister's Text id ("tx_..."): Number() here made it NaN.
           const txDocuments = await icpService.getDocumentsByTransaction(String(tx.id));
+          if (selectedTxIdRef.current !== tx.id) return;
           setDocuments(txDocuments || []);
-          const status = await icpService.getDocumentStatus(String(tx.id)).catch(() => []);
-          setHiddenStatus(hiddenDocumentStatuses(status, (txDocuments || []).map((d: Document) => d.uploadedAtNs)));
+          // A failed status read leaves the last rows up for this deal.
+          const status = await icpService.getDocumentStatus(String(tx.id)).catch((err: unknown) => {
+            logger.warn('Could not load document status:', err);
+            return null;
+          });
+          if (status && selectedTxIdRef.current === tx.id) {
+            setHiddenStatus(hiddenDocumentStatuses(status, (txDocuments || []).map((d: Document) => d.uploadedAtNs)));
+          }
         } else {
           logger.warn('getDocumentsByTransaction not available in icpService');
           setDocuments([]);
         }
       } catch (err) {
         logger.warn('Could not load documents from blockchain:', err);
-        setDocuments([]);
-        setHiddenStatus([]);
+        if (selectedTxIdRef.current === tx.id) setDocuments([]);
       }
     } catch (error) {
       logger.error('Error selecting transaction:', error);
@@ -319,6 +333,7 @@ const DashboardModern: React.FC = () => {
   };
 
   const handleBackToList = () => {
+    selectedTxIdRef.current = null;
     setSelectedTransaction(null);
     setSearchParams({});
     setCurrentUserRole(null);
