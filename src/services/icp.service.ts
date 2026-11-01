@@ -36,6 +36,7 @@ import type {
 // type cannot be deep-imported — derive it from the public service signature
 // instead, which also keeps it correct if the variant ever changes.
 type UserType = Parameters<UserManagementService['addTransactionMember']>[2];
+type TransactionDocumentRows = Awaited<ReturnType<DocumentStorageService['fetchTransactionDocuments']>>;
 
 // Import rate limiting utilities
 import { debounceAsync } from '../utils/debounce';
@@ -53,6 +54,7 @@ import { getStorePrincipalId, getStoreIsAuthenticated } from '../stores/authStor
 import { SessionManager } from '../utils/sessionManager';
 import { logger } from '@/utils/logger';
 import { delegatePairsOf } from '@/lib/dealAccess';
+import { toDocumentStatusRows, type DocumentStatusRow } from '@/lib/documentStatus';
 import { onChainFileName } from '@/lib/onChainDocument';
 import { normalizeParty } from '../types/multiParty.types';
 import { CANISTER_IDS } from '@/config/canisterIds';
@@ -2273,11 +2275,11 @@ class ICPService {
   /**
    * Get document metadata from storage canister (hash-based)
    */
-  async getDocumentMetadata(storageDocumentId: number) {
+  async fetchDocumentMetadata(storageDocumentId: number) {
     return wrapReadCall(async () => {
       await this.ensureDocumentStorageActor();
 
-      const result = await this.dsActor.getDocumentMetadata(
+      const result = await this.dsActor.fetchDocumentMetadata(
         BigInt(storageDocumentId)
       );
 
@@ -2396,148 +2398,150 @@ class ICPService {
   }
 
   /**
-   * Get all documents for a transaction from the document storage canister
-   * This queries the blockchain directly for transaction-linked documents
+   * The party-gated list: documents this caller can open, plus their uploads.
+   * An update call of about two seconds, and several views ask at once when a
+   * deal opens, so concurrent asks for one deal share a single call.
    */
-  async getDocumentsByTransaction(transactionId: string | number): Promise<any[]> {
+  private readTransactionDocuments(transactionId: string): Promise<TransactionDocumentRows> {
     return wrapReadCall(async () => {
       await this.ensureDocumentStorageActor();
+      return this.dsActor.fetchTransactionDocuments(transactionId);
+    }, { cacheKey: `fetchTransactionDocuments:${transactionId}` });
+  }
 
-      try {
-        // The canister expects transactionId as a string (Text), not BigInt
-        const txIdString = String(transactionId);
+  /**
+   * What has been uploaded on a deal, for every party: category, integrity flag
+   * and time, with no filename. Same call sharing as readTransactionDocuments.
+   */
+  async getDocumentStatus(transactionId: string): Promise<DocumentStatusRow[]> {
+    return wrapReadCall(async () => {
+      await this.ensureDocumentStorageActor();
+      return toDocumentStatusRows(await this.dsActor.fetchTransactionDocumentStatus(transactionId));
+    }, { cacheKey: `fetchTransactionDocumentStatus:${transactionId}` });
+  }
 
-        logger.info('Fetching documents for transaction:', txIdString);
+  /**
+   * Documents on a transaction that this caller may see, mapped for display.
+   * Throws when the lookup fails: an empty list would read as "nothing
+   * uploaded", and every status row would look hidden.
+   */
+  async getDocumentsByTransaction(transactionId: string | number): Promise<any[]> {
+    // The canister expects transactionId as a string (Text), not BigInt
+    const documents = await this.readTransactionDocuments(String(transactionId));
 
-        const documents = await this.dsActor.getTransactionDocuments(
-          txIdString
-        );
+    // Helper function to infer category from document type
+    // Handles both kebab-case (legacy) and camelCase (DOCUMENT_TYPES storageKey) naming
+    const inferCategory = (docType: string): 'seller' | 'buyer' | 'shared' => {
+      // Strip _person[N] suffix for multi-party docs before matching
+      const baseType = docType.replace(/_person\d+$/, '');
 
-        logger.info('Raw documents from canister:', documents);
+      // Role-prefixed types (e.g. seller-id, buyer-proof-of-address)
+      if (baseType.startsWith('seller-') || baseType.startsWith('seller_')) return 'seller';
+      if (baseType.startsWith('buyer-') || baseType.startsWith('buyer_')) return 'buyer';
 
-        if (!Array.isArray(documents)) {
-          logger.warn('getTransactionDocuments returned non-array:', documents);
-          return [];
-        }
+      // Unambiguous seller documents (camelCase storageKeys + kebab-case legacy)
+      const sellerDocs = [
+        'titleDeeds', 'title-deeds',
+        'energyPerformanceCertificate', 'epc-certificate',
+        'ta6PropertyInformationForm', 'ta6-form', 'ta6',
+        'ta10FittingsContents', 'ta10-form',
+        'property-info', 'fittings-contents'
+      ];
+      // Unambiguous buyer documents
+      const buyerDocs = [
+        'proofOfFunds', 'proof-of-funds',
+        'mortgageAgreement', 'mortgage-agreement', 'mortgage-offer'
+      ];
+      const sharedDocs = ['property-searches', 'survey-report', 'local-search', 'environmental-search'];
 
-      // Helper function to infer category from document type
-      // Handles both kebab-case (legacy) and camelCase (DOCUMENT_TYPES storageKey) naming
-      const inferCategory = (docType: string): 'seller' | 'buyer' | 'shared' => {
-        // Strip _person[N] suffix for multi-party docs before matching
-        const baseType = docType.replace(/_person\d+$/, '');
+      if (sellerDocs.includes(baseType)) return 'seller';
+      if (buyerDocs.includes(baseType)) return 'buyer';
+      if (sharedDocs.includes(baseType)) return 'shared';
 
-        // Role-prefixed types (e.g. seller-id, buyer-proof-of-address)
-        if (baseType.startsWith('seller-') || baseType.startsWith('seller_')) return 'seller';
-        if (baseType.startsWith('buyer-') || baseType.startsWith('buyer_')) return 'buyer';
+      // Ambiguous types (proofOfIdentity, proofOfAddress) used by both roles
+      // Category determined by uploadedBy in checklist matching
+      return 'shared';
+    };
 
-        // Unambiguous seller documents (camelCase storageKeys + kebab-case legacy)
-        const sellerDocs = [
-          'titleDeeds', 'title-deeds',
-          'energyPerformanceCertificate', 'epc-certificate',
-          'ta6PropertyInformationForm', 'ta6-form', 'ta6',
-          'ta10FittingsContents', 'ta10-form',
-          'property-info', 'fittings-contents'
-        ];
-        // Unambiguous buyer documents
-        const buyerDocs = [
-          'proofOfFunds', 'proof-of-funds',
-          'mortgageAgreement', 'mortgage-agreement', 'mortgage-offer'
-        ];
-        const sharedDocs = ['property-searches', 'survey-report', 'local-search', 'environmental-search'];
-
-        if (sellerDocs.includes(baseType)) return 'seller';
-        if (buyerDocs.includes(baseType)) return 'buyer';
-        if (sharedDocs.includes(baseType)) return 'shared';
-
-        // Ambiguous types (proofOfIdentity, proofOfAddress) used by both roles
-        // Category determined by uploadedBy in checklist matching
-        return 'shared';
+    // Helper function to get display name from document type
+    // Handles both kebab-case (legacy) and camelCase (DOCUMENT_TYPES storageKey) naming
+    const getDocumentName = (docType: string): string => {
+      const nameMap: Record<string, string> = {
+        'title-deeds': 'Title Deeds',
+        'titleDeeds': 'Title Deeds',
+        'epc-certificate': 'Energy Performance Certificate',
+        'energyPerformanceCertificate': 'Energy Performance Certificate',
+        'proof-of-identity': 'Proof of Identity',
+        'proofOfIdentity': 'Proof of Identity',
+        'proof-of-address': 'Proof of Address',
+        'proofOfAddress': 'Proof of Address',
+        'proof-of-funds': 'Proof of Funds',
+        'proofOfFunds': 'Proof of Funds',
+        'mortgage-agreement': 'Mortgage Agreement',
+        'mortgageAgreement': 'Mortgage Agreement',
+        'property-searches': 'Property Searches',
+        'survey-report': 'Survey Report',
+        'ta6': 'TA6 Form',
+        'ta6PropertyInformationForm': 'TA6 Property Information Form',
+        'ta10FittingsContents': 'TA10 Fittings & Contents Form',
+        'local-search': 'Local Authority Search',
+        'environmental-search': 'Environmental Search',
       };
 
-      // Helper function to get display name from document type
-      // Handles both kebab-case (legacy) and camelCase (DOCUMENT_TYPES storageKey) naming
-      const getDocumentName = (docType: string): string => {
-        const nameMap: Record<string, string> = {
-          'title-deeds': 'Title Deeds',
-          'titleDeeds': 'Title Deeds',
-          'epc-certificate': 'Energy Performance Certificate',
-          'energyPerformanceCertificate': 'Energy Performance Certificate',
-          'proof-of-identity': 'Proof of Identity',
-          'proofOfIdentity': 'Proof of Identity',
-          'proof-of-address': 'Proof of Address',
-          'proofOfAddress': 'Proof of Address',
-          'proof-of-funds': 'Proof of Funds',
-          'proofOfFunds': 'Proof of Funds',
-          'mortgage-agreement': 'Mortgage Agreement',
-          'mortgageAgreement': 'Mortgage Agreement',
-          'property-searches': 'Property Searches',
-          'survey-report': 'Survey Report',
-          'ta6': 'TA6 Form',
-          'ta6PropertyInformationForm': 'TA6 Property Information Form',
-          'ta10FittingsContents': 'TA10 Fittings & Contents Form',
-          'local-search': 'Local Authority Search',
-          'environmental-search': 'Environmental Search',
-        };
+      // Direct lookup
+      if (nameMap[docType]) return nameMap[docType];
 
-        // Direct lookup
-        if (nameMap[docType]) return nameMap[docType];
-
-        // Handle multi-party person variants (e.g. "proofOfAddress_person2" → "Proof of Address - Person 2")
-        const personMatch = docType.match(/^(.+)_person(\d+)$/);
-        if (personMatch) {
-          const baseName = nameMap[personMatch[1]];
-          if (baseName) return `${baseName} - Person ${personMatch[2]}`;
-        }
-
-        return docType.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-      };
-
-      const mappedDocs = documents.map((doc) => {
-        const docType = doc.docType || 'unknown';
-        const category = inferCategory(docType);
-        const storageId = Number(doc.id);
-
-        // Reconstruct verificationDocumentId from localStorage mapping
-        // (saved during upload as doc_id_mapping_${storageDocId} -> verificationDocId)
-        let verificationDocumentId: number | undefined;
-        try {
-          const mapped = localStorage.getItem(`doc_id_mapping_${storageId}`);
-          if (mapped) {
-            verificationDocumentId = Number(mapped);
-          }
-        } catch {
-          // localStorage unavailable
-        }
-
-        return {
-          id: `doc_${storageId}`,
-          storageDocumentId: storageId,
-          verificationDocumentId,
-          fileName: doc.fileName,
-          hash: doc.fileHash, // Map canister's fileHash to Document type's hash field
-          fileSize: Number(doc.fileSize),
-          mimeType: doc.contentType,
-          contentType: doc.contentType,
-          uploadedBy: doc.uploadedBy?.toString() || '',
-          uploadedAt: new Date(Number(doc.uploadedAt) / 1000000).toISOString(), // Convert nanoseconds to ISO
-          storageLocation: doc.storageLocation,
-          verified: doc.verified,
-          transactionId: doc.transactionId?.[0] || null,
-          type: docType,
-          category: category,
-          name: getDocumentName(docType),
-          status: doc.verified ? 'verified' : 'uploaded',
-          required: true,
-        };
-      });
-
-      logger.info('Mapped documents:', mappedDocs);
-      return mappedDocs;
-      } catch (error) {
-        logger.error('Error getting documents by transaction:', error);
-        return [];
+      // Handle multi-party person variants (e.g. "proofOfAddress_person2" → "Proof of Address - Person 2")
+      const personMatch = docType.match(/^(.+)_person(\d+)$/);
+      if (personMatch) {
+        const baseName = nameMap[personMatch[1]];
+        if (baseName) return `${baseName} - Person ${personMatch[2]}`;
       }
+
+      return docType.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    };
+
+    const mappedDocs = documents.map((doc) => {
+      const docType = doc.docType || 'unknown';
+      const category = inferCategory(docType);
+      const storageId = Number(doc.id);
+
+      // Reconstruct verificationDocumentId from localStorage mapping
+      // (saved during upload as doc_id_mapping_${storageDocId} -> verificationDocId)
+      let verificationDocumentId: number | undefined;
+      try {
+        const mapped = localStorage.getItem(`doc_id_mapping_${storageId}`);
+        if (mapped) {
+          verificationDocumentId = Number(mapped);
+        }
+      } catch {
+        // localStorage unavailable
+      }
+
+      return {
+        id: `doc_${storageId}`,
+        storageDocumentId: storageId,
+        verificationDocumentId,
+        fileName: doc.fileName,
+        hash: doc.fileHash, // Map canister's fileHash to Document type's hash field
+        fileSize: Number(doc.fileSize),
+        mimeType: doc.contentType,
+        contentType: doc.contentType,
+        uploadedBy: doc.uploadedBy?.toString() || '',
+        uploadedAt: new Date(Number(doc.uploadedAt) / 1000000).toISOString(), // Convert nanoseconds to ISO
+        uploadedAtNs: String(doc.uploadedAt), // Exact: pairs this row with its status row
+        storageLocation: doc.storageLocation,
+        verified: doc.verified,
+        transactionId: doc.transactionId?.[0] || null,
+        type: docType,
+        category: category,
+        name: getDocumentName(docType),
+        status: doc.verified ? 'verified' : 'uploaded',
+        required: true,
+      };
     });
+
+    return mappedDocs;
   }
 
   /**
@@ -2605,12 +2609,12 @@ class ICPService {
    * Get audit logs for a document
    * Rate limited: wrapReadCall
    */
-  async getAuditLogs(storageDocumentId: number): Promise<any[]> {
+  async fetchDocumentAuditLogs(storageDocumentId: number): Promise<any[]> {
     return wrapReadCall(async () => {
       await this.ensureDocumentStorageActor();
 
       try {
-        const logs = await this.documentStorageActor!.getAuditLogs(BigInt(storageDocumentId));
+        const logs = await this.dsActor.fetchAuditLogs(BigInt(storageDocumentId));
         return logs || [];
       } catch (error) {
         logger.error('Error getting audit logs:', error);
@@ -2641,21 +2645,11 @@ class ICPService {
   }
 
   /**
-   * Get transaction documents from storage canister
-   * Rate limited: wrapReadCall
+   * Raw document rows this caller may see on a transaction. Throws on failure,
+   * so a poll that fails keeps the last good list instead of blanking it.
    */
-  async getTransactionDocuments(transactionId: string): Promise<any[]> {
-    return wrapReadCall(async () => {
-      await this.ensureDocumentStorageActor();
-
-      try {
-        const docs = await this.documentStorageActor!.getTransactionDocuments(transactionId);
-        return docs || [];
-      } catch (error) {
-        logger.error('Error getting transaction documents:', error);
-        return [];
-      }
-    });
+  async fetchTransactionDocuments(transactionId: string): Promise<TransactionDocumentRows> {
+    return this.readTransactionDocuments(transactionId);
   }
 
   // ==================== Chain Management Methods ====================

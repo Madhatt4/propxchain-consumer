@@ -13,6 +13,7 @@ const mockUpload = vi.fn();
 const mockRemove = vi.fn();
 const mockGetSession = vi.fn();
 const mockRegisterProof = vi.fn();
+const mockGetDocumentStatus = vi.fn();
 const mockClassify = vi.fn();
 
 vi.mock('../../lib/supabase', () => ({
@@ -41,6 +42,7 @@ vi.mock('../icp.service', () => ({
     },
     emitDocumentUploadedEvent: () => undefined,
     getDocumentsByTransaction: (...args: unknown[]) => mockGetDocuments(...args),
+    getDocumentStatus: (...args: unknown[]) => mockGetDocumentStatus(...args),
     deleteStorageDocument: (...args: unknown[]) => mockDeleteStorageDocument(...args),
     unrecordFormUpload: (...args: unknown[]) => mockUnrecord(...args),
   },
@@ -215,6 +217,7 @@ describe('withdrawCompletedForm', () => {
 
   beforeEach(() => {
     mockGetDocuments.mockReset().mockResolvedValue([ta6Pdf, ta10Pdf]);
+    mockGetDocumentStatus.mockReset().mockResolvedValue([]);
     mockDeleteStorageDocument.mockReset().mockResolvedValue(true);
     mockRemove.mockReset().mockResolvedValue({ error: null });
     mockUnrecord.mockReset().mockResolvedValue(undefined);
@@ -236,6 +239,33 @@ describe('withdrawCompletedForm', () => {
     expect(await withdrawCompletedForm('tx_1', 'ta7')).toEqual({ removed: 0 });
     expect(mockDeleteStorageDocument).not.toHaveBeenCalled();
     expect(mockUnrecord).toHaveBeenCalledWith('tx_1', 'ta7');
+  });
+
+  it('should change nothing when another party uploaded a copy this caller cannot see', async () => {
+    // Arrange: a joint seller's list omits the other seller's TA6 PDF.
+    mockGetDocuments.mockResolvedValue([ta10Pdf]);
+    mockGetDocumentStatus.mockResolvedValue([{ category: 'ta6', verified: false, uploadedAtNs: '100' }]);
+
+    // Act
+    const withdrawing = withdrawCompletedForm('tx_1', 'ta6');
+
+    // Assert
+    await expect(withdrawing).rejects.toThrow('Only the person who uploaded this form can remove it.');
+    expect(mockDeleteStorageDocument).not.toHaveBeenCalled();
+    expect(mockUnrecord).not.toHaveBeenCalled();
+  });
+
+  it('should still withdraw when the hidden document is a different form', async () => {
+    mockGetDocumentStatus.mockResolvedValue([{ category: 'funds', verified: false, uploadedAtNs: '100' }]);
+
+    expect(await withdrawCompletedForm('tx_1', 'ta6')).toEqual({ removed: 1 });
+  });
+
+  it('should change nothing when the status read fails', async () => {
+    mockGetDocumentStatus.mockRejectedValue(new Error('status down'));
+
+    await expect(withdrawCompletedForm('tx_1', 'ta6')).rejects.toThrow('status down');
+    expect(mockUnrecord).not.toHaveBeenCalled();
   });
 
   it('should stop before clearing the flag when the proof will not delete', async () => {

@@ -20,6 +20,7 @@ import { useSplitPanel } from '@/contexts/SplitPanelContext';
 import { logger } from '@/utils/logger';
 import { getStorePrincipalId } from '@/stores/authStore';
 import { NewDocumentBadge, isNewDocument } from '@/components/documents/NewDocumentBadge';
+import DocumentStatusList from '@/components/documents/DocumentStatusList';
 import { acknowledgeDocument } from '@/utils/documentAcknowledgment';
 
 interface TransactionDetailsPanelProps {
@@ -61,6 +62,7 @@ const TransactionDetailsPanel: React.FC<TransactionDetailsPanelProps> = ({
   // Consume documents from context - no duplicate fetching
   const {
     transactionDocuments,
+    hiddenDocumentStatus,
     documentsLoading,
     documentsError,
     selectedTransaction,
@@ -328,7 +330,7 @@ const TransactionDetailsPanel: React.FC<TransactionDetailsPanelProps> = ({
         )}
 
         {/* Empty state */}
-        {!documentsLoading && !documentsError && documents.length === 0 ? (
+        {!documentsLoading && !documentsError && documents.length === 0 && hiddenDocumentStatus.length === 0 ? (
           <div className="text-center text-stone-600 dark:text-gray-400 py-8">
             <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
             <p>No documents uploaded yet</p>
@@ -374,6 +376,7 @@ const TransactionDetailsPanel: React.FC<TransactionDetailsPanelProps> = ({
             );
           })
         )}
+        <DocumentStatusList rows={hiddenDocumentStatus} />
       </div>
     );
   };

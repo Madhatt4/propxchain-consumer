@@ -181,4 +181,12 @@ describe('DocumentInventory', () => {
     // Cleanup
     resolveVerify(true);
   });
+
+  it('should show withheld documents by category with no verify button', () => {
+    render(<DocumentInventory documents={[]} withheld={[{ category: 'funds', verified: true, uploadedAtNs: '1' }]} />);
+
+    expect(screen.getByText('Buyer funds: received')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Verify Hash/ })).not.toBeInTheDocument();
+    expect(screen.queryByText('No documents uploaded yet')).not.toBeInTheDocument();
+  });
 });

@@ -22,6 +22,7 @@ import { icpService } from './icp.service';
 import { generateFileHash } from '../utils/hashGenerator';
 import { supabase } from '../lib/supabase';
 import { logger } from '../utils/logger';
+import { hiddenDocumentStatuses } from '../lib/documentStatus';
 import type { DocClassification, DocFinding } from './docClassify.service';
 
 export type CompletedFormId = 'ta6' | 'ta10' | 'ta7';
@@ -143,7 +144,17 @@ interface StoredDocumentRow {
   id: string;
   type: string;
   storageLocation: string;
+  uploadedAtNs?: string;
 }
+
+// document_storage's category for each form's canonical docType. "ta7" is not a
+// category it knows, so a TA7 falls under "other": a hidden "other" row stops a
+// TA7 withdrawal even if it is some other file. Blocking is the safe mistake.
+const FORM_STATUS_CATEGORY: Readonly<Record<CompletedFormId, string>> = {
+  ta6: 'ta6',
+  ta10: 'ta10',
+  ta7: 'other',
+};
 
 const SUPABASE_LOCATION = /^supabase:\/\/([^/]+)\/(.+)$/;
 
@@ -180,9 +191,18 @@ export async function withdrawCompletedForm(
   formId: CompletedFormId,
 ): Promise<WithdrawnCompletedForm> {
   const wanted = canonicalUploadDocType(formId);
-  const rows = ((await icpService.getDocumentsByTransaction(transactionId)) as StoredDocumentRow[]).filter(
-    (row) => row.type === wanted,
-  );
+  const visible = (await icpService.getDocumentsByTransaction(transactionId)) as StoredDocumentRow[];
+
+  // The list holds only what this caller can open, so a copy another party
+  // uploaded is absent from it. Clearing the flag then would read as removed
+  // while that PDF stays on record, so stop here and change nothing.
+  const status = await icpService.getDocumentStatus(transactionId);
+  const hidden = hiddenDocumentStatuses(status, visible.map((row) => row.uploadedAtNs));
+  if (hidden.some((row) => row.category === FORM_STATUS_CATEGORY[formId])) {
+    throw new Error('Only the person who uploaded this form can remove it.');
+  }
+
+  const rows = visible.filter((row) => row.type === wanted);
 
   let removed = 0;
   for (const row of rows) {

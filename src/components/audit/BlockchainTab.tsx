@@ -116,7 +116,7 @@ const BlockchainTab: React.FC<BlockchainTabProps> = ({ report }) => {
       </CollapsibleSection>
 
       <CollapsibleSection title="Document Inventory">
-        <DocumentInventory documents={report.documents} />
+        <DocumentInventory documents={report.documents} withheld={report.withheldDocuments} />
       </CollapsibleSection>
 
       <CollapsibleSection title="Property Chain Position" defaultOpen={false}>

@@ -15,6 +15,7 @@ export interface OnChainDocumentRow {
   type?: string;
   fileSize?: number;
   uploadedAt?: string;
+  uploadedAtNs?: string;
   uploadedBy?: string;
 }
 

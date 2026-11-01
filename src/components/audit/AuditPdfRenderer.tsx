@@ -7,6 +7,7 @@ import React, { forwardRef } from 'react';
 import { logger } from '@/utils/logger';
 import type { AuditReport, DocumentAuditEntry, AuditEvent } from '../../services/transactionAudit';
 import { groupEventsIntoMilestones } from '../../services/transactionAudit';
+import { documentStatusLines, type DocumentStatusRow } from '@/lib/documentStatus';
 
 interface AuditPdfRendererProps {
   report: AuditReport;
@@ -65,6 +66,18 @@ const EventSection: React.FC<{ events: AuditEvent[] }> = ({ events }) => {
     </div>
   );
 };
+
+const WithheldSection: React.FC<{ rows: DocumentStatusRow[] }> = ({ rows }) => (
+  <div>
+    <h2 style={STYLES.heading}>Other Documents On This Transaction</h2>
+    <p style={{ fontSize: '12px' }}>
+      Held by other parties. This report can confirm they were received, but not name or check them.
+    </p>
+    <ul style={{ fontSize: '12px' }}>
+      {documentStatusLines(rows).map(line => <li key={line}>{line}</li>)}
+    </ul>
+  </div>
+);
 
 const DocSection: React.FC<{ docs: DocumentAuditEntry[] }> = ({ docs }) => (
   <div>
@@ -149,6 +162,7 @@ const AuditPdfRenderer = forwardRef<HTMLDivElement, AuditPdfRendererProps>(
 
         {/* Documents */}
         {report.documents.length > 0 && <DocSection docs={report.documents} />}
+        {report.withheldDocuments.length > 0 && <WithheldSection rows={report.withheldDocuments} />}
 
         <div style={STYLES.divider} />
 

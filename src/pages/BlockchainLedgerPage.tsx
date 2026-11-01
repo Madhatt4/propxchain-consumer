@@ -6,6 +6,9 @@ import { logger } from '@/utils/logger';
 import { CANISTER_IDS } from '@/config/canisterIds';
 import { useAuthStore } from '../stores/authStore';
 import { toTransactionStatus } from '@/types/transactionStatus';
+import DocumentStatusList from '@/components/documents/DocumentStatusList';
+import { hiddenDocumentStatuses, type DocumentStatusRow } from '@/lib/documentStatus';
+import { mapWithConcurrency } from '@/lib/mapWithConcurrency';
 import {
   buildLedgerDocuments,
   CHAIN_STATUS_LABEL,
@@ -14,6 +17,8 @@ import {
   type LocalDocumentRecord,
   type OnChainDocumentRow,
 } from '@/lib/ledgerDocuments';
+
+const LEDGER_TRANSACTION_CONCURRENCY = 3;
 
 /** The fields of a merged chain + localStorage transaction the ledger reads. */
 interface LedgerSourceTransaction {
@@ -55,6 +60,7 @@ const BlockchainLedgerPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'transactions' | 'documents' | 'verification'>('transactions');
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [documents, setDocuments] = useState<LedgerDocument[]>([]);
+  const [hiddenByTransaction, setHiddenByTransaction] = useState<Record<string, DocumentStatusRow[]>>({});
   const [selectedTransaction, setSelectedTransaction] = useState<string | null>(null);
   const [verificationHash, setVerificationHash] = useState('');
   const [loading, setLoading] = useState(true);
@@ -133,25 +139,36 @@ const BlockchainLedgerPage: React.FC = () => {
       // Hashes and verification come only from document_storage. Each lookup
       // is caught on its own so one failing transaction marks just its rows
       // "couldn't check" rather than claiming they are not on chain.
-      const allDocuments: LedgerDocument[] = (
-        await Promise.all(
-          mergedTransactions.map(async (tx: LedgerSourceTransaction) => {
-            let onChain: OnChainDocumentRow[] | null;
-            try {
-              onChain = await icpService.getDocumentsByTransaction(String(tx.id));
-            } catch (error) {
-              logger.error('Error loading on-chain documents:', error);
-              onChain = null;
-            }
-            return buildLedgerDocuments({
-              transactionId: String(tx.id),
+      // Two update calls per deal, so only a few deals run at a time.
+      const perTransaction = await mapWithConcurrency(
+        mergedTransactions as LedgerSourceTransaction[],
+        LEDGER_TRANSACTION_CONCURRENCY,
+        async (tx) => {
+          const transactionId = String(tx.id);
+          let onChain: OnChainDocumentRow[] | null;
+          try {
+            onChain = await icpService.getDocumentsByTransaction(transactionId);
+          } catch (error) {
+            logger.error('Error loading on-chain documents:', error);
+            onChain = null;
+          }
+          // Only with a real list to subtract: a failed one would make every
+          // document on the deal look hidden.
+          const status = onChain ? await icpService.getDocumentStatus(transactionId).catch(() => []) : [];
+          const hidden = hiddenDocumentStatuses(status, (onChain ?? []).map((row) => row.uploadedAtNs));
+          return {
+            transactionId,
+            hidden,
+            documents: buildLedgerDocuments({
+              transactionId,
               propertyAddress: tx.propertyAddress || 'Address not available',
               onChain,
               local: [...(tx.uploadedDocuments || []), ...(tx.wizardData?.documents || [])],
-            });
-          }),
-        )
-      ).flat();
+            }),
+          };
+        },
+      );
+      const allDocuments: LedgerDocument[] = perTransaction.flatMap((entry) => entry.documents);
 
       // Transform transactions for display
       const transformedTransactions: Transaction[] = Array.isArray(mergedTransactions)
@@ -172,6 +189,7 @@ const BlockchainLedgerPage: React.FC = () => {
 
       setTransactions(transformedTransactions);
       setDocuments(allDocuments);
+      setHiddenByTransaction(Object.fromEntries(perTransaction.map((entry) => [entry.transactionId, entry.hidden])));
       setLoading(false);
     } catch (err: any) {
       logger.error('Error loading dashboard data:', err);
@@ -390,6 +408,11 @@ const BlockchainLedgerPage: React.FC = () => {
                 </button>
               </div>
             )}
+            <div className="mb-4">
+              <DocumentStatusList
+                rows={selectedTransaction ? hiddenByTransaction[selectedTransaction] ?? [] : Object.values(hiddenByTransaction).flat()}
+              />
+            </div>
             <div className={`${themeClasses.cardBg} rounded-lg border ${themeClasses.border} overflow-hidden`}>
               <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                 <h2 className={`text-lg font-semibold ${themeClasses.textPrimary}`}>

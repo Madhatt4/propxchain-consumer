@@ -28,12 +28,15 @@ import type { Transaction } from '../types/transaction.types';
 import { mapUserTypeToRole } from '../utils/roleMapping';
 import { useAuthStore } from '../stores/authStore';
 import { icpService } from '../services/icp.service';
+import { hiddenDocumentStatuses } from '@/lib/documentStatus';
 import { logger } from '../utils/logger';
 
 /**
  * Polling interval for document updates (30 seconds)
  */
-const DOCUMENT_POLL_INTERVAL = 30000;
+// Each poll is two canister update calls of about two seconds each. Uploads made
+// in this tab refresh at once, so this only sets how soon another party's shows.
+const DOCUMENT_POLL_INTERVAL = 60000;
 
 /**
  * Initial state for the split panel
@@ -46,6 +49,7 @@ const initialState: SplitPanelState = {
   transactionsLoading: false,
   transactionsError: null,
   transactionDocuments: [],
+  hiddenDocumentStatus: [],
   documentsLoading: false,
   documentsError: null,
   documentsLastUpdated: null,
@@ -109,6 +113,11 @@ function splitPanelReducer(
       return {
         ...state,
         documentsLoading: action.payload,
+      };
+    case 'SET_HIDDEN_DOCUMENT_STATUS':
+      return {
+        ...state,
+        hiddenDocumentStatus: action.payload,
       };
     case 'SET_DOCUMENTS_ERROR':
       return {
@@ -230,22 +239,36 @@ export const SplitPanelProvider: React.FC<SplitPanelProviderProps> = ({
       await icpService.ensureDocumentStorageActor();
 
       // Verify method exists before calling - prevents runtime errors
-      if (typeof icpService.getTransactionDocuments !== 'function') {
-        logger.error('icpService.getTransactionDocuments is not available');
+      if (typeof icpService.fetchTransactionDocuments !== 'function') {
+        logger.error('icpService.fetchTransactionDocuments is not available');
         dispatch({ type: 'SET_DOCUMENTS_ERROR', payload: 'Document service unavailable' });
         return;
       }
 
-      const docs = await icpService.getTransactionDocuments(transactionId);
+      // A failed status read must not take down the document list: the status
+      // lines and ticks just keep their last value until the next poll.
+      const [docs, status] = await Promise.all([
+        icpService.fetchTransactionDocuments(transactionId),
+        icpService.getDocumentStatus(transactionId).catch((error: unknown) => {
+          logger.warn('Could not load document status:', error);
+          return null;
+        }),
+      ]);
 
       // Transform to DocumentProofInfo (Principal to string for display)
-      const transformedDocs: DocumentProofInfo[] = (docs || []).map((doc: any) => ({
+      const transformedDocs = (docs || []).map((doc) => ({
         ...doc,
         uploadedBy: doc.uploadedBy?.toText?.() || doc.uploadedBy?.toString?.() || doc.uploadedBy,
         transactionId: doc.transactionId?.[0] || null,
-      }));
+      })) as unknown as DocumentProofInfo[];
 
       dispatch({ type: 'SET_DOCUMENTS', payload: transformedDocs });
+      if (status) {
+        dispatch({
+          type: 'SET_HIDDEN_DOCUMENT_STATUS',
+          payload: hiddenDocumentStatuses(status, (docs || []).map((doc) => String(doc.uploadedAt))),
+        });
+      }
       dispatch({ type: 'SET_DOCUMENTS_LAST_UPDATED', payload: Date.now() });
       dispatch({ type: 'SET_DOCUMENTS_ERROR', payload: null });
     } catch (error: unknown) {
@@ -267,6 +290,8 @@ export const SplitPanelProvider: React.FC<SplitPanelProviderProps> = ({
   // Polls every 30 seconds when tab is visible, pauses when hidden
   useEffect(() => {
     const txId = state.selectedTransaction?.id;
+    // Another deal's status lines must not carry over to this one.
+    dispatch({ type: 'SET_HIDDEN_DOCUMENT_STATUS', payload: [] });
     if (!txId) {
       // Clear documents when no transaction selected
       dispatch({ type: 'SET_DOCUMENTS', payload: [] });
@@ -323,6 +348,7 @@ export const SplitPanelProvider: React.FC<SplitPanelProviderProps> = ({
       transactionsLoading: state.transactionsLoading,
       transactionsError: state.transactionsError,
       transactionDocuments: state.transactionDocuments,
+      hiddenDocumentStatus: state.hiddenDocumentStatus,
       documentsLoading: state.documentsLoading,
       documentsError: state.documentsError,
       documentsLastUpdated: state.documentsLastUpdated,
@@ -340,6 +366,7 @@ export const SplitPanelProvider: React.FC<SplitPanelProviderProps> = ({
       state.transactionsLoading,
       state.transactionsError,
       state.transactionDocuments,
+      state.hiddenDocumentStatus,
       state.documentsLoading,
       state.documentsError,
       state.documentsLastUpdated,

@@ -9,6 +9,7 @@ import ChainView from '../components/ChainView';
 import MobileNavMenu from '../components/navigation/MobileNavMenu';
 import { useThemeClasses } from '../hooks/useThemeClasses';
 import { useTheme } from '../contexts/ThemeContext';
+import { hiddenDocumentStatuses, statusProgressDocuments } from '@/lib/documentStatus';
 import { Transaction, Document as TxDocument, Milestone } from '../types/transaction.types';
 import { logger } from '@/utils/logger';
 import { usePrincipalId, useIsAuthenticated, getStorePrincipalId } from '../stores/authStore';
@@ -108,8 +109,12 @@ const DashboardPage: React.FC = () => {
       try {
         const { icpService } = await import('../services/icp.service');
         await icpService.initialize();
-        const docs = await icpService.getDocumentsByTransaction(activeTransaction.id);
-        setTxDocuments(docs || []);
+        const docs: TxDocument[] = (await icpService.getDocumentsByTransaction(activeTransaction.id)) || [];
+        // The list leaves out what this viewer cannot open, such as a title
+        // uploaded by their agent, but the progress below must still count it.
+        const status = await icpService.getDocumentStatus(activeTransaction.id).catch(() => []);
+        const hidden = hiddenDocumentStatuses(status, docs.map((d) => d.uploadedAtNs));
+        setTxDocuments([...docs, ...statusProgressDocuments(hidden, activeTransaction.id)]);
       } catch (err) {
         logger.error('Error loading documents for dashboard:', err);
       }

@@ -14,11 +14,13 @@ vi.mock('../../stores/authStore', () => ({
 const getMyTransactions = vi.fn();
 const getAllTransactions = vi.fn();
 const getDocumentsByTransaction = vi.fn();
+const getDocumentStatus = vi.fn();
 vi.mock('../../services/icp.service', () => ({
   icpService: {
     getMyTransactions: (...a: unknown[]) => getMyTransactions(...a),
     getAllTransactions: (...a: unknown[]) => getAllTransactions(...a),
     getDocumentsByTransaction: (...a: unknown[]) => getDocumentsByTransaction(...a),
+    getDocumentStatus: (...a: unknown[]) => getDocumentStatus(...a),
   },
 }));
 
@@ -47,6 +49,7 @@ describe('BlockchainLedgerPage document ledger', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+    getDocumentStatus.mockResolvedValue([]);
     getMyTransactions.mockResolvedValue([{ id: 'tx_1', propertyAddress: '1 Test Street', status: 'active' }]);
     localStorage.setItem(
       'transactions',
@@ -103,6 +106,30 @@ describe('BlockchainLedgerPage document ledger', () => {
     expect(within(row).getByText("Couldn't check chain")).toBeInTheDocument();
   });
 
+  it('should show a document the viewer cannot open as a status line with no filename', async () => {
+    // Arrange: the list comes back empty, but the deal holds the buyer's funds.
+    getDocumentsByTransaction.mockResolvedValue([]);
+    getDocumentStatus.mockResolvedValue([{ category: 'funds', verified: true, uploadedAtNs: '100' }]);
+
+    // Act
+    await openDocumentLedger();
+
+    // Assert
+    expect(screen.getByText('Buyer funds: received')).toBeInTheDocument();
+  });
+
+  it('should not show status lines when the document list failed', async () => {
+    // Arrange
+    getDocumentsByTransaction.mockRejectedValue(new Error('rate limited'));
+    getDocumentStatus.mockResolvedValue([{ category: 'funds', verified: true, uploadedAtNs: '100' }]);
+
+    // Act
+    await openDocumentLedger();
+
+    // Assert
+    expect(screen.queryByText('Buyer funds: received')).not.toBeInTheDocument();
+  });
+
   it('should ask document_storage for each transaction by its id', async () => {
     // Arrange / Act
     await openDocumentLedger();
@@ -116,6 +143,7 @@ describe('BlockchainLedgerPage transaction source', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+    getDocumentStatus.mockResolvedValue([]);
     getDocumentsByTransaction.mockResolvedValue([]);
   });
 
