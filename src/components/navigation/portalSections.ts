@@ -28,7 +28,7 @@ const EXTRA_SECTIONS: Record<PortalKind, readonly SectionTab[]> = {
     { label: 'Pipeline', to: '/pro/estate-agent/pipeline' },
   ],
   developer: [{ label: 'Sites', to: '/pro/builder' }],
-  conveyancer: [],
+  conveyancer: [{ label: 'Matters', to: '/pro/conveyancer', end: true }],
 };
 
 const KIND_ORDER: readonly PortalKind[] = ['agent', 'developer', 'conveyancer'];

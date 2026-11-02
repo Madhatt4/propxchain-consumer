@@ -7,16 +7,27 @@ import { useMembershipsQuery } from '@/router/useMembershipsQuery';
 import type { SectionTab } from './SectionTabs';
 import { portalKindsFor, sectionsFor, type PortalKind } from './portalSections';
 
-/** Which professional portals (agent, developer, conveyancer) this user has. */
-export function usePortalKinds(): PortalKind[] {
+/**
+ * Which professional portals (agent, developer, conveyancer) this user has,
+ * plus whether the organisation memberships behind the answer are still
+ * loading. The sign-up role is known at once; memberships arrive from
+ * Supabase, so a caller deciding where to send the user waits for `isLoading`.
+ */
+export function usePortalKindsQuery(): { kinds: PortalKind[]; isLoading: boolean } {
   const supabaseUser = useAuthStore((s) => s.supabaseUser);
-  const { data: memberships } = useMembershipsQuery(supabaseUser?.id);
+  const { data: memberships, isLoading } = useMembershipsQuery(supabaseUser?.id);
   const signupRole = supabaseUser?.user_metadata?.role as string | undefined;
 
-  return useMemo(
+  const kinds = useMemo(
     () => portalKindsFor((memberships ?? []).map((m) => m.organisationType), signupRole),
     [memberships, signupRole],
   );
+  return { kinds, isLoading: Boolean(supabaseUser?.id) && isLoading };
+}
+
+/** Which professional portals (agent, developer, conveyancer) this user has. */
+export function usePortalKinds(): PortalKind[] {
+  return usePortalKindsQuery().kinds;
 }
 
 /**
