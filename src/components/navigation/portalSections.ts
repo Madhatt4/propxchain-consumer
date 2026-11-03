@@ -28,9 +28,13 @@ const EXTRA_SECTIONS: Record<PortalKind, readonly SectionTab[]> = {
     { label: 'Pipeline', to: '/pro/estate-agent/pipeline' },
   ],
   developer: [{ label: 'Sites', to: '/pro/builder' }],
-  // end: the workspace root is the Matters list; Quotes and Invites will be
+  // end: the workspace root is the Matters list; Quotes and Invites are
   // sibling paths under it, and must not light up Matters too.
-  conveyancer: [{ label: 'Matters', to: CONVEYANCER_WORKSPACE_PATH, end: true }],
+  conveyancer: [
+    { label: 'Matters', to: CONVEYANCER_WORKSPACE_PATH, end: true },
+    { label: 'Quotes', to: `${CONVEYANCER_WORKSPACE_PATH}/quotes` },
+    { label: 'Invites', to: `${CONVEYANCER_WORKSPACE_PATH}/invites` },
+  ],
 };
 
 const KIND_ORDER: readonly PortalKind[] = ['agent', 'developer', 'conveyancer'];
