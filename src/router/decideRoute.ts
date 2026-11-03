@@ -68,7 +68,9 @@ export function decideRoute(args: DecideRouteArgs): RouteDecision {
   }
 
   // An agent who is also a conveyancer is an agent first (same rule as the
-  // shared dashboard's isConveyancer), so only a pure conveyancer lands here.
+  // shared dashboard's isConveyancer). Only agency outranks conveyancing: a
+  // developer that is also a conveyancer lands here, builder pages one menu
+  // item away.
   if (portalKinds.includes('conveyancer') && !portalKinds.includes('agent')) {
     return { path: CONVEYANCER_WORKSPACE_PATH, reason: 'signed in: conveyancer workspace' };
   }

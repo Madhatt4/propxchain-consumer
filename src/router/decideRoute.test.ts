@@ -71,6 +71,11 @@ describe('decideRoute', () => {
     expect(decideRoute({ ...baseArgs(), portalKinds: ['agent', 'conveyancer'] }).path).toBe('/dashboard');
   });
 
+  it('should send a conveyancer who is also a developer to the conveyancer workspace', () => {
+    // Only agency outranks conveyancing; builder pages stay in the side menu.
+    expect(decideRoute({ ...baseArgs(), portalKinds: ['developer', 'conveyancer'] }).path).toBe('/pro/conveyancer');
+  });
+
   it('should still send a conveyancer in the phone app to /app', () => {
     expect(decideRoute({ ...baseArgs(), native: true, portalKinds: ['conveyancer'] }).path).toBe('/app');
   });
