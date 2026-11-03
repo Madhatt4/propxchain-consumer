@@ -45,8 +45,10 @@ describe('sectionsFor', () => {
     expect(labels(sectionsFor(['developer'])).slice(COMMON_SECTIONS.length)).toEqual(['Sites']);
   });
 
-  it('should add nothing beyond the common sections for a conveyancer', () => {
-    expect(labels(sectionsFor(['conveyancer'])).slice(COMMON_SECTIONS.length)).toEqual([]);
+  it('should add Matters for a conveyancer, pointing at the conveyancer workspace', () => {
+    const extras = sectionsFor(['conveyancer']).slice(COMMON_SECTIONS.length);
+    expect(extras.map((s) => s.label)).toEqual(['Matters']);
+    expect(extras[0].to).toBe('/pro/conveyancer');
   });
 
   it('should link each extra to its existing page', () => {

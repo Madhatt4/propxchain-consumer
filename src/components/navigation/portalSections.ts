@@ -7,7 +7,7 @@
  * dashboard, the agent portal and the builder portal all share one menu.
  */
 
-import type { OrganisationType } from '@/router/decideRoute';
+import { CONVEYANCER_WORKSPACE_PATH, type OrganisationType } from '@/router/decideRoute';
 import type { SectionTab } from './SectionTabs';
 
 export type PortalKind = 'agent' | 'developer' | 'conveyancer';
@@ -28,7 +28,9 @@ const EXTRA_SECTIONS: Record<PortalKind, readonly SectionTab[]> = {
     { label: 'Pipeline', to: '/pro/estate-agent/pipeline' },
   ],
   developer: [{ label: 'Sites', to: '/pro/builder' }],
-  conveyancer: [],
+  // end: the workspace root is the Matters list; Quotes and Invites will be
+  // sibling paths under it, and must not light up Matters too.
+  conveyancer: [{ label: 'Matters', to: CONVEYANCER_WORKSPACE_PATH, end: true }],
 };
 
 const KIND_ORDER: readonly PortalKind[] = ['agent', 'developer', 'conveyancer'];

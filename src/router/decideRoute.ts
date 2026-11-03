@@ -6,10 +6,16 @@
  *
  * Pure function: no side effects, no I/O. Everyone who is signed in and
  * verified lands on the same dashboard (in the phone app, its home screen at
- * /app). A professional's own pages (agent
- * listings and pipeline, builder sites) are extra items in that dashboard's
- * side menu, not separate front doors, so there is nothing to choose between.
+ * /app). An agent's or developer's own pages (listings and pipeline, builder
+ * sites) are extra items in that dashboard's side menu, not separate front
+ * doors. A conveyancer is the exception: their work is matters, not their own
+ * deals, so they land in the conveyancer workspace at /pro/conveyancer, with
+ * the shared dashboard one menu item away.
  */
+
+import type { PortalKind } from '@/components/navigation/portalSections';
+
+export const CONVEYANCER_WORKSPACE_PATH = '/pro/conveyancer';
 
 export type OrganisationType =
   | 'consumer'
@@ -33,6 +39,8 @@ export interface DecideRouteArgs {
   freshSignup: boolean;
   /** True inside the iOS or Android app, whose signed-in home is the phone screen. */
   native?: boolean;
+  /** The professional portals this user has (usePortalKinds); empty for a consumer. */
+  portalKinds?: readonly PortalKind[];
 }
 
 export interface RouteDecision {
@@ -41,7 +49,7 @@ export interface RouteDecision {
 }
 
 export function decideRoute(args: DecideRouteArgs): RouteDecision {
-  const { user, emailVerified, freshSignup, native = false } = args;
+  const { user, emailVerified, freshSignup, native = false, portalKinds = [] } = args;
 
   if (!user) {
     return { path: '/login', reason: 'no authenticated user' };
@@ -57,6 +65,14 @@ export function decideRoute(args: DecideRouteArgs): RouteDecision {
 
   if (native) {
     return { path: '/app', reason: 'signed in: phone app home' };
+  }
+
+  // An agent who is also a conveyancer is an agent first (same rule as the
+  // shared dashboard's isConveyancer). Only agency outranks conveyancing: a
+  // developer that is also a conveyancer lands here, builder pages one menu
+  // item away.
+  if (portalKinds.includes('conveyancer') && !portalKinds.includes('agent')) {
+    return { path: CONVEYANCER_WORKSPACE_PATH, reason: 'signed in: conveyancer workspace' };
   }
 
   return { path: '/dashboard', reason: 'signed in: shared dashboard' };

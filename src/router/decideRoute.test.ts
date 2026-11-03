@@ -55,4 +55,32 @@ describe('decideRoute', () => {
     const result = decideRoute({ ...baseArgs(), emailVerified: false, native: true });
     expect(result.path).toBe('/verify');
   });
+
+  it('should send a conveyancer to the conveyancer workspace', () => {
+    const result = decideRoute({ ...baseArgs(), portalKinds: ['conveyancer'] });
+    expect(result.path).toBe('/pro/conveyancer');
+  });
+
+  it('should keep an agent or developer on the shared /dashboard', () => {
+    expect(decideRoute({ ...baseArgs(), portalKinds: ['agent'] }).path).toBe('/dashboard');
+    expect(decideRoute({ ...baseArgs(), portalKinds: ['developer'] }).path).toBe('/dashboard');
+  });
+
+  it('should send a conveyancer who is also an agent to the shared /dashboard', () => {
+    // Mirrors Dashboard_Premium: an agent who is also a conveyancer is an agent first.
+    expect(decideRoute({ ...baseArgs(), portalKinds: ['agent', 'conveyancer'] }).path).toBe('/dashboard');
+  });
+
+  it('should send a conveyancer who is also a developer to the conveyancer workspace', () => {
+    // Only agency outranks conveyancing; builder pages stay in the side menu.
+    expect(decideRoute({ ...baseArgs(), portalKinds: ['developer', 'conveyancer'] }).path).toBe('/pro/conveyancer');
+  });
+
+  it('should still send a conveyancer in the phone app to /app', () => {
+    expect(decideRoute({ ...baseArgs(), native: true, portalKinds: ['conveyancer'] }).path).toBe('/app');
+  });
+
+  it('should still gate a conveyancer on email verification', () => {
+    expect(decideRoute({ ...baseArgs(), emailVerified: false, portalKinds: ['conveyancer'] }).path).toBe('/verify');
+  });
 });

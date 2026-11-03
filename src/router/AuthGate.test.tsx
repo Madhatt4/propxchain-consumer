@@ -26,6 +26,12 @@ vi.mock('../hooks/useIsAdmin', () => ({
   useIsAdmin: () => mockAdminState,
 }));
 
+// Portal kinds come from organisation memberships + sign-up role.
+const mockKindsState = { kinds: [] as Array<'agent' | 'developer' | 'conveyancer'>, isLoading: false };
+vi.mock('../components/navigation/usePortalSections', () => ({
+  usePortalKindsQuery: () => mockKindsState,
+}));
+
 import AuthGate from './AuthGate';
 
 // ── helpers ───────────────────────────────────────────────────────────────
@@ -38,6 +44,7 @@ const renderAt = (initialPath: string = '/post-login') =>
         <Route path="/verify" element={<div data-testid="at-verify" />} />
         <Route path="/onboarding" element={<div data-testid="at-onboarding" />} />
         <Route path="/login" element={<div data-testid="at-login" />} />
+        <Route path="/pro/conveyancer" element={<div data-testid="at-conveyancer" />} />
       </Routes>
     </MemoryRouter>,
   );
@@ -53,6 +60,8 @@ const resetMocks = (): void => {
   mockAdminState.isAdmin = false;
   mockAdminState.role = null;
   mockAdminState.isLoading = false;
+  mockKindsState.kinds = [];
+  mockKindsState.isLoading = false;
 };
 
 // ── tests ─────────────────────────────────────────────────────────────────
@@ -84,6 +93,22 @@ describe('<AuthGate>', () => {
     await waitFor(() => {
       expect(screen.getByTestId('at-dashboard')).toBeInTheDocument();
     });
+  });
+
+  it('sends a conveyancer to the conveyancer workspace', async () => {
+    mockKindsState.kinds = ['conveyancer'];
+    renderAt();
+    await waitFor(() => {
+      expect(screen.getByTestId('at-conveyancer')).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId('at-dashboard')).toBeNull();
+  });
+
+  it('should hold on the spinner until the memberships answer arrives', () => {
+    mockKindsState.isLoading = true;
+    const { container } = renderAt();
+    expect(container.querySelector('.animate-spin')).toBeTruthy();
+    expect(screen.queryByTestId('at-dashboard')).toBeNull();
   });
 
   it('sends an unverified email to /verify', async () => {

@@ -8,6 +8,7 @@ import { useAuthStore } from '../stores/authStore';
 import { decideRoute } from './decideRoute';
 import { useIsAdmin } from '../hooks/useIsAdmin';
 import { isNativeApp } from '../lib/native';
+import { usePortalKindsQuery } from '../components/navigation/usePortalSections';
 
 /**
  * Post-login landing gate.
@@ -39,11 +40,14 @@ const AuthGate: React.FC = () => {
   const isInitialized = useAuthStore((s) => s.isInitialized);
   const isLoading = useAuthStore((s) => s.isLoading);
   const { isAdmin, isLoading: isAdminLoading } = useIsAdmin();
+  // A conveyancer lands in their workspace, so routing also waits for the
+  // organisation memberships that say who is one.
+  const { kinds: portalKinds, isLoading: isKindsLoading } = usePortalKindsQuery();
 
   // Routing waits for the canister's admin answer, so an admin is never sent
   // down the normal path first. Without a principal the admin query is
   // disabled and resolves immediately.
-  const authReady = isInitialized && !isLoading && !isAdminLoading;
+  const authReady = isInitialized && !isLoading && !isAdminLoading && !isKindsLoading;
 
   // Admin escape hatch: platform admins always land on the dashboard,
   // whatever their email-verification state. Admin status comes from the
@@ -81,11 +85,12 @@ const AuthGate: React.FC = () => {
       emailVerified: supabaseUser?.email_confirmed_at != null,
       freshSignup: searchParams.get('fresh') === '1',
       native: isNativeApp(),
+      portalKinds,
     });
 
     navigatedRef.current = true;
     navigate(decision.path, { replace: true });
-  }, [authReady, authMethod, supabaseUser, searchParams, navigate, isAdmin]);
+  }, [authReady, authMethod, supabaseUser, searchParams, navigate, isAdmin, portalKinds]);
 
   return <FullPageSpinner />;
 };
