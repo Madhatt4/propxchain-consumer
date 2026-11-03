@@ -45,10 +45,19 @@ describe('sectionsFor', () => {
     expect(labels(sectionsFor(['developer'])).slice(COMMON_SECTIONS.length)).toEqual(['Sites']);
   });
 
-  it('should add Matters for a conveyancer, pointing at the conveyancer workspace', () => {
+  it('should add Matters, Quotes and Invites for a conveyancer, under the conveyancer workspace', () => {
     const extras = sectionsFor(['conveyancer']).slice(COMMON_SECTIONS.length);
-    expect(extras.map((s) => s.label)).toEqual(['Matters']);
-    expect(extras[0].to).toBe('/pro/conveyancer');
+    expect(extras.map((s) => [s.label, s.to])).toEqual([
+      ['Matters', '/pro/conveyancer'],
+      ['Quotes', '/pro/conveyancer/quotes'],
+      ['Invites', '/pro/conveyancer/invites'],
+    ]);
+  });
+
+  it('should match Matters exactly so it stays unlit on the Quotes and Invites pages', () => {
+    const extras = sectionsFor(['conveyancer']).slice(COMMON_SECTIONS.length);
+    expect(extras.find((s) => s.label === 'Matters')?.end).toBe(true);
+    expect(extras.filter((s) => s.label !== 'Matters').every((s) => !s.end)).toBe(true);
   });
 
   it('should link each extra to its existing page', () => {
