@@ -16,8 +16,9 @@
  *  - Flood warnings: Environment Agency live warnings within 10 km.
  *    Surface-water and long-term risk bands are NOT covered, so the copy says so
  *    and points to the GOV.UK service rather than implying it.
- *  - Heritage: conservation area, listed building, park and garden, scheduled
- *    monument, world heritage site (planning.data.gov.uk, England only).
+ *  - Heritage: conservation area, listed building, scheduled monument, world
+ *    heritage site (planning.data.gov.uk, England only). Registered parks and
+ *    gardens are NOT checked.
  *  - Sold prices: HM Land Registry price paid (England and Wales).
  *  - Planning applications: UK PlanIt. EPC: the energy certificate register.
  *
@@ -39,7 +40,7 @@ export const PROPERTY_CHECK_HERO = {
 export const PROPERTY_CHECK_COVERS = [
   { label: 'Flood zone', body: 'Whether the property sits in Flood Zone 2 or 3 on the planning flood map for rivers and the sea.' },
   { label: 'Flood warnings', body: 'Live Environment Agency flood warnings and alerts within 10 km.' },
-  { label: 'Heritage', body: 'Listed building, conservation area, registered park and garden, scheduled monument and world heritage site.' },
+  { label: 'Heritage', body: 'Listed building, conservation area, scheduled monument and world heritage site.' },
   { label: 'Environment', body: 'Green belt, SSSI, national park, ancient woodland and Areas of Outstanding Natural Beauty.' },
   { label: 'Planning', body: 'Recent planning applications nearby, plus tree preservation orders and brownfield land.' },
   { label: 'Sold prices', body: 'What homes on the street sold for, from HM Land Registry price paid data.' },
@@ -50,6 +51,7 @@ export const PROPERTY_CHECK_SECTIONS = [
   {
     id: 'flood-risk',
     heading: 'Check flood risk by postcode',
+    more: { to: '/flood-risk-check', label: 'More on flood zones and flood warnings' },
     paragraphs: [
       'The check shows whether the address falls inside Flood Zone 2 or Flood Zone 3, the Environment Agency zones used in planning for flooding from rivers and the sea. Flood Zone 3 is the highest probability. It also lists any flood warnings in force within 10 km right now.',
       'It does not show surface water (flash flooding) risk. For that, use the long-term flood risk service on GOV.UK, and ask the seller about any past flooding on the TA6 form.',
@@ -58,8 +60,9 @@ export const PROPERTY_CHECK_SECTIONS = [
   {
     id: 'heritage',
     heading: 'Is the property listed or in a conservation area?',
+    more: { to: '/listed-building-check', label: 'More on listed buildings and conservation areas' },
     paragraphs: [
-      'The check reports whether the address is a listed building or sits in a conservation area, a registered park and garden, a scheduled monument or a world heritage site.',
+      'The check reports whether the address is a listed building or sits in a conservation area, a scheduled monument or a world heritage site.',
       'Listing and conservation area status limit what you can change, from windows to extensions, and some works need consent. Knowing before you offer saves a surprise at the searches stage.',
     ],
   },

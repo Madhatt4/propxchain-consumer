@@ -24,6 +24,7 @@ import {
   PROPERTY_CHECK_SECTIONS,
   buildPropertyCheckFaqJsonLd,
 } from '../src/pages/marketing/propertyCheckData.mjs';
+import { FLOOD_RISK_SPOKE, HERITAGE_SPOKE, buildSpokeFaqJsonLd } from '../src/pages/marketing/propertyCheckSpokesData.mjs';
 
 import { resourcePages } from './prerender-resources.mjs';
 
@@ -69,6 +70,7 @@ ${PROPERTY_CHECK_SECTIONS.map(
 <section aria-labelledby="${sec.id}">
   <h2 id="${sec.id}">${escapeHtml(sec.heading)}</h2>
 ${sec.paragraphs.map((para) => `  <p>${escapeHtml(para)}</p>`).join('\n')}
+${sec.more ? `  <p><a href="${sec.more.to}">${escapeHtml(sec.more.label)}</a></p>` : ''}
 </section>`,
 ).join('\n')}
 
@@ -78,6 +80,27 @@ ${PROPERTY_CHECK_FAQS.map((f) => `  <h3>${escapeHtml(f.q)}</h3>\n  <p>${escapeHt
 </section>
 
 <p>Before you buy or sell: <a href="/resources/searches-and-legal/property-searches-explained">property searches explained</a>, <a href="/resources/buying/how-long-does-conveyancing-take">how long conveyancing takes</a>, <a href="/resources/selling/ta6-form-explained">the TA6 form explained</a>.</p>
+</main>`;
+
+// Topic pages of the property check, built from their shared data module.
+const spokeMain = (spoke) => `<main id="seo-fallback" role="main" aria-label="${escapeHtml(spoke.h1)} — summary">
+<p class="muted">Loading PropXchain…</p>
+<h1>${escapeHtml(spoke.h1)}</h1>
+<p>${escapeHtml(spoke.intro)}</p>
+${spoke.sections.map(
+  (sec) => `
+<section aria-labelledby="${sec.id}">
+  <h2 id="${sec.id}">${escapeHtml(sec.heading)}</h2>
+${sec.paragraphs.map((para) => `  <p>${escapeHtml(para)}</p>`).join('\n')}
+</section>`,
+).join('\n')}
+
+<section aria-labelledby="questions">
+  <h2 id="questions">Questions</h2>
+${spoke.faqs.map((f) => `  <h3>${escapeHtml(f.q)}</h3>\n  <p>${escapeHtml(f.a)}</p>`).join('\n')}
+</section>
+
+<p>The same check covers planning, sold prices, the energy rating and more: <a href="/property-check">the full free property check</a>.</p>
 </main>`;
 
 // SEO LIMITS — the most common audit failure on this site. Every `title` must
@@ -325,6 +348,20 @@ export const pages = [
     description: PROPERTY_CHECK_META.description,
     jsonLd: buildPropertyCheckFaqJsonLd(),
     main: propertyCheckMain,
+  },
+  {
+    route: 'flood-risk-check',
+    title: FLOOD_RISK_SPOKE.meta.title,
+    description: FLOOD_RISK_SPOKE.meta.description,
+    jsonLd: buildSpokeFaqJsonLd(FLOOD_RISK_SPOKE),
+    main: spokeMain(FLOOD_RISK_SPOKE),
+  },
+  {
+    route: 'listed-building-check',
+    title: HERITAGE_SPOKE.meta.title,
+    description: HERITAGE_SPOKE.meta.description,
+    jsonLd: buildSpokeFaqJsonLd(HERITAGE_SPOKE),
+    main: spokeMain(HERITAGE_SPOKE),
   },
   {
     route: 'about',

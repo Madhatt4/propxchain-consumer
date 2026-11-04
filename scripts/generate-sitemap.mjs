@@ -28,6 +28,8 @@ const routes = [
   { loc: '/sell-my-house', lastmod: '2026-06-13', changefreq: 'weekly', priority: '0.95' },
   { loc: '/find-a-conveyancer', lastmod: '2026-06-13', changefreq: 'weekly', priority: '0.95' },
   { loc: '/property-check', lastmod: '2026-11-04', changefreq: 'monthly', priority: '0.9' },
+  { loc: '/flood-risk-check', lastmod: '2026-11-04', changefreq: 'monthly', priority: '0.8' },
+  { loc: '/listed-building-check', lastmod: '2026-11-04', changefreq: 'monthly', priority: '0.8' },
   { loc: '/news/', lastmod: '2026-10-18', changefreq: 'weekly', priority: '0.8' },
   { loc: '/news/opda-sandbox-hackathons', lastmod: '2026-06-12', changefreq: 'monthly', priority: '0.8' },
   { loc: '/faq', lastmod: '2026-10-08', changefreq: 'monthly', priority: '0.8' },
