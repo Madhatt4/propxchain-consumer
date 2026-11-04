@@ -7,6 +7,8 @@ import { lazy, Suspense, useState, type ReactElement } from 'react';
 
 import type { EpcBand, PropertyIntelligenceReport } from '../../../services/propertyIntelligenceService';
 
+import { ErrorBoundary } from '@/components/common/ErrorBoundary';
+
 import { ReportSection, Unavailable } from './ReportParts';
 import { R } from './reportStyles';
 
@@ -48,9 +50,11 @@ export function PricesSection({ report }: { report: PropertyIntelligenceReport }
     >
       {sales.length > 1 && (
         <figure className={`mt-5 rounded-lg border ${R.rule} ${R.paper} px-3 pb-2 pt-3`}>
-          <Suspense fallback={<div className="h-64 w-full animate-pulse rounded bg-[#EEF2EE] dark:bg-[#1F2937]" />}>
-            <PriceChart sales={sales} />
-          </Suspense>
+          <ErrorBoundary fallback={<p className={`m-0 px-1 py-6 ${R.source}`}>The chart couldn’t load here; every sale is in the table below.</p>}>
+            <Suspense fallback={<div className="h-64 w-full animate-pulse rounded bg-[#EEF2EE] dark:bg-[#1F2937]" />}>
+              <PriceChart sales={sales} />
+            </Suspense>
+          </ErrorBoundary>
           <figcaption className={`mt-1 px-1 ${R.source}`}>Each dot is one sale; the latest is in teal. Property types are mixed, so read this as the postcode’s range, not a trend.</figcaption>
         </figure>
       )}
