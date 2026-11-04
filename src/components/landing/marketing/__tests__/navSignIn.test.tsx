@@ -41,3 +41,20 @@ describe('landing nav sign-in', () => {
     links.forEach((link) => expect(link).toHaveAttribute('href', '/?signin=1'));
   });
 });
+
+describe('landing nav property check', () => {
+  it('should route the desktop Property check link to its page', () => {
+    renderNav();
+
+    expect(screen.getByRole('link', { name: 'Property check' })).toHaveAttribute('href', '/property-check');
+  });
+
+  it('should route the mobile menu Property check link to its page', () => {
+    renderNav();
+    fireEvent.click(screen.getByRole('button', { name: 'Open menu' }));
+
+    const links = screen.getAllByRole('link', { name: 'Property check' });
+    expect(links).toHaveLength(2);
+    links.forEach((link) => expect(link).toHaveAttribute('href', '/property-check'));
+  });
+});

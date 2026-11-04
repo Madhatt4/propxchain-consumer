@@ -28,6 +28,12 @@ const MarketingHeader: React.FC = () => {
         </Link>
         <nav className="flex items-center gap-6 font-[DM_Sans] text-sm">
           <Link
+            to="/property-check"
+            className="text-[#1A1A1A] dark:text-[#CBD5E1] hover:text-[#0D9488]"
+          >
+            Free property check
+          </Link>
+          <Link
             to="/resources"
             className="text-[#1A1A1A] dark:text-[#CBD5E1] hover:text-[#0D9488]"
           >
