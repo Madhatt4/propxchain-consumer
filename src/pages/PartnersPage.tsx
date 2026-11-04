@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { sendEnquiry } from '@/services/enquiry.service';
 import { logger } from '@/utils/logger';
 import { Logo } from '@/components/brand/Logo';
+import { Wordmark } from '@/components/brand/Wordmark';
 
 const PartnersPage: React.FC = () => {
   const navigate = useNavigate();
@@ -102,7 +103,7 @@ const PartnersPage: React.FC = () => {
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-5xl font-bold mb-6">Partner with PropXchain</h1>
+          <h1 className="text-5xl font-bold mb-6">Partner with <Wordmark hasRegisteredMark={false} accentClassName="text-[#00D4B8]" /></h1>
           <p className="text-xl text-gray-300 max-w-3xl mx-auto mb-8">
             Join our ecosystem of technology partners, integrators, and industry leaders revolutionizing UK property conveyancing.
           </p>
@@ -296,7 +297,7 @@ const PartnersPage: React.FC = () => {
 
         {/* Partner Benefits */}
         <section className="mb-16">
-          <h2 className="text-3xl font-bold text-black dark:text-[#F1F5F9] mb-8 text-center">Why Partner with PropXchain?</h2>
+          <h2 className="text-3xl font-bold text-black dark:text-[#F1F5F9] mb-8 text-center">Why Partner with <Wordmark hasRegisteredMark={false} />?</h2>
 
           <div className="grid md:grid-cols-3 gap-8">
             <div className="text-center">

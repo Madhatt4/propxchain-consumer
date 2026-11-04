@@ -19,18 +19,26 @@ interface WordmarkProps {
   /** Size and base colour, e.g. `text-[22px] text-[var(--text-main)]`. */
   className?: string;
   accentClassName?: string;
+  /**
+   * Show the ® sign. Defaults to true for logos; a heading that names
+   * PropXchain under a logo that already carries the sign passes false.
+   */
+  hasRegisteredMark?: boolean;
 }
 
 export function Wordmark({
   className = '',
   accentClassName = 'text-[#0D9488] dark:text-[#00D4B8]',
+  hasRegisteredMark = true,
 }: WordmarkProps): JSX.Element {
   return (
     <span className={`font-display font-bold leading-none tracking-[-0.02em] ${className}`.trim()}>
       Prop<span className={accentClassName}>X</span>chain
-      <sup aria-hidden="true" data-testid="registered-mark" className="ml-[0.08em] align-super text-[0.4em] font-sans font-normal">
-        ®
-      </sup>
+      {hasRegisteredMark && (
+        <sup aria-hidden="true" data-testid="registered-mark" className="ml-[0.08em] align-super text-[0.4em] font-sans font-normal">
+          ®
+        </sup>
+      )}
     </span>
   );
 }

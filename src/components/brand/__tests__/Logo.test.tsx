@@ -47,3 +47,16 @@ describe('Wordmark', () => {
     expect(screen.getByTestId('registered-mark')).toHaveAttribute('aria-hidden', 'true');
   });
 });
+
+describe('Wordmark in a heading', () => {
+  it('should leave out the ® sign when the heading asks it to', () => {
+    render(
+      <h1>
+        <Wordmark hasRegisteredMark={false} /> is free to use.
+      </h1>,
+    );
+
+    expect(screen.queryByTestId('registered-mark')).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('PropXchain is free to use.');
+  });
+});

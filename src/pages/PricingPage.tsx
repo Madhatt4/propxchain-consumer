@@ -19,6 +19,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { IS_REGISTRATION_OPEN, PRELAUNCH_CAPTURE_PATH } from '../config/registration';
 import { FREE_FEATURES, PAID_ITEMS } from '../constants/pricing';
+import { Wordmark } from '@/components/brand/Wordmark';
+
 import MarketingShell from './marketing/MarketingShell';
 
 const FAQS = [
@@ -61,7 +63,7 @@ const PricingPage: React.FC = () => {
         {/* Hero */}
         <div className="mx-auto max-w-2xl text-center mb-12">
           <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-50 sm:text-4xl lg:text-5xl mb-4">
-            PropXchain is free to use.
+            <Wordmark hasRegisteredMark={false} /> is free to use.
           </h1>
           <p className="text-lg text-slate-600 dark:text-slate-400">
             No plans, no tiers, no platform fee. You only pay for the third-party items you

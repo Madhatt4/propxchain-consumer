@@ -91,6 +91,7 @@ describe('pricing copy claims', () => {
 
   it('should open the pricing page by saying PropXchain is free to use', () => {
     const page = readFileSync(join(process.cwd(), 'src/pages/PricingPage.tsx'), 'utf8');
-    expect(page).toContain('PropXchain is free to use.');
+    // The name may be set as the Wordmark component, which renders "PropXchain".
+    expect(page).toMatch(/(?:PropXchain|<Wordmark [^>]*\/>) is free to use\./);
   });
 });

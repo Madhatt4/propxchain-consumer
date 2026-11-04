@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Home, Key, Loader2 } from 'lucide-react';
 import { Logo } from '@/components/brand/Logo';
+import { Wordmark } from '@/components/brand/Wordmark';
 import { usePrincipalId } from '@/stores/authStore';
 
 type UserRole = 'seller' | 'buyer';
@@ -44,7 +45,7 @@ export default function RoleSelectionPage(): JSX.Element {
 
         <div className="relative z-10 w-full max-w-2xl mx-auto px-4 py-12">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold mb-2">Welcome to PropXchain</h1>
+            <h1 className="text-3xl font-bold mb-2">Welcome to <Wordmark hasRegisteredMark={false} /></h1>
             <p className="text-muted-foreground text-lg">Are you selling or buying a property?</p>
           </div>
 
