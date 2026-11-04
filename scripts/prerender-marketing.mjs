@@ -16,6 +16,14 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { FAQ_GROUPS, buildFaqJsonLd } from '../src/pages/marketing/faqData.mjs';
+import {
+  PROPERTY_CHECK_COVERS,
+  PROPERTY_CHECK_FAQS,
+  PROPERTY_CHECK_HERO,
+  PROPERTY_CHECK_META,
+  PROPERTY_CHECK_SECTIONS,
+  buildPropertyCheckFaqJsonLd,
+} from '../src/pages/marketing/propertyCheckData.mjs';
 
 import { resourcePages } from './prerender-resources.mjs';
 
@@ -41,6 +49,35 @@ ${group.items.map((item) => `  <h3>${escapeHtml(item.q)}</h3>\n  <p>${escapeHtml
 ).join('\n')}
 
 <p>Still have questions? <a href="/support">Talk to us</a> or <a href="/register">create a free account</a>.</p>
+</main>`;
+
+// /property-check body comes from the same data module the React page renders,
+// so the copy a crawler reads and the copy a visitor reads stay identical.
+const propertyCheckMain = `<main id="seo-fallback" role="main" aria-label="Free property check — summary">
+<p class="muted">Loading PropXchain…</p>
+<h1>${escapeHtml(PROPERTY_CHECK_HERO.h1)}</h1>
+<p>${escapeHtml(PROPERTY_CHECK_HERO.intro)}</p>
+
+<section aria-labelledby="covers">
+  <h2 id="covers">What the check covers</h2>
+  <ul>
+${PROPERTY_CHECK_COVERS.map((c) => `    <li><strong>${escapeHtml(c.label)}</strong> — ${escapeHtml(c.body)}</li>`).join('\n')}
+  </ul>
+</section>
+${PROPERTY_CHECK_SECTIONS.map(
+  (sec) => `
+<section aria-labelledby="${sec.id}">
+  <h2 id="${sec.id}">${escapeHtml(sec.heading)}</h2>
+${sec.paragraphs.map((para) => `  <p>${escapeHtml(para)}</p>`).join('\n')}
+</section>`,
+).join('\n')}
+
+<section aria-labelledby="questions">
+  <h2 id="questions">Property check questions</h2>
+${PROPERTY_CHECK_FAQS.map((f) => `  <h3>${escapeHtml(f.q)}</h3>\n  <p>${escapeHtml(f.a)}</p>`).join('\n')}
+</section>
+
+<p>Before you buy or sell: <a href="/resources/searches-and-legal/property-searches-explained">property searches explained</a>, <a href="/resources/buying/how-long-does-conveyancing-take">how long conveyancing takes</a>, <a href="/resources/selling/ta6-form-explained">the TA6 form explained</a>.</p>
 </main>`;
 
 // SEO LIMITS — the most common audit failure on this site. Every `title` must
@@ -281,6 +318,13 @@ export const pages = [
 
 <p>Ready to find a conveyancer? <a href="/register">Create a free account</a>. Selling a house? <a href="/sell-my-house">Start here</a>.</p>
 </main>`,
+  },
+  {
+    route: 'property-check',
+    title: PROPERTY_CHECK_META.title,
+    description: PROPERTY_CHECK_META.description,
+    jsonLd: buildPropertyCheckFaqJsonLd(),
+    main: propertyCheckMain,
   },
   {
     route: 'about',

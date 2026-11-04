@@ -33,6 +33,7 @@ const MarketingFooter: React.FC = () => {
             <ul className="mt-3 space-y-2">
               <li><Link to="/#developers" className="hover:text-[#0D9488]">For developers</Link></li>
               <li><Link to="/#conveyancers" className="hover:text-[#0D9488]">For conveyancers</Link></li>
+              <li><Link to="/property-check" className="hover:text-[#0D9488]">Free property check</Link></li>
               <li><Link to="/pricing" className="hover:text-[#0D9488]">Pricing</Link></li>
               <li><Link to="/api" className="hover:text-[#0D9488]">API docs</Link></li>
               {/* Plain anchor: /agent is a static page outside the SPA */}
