@@ -445,6 +445,9 @@ const SalesPage: React.FC = () => {
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-12 mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="mb-4 flex justify-center">
+            <Logo variant="full" tone="onDark" className="h-10 w-auto" />
+          </div>
           <p className="text-gray-300">&copy; 2025 PropXchain. All rights reserved.</p>
         </div>
       </footer>

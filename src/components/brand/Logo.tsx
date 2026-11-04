@@ -2,35 +2,27 @@
 // Copyright (C) 2026 PropXchain Ltd
 
 /**
- * The PropXchain glass lockup image. The signed-in top bar and the landing
- * page use the type-set `Wordmark` instead; this stays on the other pages.
+ * The PropXchain logo for every page outside the landing hero: the type-set
+ * `Wordmark` (Fraunces, bold, teal X) with the registered trade mark sign.
+ * It replaced the glass lockup image so the whole site carries the same logo
+ * as the landing page, top and bottom. Keeping this component, rather than
+ * importing `Wordmark` at each of the ~20 call sites, means a page cannot
+ * drift back to an older mark.
  *
- * The lockup is the glass render — house, wordmark and tagline together on its
- * own dark ground — so it reads as a self-contained tile rather than a
- * transparent glyph. Both variants resolve to the same asset:
+ * - `variant="full"` — roomy surfaces (footers, auth screens): a larger size.
+ * - `variant="mark"` — top bars, sidebars and compact headers.
  *
- * - `variant="full"` — roomy surfaces (footers, auth screens, centred headers).
- * - `variant="mark"` — tight top-nav bars, collapsed sidebars, avatars.
+ * Callers size the box with height classes (`h-9`, `h-11`); the text is
+ * vertically centred inside it. `tone` picks the base colour for the
+ * surface: `onDark` is white, `onLight` is near-black and follows the app's
+ * dark mode.
  *
- * Because the tile carries its own background, it no longer needs a per-surface
- * colour treatment. `tone` survives for the ~20 existing call sites and now
- * controls the edge only: `onLight` adds a hairline ring so the dark tile has a
- * defined edge against cream/white, `onDark` leaves it flush.
- *
- * The wordmark inside the tile is part of the artwork, so a caller placing this
- * next to a separate "PropXchain" text label would render the name twice.
- *
- * The ® is an SVG overlay in the artwork's own 930x768 coordinates, so it sits
- * just after the baked-in wordmark at every size. PropXchain is a registered
- * UK trade mark, UK00004420719 (Class 42), registered 2026-10-09.
+ * PropXchain is a registered UK trade mark, UK00004420719 (Class 42),
+ * registered 2026-10-09, hence the ®.
  */
 import { Link } from 'react-router-dom';
 
-import lockupGlass from '@/assets/brand/propxchain-lockup-glass.webp';
-
-/** Where the wordmark ends in the lockup artwork, in its pixel coordinates. */
-const LOCKUP_SIZE = { width: 930, height: 768 } as const;
-const REGISTERED_MARK = { x: 810, y: 532, size: 52 } as const;
+import { Wordmark } from './Wordmark';
 
 export type LogoVariant = 'full' | 'mark';
 export type LogoTone = 'onLight' | 'onDark';
@@ -38,12 +30,22 @@ export type LogoTone = 'onLight' | 'onDark';
 interface LogoProps {
   variant?: LogoVariant;
   tone?: LogoTone;
-  /** Tailwind sizing/colour classes for the <img>. Default keeps aspect ratio. */
+  /** Box sizing classes, e.g. `h-9 w-auto`. */
   className?: string;
-  /** Router destination. Pass `null` to render the image without a link. */
+  /** Router destination. Pass `null` to render the logo without a link. */
   to?: string | null;
   alt?: string;
 }
+
+const SIZE: Record<LogoVariant, string> = {
+  full: 'text-[1.75rem]',
+  mark: 'text-[1.5rem]',
+};
+
+const COLOUR: Record<LogoTone, string> = {
+  onLight: 'text-[#1A1A1A] dark:text-[#E5E7EB]',
+  onDark: 'text-white',
+};
 
 export function Logo({
   variant = 'full',
@@ -52,45 +54,26 @@ export function Logo({
   to = '/',
   alt = 'PropXchain',
 }: LogoProps): JSX.Element {
-  // The tile is deliberately soft-cornered; `full` gets a slightly larger radius
-  // because it is only ever rendered at footer/hero sizes.
-  const radius = variant === 'full' ? 'rounded-lg' : 'rounded-md';
-  const edge = tone === 'onLight' ? ' ring-1 ring-black/10' : '';
-
-  const image = (
-    <span className="relative inline-block">
-      <img
-        src={lockupGlass}
-        alt={alt}
-        className={`${radius} object-contain${edge} ${className}`.trim()}
-        draggable={false}
-      />
-      <svg
-        viewBox={`0 0 ${LOCKUP_SIZE.width} ${LOCKUP_SIZE.height}`}
-        className="pointer-events-none absolute inset-0 h-full w-full"
+  const logo = (
+    <span role="img" aria-label={alt} className={`inline-flex items-center ${className}`.trim()}>
+      <Wordmark className={`${SIZE[variant]} ${COLOUR[tone]}`} />
+      <sup
         aria-hidden="true"
         data-testid="registered-mark"
+        className={`ml-0.5 text-[0.55rem] font-sans ${COLOUR[tone]}`}
       >
-        <text
-          x={REGISTERED_MARK.x}
-          y={REGISTERED_MARK.y}
-          fontSize={REGISTERED_MARK.size}
-          fill="#E6FBFF"
-          fontFamily="Arial, Helvetica, sans-serif"
-        >
-          ®
-        </text>
-      </svg>
+        ®
+      </sup>
     </span>
   );
 
   if (to === null) {
-    return image;
+    return logo;
   }
 
   return (
     <Link to={to} aria-label={alt} className="inline-flex items-center">
-      {image}
+      {logo}
     </Link>
   );
 }

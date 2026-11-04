@@ -3,8 +3,8 @@
 
 /**
  * The PropXchain name set as type: Fraunces, bold, with the X in teal. This is
- * the logo in the signed-in top bar and the landing page's nav and footer.
- * `Logo` (the glass lockup image) is still used on the other public pages.
+ * the logo in the landing page's nav and footer, and `Logo` wraps it (with
+ * the ® sign) for every other page.
  *
  * The base colour comes from the caller's `className`, so it follows whatever
  * theme tokens that surface uses; the X's teal is `accentClassName`, which
