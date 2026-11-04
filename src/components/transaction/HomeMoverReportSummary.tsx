@@ -33,6 +33,14 @@ import {
   epcSummaryText,
   formatPrice,
 } from './PropertyIntelSections';
+import {
+  coalMiningSummaryStatus,
+  coalMiningSummaryText,
+  radonSummaryStatus,
+  radonSummaryText,
+  surfaceWaterSummaryStatus,
+  surfaceWaterSummaryText,
+} from './groundRiskWording';
 import { placeLine } from './homeMoverReportFormat';
 import { INK, PAPER_ROW, STYLES, TEAL, statusMeta } from './homeMoverReportStyles';
 
@@ -47,12 +55,15 @@ function buildRows(r: PropertyIntelligenceReport): GlanceRow[] {
   return [
     { label: 'Flood risk (live warnings)', finding: floodSummaryText(r.flood), status: r.flood?.status ?? 'unknown' },
     { label: 'Flood zone', finding: floodZoneSummaryText(r.floodZone), status: floodZoneSummaryStatus(r.floodZone) },
+    { label: 'Surface water flooding', finding: surfaceWaterSummaryText(r.surfaceWater), status: surfaceWaterSummaryStatus(r.surfaceWater) },
     { label: 'Heritage / listed status', finding: heritageSummaryText(r.heritage), status: heritageSummaryStatus(r.heritage) },
     { label: 'Permitted development', finding: article4SummaryText(r.article4), status: article4SummaryStatus(r.article4) },
     { label: 'Tree preservation (TPO)', finding: treePreservationSummaryText(r.treePreservation), status: treePreservationSummaryStatus(r.treePreservation) },
     { label: 'Brownfield land', finding: brownfieldSummaryText(r.brownfield), status: brownfieldSummaryStatus(r.brownfield) },
     { label: 'Environmental designations', finding: environmentalSummaryText(r.environmental), status: environmentalSummaryStatus(r.environmental) },
     { label: 'Planning applications nearby', finding: planningSummaryText(r.planningApplications), status: planningSummaryStatus(r.planningApplications) },
+    { label: 'Coal mining', finding: coalMiningSummaryText(r.coalMining), status: coalMiningSummaryStatus(r.coalMining) },
+    { label: 'Radon (1 km square)', finding: radonSummaryText(r.radon), status: radonSummaryStatus(r.radon) },
     { label: 'Energy rating (EPC)', finding: epcSummaryText(r.epc), status: epcTone(r.epc) },
     { label: 'Sold prices (this postcode)', finding: priceSummaryText(r.pricePaid), status: 'info' },
   ];
@@ -65,10 +76,16 @@ function buildNextSteps(r: PropertyIntelligenceReport): string[] {
     steps.push('Permitted-development rights are restricted here (Article 4) — budget for a full planning application before extending or altering.');
   if (r.floodZone?.status && r.floodZone.status !== 'none')
     steps.push('This property sits in a flood zone — order a flood report and get insurance quotes early, before you commit.');
+  if (r.surfaceWater && (r.surfaceWater.band === 'high' || r.surfaceWater.band === 'medium'))
+    steps.push('Surface water flood risk is raised here — ask the seller about past flooding and get insurance quotes early.');
+  if (r.coalMining?.inHighRiskArea)
+    steps.push('In a coal mining high risk area — ask your conveyancer to order a CON29M coal mining search.');
   if (r.heritage && (r.heritage.status === 'listed_building' || r.heritage.status === 'both'))
     steps.push('Heritage designation applies — alterations will need listed-building or conservation-area consent.');
   if (r.treePreservation?.status === 'present')
     steps.push('Protected trees (TPO) on or near the plot — you need council consent to fell, top or lop them.');
+  if (r.radon && r.radon.classMax >= 2)
+    steps.push('In a radon affected area — ask whether the home has been tested for radon, and consider a test.');
   if (r.brownfield?.status === 'present')
     steps.push('On the brownfield land register — ask about ground conditions and any previous use of the site.');
   if (r.planningApplications?.status === 'many')

@@ -14,8 +14,10 @@
  * that way when the report changes:
  *  - Flood zone: planning.data.gov.uk flood-risk-zone (rivers and sea, Zones 2/3).
  *  - Flood warnings: Environment Agency live warnings within 10 km.
- *    Surface-water and long-term risk bands are NOT covered, so the copy says so
- *    and points to the GOV.UK service rather than implying it.
+ *  - Surface water: EA NaFRA2 risk band (high / medium / low / very low).
+ *    Groundwater and reservoir flooding are NOT covered, so the copy says so.
+ *  - Coal mining: Mining Remediation Authority Development High Risk Area.
+ *  - Radon: BGS / UKHSA indicative atlas, for the surrounding 1 km square.
  *  - Heritage: conservation area, listed building, scheduled monument, world
  *    heritage site (planning.data.gov.uk, England only). Registered parks and
  *    gardens are NOT checked.
@@ -40,6 +42,9 @@ export const PROPERTY_CHECK_HERO = {
 export const PROPERTY_CHECK_COVERS = [
   { label: 'Flood zone', body: 'Whether the property sits in Flood Zone 2 or 3 on the planning flood map for rivers and the sea.' },
   { label: 'Flood warnings', body: 'Live Environment Agency flood warnings and alerts within 10 km.' },
+  { label: 'Surface water', body: 'The Environment Agency’s surface water flood risk band for the location, from very low to high.' },
+  { label: 'Coal mining', body: 'Whether the property is in a coal mining high risk area, where a mining search is needed.' },
+  { label: 'Radon', body: 'The radon level for the surrounding 1 km square, from the UK radon atlas.' },
   { label: 'Heritage', body: 'Listed building, conservation area, scheduled monument and world heritage site.' },
   { label: 'Environment', body: 'Green belt, SSSI, national park, ancient woodland and Areas of Outstanding Natural Beauty.' },
   { label: 'Planning', body: 'Recent planning applications nearby, plus tree preservation orders and brownfield land.' },
@@ -54,7 +59,7 @@ export const PROPERTY_CHECK_SECTIONS = [
     more: { to: '/flood-risk-check', label: 'More on flood zones and flood warnings' },
     paragraphs: [
       'The check shows whether the address falls inside Flood Zone 2 or Flood Zone 3, the Environment Agency zones used in planning for flooding from rivers and the sea. Flood Zone 3 is the highest probability. It also lists any flood warnings in force within 10 km right now.',
-      'It does not show surface water (flash flooding) risk. For that, use the long-term flood risk service on GOV.UK, and ask the seller about any past flooding on the TA6 form.',
+      'It also shows the surface water (flash flooding) risk band for the location. It does not cover groundwater or reservoir flooding, so ask the seller about any past flooding on the TA6 form.',
     ],
   },
   {
@@ -83,7 +88,7 @@ export const PROPERTY_CHECK_FAQS = [
   },
   {
     q: 'Where does the data come from?',
-    a: 'HM Land Registry, the Environment Agency, planning.data.gov.uk, the EPC register and UK PlanIt. Each section of the report names its source.',
+    a: 'HM Land Registry, the Environment Agency, planning.data.gov.uk, the Mining Remediation Authority, the British Geological Survey and UKHSA, the EPC register and UK PlanIt. Each section of the report names its source.',
   },
 ];
 

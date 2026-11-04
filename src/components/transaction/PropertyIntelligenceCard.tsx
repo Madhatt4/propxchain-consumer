@@ -58,6 +58,15 @@ import type { CrossReferenceResult } from '../../services/formCrossReferenceServ
 import { postcodeService } from '../../services/postcodeService';
 import { LoadingHouse } from '../ui/LoadingHouse';
 import { PostcodeCompletionPrompt } from './PostcodeCompletionPrompt';
+import { CoalMiningSection, RadonSection, SurfaceWaterSection } from './GroundRiskSections';
+import {
+  coalMiningSummaryStatus,
+  coalMiningSummaryText,
+  radonSummaryStatus,
+  radonSummaryText,
+  surfaceWaterSummaryStatus,
+  surfaceWaterSummaryText,
+} from './groundRiskWording';
 import HomeMoverReportPdf, {
   exportHomeMoverReportPdf,
 } from './HomeMoverReportPdf';
@@ -333,6 +342,12 @@ export function PropertyIntelligenceCard({
         return null;
       case 'flood-zone':
         return <FloodZoneSection data={report.floodZone} />;
+      case 'surface-water':
+        return <SurfaceWaterSection data={report.surfaceWater} />;
+      case 'coal-mining':
+        return <CoalMiningSection data={report.coalMining} />;
+      case 'radon':
+        return <RadonSection data={report.radon} />;
       case 'heritage':
         return <HeritageSection data={report.heritage} />;
       case 'article-4':
@@ -410,6 +425,14 @@ export function PropertyIntelligenceCard({
               {...pick('flood-zone')}
             />
             <CategoryTile
+              title="Surface water"
+              riskLabel="Surface water flooding"
+              status={surfaceWaterSummaryStatus(report.surfaceWater)}
+              tone={surfaceWaterSummaryStatus(report.surfaceWater)}
+              summary={surfaceWaterSummaryText(report.surfaceWater)}
+              {...pick('surface-water')}
+            />
+            <CategoryTile
               title="Heritage"
               riskLabel="Heritage"
               status={heritageSummaryStatus(report.heritage)}
@@ -456,6 +479,22 @@ export function PropertyIntelligenceCard({
               tone={planningSummaryStatus(report.planningApplications)}
               summary={planningSummaryText(report.planningApplications)}
               {...pick('planning')}
+            />
+            <CategoryTile
+              title="Coal mining"
+              riskLabel="Coal mining"
+              status={coalMiningSummaryStatus(report.coalMining)}
+              tone={coalMiningSummaryStatus(report.coalMining)}
+              summary={coalMiningSummaryText(report.coalMining)}
+              {...pick('coal-mining')}
+            />
+            <CategoryTile
+              title="Radon"
+              riskLabel="Radon"
+              status={radonSummaryStatus(report.radon)}
+              tone={radonSummaryStatus(report.radon)}
+              summary={radonSummaryText(report.radon)}
+              {...pick('radon')}
             />
             <CategoryTile
               title="Energy (EPC)"
