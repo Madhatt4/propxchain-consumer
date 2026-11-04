@@ -79,7 +79,7 @@ describe('landing CTAs when sign-ups are open', () => {
     );
   });
 
-  it('should make the account the primary hero CTA, with the report beside it', async () => {
+  it('should make the account the primary hero CTA, with the address box as the report', async () => {
     const { HeroSection } = await withFlag(OPEN, () => import('../HeroSection'));
     inRouter(<HeroSection isDark={false} onToggleTheme={noop} onScrollTo={noop} />);
 
@@ -87,10 +87,8 @@ describe('landing CTAs when sign-ups are open', () => {
       'href',
       '/register',
     );
-    expect(screen.getByRole('link', { name: 'Get your free report' })).toHaveAttribute(
-      'href',
-      '/property-check',
-    );
+    expect(screen.getByRole('form', { name: 'Check a property' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Get your free report' })).toBeNull();
   });
 
   it('should keep the report reachable as the secondary seller CTA', async () => {
