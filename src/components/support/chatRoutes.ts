@@ -39,6 +39,7 @@ export const NO_HELP_PREFIXES: readonly string[] = [
   '/sales',
   '/partners',
   '/pricing',
+  '/property-check',
   '/developers',
   '/sellers',
   '/buyers',
