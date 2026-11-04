@@ -695,6 +695,61 @@ describe('getPropertyIntelligence', () => {
     expect(report.sources.some((s) => s.source.includes('communities.gov.uk'))).toBe(true);
   });
 
+  it('skips the England-only sources for a Welsh address rather than reporting them clear', async () => {
+    (globalThis.fetch as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce(
+        mockJsonResponse({
+          status: 200,
+          result: {
+            postcode: 'LL28 5ND',
+            latitude: 53.2674,
+            longitude: -3.7949,
+            admin_district: 'Conwy',
+            admin_ward: 'Llansanffraid',
+            country: 'Wales',
+            region: null,
+          },
+        }),
+      )
+      .mockResolvedValueOnce(mockJsonResponse({ records: [], total: 0 }))
+      .mockResolvedValueOnce(mockJsonResponse({ head: { vars: [] }, results: { bindings: [] } }));
+
+    const report = await getPropertyIntelligence('LL28 5ND');
+
+    expect(report.coverageGap).toBe('Wales');
+    for (const key of ['flood', 'heritage', 'article4', 'floodZone', 'environmental', 'treePreservation', 'brownfield'] as const) {
+      expect(report[key]).toBeNull();
+    }
+    const urls = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls.map((c) => String(c[0]));
+    expect(urls.some((u) => u.includes('planning.data.gov.uk'))).toBe(false);
+    expect(urls.some((u) => u.includes('environment.data.gov.uk'))).toBe(false);
+    expect(report.sources.find((s) => s.source === 'planning.data.gov.uk/heritage')?.error).toBe(
+      'Not available for addresses in Wales',
+    );
+  });
+
+  it('reports no coverage gap for an English address', async () => {
+    (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(mockJsonResponse({ entities: [], items: [], records: [] }));
+    (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+      mockJsonResponse({
+        status: 200,
+        result: {
+          postcode: 'SG18 0AA',
+          latitude: 52.087,
+          longitude: -0.275,
+          admin_district: 'Central Bedfordshire',
+          admin_ward: 'Biggleswade North',
+          country: 'England',
+          region: 'East of England',
+        },
+      }),
+    );
+
+    const report = await getPropertyIntelligence('SG18 0AA');
+
+    expect(report.coverageGap).toBeNull();
+  });
+
   it('queries the planning datasets by polygon when a title boundary resolves', async () => {
     const wkt =
       'POLYGON((-0.135 51.5095, -0.133 51.5095, -0.133 51.5105, -0.135 51.5105, -0.135 51.5095))';
@@ -963,10 +1018,13 @@ describe('getPropertyIntelligence', () => {
     expect(report.location?.coordinates).toEqual({ lat: 53.2674149, lng: -3.7949716 });
     expect(report.sources.some((s) => s.source === 'os-open-uprn' && s.ok)).toBe(true);
 
-    // The precise pin must flow downstream to the coordinate-keyed sources.
+    // The precise pin must flow downstream to the coordinate-keyed sources. This
+    // address is in Wales, so the England-only planning.data.gov.uk sources are
+    // skipped; UK PlanIt covers Wales and is the one to check.
     const urls = fetchMock.mock.calls.map((c) => String(c[0]));
     expect(urls.some((u) => u.includes('uprn-coordinate?uprn=100100437058'))).toBe(true);
-    expect(urls.some((u) => u.includes('planning.data.gov.uk') && u.includes('latitude=53.2674149'))).toBe(true);
+    expect(urls.some((u) => u.includes('planning.data.gov.uk'))).toBe(false);
+    expect(urls.some((u) => u.includes('planit.org.uk') && u.includes('lat=53.2674149'))).toBe(true);
   });
 
   it('falls back to the postcode centroid when the UPRN is not in OS Open UPRN', async () => {

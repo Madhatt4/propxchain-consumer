@@ -85,6 +85,7 @@ function makeReport(overrides: Partial<PropertyIntelligenceReport> = {}): Proper
       currentBand: 'D', potentialBand: 'B', currentRating: 60, potentialRating: 82,
       floorAreaSqm: 85, lodgementDate: '2024-01-01', meetsMees: true,
     },
+    coverageGap: null,
     valuePerSqm: 5000,
     localPlanningAuthority: null,
     sources: [{ source: 'postcodes.io', ok: true, lastFetched: Date.now() }],

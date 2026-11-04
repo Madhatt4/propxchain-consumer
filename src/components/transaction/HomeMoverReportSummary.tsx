@@ -44,14 +44,15 @@ interface GlanceRow {
 
 /** Build the at-a-glance rows in the same order as the on-screen tiles. */
 function buildRows(r: PropertyIntelligenceReport): GlanceRow[] {
+  const cov = (text: string): string => (r.coverageGap ? `Not covered in ${r.coverageGap}` : text);
   return [
-    { label: 'Flood risk (live warnings)', finding: floodSummaryText(r.flood), status: r.flood?.status ?? 'unknown' },
-    { label: 'Flood zone', finding: floodZoneSummaryText(r.floodZone), status: floodZoneSummaryStatus(r.floodZone) },
-    { label: 'Heritage / listed status', finding: heritageSummaryText(r.heritage), status: heritageSummaryStatus(r.heritage) },
-    { label: 'Permitted development', finding: article4SummaryText(r.article4), status: article4SummaryStatus(r.article4) },
-    { label: 'Tree preservation (TPO)', finding: treePreservationSummaryText(r.treePreservation), status: treePreservationSummaryStatus(r.treePreservation) },
-    { label: 'Brownfield land', finding: brownfieldSummaryText(r.brownfield), status: brownfieldSummaryStatus(r.brownfield) },
-    { label: 'Environmental designations', finding: environmentalSummaryText(r.environmental), status: environmentalSummaryStatus(r.environmental) },
+    { label: 'Flood risk (live warnings)', finding: cov(floodSummaryText(r.flood)), status: r.flood?.status ?? 'unknown' },
+    { label: 'Flood zone', finding: cov(floodZoneSummaryText(r.floodZone)), status: floodZoneSummaryStatus(r.floodZone) },
+    { label: 'Heritage / listed status', finding: cov(heritageSummaryText(r.heritage)), status: heritageSummaryStatus(r.heritage) },
+    { label: 'Permitted development', finding: cov(article4SummaryText(r.article4)), status: article4SummaryStatus(r.article4) },
+    { label: 'Tree preservation (TPO)', finding: cov(treePreservationSummaryText(r.treePreservation)), status: treePreservationSummaryStatus(r.treePreservation) },
+    { label: 'Brownfield land', finding: cov(brownfieldSummaryText(r.brownfield)), status: brownfieldSummaryStatus(r.brownfield) },
+    { label: 'Environmental designations', finding: cov(environmentalSummaryText(r.environmental)), status: environmentalSummaryStatus(r.environmental) },
     { label: 'Planning applications nearby', finding: planningSummaryText(r.planningApplications), status: planningSummaryStatus(r.planningApplications) },
     { label: 'Energy rating (EPC)', finding: epcSummaryText(r.epc), status: epcTone(r.epc) },
     { label: 'Sold prices (this postcode)', finding: priceSummaryText(r.pricePaid), status: 'info' },
@@ -61,6 +62,8 @@ function buildRows(r: PropertyIntelligenceReport): GlanceRow[] {
 /** Short, conditional "what to check next" prompts driven by the findings. */
 function buildNextSteps(r: PropertyIntelligenceReport): string[] {
   const steps: string[] = [];
+  if (r.coverageGap)
+    steps.push(`The flood, heritage and planning designation checks don’t cover ${r.coverageGap} yet. Your conveyancer’s local searches will confirm them.`);
   if (r.article4?.status === 'restricted')
     steps.push('Permitted-development rights are restricted here (Article 4) — budget for a full planning application before extending or altering.');
   if (r.floodZone?.status && r.floodZone.status !== 'none')

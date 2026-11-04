@@ -314,6 +314,10 @@ export function PropertyIntelligenceCard({
   }
 
   const hasAnomalies = Boolean(anomalies && anomalies.length > 0);
+  // England-only checks were skipped for this address: say so on their tiles
+  // instead of the generic "Source unavailable".
+  const gap = report.coverageGap;
+  const cov = (text: string): string => (gap ? `Not covered in ${gap}` : text);
   const floodStatus = report.flood?.status ?? 'unknown';
 
   const present = datasetsInGeometry(geometry);
@@ -376,6 +380,13 @@ export function PropertyIntelligenceCard({
             <p className="mt-1 font-[DM_Sans] text-sm text-teal-50/90">
               {report.location.admin_district}, {report.location.postcode}
             </p>
+            {gap && (
+              <p className="mt-2 max-w-xl font-[DM_Sans] text-sm text-teal-50">
+                Flood, heritage and planning designation checks use data that covers England only, so they are
+                not shown for this address in {gap}. Sold prices, the energy rating and nearby planning
+                applications still apply.
+              </p>
+            )}
             {report.localPlanningAuthority && (
               <p className="mt-0.5 font-[DM_Sans] text-xs text-teal-100/70">
                 Local planning authority: {report.localPlanningAuthority.name}
@@ -398,7 +409,7 @@ export function PropertyIntelligenceCard({
               riskLabel="Flood"
               status={floodStatus}
               tone={floodStatus}
-              summary={floodSummaryText(report.flood)}
+              summary={cov(floodSummaryText(report.flood))}
               {...pick('flood-risk')}
             />
             <CategoryTile
@@ -406,7 +417,7 @@ export function PropertyIntelligenceCard({
               riskLabel="Flood zone"
               status={floodZoneSummaryStatus(report.floodZone)}
               tone={floodZoneSummaryStatus(report.floodZone)}
-              summary={floodZoneSummaryText(report.floodZone)}
+              summary={cov(floodZoneSummaryText(report.floodZone))}
               {...pick('flood-zone')}
             />
             <CategoryTile
@@ -414,7 +425,7 @@ export function PropertyIntelligenceCard({
               riskLabel="Heritage"
               status={heritageSummaryStatus(report.heritage)}
               tone={heritageSummaryStatus(report.heritage)}
-              summary={heritageSummaryText(report.heritage)}
+              summary={cov(heritageSummaryText(report.heritage))}
               {...pick('heritage')}
             />
             <CategoryTile
@@ -422,7 +433,7 @@ export function PropertyIntelligenceCard({
               riskLabel="Permitted development"
               status={article4SummaryStatus(report.article4)}
               tone={article4SummaryStatus(report.article4)}
-              summary={article4SummaryText(report.article4)}
+              summary={cov(article4SummaryText(report.article4))}
               {...pick('article-4')}
             />
             <CategoryTile
@@ -430,7 +441,7 @@ export function PropertyIntelligenceCard({
               riskLabel="Tree preservation"
               status={treePreservationSummaryStatus(report.treePreservation)}
               tone={treePreservationSummaryStatus(report.treePreservation)}
-              summary={treePreservationSummaryText(report.treePreservation)}
+              summary={cov(treePreservationSummaryText(report.treePreservation))}
               {...pick('tpo')}
             />
             <CategoryTile
@@ -438,7 +449,7 @@ export function PropertyIntelligenceCard({
               riskLabel="Brownfield"
               status={brownfieldSummaryStatus(report.brownfield)}
               tone={brownfieldSummaryStatus(report.brownfield)}
-              summary={brownfieldSummaryText(report.brownfield)}
+              summary={cov(brownfieldSummaryText(report.brownfield))}
               {...pick('brownfield')}
             />
             <CategoryTile
@@ -446,7 +457,7 @@ export function PropertyIntelligenceCard({
               riskLabel="Environment"
               status={environmentalSummaryStatus(report.environmental)}
               tone={environmentalSummaryStatus(report.environmental)}
-              summary={environmentalSummaryText(report.environmental)}
+              summary={cov(environmentalSummaryText(report.environmental))}
               {...pick('environment')}
             />
             <CategoryTile
