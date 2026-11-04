@@ -3,8 +3,8 @@
 
 /**
  * Wording for the report's ground and water checks (surface water, coal
- * mining, radon). Pure helpers, so the on-screen card (GroundRiskSections.tsx)
- * and the PDF read the same words. The wording is deliberately careful about
+ * mining, radon). Pure helpers, so the on-screen report and the PDF read the
+ * same words. The wording is deliberately careful about
  * what each source can and cannot say (see groundRiskService.ts): radon is a
  * 1 km square, not the home, and being outside a coal high risk area is not
  * the same as being outside the coalfield.
