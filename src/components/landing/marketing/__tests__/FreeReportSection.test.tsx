@@ -42,6 +42,14 @@ describe('FreeReportSection', () => {
     expect(screen.getByRole('link', { name: 'Check a property free' })).toHaveAttribute('href', '/property-check');
   });
 
+  it('should put the call to action above the video', () => {
+    const container = renderSection();
+
+    const link = screen.getByRole('link', { name: 'Check a property free' });
+    const video = container.querySelector('video') as HTMLVideoElement;
+    expect(link.compareDocumentPosition(video) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('should not ask for any personal details on the homepage', () => {
     renderSection();
 

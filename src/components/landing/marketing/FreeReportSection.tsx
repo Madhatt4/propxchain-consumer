@@ -32,13 +32,19 @@ export function FreeReportSection(): JSX.Element {
             >
               Know the property before you commit.
             </h2>
-            <p className="lead" style={{ textAlign: 'center', marginTop: '1.2rem' }}>
+            <p className="lead mx-auto" style={{ textAlign: 'center', marginTop: '1.2rem' }}>
               Flood risk, planning history, sold prices, energy rating and heritage status for any address
               in England. Pulled live from official sources, free, in seconds. No sign-up needed.
             </p>
           </div>
 
-          <div className="max-w-3xl mx-auto text-left">
+          <div className="flex justify-center mb-12">
+            <Link to="/property-check" className="btn-primary px-12 py-4 text-base font-semibold min-h-14 items-center">
+              Check a property free
+            </Link>
+          </div>
+
+          <div className="max-w-3xl mx-auto text-center">
             <p className="font-micro uppercase text-[0.65rem] tracking-[0.12em] text-white/60 mb-2.5">
               Watch the 52-second tour
             </p>
@@ -57,12 +63,6 @@ export function FreeReportSection(): JSX.Element {
             <p className="text-xs text-white/50 mt-2.5">
               Selling? Fill in your details, pull your title, answer the TA forms and invite everyone with one code.
             </p>
-          </div>
-
-          <div className="flex justify-center mt-10">
-            <Link to="/property-check" className="btn-primary px-10 py-3.5 text-sm">
-              Check a property free
-            </Link>
           </div>
         </div>
       </div>
