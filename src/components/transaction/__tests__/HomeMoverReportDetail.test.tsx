@@ -88,6 +88,7 @@ function makeReport(overrides: Partial<PropertyIntelligenceReport> = {}): Proper
     surfaceWater: null,
     coalMining: null,
     radon: null,
+    coverageGap: null,
     valuePerSqm: 5000,
     localPlanningAuthority: null,
     sources: [{ source: 'postcodes.io', ok: true, lastFetched: Date.now() }],

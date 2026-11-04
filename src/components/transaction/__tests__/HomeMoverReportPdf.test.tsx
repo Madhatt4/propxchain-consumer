@@ -63,6 +63,7 @@ function makeReport(overrides: Partial<PropertyIntelligenceReport> = {}): Proper
     surfaceWater: null,
     coalMining: null,
     radon: null,
+    coverageGap: null,
     valuePerSqm: 5000,
     localPlanningAuthority: { entity: 1, name: 'Central Bedfordshire Council', dataset: 'local-planning-authority', reference: 'CBC', startDate: null, documentUrl: null },
     sources: [

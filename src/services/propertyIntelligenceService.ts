@@ -243,6 +243,12 @@ export interface PropertyIntelligenceReport {
   /** Local planning authority for the property — routing hint for the official search. Null if unknown. */
   localPlanningAuthority: PlanningEntity | null;
   /**
+   * The country, when the address is outside England. planning.data.gov.uk and
+   * the Environment Agency cover England only, so those checks are skipped
+   * rather than reported as clear. Null for English addresses.
+   */
+  coverageGap: string | null;
+  /**
    * Estimated price per square metre, derived from the most recent postcode
    * sale ÷ this property's EPC floor area. Null unless both are available.
    * A rough indicator, not a valuation — the sale and the EPC dwelling may
@@ -905,6 +911,7 @@ export async function getPropertyIntelligence(
   let radon: RadonRisk | null = null;
   let localPlanningAuthority: PlanningEntity | null = null;
   let titleBoundary: TitleBoundary | null = null;
+  let coverageGap: string | null = null;
 
   if (location) {
     // Registered title boundary (HMLR INSPIRE) at the precise pin. When present,
@@ -936,6 +943,13 @@ export async function getPropertyIntelligence(
       }
     }
 
+    // An empty answer from an England-only source for a Welsh address would read
+    // as "all clear", so those sources are not asked at all outside England.
+    coverageGap = location.country && location.country !== 'England' ? location.country : null;
+    const gap = coverageGap;
+    const englandOnly = <T,>(run: () => Promise<T>): Promise<T> =>
+      gap ? Promise.reject(new Error(`Not available for addresses in ${gap}`)) : run();
+
     // Fetch the downstream sources in parallel — none depend on each other
     const [
       floodRes,
@@ -953,14 +967,14 @@ export async function getPropertyIntelligence(
       coalRes,
       radonRes,
     ] = await Promise.allSettled([
-      getFloodRisk(location.coordinates),
-      getHeritageAssets(location.coordinates, planningGeometry),
-      getArticle4Directions(location.coordinates, planningGeometry),
-      getFloodZone(location.coordinates, planningGeometry),
-      getEnvironmentalDesignations(location.coordinates, planningGeometry),
-      getTreePreservation(location.coordinates, planningGeometry),
-      getBrownfield(location.coordinates, planningGeometry),
-      getLocalPlanningAuthority(location.coordinates, planningGeometry),
+      englandOnly(() => getFloodRisk(location.coordinates)),
+      englandOnly(() => getHeritageAssets(location.coordinates, planningGeometry)),
+      englandOnly(() => getArticle4Directions(location.coordinates, planningGeometry)),
+      englandOnly(() => getFloodZone(location.coordinates, planningGeometry)),
+      englandOnly(() => getEnvironmentalDesignations(location.coordinates, planningGeometry)),
+      englandOnly(() => getTreePreservation(location.coordinates, planningGeometry)),
+      englandOnly(() => getBrownfield(location.coordinates, planningGeometry)),
+      englandOnly(() => getLocalPlanningAuthority(location.coordinates, planningGeometry)),
       getPlanningApplications(location.coordinates),
       getPricePaidHistory(location.postcode),
       getEpcCached(location.postcode, addressLine),
@@ -1132,6 +1146,7 @@ export async function getPropertyIntelligence(
     radon,
     valuePerSqm: deriveValuePerSqm(pricePaid, epc),
     localPlanningAuthority,
+    coverageGap,
     sources,
   };
 }

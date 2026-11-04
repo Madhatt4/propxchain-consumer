@@ -42,6 +42,7 @@ function baseReport(overrides: Partial<PropertyIntelligenceReport> = {}): Proper
     surfaceWater: null,
     coalMining: null,
     radon: null,
+    coverageGap: null,
     valuePerSqm: null,
     localPlanningAuthority: null,
     sources: [],
