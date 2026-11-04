@@ -49,6 +49,7 @@ const FeaturesPage = lazy(() => import('./pages/FeaturesPage'));
 const HowItWorksPage = lazy(() => import('./pages/HowItWorksPage'));
 const SellMyHousePage = lazy(() => import('./pages/SellMyHousePage'));
 const FindAConveyancerPage = lazy(() => import('./pages/FindAConveyancerPage'));
+const PropertyCheckPage = lazy(() => import('./pages/PropertyCheckPage'));
 const AboutPage = lazy(() => import('./pages/AboutPage'));
 const TermsOfServicePage = lazy(() => import('./pages/TermsOfServicePage'));
 const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicyPage'));
@@ -219,6 +220,7 @@ function App() {
                   to home — see marketingRouteParity.test.ts. */}
               <Route path="/sell-my-house" element={<SellMyHousePage />} />
               <Route path="/find-a-conveyancer" element={<FindAConveyancerPage />} />
+              <Route path="/property-check" element={<PropertyCheckPage />} />
               <Route path="/about" element={<AboutPage />} />
               <Route path="/terms" element={<TermsOfServicePage />} />
               <Route path="/privacy" element={<PrivacyPolicyPage />} />
