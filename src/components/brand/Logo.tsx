@@ -17,8 +17,8 @@
  * surface: `onDark` is white, `onLight` is near-black and follows the app's
  * dark mode.
  *
- * PropXchain is a registered UK trade mark, UK00004420719 (Class 42),
- * registered 2026-10-09, hence the ®.
+ * The ® sign comes from `Wordmark`, so the landing page, the signed-in top
+ * bar and every page using this component all carry it.
  */
 import { Link } from 'react-router-dom';
 
@@ -57,13 +57,6 @@ export function Logo({
   const logo = (
     <span role="img" aria-label={alt} className={`inline-flex items-center ${className}`.trim()}>
       <Wordmark className={`${SIZE[variant]} ${COLOUR[tone]}`} />
-      <sup
-        aria-hidden="true"
-        data-testid="registered-mark"
-        className={`ml-0.5 text-[0.55rem] font-sans ${COLOUR[tone]}`}
-      >
-        ®
-      </sup>
     </span>
   );
 

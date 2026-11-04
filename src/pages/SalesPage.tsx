@@ -443,7 +443,7 @@ const SalesPage: React.FC = () => {
       </main>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12 mt-12">
+      <footer className="bg-[#0B1120] text-white py-12 mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="mb-4 flex justify-center">
             <Logo variant="full" tone="onDark" className="h-10 w-auto" />

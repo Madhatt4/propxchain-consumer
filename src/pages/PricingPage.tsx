@@ -70,7 +70,7 @@ const PricingPage: React.FC = () => {
         </div>
 
         {/* Free to use */}
-        <div className="mx-auto max-w-2xl rounded-2xl border border-blue-600/40 bg-white dark:bg-slate-800/70 p-8 shadow-lg shadow-blue-600/10">
+        <div className="mx-auto max-w-2xl rounded-2xl border border-[#0D9488]/40 bg-white dark:bg-slate-800/70 p-8 shadow-lg shadow-[#0D9488]/10">
           <h2 className="text-xl font-bold text-slate-900 dark:text-slate-50">Free to use</h2>
           <div className="mt-4 mb-6">
             <span className="text-5xl font-bold text-slate-900 dark:text-slate-50">Free</span>
@@ -91,7 +91,7 @@ const PricingPage: React.FC = () => {
               open — and say so. */}
           <button
             onClick={() => navigate(IS_REGISTRATION_OPEN ? '/register' : PRELAUNCH_CAPTURE_PATH)}
-            className="w-full rounded-xl bg-blue-600 py-3 text-base font-semibold text-white transition-colors hover:bg-blue-700"
+            className="w-full rounded-xl bg-[#0D9488] py-3 text-base font-semibold text-white transition-colors hover:bg-[#0F766E]"
           >
             {IS_REGISTRATION_OPEN ? 'Start free' : 'Get the free Home Mover Report'}
           </button>
@@ -142,7 +142,7 @@ const PricingPage: React.FC = () => {
         </div>
 
         {/* Footer CTA */}
-        <div className="mx-auto mt-16 max-w-2xl rounded-2xl bg-blue-600/10 border border-blue-600/20 p-10 text-center">
+        <div className="mx-auto mt-16 max-w-2xl rounded-2xl bg-[#0D9488]/10 border border-[#0D9488]/20 p-10 text-center">
           <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-50 mb-2">
             Ready to start?
           </h3>
@@ -151,7 +151,7 @@ const PricingPage: React.FC = () => {
           </p>
           <button
             onClick={() => navigate('/register')}
-            className="rounded-xl bg-blue-600 px-8 py-3 text-base font-semibold text-white hover:bg-blue-700 transition-colors"
+            className="rounded-xl bg-[#0D9488] px-8 py-3 text-base font-semibold text-white hover:bg-[#0F766E] transition-colors"
           >
             Start free
           </button>
