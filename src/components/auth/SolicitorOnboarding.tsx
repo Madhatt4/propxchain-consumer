@@ -120,7 +120,7 @@ const SolicitorOnboarding: React.FC<SolicitorOnboardingProps> = ({
                     isDone
                       ? 'bg-green-600 border-green-600 text-white'
                       : isCurrent
-                      ? 'bg-blue-600 border-blue-600 text-white'
+                      ? 'bg-[#0D9488] border-[#0D9488] text-white'
                       : 'bg-gray-100 border-gray-300 text-gray-500 dark:bg-gray-800 dark:border-gray-600'
                   }`}
                 >
@@ -132,7 +132,7 @@ const SolicitorOnboarding: React.FC<SolicitorOnboardingProps> = ({
                     idx + 1
                   )}
                 </div>
-                <span className={`text-xs mt-1 ${isCurrent ? 'text-blue-600 dark:text-blue-400' : isDone ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-600'}`}>
+                <span className={`text-xs mt-1 ${isCurrent ? 'text-[#0D9488] dark:text-[#14B8A6]' : isDone ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-600'}`}>
                   {STEP_LABELS[step]}
                 </span>
               </div>

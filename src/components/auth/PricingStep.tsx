@@ -95,7 +95,7 @@ const PricingStep: React.FC<PricingStepProps> = ({ onComplete, onBack }) => {
                   onChange={(e) => handleChange(taskType, e.target.value)}
                   placeholder="0.00"
                   className={`flex-1 px-3 py-2 bg-white dark:bg-gray-900 border rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none text-sm ${
-                    errors[taskType] ? 'border-red-600 focus:border-red-500' : 'border-gray-300 dark:border-gray-700 focus:border-blue-500'
+                    errors[taskType] ? 'border-red-600 focus:border-red-500' : 'border-gray-300 dark:border-gray-700 focus:border-[#0D9488]'
                   }`}
                 />
               </div>
@@ -130,7 +130,7 @@ const PricingStep: React.FC<PricingStepProps> = ({ onComplete, onBack }) => {
           disabled={!allValid}
           className={`flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition-colors ${
             allValid
-              ? 'bg-blue-600 text-white hover:bg-blue-700'
+              ? 'bg-[#0D9488] text-white hover:bg-[#0F766E]'
               : 'bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500'
           }`}
         >

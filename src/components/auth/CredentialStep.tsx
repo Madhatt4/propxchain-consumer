@@ -104,7 +104,7 @@ const CredentialStep: React.FC<CredentialStepProps> = ({ onComplete, onBack }) =
             onClick={() => { setRegulatoryBody('sra'); setVerifyResult(null); setVerifyError(''); }}
             className={`flex-1 py-2 text-sm font-medium transition-colors ${
               regulatoryBody === 'sra'
-                ? 'bg-blue-600 text-white'
+                ? 'bg-[#0D9488] text-white'
                 : 'bg-gray-50 text-gray-600 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'
             }`}
           >
@@ -115,7 +115,7 @@ const CredentialStep: React.FC<CredentialStepProps> = ({ onComplete, onBack }) =
             onClick={() => { setRegulatoryBody('clc'); setVerifyResult(null); setVerifyError(''); }}
             className={`flex-1 py-2 text-sm font-medium transition-colors ${
               regulatoryBody === 'clc'
-                ? 'bg-blue-600 text-white'
+                ? 'bg-[#0D9488] text-white'
                 : 'bg-gray-50 text-gray-600 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'
             }`}
           >
@@ -140,7 +140,7 @@ const CredentialStep: React.FC<CredentialStepProps> = ({ onComplete, onBack }) =
             value={regNumber}
             onChange={(e) => { setRegNumber(e.target.value); setVerifyResult(null); setVerifyError(''); }}
             placeholder={regulatoryBody === 'sra' ? 'e.g. 123456' : 'e.g. 1234567'}
-            className="flex-1 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 text-sm"
+            className="flex-1 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:border-[#0D9488] text-sm"
             disabled={isVerifying}
           />
           <button
@@ -150,7 +150,7 @@ const CredentialStep: React.FC<CredentialStepProps> = ({ onComplete, onBack }) =
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               isVerifying || !regNumber.trim()
                 ? 'bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500'
-                : 'bg-blue-600 text-white hover:bg-blue-700'
+                : 'bg-[#0D9488] text-white hover:bg-[#0F766E]'
             }`}
           >
             {isVerifying ? 'Verifying...' : 'Verify'}
@@ -176,7 +176,7 @@ const CredentialStep: React.FC<CredentialStepProps> = ({ onComplete, onBack }) =
               value={manualName}
               onChange={(e) => setManualName(e.target.value)}
               placeholder="e.g. Jane Smith"
-              className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 text-sm"
+              className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:border-[#0D9488] text-sm"
             />
           </div>
           <div>
@@ -186,7 +186,7 @@ const CredentialStep: React.FC<CredentialStepProps> = ({ onComplete, onBack }) =
               value={manualFirm}
               onChange={(e) => setManualFirm(e.target.value)}
               placeholder="e.g. Smith & Partners LLP"
-              className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 text-sm"
+              className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:border-[#0D9488] text-sm"
             />
           </div>
           <p className="text-xs text-amber-700 dark:text-amber-400">Pending verification — your {regulatoryBody.toUpperCase()} number will be checked within 24 hours.</p>
@@ -261,7 +261,7 @@ const CredentialStep: React.FC<CredentialStepProps> = ({ onComplete, onBack }) =
           disabled={!canProceed}
           className={`flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition-colors ${
             canProceed
-              ? 'bg-blue-600 text-white hover:bg-blue-700'
+              ? 'bg-[#0D9488] text-white hover:bg-[#0F766E]'
               : 'bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500'
           }`}
         >

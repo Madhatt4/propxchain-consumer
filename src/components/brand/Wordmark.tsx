@@ -3,27 +3,42 @@
 
 /**
  * The PropXchain name set as type: Fraunces, bold, with the X in teal. This is
- * the logo in the signed-in top bar and the landing page's nav and footer.
- * `Logo` (the glass lockup image) is still used on the other public pages.
+ * the logo in the landing page's nav and footer, and `Logo` wraps it (with
+ * the ® sign) for every other page.
  *
  * The base colour comes from the caller's `className`, so it follows whatever
  * theme tokens that surface uses; the X's teal is `accentClassName`, which
  * defaults to the brand teal for light and dark mode.
+ *
+ * PropXchain is a registered UK trade mark, UK00004420719 (Class 42),
+ * registered 2026-10-09, so the wordmark always carries the ® sign. It is
+ * hidden from screen readers so the name is still read as "PropXchain".
  */
 
 interface WordmarkProps {
   /** Size and base colour, e.g. `text-[22px] text-[var(--text-main)]`. */
   className?: string;
   accentClassName?: string;
+  /**
+   * Show the ® sign. Defaults to true for logos; a heading that names
+   * PropXchain under a logo that already carries the sign passes false.
+   */
+  hasRegisteredMark?: boolean;
 }
 
 export function Wordmark({
   className = '',
   accentClassName = 'text-[#0D9488] dark:text-[#00D4B8]',
+  hasRegisteredMark = true,
 }: WordmarkProps): JSX.Element {
   return (
     <span className={`font-display font-bold leading-none tracking-[-0.02em] ${className}`.trim()}>
       Prop<span className={accentClassName}>X</span>chain
+      {hasRegisteredMark && (
+        <sup aria-hidden="true" data-testid="registered-mark" className="ml-[0.08em] align-super text-[0.4em] font-sans font-normal">
+          ®
+        </sup>
+      )}
     </span>
   );
 }
