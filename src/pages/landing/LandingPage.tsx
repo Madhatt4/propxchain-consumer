@@ -26,6 +26,7 @@ import { AudienceSections } from '@/components/landing/marketing/AudienceSection
 import { SecuritySection } from '@/components/landing/marketing/SecuritySection';
 import { PricingSection } from '@/components/landing/marketing/PricingSection';
 import { FreeReportSection } from '@/components/landing/marketing/FreeReportSection';
+import { GuidesSection } from '@/components/landing/marketing/GuidesSection';
 import { SiteFooter } from '@/components/landing/marketing/SiteFooter';
 import { useMarketingTheme } from '@/components/landing/marketing/hooks/useMarketingTheme';
 import { useScrollReveal } from '@/components/landing/marketing/hooks/useScrollReveal';
@@ -80,6 +81,7 @@ const LandingPage: FC = () => {
         <SecuritySection />
         <PricingSection onScrollTo={scrollTo} />
         <FreeReportSection />
+        <GuidesSection />
         <SiteFooter onScrollTo={scrollTo} />
       </main>
 

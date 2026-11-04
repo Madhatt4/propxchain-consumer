@@ -3,7 +3,8 @@
 
 /**
  * Glass navigation bar for the unified landing. Every audience link scrolls to
- * its in-page section — there are no separate audience routes. "Log in" opens
+ * its in-page section — there are no separate audience routes. "Property
+ * check" is the exception: it routes to the free check at /property-check. "Log in" opens
  * the sign-in card over the page rather than routing away (it stays a <Link>,
  * so middle-click still opens /?signin=1 in a working new tab). The primary CTA
  * routes to a real page once sign-ups are open: it offers the report capture
@@ -23,6 +24,9 @@ import { SIGN_IN_URL } from '@/components/auth/SignInDialog';
 import { IS_REGISTRATION_OPEN } from '@/config/registration';
 
 import { NAV_LINKS } from './data';
+
+/** The one nav entry that is a page of its own rather than a section of this one. */
+const PROPERTY_CHECK_PATH = '/property-check';
 
 interface MarketingNavProps {
   isDark: boolean;
@@ -60,6 +64,9 @@ export function MarketingNav({ isDark, onToggleTheme, onScrollTo }: MarketingNav
               {link.label}
             </a>
           ))}
+          <Link to={PROPERTY_CHECK_PATH} className={linkCls} style={{ color: 'var(--fg-2)' }}>
+            Property check
+          </Link>
         </div>
 
         <div className="flex items-center gap-4">
@@ -138,6 +145,14 @@ export function MarketingNav({ isDark, onToggleTheme, onScrollTo }: MarketingNav
               {link.label}
             </a>
           ))}
+          <Link
+            to={PROPERTY_CHECK_PATH}
+            onClick={() => setMenuOpen(false)}
+            className="text-base hover:text-[color:var(--t)] transition-colors"
+            style={{ color: 'var(--fg-2)' }}
+          >
+            Property check
+          </Link>
           <Link
             to={SIGN_IN_URL}
             onClick={() => setMenuOpen(false)}
