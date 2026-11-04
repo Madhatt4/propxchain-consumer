@@ -9,6 +9,7 @@ import { LaunchListOptIn } from '@/components/property/LaunchListOptIn';
 import { PropertyIntelligenceCard } from '@/components/transaction/PropertyIntelligenceCard';
 
 import MarketingShell from './marketing/MarketingShell';
+import { BAND_CLS, BODY_CLS, H1_CLS, H2_CLS, LINK_CLS, MUTED_CLS } from './marketing/propertyCheckStyles';
 import {
   PROPERTY_CHECK_COVERS,
   PROPERTY_CHECK_FAQS,
@@ -29,12 +30,6 @@ import {
  * All copy comes from propertyCheckData.mjs, which the prerender also reads,
  * so the crawler's HTML and this page cannot drift apart.
  */
-
-const H2_CLS =
-  'font-[Fraunces] text-[1.75rem] font-semibold leading-tight tracking-tight text-[#1A1A1A] dark:text-[#F1F5F9]';
-const BODY_CLS = 'font-[DM_Sans] text-base leading-relaxed text-[#1A1A1A] dark:text-[#CBD5E1]';
-const MUTED_CLS = 'font-[DM_Sans] text-base leading-relaxed text-[#6B7280] dark:text-[#94A3B8]';
-const BAND_CLS = 'border-t border-[#E5E7EB] dark:border-[#1E293B]';
 
 const GUIDES: ReadonlyArray<{ to: string; label: string }> = [
   { to: '/resources/searches-and-legal/property-searches-explained', label: 'Property searches explained' },
@@ -98,7 +93,7 @@ const PropertyCheckPage: React.FC = () => {
   return (
     <MarketingShell>
       <section className="mx-auto max-w-[860px] px-6 py-16 sm:py-24">
-        <h1 className="font-[Fraunces] text-[2.5rem] font-semibold leading-[1.05] tracking-tight text-[#1A1A1A] dark:text-[#F1F5F9] sm:text-[3.5rem]">
+        <h1 className={H1_CLS}>
           {PROPERTY_CHECK_HERO.h1}
         </h1>
         <p className={`mt-6 max-w-2xl text-lg ${MUTED_CLS}`}>{PROPERTY_CHECK_HERO.intro}</p>
@@ -128,6 +123,13 @@ const PropertyCheckPage: React.FC = () => {
             {section.paragraphs.map((p) => (
               <p key={p} className={`mt-5 ${BODY_CLS}`}>{p}</p>
             ))}
+            {section.more && (
+              <p className="mt-5">
+                <Link to={section.more.to} className={LINK_CLS}>
+                  {section.more.label}
+                </Link>
+              </p>
+            )}
           </div>
         </section>
       ))}

@@ -15,6 +15,8 @@ export interface PropertyCheckSection {
   readonly id: string;
   readonly heading: string;
   readonly paragraphs: readonly string[];
+  /** Link to the topic page that covers this section in depth. */
+  readonly more?: { readonly to: string; readonly label: string };
 }
 
 export interface PropertyCheckFaq {
