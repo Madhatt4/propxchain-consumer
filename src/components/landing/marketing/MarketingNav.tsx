@@ -21,12 +21,10 @@ import { Link } from 'react-router-dom';
 
 import { Wordmark } from '@/components/brand/Wordmark';
 import { SIGN_IN_URL } from '@/components/auth/SignInDialog';
-import { IS_REGISTRATION_OPEN } from '@/config/registration';
+import { FREE_REPORT_PATH, IS_REGISTRATION_OPEN } from '@/config/registration';
 
 import { NAV_LINKS } from './data';
 
-/** The one nav entry that is a page of its own rather than a section of this one. */
-const PROPERTY_CHECK_PATH = '/property-check';
 
 interface MarketingNavProps {
   isDark: boolean;
@@ -64,7 +62,7 @@ export function MarketingNav({ isDark, onToggleTheme, onScrollTo }: MarketingNav
               {link.label}
             </a>
           ))}
-          <Link to={PROPERTY_CHECK_PATH} className={linkCls} style={{ color: 'var(--fg-2)' }}>
+          <Link to={FREE_REPORT_PATH} className={linkCls} style={{ color: 'var(--fg-2)' }}>
             Property check
           </Link>
         </div>
@@ -100,13 +98,9 @@ export function MarketingNav({ isDark, onToggleTheme, onScrollTo }: MarketingNav
                 Create account
               </Link>
             ) : (
-              <a
-                href="#report"
-                onClick={scroll('report')}
-                className="btn-primary px-5 py-2 text-sm min-h-11 items-center"
-              >
+              <Link to={FREE_REPORT_PATH} className="btn-primary px-5 py-2 text-sm min-h-11 items-center">
                 Free report
-              </a>
+              </Link>
             )}
           </span>
 
@@ -146,7 +140,7 @@ export function MarketingNav({ isDark, onToggleTheme, onScrollTo }: MarketingNav
             </a>
           ))}
           <Link
-            to={PROPERTY_CHECK_PATH}
+            to={FREE_REPORT_PATH}
             onClick={() => setMenuOpen(false)}
             className="text-base hover:text-[color:var(--t)] transition-colors"
             style={{ color: 'var(--fg-2)' }}
@@ -170,9 +164,13 @@ export function MarketingNav({ isDark, onToggleTheme, onScrollTo }: MarketingNav
               Create account
             </Link>
           ) : (
-            <a href="#report" onClick={scroll('report')} className="btn-primary px-5 py-3 text-sm text-center mt-1">
+            <Link
+              to={FREE_REPORT_PATH}
+              onClick={() => setMenuOpen(false)}
+              className="btn-primary px-5 py-3 text-sm text-center mt-1"
+            >
               Get your free report
-            </a>
+            </Link>
           )}
         </div>
       )}

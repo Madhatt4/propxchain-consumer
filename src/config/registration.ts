@@ -21,9 +21,14 @@ export const IS_REGISTRATION_OPEN: boolean =
   import.meta.env.VITE_MAINTENANCE_MODE !== 'true';
 
 /**
- * Where to send someone who wanted to sign up but can't yet.
- *
- * The Home Mover Report is the only consumer capture path that IS open
- * pre-launch, so a closed sign-up should route there rather than nowhere.
+ * The free property check: an instant report with no sign-up. Every "free
+ * report" button on the site routes here rather than scrolling to the
+ * homepage card, which only points on to this page.
  */
-export const PRELAUNCH_CAPTURE_PATH = '/#report';
+export const FREE_REPORT_PATH = '/property-check';
+
+/**
+ * Where to send someone who wanted to sign up but can't yet: the free
+ * report is the one consumer path that is open pre-launch.
+ */
+export const PRELAUNCH_CAPTURE_PATH = FREE_REPORT_PATH;

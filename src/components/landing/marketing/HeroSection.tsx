@@ -12,7 +12,7 @@
 import { type MouseEvent } from 'react';
 import { Link } from 'react-router-dom';
 
-import { IS_REGISTRATION_OPEN } from '@/config/registration';
+import { FREE_REPORT_PATH, IS_REGISTRATION_OPEN } from '@/config/registration';
 import { liveCategories } from '@/pages/resources/resourcesMeta';
 
 import { MarketingNav } from './MarketingNav';
@@ -171,20 +171,19 @@ export function HeroSection({ isDark, onToggleTheme, onScrollTo }: HeroSectionPr
                 <Link to="/register" className="btn-primary px-8 py-3.5">
                   Create your free account
                 </Link>
-                <a
-                  href="#report"
-                  onClick={scroll('report')}
+                <Link
+                  to={FREE_REPORT_PATH}
                   className="btn-ghost px-8 py-3.5"
                   style={{ borderColor: 'var(--t-30)' }}
                 >
                   Get your free report
-                </a>
+                </Link>
               </>
             ) : (
               <>
-                <a href="#report" onClick={scroll('report')} className="btn-primary px-8 py-3.5">
+                <Link to={FREE_REPORT_PATH} className="btn-primary px-8 py-3.5">
                   Get your free Home Mover Report
-                </a>
+                </Link>
                 <a
                   href="#audiences"
                   onClick={scroll('audiences')}

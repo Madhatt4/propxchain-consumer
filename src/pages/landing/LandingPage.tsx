@@ -79,7 +79,7 @@ const LandingPage: FC = () => {
         <AssistantsSection />
         <AudienceSections onScrollTo={scrollTo} />
         <SecuritySection />
-        <PricingSection onScrollTo={scrollTo} />
+        <PricingSection />
         <FreeReportSection />
         <GuidesSection />
         <SiteFooter onScrollTo={scrollTo} />
