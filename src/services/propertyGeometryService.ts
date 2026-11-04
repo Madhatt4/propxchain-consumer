@@ -32,13 +32,15 @@ const CACHE_PREFIX = 'propxchain:geo:';
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
 /** Brand-aligned colour per designation dataset. */
+// Hazards in amber, heritage in the sage and teal family, landscape in greens.
+// No blue or purple: the brand keeps clear of blue-heavy proptech.
 const DATASET_COLOR: Record<string, string> = {
-  'conservation-area': '#D97706',
-  'flood-risk-zone': '#2563EB',
-  'listed-building': '#DC2626',
-  'park-and-garden': '#9333EA',
-  'scheduled-monument': '#7C3AED',
-  'world-heritage-site': '#C026D3',
+  'conservation-area': '#5F8A68',
+  'flood-risk-zone': '#B45309',
+  'listed-building': '#0F766E',
+  'park-and-garden': '#84A98C',
+  'scheduled-monument': '#7C5E3C',
+  'world-heritage-site': '#A16207',
   'green-belt': '#059669',
   'site-of-special-scientific-interest': '#16A34A',
   'area-of-outstanding-natural-beauty': '#65A30D',

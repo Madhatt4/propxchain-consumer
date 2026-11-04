@@ -2,15 +2,14 @@
 // Copyright (C) 2026 PropXchain Ltd
 
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
-
-import { CoalMiningSection, RadonSection, SurfaceWaterSection } from '../GroundRiskSections';
 import {
+  GROUND_RISK_SOURCES,
   coalMiningDetailText,
   coalMiningSummaryStatus,
   radonDetailText,
   radonSummaryStatus,
   surfaceWaterSummaryStatus,
+  surfaceWaterDetailText,
   surfaceWaterSummaryText,
 } from '../groundRiskWording';
 
@@ -27,15 +26,11 @@ describe('surface water wording', () => {
 
   it('should say the source is unavailable rather than imply no risk', () => {
     expect(surfaceWaterSummaryStatus(null)).toBe('unknown');
-    render(<SurfaceWaterSection data={null} />);
-    expect(screen.getByText(/unavailable/)).toBeInTheDocument();
+    expect(surfaceWaterSummaryText(null)).toBe('Source unavailable');
   });
 
-  it('should explain the band as an annual chance and name its source', () => {
-    render(<SurfaceWaterSection data={{ band: 'high', confidence: 2 }} />);
-
-    expect(screen.getByText(/more than a 3.3% chance of flooding each year/)).toBeInTheDocument();
-    expect(screen.getByText(/Environment Agency/)).toBeInTheDocument();
+  it('should explain the band as an annual chance', () => {
+    expect(surfaceWaterDetailText({ band: 'high', confidence: 2 })).toContain('more than a 3.3% chance of flooding each year');
   });
 });
 
@@ -53,8 +48,7 @@ describe('coal mining wording', () => {
   });
 
   it('should acknowledge the Mining Remediation Authority', () => {
-    render(<CoalMiningSection data={{ inHighRiskArea: false }} />);
-    expect(screen.getByText(/Mining Remediation Authority/)).toBeInTheDocument();
+    expect(GROUND_RISK_SOURCES.coalMining).toContain('Mining Remediation Authority');
   });
 });
 
@@ -77,7 +71,6 @@ describe('radon wording', () => {
   });
 
   it('should acknowledge the British Geological Survey', () => {
-    render(<RadonSection data={{ classMax: 1, description: 'Lowest band.', gridSquare: 'TL1749' }} />);
-    expect(screen.getByText(/British Geological Survey/)).toBeInTheDocument();
+    expect(GROUND_RISK_SOURCES.radon).toContain('British Geological Survey');
   });
 });

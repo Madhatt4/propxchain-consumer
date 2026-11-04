@@ -978,7 +978,7 @@ export async function getPropertyIntelligence(
       getPlanningApplications(location.coordinates),
       getPricePaidHistory(location.postcode),
       getEpcCached(location.postcode, addressLine),
-      getSurfaceWaterRisk(location.coordinates),
+      englandOnly(() => getSurfaceWaterRisk(location.coordinates)),
       getCoalMiningRisk(location.coordinates),
       getRadonRisk(location.coordinates),
     ]);

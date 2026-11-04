@@ -82,6 +82,10 @@ const CSP_DIRECTIVES = {
     'https://environment.data.gov.uk',
     'https://www.planning.data.gov.uk',
     'https://www.planit.org.uk',
+    // Property report ground checks: coal mining high risk areas (Mining
+    // Remediation Authority) and the BGS radon atlas.
+    'https://services-eu1.arcgis.com',
+    'https://map.bgs.ac.uk',
   ],
   'frame-src': ["'self'", 'https://identity.ic0.app', 'https://id.ai', 'https://*.stripe.com'],
   'object-src': ["'none'"],
