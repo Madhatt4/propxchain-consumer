@@ -15,6 +15,7 @@ import { Link } from 'react-router-dom';
 import { FREE_REPORT_PATH, IS_REGISTRATION_OPEN } from '@/config/registration';
 import { liveCategories } from '@/pages/resources/resourcesMeta';
 
+import { HeroAddressCheck } from './HeroAddressCheck';
 import { MarketingNav } from './MarketingNav';
 import { useAmbientVideo } from './hooks/useAmbientVideo';
 import { useMilestoneChain } from './hooks/useMilestoneChain';
@@ -157,28 +158,21 @@ export function HeroSection({ isDark, onToggleTheme, onScrollTo }: HeroSectionPr
             watching the same truth.
           </p>
 
+          <HeroAddressCheck />
+
           <div
             className="flex flex-wrap gap-4 justify-center px-up"
             style={{ animationDelay: '800ms' }}
           >
-            {/* Once sign-ups are open the account becomes the ask and the
-                report drops to a secondary button — it is still the capture
-                path for anyone not ready to register. "Find your role" gives
-                up its slot rather than run four buttons across the hero; the
-                nav still links every audience section. */}
+            {/* Once sign-ups are open the account becomes the ask. The free
+                report needs no button of its own here: the address box above
+                is the report. "Find your role" gives up its slot rather than
+                run four buttons across the hero; the nav still links every
+                audience section. */}
             {IS_REGISTRATION_OPEN ? (
-              <>
-                <Link to="/register" className="btn-primary px-8 py-3.5">
-                  Create your free account
-                </Link>
-                <Link
-                  to={FREE_REPORT_PATH}
-                  className="btn-ghost px-8 py-3.5"
-                  style={{ borderColor: 'var(--t-30)' }}
-                >
-                  Get your free report
-                </Link>
-              </>
+              <Link to="/register" className="btn-primary px-8 py-3.5">
+                Create your free account
+              </Link>
             ) : (
               <>
                 <Link to={FREE_REPORT_PATH} className="btn-primary px-8 py-3.5">

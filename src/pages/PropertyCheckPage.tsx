@@ -2,7 +2,7 @@
 // Copyright (C) 2026 PropXchain Ltd
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 import { AddressCheckForm, type CheckedAddress } from '@/components/property/AddressCheckForm';
 import { LaunchListOptIn } from '@/components/property/LaunchListOptIn';
@@ -75,8 +75,20 @@ function CheckResult({ address }: { address: CheckedAddress }): JSX.Element {
   );
 }
 
+/**
+ * The homepage hero hands its address over in router state, never the query
+ * string, so a house number and postcode stay out of analytics page URLs.
+ */
+function addressFromState(state: unknown): CheckedAddress | null {
+  const candidate = (state as { address?: Partial<CheckedAddress> } | null)?.address;
+  if (typeof candidate?.postcode !== 'string' || typeof candidate.houseNumber !== 'string') return null;
+  if (!candidate.postcode.trim() || !candidate.houseNumber.trim()) return null;
+  return { postcode: candidate.postcode, houseNumber: candidate.houseNumber };
+}
+
 const PropertyCheckPage: React.FC = () => {
-  const [address, setAddress] = useState<CheckedAddress | null>(null);
+  const location = useLocation();
+  const [address, setAddress] = useState<CheckedAddress | null>(() => addressFromState(location.state));
   const resultRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

@@ -33,6 +33,16 @@ function renderPage(): void {
   );
 }
 
+function renderPageWithState(state: unknown): void {
+  render(
+    <MemoryRouter initialEntries={[{ pathname: '/property-check', state }]}>
+      <ThemeProvider>
+        <PropertyCheckPage />
+      </ThemeProvider>
+    </MemoryRouter>,
+  );
+}
+
 function checkAddress(houseNumber: string, postcode: string): void {
   fireEvent.change(screen.getByLabelText('House name or number'), { target: { value: houseNumber } });
   fireEvent.change(screen.getByLabelText('Postcode'), { target: { value: postcode } });
@@ -56,6 +66,20 @@ describe('PropertyCheckPage', () => {
     for (const faq of PROPERTY_CHECK_FAQS) {
       expect(screen.getByRole('heading', { name: faq.q })).toBeInTheDocument();
     }
+    expect(screen.queryByTestId('report')).not.toBeInTheDocument();
+  });
+
+  it('should run the report straight away for an address handed over by the homepage hero', () => {
+    renderPageWithState({ address: { houseNumber: '14a', postcode: 'SG19 1AB' } });
+
+    const report = screen.getByTestId('report');
+    expect(report).toHaveAttribute('data-postcode', 'SG19 1AB');
+    expect(report).toHaveAttribute('data-address', '14a');
+  });
+
+  it('should ignore a malformed hand-over and wait for an address', () => {
+    renderPageWithState({ address: { houseNumber: '', postcode: 42 } });
+
     expect(screen.queryByTestId('report')).not.toBeInTheDocument();
   });
 
