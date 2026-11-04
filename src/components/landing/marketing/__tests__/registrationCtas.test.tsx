@@ -71,7 +71,7 @@ describe('landing CTAs when sign-ups are open', () => {
 
   it('should route the free-to-use card CTA to the register page', async () => {
     const { PricingSection } = await withFlag(OPEN, () => import('../PricingSection'));
-    inRouter(<PricingSection onScrollTo={noop} />);
+    inRouter(<PricingSection />);
 
     expect(screen.getByRole('link', { name: 'Get started free' })).toHaveAttribute(
       'href',
@@ -89,7 +89,7 @@ describe('landing CTAs when sign-ups are open', () => {
     );
     expect(screen.getByRole('link', { name: 'Get your free report' })).toHaveAttribute(
       'href',
-      '#report',
+      '/property-check',
     );
   });
 
@@ -97,10 +97,10 @@ describe('landing CTAs when sign-ups are open', () => {
     const { AudienceSections } = await withFlag(OPEN, () => import('../AudienceSections'));
     const view = inRouter(<AudienceSections onScrollTo={noop} />);
 
-    // Still an in-page scroll, not a route — the report section is on this page.
+    // A route to the free property check, not a scroll to the homepage card.
     expect(
       within(audience(view, 'sellers')).getByRole('link', { name: 'Get your free report' }),
-    ).toHaveAttribute('href', '#report');
+    ).toHaveAttribute('href', '/property-check');
   });
 });
 
@@ -115,7 +115,7 @@ describe('landing CTAs when sign-ups are closed', () => {
     inRouter(<MarketingNav isDark={false} onToggleTheme={noop} onScrollTo={noop} />);
 
     expect(screen.queryByRole('link', { name: 'Create account' })).toBeNull();
-    expect(screen.getByRole('link', { name: 'Free report' })).toHaveAttribute('href', '#report');
+    expect(screen.getByRole('link', { name: 'Free report' })).toHaveAttribute('href', '/property-check');
   });
 
   it('should keep the hero on the report while there is no account to create', async () => {
@@ -125,7 +125,7 @@ describe('landing CTAs when sign-ups are closed', () => {
     expect(screen.queryByRole('link', { name: 'Create your free account' })).toBeNull();
     expect(
       screen.getByRole('link', { name: 'Get your free Home Mover Report' }),
-    ).toHaveAttribute('href', '#report');
+    ).toHaveAttribute('href', '/property-check');
   });
 
   it('should stop offering the buyer an account it cannot create', async () => {
@@ -138,17 +138,17 @@ describe('landing CTAs when sign-ups are closed', () => {
     expect(buyers.queryByRole('link', { name: 'Create a free buyer account' })).toBeNull();
     expect(buyers.getByRole('link', { name: 'Get your free report' })).toHaveAttribute(
       'href',
-      '#report',
+      '/property-check',
     );
   });
 
   it('should not send the free-to-use card CTA to a register page that would refuse it', async () => {
     const { PricingSection } = await withFlag(CLOSED, () => import('../PricingSection'));
-    inRouter(<PricingSection onScrollTo={noop} />);
+    inRouter(<PricingSection />);
 
     expect(screen.getByRole('link', { name: 'Get started free' })).toHaveAttribute(
       'href',
-      '#report',
+      '/property-check',
     );
   });
 });
@@ -168,7 +168,7 @@ describe('pricing card CTA destinations that do not depend on sign-ups', () => {
       const { PricingSection } = await withFlag(state, () => import('../PricingSection'));
       const { unmount } = render(
         <MemoryRouter>
-          <PricingSection onScrollTo={noop} />
+          <PricingSection />
         </MemoryRouter>,
       );
       expect(screen.getByRole('link', { name: 'Contact sales' })).toHaveAttribute(
@@ -182,7 +182,7 @@ describe('pricing card CTA destinations that do not depend on sign-ups', () => {
   it('should route the paid-per-item card to the pricing page in both states', async () => {
     for (const state of [OPEN, CLOSED]) {
       const { PricingSection } = await withFlag(state, () => import('../PricingSection'));
-      const { unmount } = inRouter(<PricingSection onScrollTo={noop} />);
+      const { unmount } = inRouter(<PricingSection />);
       expect(screen.getByRole('link', { name: 'See what you pay for' })).toHaveAttribute(
         'href',
         '/pricing',

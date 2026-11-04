@@ -43,8 +43,9 @@ describe('IS_REGISTRATION_OPEN', () => {
 });
 
 describe('PRELAUNCH_CAPTURE_PATH', () => {
-  it('should point at the report section, the one open consumer path', async () => {
+  it('should point at the free property check, the one open consumer path', async () => {
     const mod = await import('../registration');
-    expect(mod.PRELAUNCH_CAPTURE_PATH).toBe('/#report');
+    expect(mod.PRELAUNCH_CAPTURE_PATH).toBe('/property-check');
+    expect(mod.FREE_REPORT_PATH).toBe('/property-check');
   });
 });

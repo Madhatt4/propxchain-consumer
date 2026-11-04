@@ -9,7 +9,7 @@
 
 import { useState, type ReactNode } from 'react';
 
-import { IS_REGISTRATION_OPEN } from '@/config/registration';
+import { FREE_REPORT_PATH, IS_REGISTRATION_OPEN } from '@/config/registration';
 
 import { AudienceSection } from './AudienceSection';
 import { BookDemoDialog } from './BookDemoDialog';
@@ -187,9 +187,9 @@ export function AudienceSections({ onScrollTo }: AudienceSectionsProps): JSX.Ele
           IS_REGISTRATION_OPEN
             ? [
                 { label: 'Create your free account', variant: 'primary', to: '/register' },
-                { label: 'Get your free report', variant: 'ghost' },
+                { label: 'Get your free report', variant: 'ghost', to: FREE_REPORT_PATH },
               ]
-            : [{ label: 'Get your free Home Mover Report', variant: 'primary' }]
+            : [{ label: 'Get your free Home Mover Report', variant: 'primary', to: FREE_REPORT_PATH }]
         }
         side={<SellersSide />}
         onScrollTo={onScrollTo}
@@ -214,7 +214,7 @@ export function AudienceSections({ onScrollTo }: AudienceSectionsProps): JSX.Ele
           // the same broken promise with a tidier implementation behind it.
           IS_REGISTRATION_OPEN
             ? { label: 'Create a free buyer account', variant: 'ghost', to: '/register' }
-            : { label: 'Get your free report', variant: 'ghost' },
+            : { label: 'Get your free report', variant: 'ghost', to: FREE_REPORT_PATH },
         ]}
         side={<BuyersSide />}
         sideFirst

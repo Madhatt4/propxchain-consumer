@@ -12,30 +12,20 @@
  * config/registration.ts exists to prevent.
  */
 
-import type { MouseEvent } from 'react';
 import { Link } from 'react-router-dom';
 
-import { IS_REGISTRATION_OPEN } from '@/config/registration';
+import { FREE_REPORT_PATH, IS_REGISTRATION_OPEN } from '@/config/registration';
 
 import { PRICING_TIERS, type PricingTier } from './data';
 
-/** Resolves a tier CTA to a route, or undefined to scroll to the report. */
-function tierCtaPath(tier: PricingTier): string | undefined {
-  if (!tier.ctaPath) return undefined;
-  if (tier.ctaPath === '/register' && !IS_REGISTRATION_OPEN) return undefined;
+/** Resolves a tier CTA to a route; the free report stands in for a closed sign-up. */
+function tierCtaPath(tier: PricingTier): string {
+  if (!tier.ctaPath) return FREE_REPORT_PATH;
+  if (tier.ctaPath === '/register' && !IS_REGISTRATION_OPEN) return FREE_REPORT_PATH;
   return tier.ctaPath;
 }
 
-interface PricingSectionProps {
-  onScrollTo: (id: string) => void;
-}
-
-export function PricingSection({ onScrollTo }: PricingSectionProps): JSX.Element {
-  const scroll = (id: string) => (e: MouseEvent) => {
-    e.preventDefault();
-    onScrollTo(id);
-  };
-
+export function PricingSection(): JSX.Element {
   return (
     <section
       id="pricing"
@@ -99,24 +89,13 @@ export function PricingSection({ onScrollTo }: PricingSectionProps): JSX.Element
                   </div>
                 ))}
               </div>
-              {tierCtaPath(tier) ? (
-                <Link
-                  to={tierCtaPath(tier) as string}
-                  className={`${tier.featured ? 'btn-primary' : 'btn-ghost'} py-3 text-sm`}
-                  style={tier.featured ? undefined : { borderColor: 'var(--t)', color: 'var(--t)' }}
-                >
-                  {tier.ctaLabel}
-                </Link>
-              ) : (
-                <a
-                  href="#report"
-                  onClick={scroll('report')}
-                  className={`${tier.featured ? 'btn-primary' : 'btn-ghost'} py-3 text-sm`}
-                  style={tier.featured ? undefined : { borderColor: 'var(--t)', color: 'var(--t)' }}
-                >
-                  {tier.ctaLabel}
-                </a>
-              )}
+              <Link
+                to={tierCtaPath(tier)}
+                className={`${tier.featured ? 'btn-primary' : 'btn-ghost'} py-3 text-sm`}
+                style={tier.featured ? undefined : { borderColor: 'var(--t)', color: 'var(--t)' }}
+              >
+                {tier.ctaLabel}
+              </Link>
             </div>
           ))}
         </div>
