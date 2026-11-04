@@ -24,6 +24,12 @@ import type {
 } from '../../services/propertyIntelligenceService';
 import { datasetLabel, formatPrice, truncate } from './PropertyIntelSections';
 import { MAX_APPLICATIONS, MAX_ENTITIES, MAX_SALES, UNAVAILABLE_PLANNING, reference } from './homeMoverReportFormat';
+import {
+  GROUND_RISK_SOURCES,
+  coalMiningDetailText,
+  radonDetailText,
+  surfaceWaterDetailText,
+} from './groundRiskWording';
 import { EntityList, MoreNote, Note, Section } from './homeMoverReportPrimitives';
 import { HAIRLINE, INK, MUTED, PAPER_ROW, STYLES, TEAL } from './homeMoverReportStyles';
 
@@ -54,6 +60,14 @@ const FloodZoneDetail: React.FC<{ data: PropertyIntelligenceReport['floodZone'] 
     {!data && <Note>Planning flood-zone data unavailable.</Note>}
     {data && data.zones.length === 0 && <Note>Property is not in a designated flood risk zone.</Note>}
     {data && <EntityList items={data.zones} extra={reference} />}
+  </Section>
+);
+
+/** One plain sentence plus its source acknowledgement, shared by the three ground checks. */
+const GroundDetail: React.FC<{ title: string; text: string; source: string }> = ({ title, text, source }) => (
+  <Section title={title}>
+    <Note>{text}</Note>
+    <Note>{source}</Note>
   </Section>
 );
 
@@ -245,12 +259,15 @@ export const DetailPages: React.FC<DetailPagesProps> = ({ report, placeLine }) =
     </div>
     <FloodRiskDetail data={report.flood} />
     <FloodZoneDetail data={report.floodZone} />
+    <GroundDetail title="Surface water flood risk" text={surfaceWaterDetailText(report.surfaceWater)} source={GROUND_RISK_SOURCES.surfaceWater} />
     <HeritageDetail data={report.heritage} />
     <Article4Detail data={report.article4} />
     <TreePreservationDetail data={report.treePreservation} />
     <BrownfieldDetail data={report.brownfield} />
     <EnvironmentalDetail data={report.environmental} />
     <PlanningDetail data={report.planningApplications} />
+    <GroundDetail title="Coal mining" text={coalMiningDetailText(report.coalMining)} source={GROUND_RISK_SOURCES.coalMining} />
+    <GroundDetail title="Radon" text={radonDetailText(report.radon)} source={GROUND_RISK_SOURCES.radon} />
     <EpcDetail epc={report.epc} />
     <SaleHistoryDetail data={report.pricePaid} />
   </div>

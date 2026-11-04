@@ -13,7 +13,8 @@
  * Every claim maps to propertyIntelligenceService.ts:
  *  - Flood zone: planning.data.gov.uk `flood-risk-zone` (rivers and sea,
  *    Zones 2/3). Live warnings: Environment Agency flood-monitoring, 10 km.
- *    Surface water, groundwater and reservoir risk are NOT checked.
+ *    Surface water: EA NaFRA2 risk band. Groundwater and reservoir risk are
+ *    NOT checked.
  *  - Heritage: planning.data.gov.uk `listed-building` (with grade),
  *    `conservation-area`, `scheduled-monument`, `world-heritage-site` and its
  *    buffer zone. Registered parks and gardens are NOT checked.
@@ -27,11 +28,11 @@ export const FLOOD_RISK_SPOKE = {
   meta: {
     title: 'Flood Risk Check by Postcode, Free · PropXchain',
     description:
-      'Free flood risk check for any address in England: Flood Zone 2 or 3 for rivers and the sea, plus live Environment Agency flood warnings. No sign-up.',
+      'Free flood risk check for any address in England: Flood Zone 2 or 3, surface water risk and live Environment Agency flood warnings. No sign-up.',
   },
   h1: 'Flood risk check by postcode',
   intro:
-    'Enter a house number and postcode to see whether the property sits in Flood Zone 2 or 3 for flooding from rivers and the sea, and whether any Environment Agency flood warnings are in force nearby. Free, instant, no sign-up. England only.',
+    'Enter a house number and postcode to see whether the property sits in Flood Zone 2 or 3 for flooding from rivers and the sea, its surface water flood risk, and whether any Environment Agency flood warnings are in force nearby. Free, instant, no sign-up. England only.',
   sections: [
     {
       id: 'flood-zones',
@@ -39,6 +40,14 @@ export const FLOOD_RISK_SPOKE = {
       paragraphs: [
         'The Environment Agency’s flood map for planning splits England into zones by the chance of flooding from rivers and the sea, ignoring flood defences.',
         'Flood Zone 2 is medium probability: between a 1 in 1,000 and a 1 in 100 chance each year from rivers, or between 1 in 1,000 and 1 in 200 from the sea. Flood Zone 3 is high probability: 1 in 100 or more each year from rivers, or 1 in 200 or more from the sea. Land outside both is Flood Zone 1, the lowest probability.',
+      ],
+    },
+    {
+      id: 'surface-water',
+      heading: 'Surface water flood risk',
+      paragraphs: [
+        'Surface water flooding happens when heavy rain cannot drain away, and it can affect homes far from any river. The check shows the Environment Agency’s risk band for the location.',
+        'High means more than a 3.3% chance of flooding each year, medium between 1% and 3.3%, low between 0.1% and 1%, and very low less than 0.1%. The band describes the location, not whether the building itself floods.',
       ],
     },
     {
@@ -53,7 +62,7 @@ export const FLOOD_RISK_SPOKE = {
       id: 'not-covered',
       heading: 'What this check does not cover',
       paragraphs: [
-        'Surface water flooding (heavy rain that cannot drain away), groundwater and reservoir flooding are not included. The long-term flood risk service on GOV.UK covers those.',
+        'Groundwater and reservoir flooding are not included. The long-term flood risk service on GOV.UK covers those.',
         'Ask the seller about any past flooding: the TA6 property information form asks directly, and your conveyancer’s environmental search goes into more depth.',
       ],
     },

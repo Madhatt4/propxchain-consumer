@@ -27,6 +27,14 @@ const mockLookupEpc = vi.mocked(lookupEpc);
 vi.mock('../titlePolygon.service', () => ({ getTitleBoundary: vi.fn(async () => null) }));
 const mockGetTitleBoundary = vi.mocked(getTitleBoundary);
 
+// The ground checks have their own tests (groundRiskService.test.ts); here they
+// only need to resolve so the report's fetch queue stays about the report.
+vi.mock('../groundRiskService', () => ({
+  getSurfaceWaterRisk: vi.fn(async () => ({ band: 'very_low', confidence: null })),
+  getCoalMiningRisk: vi.fn(async () => ({ inHighRiskArea: false })),
+  getRadonRisk: vi.fn(async () => ({ classMax: 1, description: 'Lowest band.', gridSquare: 'TL1749' })),
+}));
+
 const originalFetch = globalThis.fetch;
 
 function mockJsonResponse(payload: unknown, ok = true, status = 200): Response {
@@ -691,6 +699,9 @@ describe('getPropertyIntelligence', () => {
     expect(report.pricePaid?.sales).toHaveLength(0);
     expect(report.epc).toBeNull();
     expect(report.valuePerSqm).toBeNull();
+    expect(report.surfaceWater?.band).toBe('very_low');
+    expect(report.coalMining?.inHighRiskArea).toBe(false);
+    expect(report.radon?.classMax).toBe(1);
     expect(report.sources.every((s) => s.ok)).toBe(true);
     expect(report.sources.some((s) => s.source.includes('communities.gov.uk'))).toBe(true);
   });
@@ -1015,7 +1026,13 @@ describe('getPropertyIntelligence', () => {
     const report = await getPropertyIntelligence('LL28 5NA', undefined, '100100437058');
 
     expect(report.coordinateSource).toBe('os-open-uprn');
-    expect(report.location?.coordinates).toEqual({ lat: 53.2674149, lng: -3.7949716 });
+    // The pin carries its British National Grid position for the surface-water check.
+    expect(report.location?.coordinates).toEqual({
+      lat: 53.2674149,
+      lng: -3.7949716,
+      easting: 280384,
+      northing: 375993,
+    });
     expect(report.sources.some((s) => s.source === 'os-open-uprn' && s.ok)).toBe(true);
 
     // The precise pin must flow downstream to the coordinate-keyed sources. This

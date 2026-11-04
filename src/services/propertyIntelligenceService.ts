@@ -21,12 +21,20 @@
  */
 
 import { lookupEpc, type EpcCertificate } from './epc.service';
+import {
+  getCoalMiningRisk,
+  getRadonRisk,
+  getSurfaceWaterRisk,
+  type CoalMiningRisk,
+  type RadonRisk,
+  type SurfaceWaterRisk,
+} from './groundRiskService';
+import { readCache, writeCache } from './intelCache';
 import { getTitleBoundary, type TitleBoundary } from './titlePolygon.service';
 
 export type { EpcCertificate, EpcBand } from './epc.service';
 export type { TitleBoundary } from './titlePolygon.service';
 
-const STORAGE_PREFIX = 'propxchain:pi:';
 
 /**
  * Max length of a polygon WKT we'll put in a planning.data.gov.uk GET query
@@ -58,6 +66,9 @@ const TTL_MS = {
 export interface Coordinates {
   lat: number;
   lng: number;
+  /** British National Grid (metres), when the source supplied it. Surface-water risk needs it. */
+  easting?: number;
+  northing?: number;
 }
 
 export interface PostcodeInfo {
@@ -223,6 +234,12 @@ export interface PropertyIntelligenceReport {
   planningApplications: PlanningApplicationsData | null;
   pricePaid: PricePaidData | null;
   epc: EpcCertificate | null;
+  /** Surface water flood risk band (EA NaFRA2). Null when unavailable. */
+  surfaceWater: SurfaceWaterRisk | null;
+  /** Whether the point is in a coal mining Development High Risk Area. */
+  coalMining: CoalMiningRisk | null;
+  /** Radon potential for the surrounding 1 km square. Null when unavailable or outside coverage. */
+  radon: RadonRisk | null;
   /** Local planning authority for the property — routing hint for the official search. Null if unknown. */
   localPlanningAuthority: PlanningEntity | null;
   /**
@@ -245,38 +262,6 @@ export interface PropertyIntelligenceReport {
 // Cache helpers
 // ============================================
 
-interface CachedEnvelope<T> {
-  value: T;
-  storedAt: number;
-  ttlMs: number;
-}
-
-function readCache<T>(key: string): T | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = window.localStorage.getItem(STORAGE_PREFIX + key);
-    if (!raw) return null;
-    const envelope = JSON.parse(raw) as CachedEnvelope<T>;
-    if (Date.now() - envelope.storedAt > envelope.ttlMs) {
-      window.localStorage.removeItem(STORAGE_PREFIX + key);
-      return null;
-    }
-    return envelope.value;
-  } catch {
-    return null;
-  }
-}
-
-function writeCache<T>(key: string, value: T, ttlMs: number): void {
-  if (typeof window === 'undefined') return;
-  try {
-    const envelope: CachedEnvelope<T> = { value, storedAt: Date.now(), ttlMs };
-    window.localStorage.setItem(STORAGE_PREFIX + key, JSON.stringify(envelope));
-  } catch {
-    // localStorage quota exceeded or blocked — silently ignore, caching is best-effort
-  }
-}
-
 // ============================================
 // Postcodes.io — geocoding
 // ============================================
@@ -287,6 +272,8 @@ interface PostcodesIoResponse {
     postcode: string;
     latitude: number;
     longitude: number;
+    eastings?: number | null;
+    northings?: number | null;
     admin_district: string;
     admin_ward: string;
     country: string;
@@ -301,7 +288,7 @@ export async function getPostcodeInfo(postcode: string): Promise<PostcodeInfo> {
     throw new Error('Postcode is empty');
   }
 
-  const cacheKey = `postcode:${normalized}`;
+  const cacheKey = `postcode-v2:${normalized}`;
   const cached = readCache<PostcodeInfo>(cacheKey);
   if (cached) return cached;
 
@@ -317,7 +304,13 @@ export async function getPostcodeInfo(postcode: string): Promise<PostcodeInfo> {
 
   const info: PostcodeInfo = {
     postcode: body.result.postcode,
-    coordinates: { lat: body.result.latitude, lng: body.result.longitude },
+    coordinates: {
+      lat: body.result.latitude,
+      lng: body.result.longitude,
+      ...(typeof body.result.eastings === 'number' && typeof body.result.northings === 'number'
+        ? { easting: body.result.eastings, northing: body.result.northings }
+        : {}),
+    },
     admin_district: body.result.admin_district,
     admin_ward: body.result.admin_ward,
     country: body.result.country,
@@ -350,7 +343,7 @@ export async function getUprnCoordinate(uprn: string): Promise<Coordinates | nul
   const normalized = uprn.trim();
   if (!/^\d{1,12}$/.test(normalized)) return null;
 
-  const cacheKey = `uprn:${normalized}`;
+  const cacheKey = `uprn-v2:${normalized}`;
   const cached = readCache<Coordinates>(cacheKey);
   if (cached) return cached;
 
@@ -363,7 +356,13 @@ export async function getUprnCoordinate(uprn: string): Promise<Coordinates | nul
   const body = (await response.json()) as UprnCoordinateResponse;
   if (typeof body.latitude !== 'number' || typeof body.longitude !== 'number') return null;
 
-  const coords: Coordinates = { lat: body.latitude, lng: body.longitude };
+  const coords: Coordinates = {
+    lat: body.latitude,
+    lng: body.longitude,
+    ...(typeof body.easting === 'number' && typeof body.northing === 'number'
+      ? { easting: body.easting, northing: body.northing }
+      : {}),
+  };
   writeCache(cacheKey, coords, TTL_MS.uprnCoordinate);
   return coords;
 }
@@ -907,6 +906,9 @@ export async function getPropertyIntelligence(
   let planningApplications: PlanningApplicationsData | null = null;
   let pricePaid: PricePaidData | null = null;
   let epc: EpcCertificate | null = null;
+  let surfaceWater: SurfaceWaterRisk | null = null;
+  let coalMining: CoalMiningRisk | null = null;
+  let radon: RadonRisk | null = null;
   let localPlanningAuthority: PlanningEntity | null = null;
   let titleBoundary: TitleBoundary | null = null;
   let coverageGap: string | null = null;
@@ -961,6 +963,9 @@ export async function getPropertyIntelligence(
       planningRes,
       priceRes,
       epcRes,
+      surfaceWaterRes,
+      coalRes,
+      radonRes,
     ] = await Promise.allSettled([
       englandOnly(() => getFloodRisk(location.coordinates)),
       englandOnly(() => getHeritageAssets(location.coordinates, planningGeometry)),
@@ -973,7 +978,14 @@ export async function getPropertyIntelligence(
       getPlanningApplications(location.coordinates),
       getPricePaidHistory(location.postcode),
       getEpcCached(location.postcode, addressLine),
+      englandOnly(() => getSurfaceWaterRisk(location.coordinates)),
+      getCoalMiningRisk(location.coordinates),
+      getRadonRisk(location.coordinates),
     ]);
+
+    surfaceWater = settleSource(surfaceWaterRes, 'environment.data.gov.uk/surface-water', sources);
+    coalMining = settleSource(coalRes, 'mining-remediation-authority/high-risk-area', sources);
+    radon = settleSource(radonRes, 'bgs.ac.uk/radon', sources);
 
     if (floodRes.status === 'fulfilled') {
       flood = floodRes.value;
@@ -1129,11 +1141,33 @@ export async function getPropertyIntelligence(
     planningApplications,
     pricePaid,
     epc,
+    surfaceWater,
+    coalMining,
+    radon,
     valuePerSqm: deriveValuePerSqm(pricePaid, epc),
     localPlanningAuthority,
     coverageGap,
     sources,
   };
+}
+
+/** Unwraps one settled source and records its provenance. */
+function settleSource<T>(
+  res: PromiseSettledResult<T>,
+  source: string,
+  sources: SourceStatus[],
+): T | null {
+  if (res.status === 'fulfilled') {
+    sources.push({ source, ok: true, lastFetched: Date.now() });
+    return res.value;
+  }
+  sources.push({
+    source,
+    ok: false,
+    error: res.reason instanceof Error ? res.reason.message : String(res.reason),
+    lastFetched: Date.now(),
+  });
+  return null;
 }
 
 /**
