@@ -60,6 +60,7 @@ function makeReport(overrides: Partial<PropertyIntelligenceReport> = {}): Proper
       currentBand: 'D', potentialBand: 'B', currentRating: 60, potentialRating: 82,
       floorAreaSqm: 85, lodgementDate: '2024-01-01', meetsMees: true,
     },
+    coverageGap: null,
     valuePerSqm: 5000,
     localPlanningAuthority: { entity: 1, name: 'Central Bedfordshire Council', dataset: 'local-planning-authority', reference: 'CBC', startDate: null, documentUrl: null },
     sources: [

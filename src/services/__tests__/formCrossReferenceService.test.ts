@@ -39,6 +39,7 @@ function baseReport(overrides: Partial<PropertyIntelligenceReport> = {}): Proper
     planningApplications: { applications: [], total: 0, status: 'none' },
     pricePaid: { sales: [], averagePrice: null, latestSale: null },
     epc: null,
+    coverageGap: null,
     valuePerSqm: null,
     localPlanningAuthority: null,
     sources: [],

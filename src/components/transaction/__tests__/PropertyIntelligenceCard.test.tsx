@@ -66,6 +66,7 @@ function makeReport(overrides: Partial<PropertyIntelligenceReport> = {}): Proper
     planningApplications: { applications: [], total: 0, status: 'none' },
     pricePaid: { sales: [], averagePrice: null, latestSale: null },
     epc: null,
+    coverageGap: null,
     valuePerSqm: null,
     localPlanningAuthority: null,
     sources: [
@@ -311,6 +312,29 @@ describe('PropertyIntelligenceCard', () => {
     expect(screen.getByLabelText('Brownfield risk: medium')).toBeInTheDocument();
     selectTile(/Brownfield/);
     expect(screen.getByText('Former gasworks site')).toBeInTheDocument();
+  });
+
+  it('says the England-only checks are not covered for a Welsh address instead of calling them clear', () => {
+    render(
+      <PropertyIntelligenceCard
+        postcode="LL28 5ND"
+        reportOverride={makeReport({
+          coverageGap: 'Wales',
+          flood: null,
+          heritage: null,
+          article4: null,
+          floodZone: null,
+          environmental: null,
+          treePreservation: null,
+          brownfield: null,
+        })}
+      />,
+    );
+
+    expect(screen.getAllByText('Not covered in Wales').length).toBe(7);
+    expect(screen.getByText(/not shown for this address in Wales/)).toBeInTheDocument();
+    expect(screen.queryByText('Not in a flood zone')).not.toBeInTheDocument();
+    expect(screen.queryByText('No active warnings')).not.toBeInTheDocument();
   });
 
   it('shows the local planning authority routing line when known', () => {
