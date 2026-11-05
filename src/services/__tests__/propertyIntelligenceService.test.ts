@@ -1007,7 +1007,7 @@ describe('getPropertyIntelligence', () => {
           },
         }),
       )
-      // 2. property-enrich /uprn-coordinate — the exact pin
+      // 2. propxchain-uprn Worker /uprn-coordinate — the exact pin
       .mockResolvedValueOnce(
         mockJsonResponse({
           uprn: '100100437058',
