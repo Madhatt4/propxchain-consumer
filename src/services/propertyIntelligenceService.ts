@@ -835,11 +835,13 @@ export async function getPricePaidHistory(postcode: string): Promise<PricePaidDa
 export async function getEpcCached(
   postcode: string,
   addressLine?: string,
+  uprn?: string,
 ): Promise<EpcCertificate | null> {
-  const cacheKey = `epc:${postcode.trim().toUpperCase().replace(/\s+/g, '')}:${(addressLine ?? '').trim().toLowerCase()}`;
+  const home = uprn ? `uprn:${uprn}` : (addressLine ?? '').trim().toLowerCase();
+  const cacheKey = `epc:${postcode.trim().toUpperCase().replace(/\s+/g, '')}:${home}`;
   const cached = readCache<EpcCertificate>(cacheKey);
   if (cached) return cached;
-  const epc = await lookupEpc(postcode, { addressLine });
+  const epc = await lookupEpc(postcode, { addressLine, uprn });
   if (epc) writeCache(cacheKey, epc, TTL_MS.epc);
   return epc;
 }
@@ -977,7 +979,7 @@ export async function getPropertyIntelligence(
       englandOnly(() => getLocalPlanningAuthority(location.coordinates, planningGeometry)),
       getPlanningApplications(location.coordinates),
       getPricePaidHistory(location.postcode),
-      getEpcCached(location.postcode, addressLine),
+      getEpcCached(location.postcode, addressLine, uprn),
       englandOnly(() => getSurfaceWaterRisk(location.coordinates)),
       getCoalMiningRisk(location.coordinates),
       getRadonRisk(location.coordinates),

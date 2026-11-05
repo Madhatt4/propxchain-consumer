@@ -5,6 +5,7 @@ import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 
+import { checkTypedAddress, findAddresses } from '@/components/property/__tests__/addressCheckDriver';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 
 import PropertyCheckPage from '../PropertyCheckPage';
@@ -18,10 +19,13 @@ vi.mock('@/services/waitlist', async () => {
 });
 
 vi.mock('@/components/transaction/PropertyIntelligenceCard', () => ({
-  PropertyIntelligenceCard: ({ postcode, addressLine }: { postcode: string; addressLine?: string }) => (
-    <div data-testid="report" data-postcode={postcode} data-address={addressLine} />
+  PropertyIntelligenceCard: ({ postcode, addressLine, uprn }: { postcode: string; addressLine?: string; uprn?: string }) => (
+    <div data-testid="report" data-postcode={postcode} data-address={addressLine} data-uprn={uprn ?? ''} />
   ),
 }));
+
+// No homes listed, so the form takes the typed house-number route.
+vi.mock('@/services/epc.service', () => ({ listPostcodeAddresses: async () => [] }));
 
 function renderPage(): void {
   render(
@@ -43,11 +47,7 @@ function renderPageWithState(state: unknown): void {
   );
 }
 
-function checkAddress(houseNumber: string, postcode: string): void {
-  fireEvent.change(screen.getByLabelText('House name or number'), { target: { value: houseNumber } });
-  fireEvent.change(screen.getByLabelText('Postcode'), { target: { value: postcode } });
-  fireEvent.click(screen.getByRole('button', { name: 'Check this property' }));
-}
+const checkAddress = checkTypedAddress;
 
 describe('PropertyCheckPage', () => {
   beforeAll(() => {
@@ -77,16 +77,28 @@ describe('PropertyCheckPage', () => {
     expect(report).toHaveAttribute('data-address', '14a');
   });
 
+  it('should pin the report to the UPRN of a home picked in the homepage hero', () => {
+    renderPageWithState({ address: { houseNumber: '12 Mill Lane', postcode: 'SG19 1AB', uprn: '100012345678' } });
+
+    expect(screen.getByTestId('report')).toHaveAttribute('data-uprn', '100012345678');
+  });
+
+  it('should drop a hand-over UPRN that is not a real UPRN', () => {
+    renderPageWithState({ address: { houseNumber: '14a', postcode: 'SG19 1AB', uprn: '12; DROP' } });
+
+    expect(screen.getByTestId('report')).toHaveAttribute('data-uprn', '');
+  });
+
   it('should ignore a malformed hand-over and wait for an address', () => {
     renderPageWithState({ address: { houseNumber: '', postcode: 42 } });
 
     expect(screen.queryByTestId('report')).not.toBeInTheDocument();
   });
 
-  it('should ask for the house number when it is missing', () => {
+  it('should ask for the house number when it is missing', async () => {
     renderPage();
 
-    checkAddress('', 'SG19 1AB');
+    await checkAddress('', 'SG19 1AB');
 
     expect(screen.getByRole('alert').textContent).toContain('house name or number');
     expect(screen.queryByTestId('report')).not.toBeInTheDocument();
@@ -95,26 +107,26 @@ describe('PropertyCheckPage', () => {
   it('should reject a partial postcode without showing a report', () => {
     renderPage();
 
-    checkAddress('14a', 'SG19');
+    findAddresses('SG19');
 
     expect(screen.getByRole('alert').textContent).toContain('full UK postcode');
     expect(screen.queryByTestId('report')).not.toBeInTheDocument();
   });
 
-  it('should show the report straight away without asking for an email', () => {
+  it('should show the report straight away without asking for an email', async () => {
     renderPage();
 
-    checkAddress(' 14a ', 'sg19 1ab');
+    await checkAddress(' 14a ', 'sg19 1ab');
 
-    const report = screen.getByTestId('report');
+    const report = await screen.findByTestId('report');
     expect(report).toHaveAttribute('data-postcode', 'SG19 1AB');
     expect(report).toHaveAttribute('data-address', '14a');
     expect(mockAddToWaitlist).not.toHaveBeenCalled();
   });
 
-  it('should not call the waitlist when the optional email is invalid', () => {
+  it('should not call the waitlist when the optional email is invalid', async () => {
     renderPage();
-    checkAddress('14a', 'SG19 1AB');
+    await checkAddress('14a', 'SG19 1AB');
 
     fireEvent.change(screen.getByLabelText('Email address'), { target: { value: 'not-an-email' } });
     fireEvent.click(screen.getByRole('button', { name: 'Join the launch list' }));
@@ -126,7 +138,7 @@ describe('PropertyCheckPage', () => {
   it('should join the launch list with the checked address when an email is given', async () => {
     mockAddToWaitlist.mockResolvedValue({ ok: true, duplicate: false });
     renderPage();
-    checkAddress('14a', 'SG19 1AB');
+    await checkAddress('14a', 'SG19 1AB');
 
     fireEvent.change(screen.getByLabelText('Email address'), { target: { value: 'ann@example.com' } });
     fireEvent.click(screen.getByRole('button', { name: 'Join the launch list' }));
@@ -145,7 +157,7 @@ describe('PropertyCheckPage', () => {
   it('should keep the report on screen and offer a retry when the waitlist call fails', async () => {
     mockAddToWaitlist.mockResolvedValue({ ok: false, duplicate: false, error: 'HTTP 500' });
     renderPage();
-    checkAddress('14a', 'SG19 1AB');
+    await checkAddress('14a', 'SG19 1AB');
 
     fireEvent.change(screen.getByLabelText('Email address'), { target: { value: 'ann@example.com' } });
     fireEvent.click(screen.getByRole('button', { name: 'Join the launch list' }));

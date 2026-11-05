@@ -2,7 +2,7 @@
 // Copyright (C) 2026 PropXchain Ltd
 
 /**
- * The address box in the landing hero: house number and postcode, then
+ * The address box in the landing hero: postcode, pick the home, then
  * straight to /property-check with the report already running. The address
  * travels in router state rather than the URL so it never lands in an
  * analytics page path.

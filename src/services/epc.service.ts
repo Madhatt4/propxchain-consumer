@@ -53,7 +53,18 @@ export interface EpcCertificate {
 export interface EpcLookupOptions {
   /** Address line to disambiguate multiple certificates on a postcode. */
   addressLine?: string;
+  /** UPRN picked from the address list — matches the certificate exactly. */
+  uprn?: string;
   signal?: AbortSignal;
+}
+
+/** One home on a postcode, as listed by the EPC register. */
+export interface PostcodeAddress {
+  /** Display text, e.g. "Flat 2, 10 High Street". */
+  label: string;
+  /** First address line, used to match the home's EPC certificate. */
+  line1: string;
+  uprn: string | null;
 }
 
 /**
@@ -71,7 +82,7 @@ export async function lookupEpc(
 
   try {
     const { data, error } = await supabase.functions.invoke<EpcCertificate | null>('epc-lookup', {
-      body: { postcode: normalized, addressLine: opts.addressLine },
+      body: { postcode: normalized, addressLine: opts.addressLine, uprn: opts.uprn },
       // Forward the abort signal so a stale scan cancels the request itself
       // (not just discards the result) — saves the shared EPC rate budget.
       signal: opts.signal,
@@ -81,6 +92,34 @@ export async function lookupEpc(
     return data;
   } catch {
     // supabase.functions.invoke can throw on network failure
+    return null;
+  }
+}
+
+function isPostcodeAddress(value: unknown): value is PostcodeAddress {
+  const a = value as Partial<PostcodeAddress> | null;
+  return (
+    typeof a?.label === 'string' &&
+    typeof a.line1 === 'string' &&
+    (a.uprn === null || typeof a.uprn === 'string')
+  );
+}
+
+/**
+ * The homes on a postcode that hold an EPC, for the property check's address
+ * picker. `[]` means the register lists none there; `null` means the lookup
+ * failed. Either way the caller falls back to a typed house name or number.
+ */
+export async function listPostcodeAddresses(postcode: string): Promise<PostcodeAddress[] | null> {
+  const normalized = postcode.trim();
+  if (!normalized) return null;
+  try {
+    const { data, error } = await supabase.functions.invoke<{ addresses?: unknown } | null>('epc-lookup', {
+      body: { postcode: normalized, mode: 'addresses' },
+    });
+    if (error || !data || !Array.isArray(data.addresses)) return null;
+    return data.addresses.filter(isPostcodeAddress);
+  } catch {
     return null;
   }
 }
