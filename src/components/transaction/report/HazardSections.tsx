@@ -71,6 +71,7 @@ export function FloodSection({ report, geometry }: SectionProps): ReactElement {
   const worst = rows.some((r) => r.tone === 'high') ? 'high' : rows.some((r) => r.tone === 'medium') ? 'medium' : 'clear';
   const lead = worst === 'clear' ? 'No flood risk found.' : worst === 'high' ? 'Serious flood risk at this address.' : 'Some flood risk at this address.';
   const loc = report.location;
+  const showMap = Boolean(loc && hasDataset(geometry, FLOOD_DATASETS));
 
   if (gap) {
     return (
@@ -81,22 +82,27 @@ export function FloodSection({ report, geometry }: SectionProps): ReactElement {
   }
   return (
     <ReportSection id="flood" title="Flood" lead={lead} tone={worst} rest={worst === 'clear' ? undefined : 'Get a buildings insurance quote before you commit.'} source="Environment Agency: flood map for planning, Risk of Flooding from Surface Water (NaFRA2) and flood monitoring. Open Government Licence.">
-      {sw && (
-        <RiskScale
-          label={`Surface water flood risk: ${SURFACE_STEPS[SURFACE_INDEX[sw.band]]}`}
-          caption="Surface water (heavy rain that cannot drain away)"
-          value={SURFACE_STEPS[SURFACE_INDEX[sw.band]]}
-          steps={SURFACE_STEPS}
-          active={SURFACE_INDEX[sw.band]}
-          tone={SURFACE_TONE[sw.band]}
-        />
-      )}
-      <CheckTable rows={rows} />
-      {loc && hasDataset(geometry, FLOOD_DATASETS) && (
-        <div className="mt-6">
-          <ReportMap lat={loc.coordinates.lat} lng={loc.coordinates.lng} label={loc.postcode} geometry={geometry} datasets={[...FLOOD_DATASETS]} variant="boundary" caption="The flood zone drawn on the map, with the property marked." />
+      {/* Side by side on a laptop so the map does not push the checks off screen; stacked on a phone. */}
+      <div className={`grid gap-6 ${showMap ? 'lg:grid-cols-2' : ''}`}>
+        <div className="min-w-0">
+          {sw && (
+            <RiskScale
+              label={`Surface water flood risk: ${SURFACE_STEPS[SURFACE_INDEX[sw.band]]}`}
+              caption="Surface water (heavy rain that cannot drain away)"
+              value={SURFACE_STEPS[SURFACE_INDEX[sw.band]]}
+              steps={SURFACE_STEPS}
+              active={SURFACE_INDEX[sw.band]}
+              tone={SURFACE_TONE[sw.band]}
+            />
+          )}
+          <CheckTable rows={rows} />
         </div>
-      )}
+        {showMap && loc && (
+          <div className="mt-5 min-w-0">
+            <ReportMap lat={loc.coordinates.lat} lng={loc.coordinates.lng} label={loc.postcode} geometry={geometry} datasets={[...FLOOD_DATASETS]} variant="boundary" caption="The flood zone drawn on the map, with the property marked." heightClass="h-72 lg:h-96" />
+          </div>
+        )}
+      </div>
     </ReportSection>
   );
 }

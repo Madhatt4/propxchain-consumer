@@ -39,7 +39,7 @@ export function ReportNav({ items }: { items: NavItem[] }): ReactElement {
 
   return (
     <nav aria-label="Report sections" className={`sticky top-0 z-10 border-y ${R.rule} bg-[#FAFAF8] dark:bg-[#0B1120]`}>
-      <ol className="flex gap-1 overflow-x-auto px-5 sm:px-7">
+      <ol className="flex gap-1 overflow-x-auto px-4 sm:px-7 lg:px-10">
         {items.map((item) => {
           const isCurrent = item.id === current;
           return (
