@@ -59,7 +59,7 @@ export function SummarySection({ report, geometry, placeName }: { report: Proper
               Flood, heritage and planning designation checks use data that covers England only, so they are not shown for this address in {report.coverageGap}.
             </p>
           )}
-          <p className={`mt-4 ${R.source}`}>None of this replaces your conveyancer’s official searches.</p>
+          <p className={`mt-4 ${R.source}`}>None of this replaces your official searches.</p>
         </div>
         {loc && (
           <ReportMap lat={loc.coordinates.lat} lng={loc.coordinates.lng} label={loc.postcode} geometry={geometry} datasets={[]} variant="street" caption="The plot and its roads." heightClass="h-64 lg:h-full lg:min-h-[16rem] 2xl:min-h-[22rem]" />

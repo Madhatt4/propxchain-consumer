@@ -48,7 +48,7 @@ const STYLES: Record<AddressCheckAppearance, { form: string; input: string; butt
   page: {
     form: 'mt-8',
     input:
-      'w-full rounded-md border border-[#D1D5DB] bg-white px-4 py-3 font-[DM_Sans] text-base text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:border-[#0D9488] focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30 dark:border-[#334155] dark:bg-[#0F172A] dark:text-[#F1F5F9]',
+      'w-full rounded-md border border-[#D1D5DB] bg-white px-4 py-3 font-[DM_Sans] text-base text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:border-[#0D9488] focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30 dark:border-[#334155] dark:bg-[#0F172A] dark:text-[#F1F5F9] dark:[color-scheme:dark] [&_option]:bg-white [&_option]:text-[#1A1A1A] dark:[&_option]:bg-[#0F172A] dark:[&_option]:text-[#F1F5F9]',
     button:
       'inline-flex min-h-12 items-center justify-center rounded-md bg-[#0D9488] px-8 py-3 font-[DM_Sans] text-base font-medium text-white transition-colors hover:bg-[#0F766E] disabled:opacity-60',
     error: 'mt-3 font-[DM_Sans] text-sm text-[#B91C1C] dark:text-[#F87171]',

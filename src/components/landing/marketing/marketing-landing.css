@@ -31,6 +31,7 @@
   --input-bg: rgba(255, 255, 255, 0.04);
   --input-border: rgba(255, 255, 255, 0.12);
   --input-fg: #ffffff;
+  --option-bg: #0A0F1E;
   --input-ph: rgba(255, 255, 255, 0.4);
   --btn-ghost-fg: #ffffff;
   /* Milestone-chain node palette (dark) */
@@ -69,6 +70,7 @@
   --input-bg: #ffffff;
   --input-border: #d8d2c4;
   --input-fg: #15181d;
+  --option-bg: #ffffff;
   --input-ph: rgba(21, 24, 29, 0.42);
   --btn-ghost-fg: #15181d;
   --node-done-bg: rgba(13, 148, 136, 0.12);
@@ -333,6 +335,9 @@
   transition: border-color 160ms ease-out;
 }
 .px-landing .cta-input::placeholder { color: var(--input-ph); }
+/* The address picker's option list is drawn by the browser and ignores the
+   translucent input background, so give it a solid one that matches the theme. */
+.px-landing select.cta-input option { background: var(--option-bg); color: var(--input-fg); }
 .px-landing .cta-input:focus { border-color: var(--t); outline: none; }
 .px-landing .foot-divider { border-top: 1px solid var(--card-border); }
 
