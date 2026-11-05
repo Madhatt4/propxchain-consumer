@@ -5,7 +5,7 @@ vi.mock('../../lib/supabase', () => ({
   supabase: { functions: { invoke: (...args: unknown[]) => mockInvoke(...(args as [])) } },
 }));
 
-import { lookupEpc } from '../epc.service';
+import { listPostcodeAddresses, lookupEpc } from '../epc.service';
 
 describe('lookupEpc', () => {
   beforeEach(() => {
@@ -34,5 +34,35 @@ describe('lookupEpc', () => {
   it('should return null for a blank postcode without a network call', async () => {
     expect(await lookupEpc('   ')).toBeNull();
     expect(mockInvoke).not.toHaveBeenCalled();
+  });
+});
+
+describe('listPostcodeAddresses', () => {
+  beforeEach(() => {
+    mockInvoke.mockReset();
+  });
+
+  it('should ask the edge function for the address list of the postcode', async () => {
+    mockInvoke.mockResolvedValue({ data: { addresses: [] }, error: null } as never);
+    await listPostcodeAddresses(' SG19 1AB ');
+    const [fn, options] = mockInvoke.mock.calls[0] as unknown as [string, { body: unknown }];
+    expect(fn).toBe('epc-lookup');
+    expect(options.body).toEqual({ postcode: 'SG19 1AB', mode: 'addresses' });
+  });
+
+  it('should keep well-formed homes and drop malformed rows', async () => {
+    const home = { label: '12 Mill Lane', line1: '12 Mill Lane', uprn: '100012345678' };
+    mockInvoke.mockResolvedValue({ data: { addresses: [home, { label: 3 }, null] }, error: null } as never);
+    expect(await listPostcodeAddresses('SG19 1AB')).toEqual([home]);
+  });
+
+  it('should return null when the function errors, so the form falls back to typing', async () => {
+    mockInvoke.mockResolvedValue({ data: null, error: new Error('500') } as never);
+    expect(await listPostcodeAddresses('SG19 1AB')).toBeNull();
+  });
+
+  it('should return null when the call throws', async () => {
+    mockInvoke.mockRejectedValue(new Error('offline'));
+    expect(await listPostcodeAddresses('SG19 1AB')).toBeNull();
   });
 });

@@ -55,7 +55,12 @@ function CoversList(): JSX.Element {
 function CheckResult({ address }: { address: CheckedAddress }): JSX.Element {
   return (
     <div className="space-y-8">
-      <PropertyIntelligenceCard postcode={address.postcode} addressLine={address.houseNumber} downloadable />
+      <PropertyIntelligenceCard
+        postcode={address.postcode}
+        addressLine={address.houseNumber}
+        uprn={address.uprn}
+        downloadable
+      />
       <div className="rounded-lg border border-[#E5E7EB] bg-white p-6 dark:border-[#1E293B] dark:bg-[#0F172A]">
         <LaunchListOptIn address={address} />
       </div>
@@ -78,7 +83,8 @@ function addressFromState(state: unknown): CheckedAddress | null {
   const candidate = (state as { address?: Partial<CheckedAddress> } | null)?.address;
   if (typeof candidate?.postcode !== 'string' || typeof candidate.houseNumber !== 'string') return null;
   if (!candidate.postcode.trim() || !candidate.houseNumber.trim()) return null;
-  return { postcode: candidate.postcode, houseNumber: candidate.houseNumber };
+  const uprn = typeof candidate.uprn === 'string' && /^\d{1,12}$/.test(candidate.uprn) ? candidate.uprn : undefined;
+  return { postcode: candidate.postcode, houseNumber: candidate.houseNumber, ...(uprn ? { uprn } : {}) };
 }
 
 const PropertyCheckPage: React.FC = () => {
@@ -104,7 +110,7 @@ const PropertyCheckPage: React.FC = () => {
         <section ref={resultRef} className={BAND_CLS} aria-label="Your property check">
           <div className="mx-auto max-w-[960px] px-6 py-12">
             {/* key: a second address mounts a fresh card rather than mixing two reports. */}
-            <CheckResult key={`${address.houseNumber}|${address.postcode}`} address={address} />
+            <CheckResult key={`${address.uprn ?? address.houseNumber}|${address.postcode}`} address={address} />
           </div>
         </section>
       )}

@@ -1,11 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 PropXchain Ltd
 
-import { describe, it, expect } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 
+import { checkTypedAddress, findAddresses } from '@/components/property/__tests__/addressCheckDriver';
+
 import { HeroAddressCheck } from '../HeroAddressCheck';
+
+// No homes listed, so the form takes the typed house-number route.
+vi.mock('@/services/epc.service', () => ({ listPostcodeAddresses: async () => [] }));
 
 /** Shows where the hero sent the visitor, and what it carried. */
 function Landed(): JSX.Element {
@@ -28,19 +33,13 @@ function renderHeroBox(): void {
   );
 }
 
-function check(houseNumber: string, postcode: string): void {
-  fireEvent.change(screen.getByLabelText('House name or number'), { target: { value: houseNumber } });
-  fireEvent.change(screen.getByLabelText('Postcode'), { target: { value: postcode } });
-  fireEvent.click(screen.getByRole('button', { name: 'Check this property' }));
-}
-
 describe('HeroAddressCheck', () => {
-  it('should open the property check carrying the address in router state, not the URL', () => {
+  it('should open the property check carrying the address in router state, not the URL', async () => {
     renderHeroBox();
 
-    check(' 14a ', 'sg19 1ab');
+    await checkTypedAddress(' 14a ', 'sg19 1ab');
 
-    const landed = screen.getByTestId('landed');
+    const landed = await screen.findByTestId('landed');
     expect(landed).toHaveAttribute('data-path', '/property-check');
     expect(landed).toHaveAttribute('data-search', '');
     expect(JSON.parse(landed.textContent ?? '{}')).toEqual({
@@ -51,7 +50,7 @@ describe('HeroAddressCheck', () => {
   it('should stay on the homepage and explain when the postcode is incomplete', () => {
     renderHeroBox();
 
-    check('14a', 'SG19');
+    findAddresses('SG19');
 
     expect(screen.getByRole('alert').textContent).toContain('full UK postcode');
     expect(screen.queryByTestId('landed')).not.toBeInTheDocument();

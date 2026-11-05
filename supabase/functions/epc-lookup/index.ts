@@ -4,6 +4,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 import { corsHeaders, preflight } from '../_shared/cors.ts';
 import { checkRateLimit, getClientIp } from '../_shared/rate-limit.ts';
 
+import { buildAddressList, normaliseUprn, type AddressOption } from './addresses.ts';
+
 /**
  * EPC (Energy Performance Certificate) lookup edge function — scope B.
  *
@@ -30,6 +32,11 @@ import { checkRateLimit, getClientIp } from '../_shared/rate-limit.ts';
  * MHCLG Energy certificate data API:
  *   Search:      GET {BASE}/api/domestic/search?postcode={pc}&page_size=100
  *   Certificate: GET {BASE}/api/certificate?certificate_number={num}
+ *
+ * Two modes, picked by the request body:
+ *   { postcode, addressLine?, uprn? }  -> the best-matching EpcCertificate, or null
+ *   { postcode, mode: 'addresses' }    -> { addresses: AddressOption[] }, or null on
+ *     an upstream failure: the homes on the postcode, for the address picker
  *   Auth: Authorization: Bearer <token>
  */
 
@@ -75,7 +82,14 @@ const UK_POSTCODE_RE = /^[A-Z]{1,2}[0-9][A-Z0-9]?\s*[0-9][A-Z]{2}$/i;
 interface LookupRequest {
   postcode?: string;
   addressLine?: string;
+  /** UPRN picked from the address list; matches the certificate exactly. */
+  uprn?: string;
+  mode?: string;
 }
+
+// Big enough for a large block of flats with re-lodged certificates, so one
+// search covers the postcode and a UPRN picked from the list is always found.
+const SEARCH_PAGE_SIZE = 500;
 
 type EpcBand = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G';
 
@@ -144,13 +158,20 @@ function normAddr(s: string): string {
  * shared leading building-number/name; otherwise fall back to the most
  * recently registered certificate on the postcode.
  */
-function pickBestRow(rows: SearchRow[], addressLine?: string): SearchRow | null {
+function pickBestRow(rows: SearchRow[], addressLine?: string, uprn?: string): SearchRow | null {
   if (rows.length === 0) return null;
 
-  const mostRecent = (): SearchRow =>
-    rows.reduce((latest, r) =>
+  const latestOf = (list: SearchRow[]): SearchRow =>
+    list.reduce((latest, r) =>
       (r.registrationDate ?? '') > (latest.registrationDate ?? '') ? r : latest,
     );
+  const mostRecent = (): SearchRow => latestOf(rows);
+
+  // A UPRN from the address picker identifies the home outright.
+  if (uprn) {
+    const forHome = rows.filter((r) => normaliseUprn(r.uprn) === uprn);
+    if (forHome.length > 0) return latestOf(forHome);
+  }
 
   if (!addressLine) return mostRecent();
 
@@ -179,9 +200,47 @@ async function epcFetch(path: string, signal: AbortSignal): Promise<Response> {
   });
 }
 
+/**
+ * Domestic certificates on a postcode. [] is a real "none on the register";
+ * null is an upstream failure, so callers can tell the two apart.
+ */
+async function searchRows(postcode: string, signal: AbortSignal): Promise<SearchRow[] | null> {
+  const res = await epcFetch(
+    `/api/domestic/search?postcode=${encodeURIComponent(postcode)}&page_size=${SEARCH_PAGE_SIZE}`,
+    signal,
+  );
+  // 404 = "no certificates could be found for that query" — a normal miss.
+  if (res.status === 404) return [];
+  if (!res.ok) {
+    console.error(`EPC search upstream ${res.status} for ${postcode}`);
+    return null;
+  }
+  const body = (await res.json()) as SearchResponse;
+  return Array.isArray(body.data) ? body.data : [];
+}
+
+async function listAddresses(postcode: string): Promise<{ addresses: AddressOption[] } | null> {
+  if (!EPC_API_KEY) {
+    console.error('EPC_API_KEY env var is not set');
+    return null;
+  }
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), UPSTREAM_TIMEOUT_MS);
+  try {
+    const rows = await searchRows(postcode, controller.signal);
+    return rows ? { addresses: buildAddressList(rows) } : null;
+  } catch (err) {
+    console.error(`EPC address list failed for ${postcode}:`, err);
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function lookup(
   postcode: string,
   addressLine: string | undefined,
+  uprn: string | undefined,
 ): Promise<EpcCertificate | null> {
   if (!EPC_API_KEY) {
     console.error('EPC_API_KEY env var is not set');
@@ -193,19 +252,9 @@ async function lookup(
 
   try {
     // 1) Search the postcode for domestic certificates.
-    const searchRes = await epcFetch(
-      `/api/domestic/search?postcode=${encodeURIComponent(postcode)}&page_size=100`,
-      controller.signal,
-    );
-    // 404 = "no certificates could be found for that query" — a normal miss.
-    if (searchRes.status === 404) return null;
-    if (!searchRes.ok) {
-      console.error(`EPC search upstream ${searchRes.status} for ${postcode}`);
-      return null;
-    }
-    const searchBody = (await searchRes.json()) as SearchResponse;
-    const rows = Array.isArray(searchBody.data) ? searchBody.data : [];
-    const row = pickBestRow(rows, addressLine);
+    const rows = await searchRows(postcode, controller.signal);
+    if (!rows) return null;
+    const row = pickBestRow(rows, addressLine, uprn);
     if (!row || !row.certificateNumber) return null;
 
     // 2) Fetch the full certificate for floor area + potential band + ratings.
@@ -234,15 +283,11 @@ async function lookup(
         ? detail.total_floor_area
         : null;
 
-    // UPRN may arrive as a number or numeric string; normalise to a clean
-    // 1-12 digit string, else null (never fabricate).
-    const uprnRaw = row.uprn === undefined || row.uprn === null ? '' : String(row.uprn).trim();
-    const uprn = /^\d{1,12}$/.test(uprnRaw) ? uprnRaw : null;
-
     return {
       address: addressParts.join(', '),
       postcode: row.postcode ?? postcode,
-      uprn,
+      // A number or numeric string upstream; a clean 1-12 digit string or null.
+      uprn: normaliseUprn(row.uprn),
       currentBand,
       potentialBand: normalizeBand(detail?.potential_energy_efficiency_band),
       currentRating:
@@ -327,6 +372,10 @@ serve(async (req) => {
       ? parsed.addressLine.trim()
       : undefined;
 
-  const result = await lookup(postcode, addressLine);
+  if (parsed.mode === 'addresses') {
+    return new Response(JSON.stringify(await listAddresses(postcode)), { headers: CORS_HEADERS });
+  }
+  const uprn = normaliseUprn(parsed.uprn) ?? undefined;
+  const result = await lookup(postcode, addressLine, uprn);
   return new Response(JSON.stringify(result), { headers: CORS_HEADERS });
 });
