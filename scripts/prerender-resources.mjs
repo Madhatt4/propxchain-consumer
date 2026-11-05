@@ -313,8 +313,8 @@ ${categoryOverview('industry-and-reform')}
     published: '2026-06-12',
     modified: '2026-08-14',
     crumb: 'What is a sales pack?',
-    title: 'What Is a Property Pack? Sales and Buyers’ Packs Explained · PropXchain',
-    description: 'A property pack (sales pack) gathers the title, searches, TA6 and EPC before you list, so buyers get the facts upfront. What goes in one, and why it speeds up a sale.',
+    title: 'What Is a Property Pack? Buyers’ Packs Explained · PropXchain',
+    description: 'A property pack (sales pack) gathers the title, searches, TA6 and EPC before you list, so buyers get the facts upfront and the sale moves faster.',
     main: `<main id="seo-fallback" role="main" aria-label="What is a sales pack — guide">
 <p class="muted">Loading PropXchain…</p>
 <h1>What is a sales pack?</h1>

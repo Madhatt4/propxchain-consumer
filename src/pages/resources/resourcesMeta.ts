@@ -132,7 +132,7 @@ export const RESOURCES: ResourceArticle[] = [
     planNumber: null,
     title: 'What is a sales pack?',
     documentTitle:
-      'What Is a Property Pack? Sales and Buyers’ Packs Explained · PropXchain',
+      'What Is a Property Pack? Buyers’ Packs Explained · PropXchain',
     teaser:
       'Title register, searches, TA6, EPC: the documents every buyer eventually needs, gathered before you list rather than after you accept an offer. The government calls it a sales pack — you may know it as a property pack. Why upfront information sells houses faster, and what actually goes in one.',
     readingTime: '6 min read',
