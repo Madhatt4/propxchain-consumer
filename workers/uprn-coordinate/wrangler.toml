@@ -1,5 +1,5 @@
 # UPRN -> exact coordinate for the free property check (see src/index.ts).
-# Deploy: build the shards first (scripts/build-shards.mjs), then `npx wrangler deploy`.
+# Quarterly refresh (download, build, deploy, live check): `pnpm uprn:refresh` from the repo root.
 name = "propxchain-uprn"
 main = "src/index.ts"
 compatibility_date = "2026-11-01"
