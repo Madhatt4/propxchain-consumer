@@ -313,8 +313,8 @@ ${categoryOverview('industry-and-reform')}
     published: '2026-06-12',
     modified: '2026-08-14',
     crumb: 'What is a sales pack?',
-    title: 'What Is a Sales Pack or Property Pack? · PropXchain',
-    description: 'A sales pack (or property pack) gathers the title, searches, TA6 and EPC before you list. What goes in one, and why upfront information speeds up a sale.',
+    title: 'What Is a Property Pack? Buyer Packs Explained · PropXchain',
+    description: 'A property pack (sales pack) gathers the title, searches, TA6 and EPC before you list, so buyers get the facts upfront and the sale moves faster.',
     main: `<main id="seo-fallback" role="main" aria-label="What is a sales pack — guide">
 <p class="muted">Loading PropXchain…</p>
 <h1>What is a sales pack?</h1>
@@ -626,7 +626,7 @@ ${SEARCHES_AT_A_GLANCE.map((s) => `      <tr><td>${escHtml(s.name)}</td><td>${es
     catName: 'Selling',
     published: '2026-06-12',
     modified: '2026-08-21',
-    title: 'TA6, TA10 and TA7 Forms Explained for Sellers · PropXchain',
+    title: 'TA6, TA10 and TA7 Forms: What Sellers Fill In · PropXchain',
     description:
       'The three forms every seller fills in, what each one asks, and why your answers are legally binding representations rather than opinions.',
     main: `<main id="seo-fallback" role="main" aria-label="TA6, TA10 and TA7 explained">
@@ -684,8 +684,8 @@ ${SEARCHES_AT_A_GLANCE.map((s) => `      <tr><td>${escHtml(s.name)}</td><td>${es
     published: '2026-09-27',
     modified: '2026-09-27',
     crumb: 'The TA6 form explained',
-    title: 'TA6 Form Explained: the 6th Edition · PropXchain',
-    description: 'The TA6 Property Information Form (6th edition) replaced older editions on 30 March 2026. What each of its 15 sections asks and what to have ready.',
+    title: 'What Is a TA6 Form? The 6th Edition Explained · PropXchain',
+    description: 'What the TA6 property information form is, what each of its 15 sections asks, and what to have ready. The 6th edition replaced older forms on 30 March 2026.',
     main: `<main id="seo-fallback" role="main" aria-label="The TA6 form explained — guide">
 <p class="muted">Loading PropXchain…</p>
 <h1>The TA6 form explained</h1>

@@ -132,7 +132,7 @@ export const RESOURCES: ResourceArticle[] = [
     planNumber: null,
     title: 'What is a sales pack?',
     documentTitle:
-      'What Is a Sales Pack or Property Pack? · PropXchain',
+      'What Is a Property Pack? Buyer Packs Explained · PropXchain',
     teaser:
       'Title register, searches, TA6, EPC: the documents every buyer eventually needs, gathered before you list rather than after you accept an offer. The government calls it a sales pack — you may know it as a property pack. Why upfront information sells houses faster, and what actually goes in one.',
     readingTime: '6 min read',
@@ -145,7 +145,7 @@ export const RESOURCES: ResourceArticle[] = [
     planNumber: 10,
     title: 'TA6, TA10 and TA7 explained',
     documentTitle:
-      'TA6, TA10 and TA7 Forms Explained for Sellers · PropXchain',
+      'TA6, TA10 and TA7 Forms: What Sellers Fill In · PropXchain',
     teaser:
       'The three forms every seller fills in, what each one asks, why your answers are legally binding representations rather than opinions, and the questions people most often get wrong.',
     readingTime: '7 min read',
@@ -158,7 +158,7 @@ export const RESOURCES: ResourceArticle[] = [
     planNumber: null,
     title: 'The TA6 form explained',
     documentTitle:
-      'TA6 Form Explained: the 6th Edition · PropXchain',
+      'What Is a TA6 Form? The 6th Edition Explained · PropXchain',
     teaser:
       'The TA6 Property Information Form (6th edition), in use since 30 March 2026: what changed, what each of the 15 sections asks, what to have ready, and how to answer without creating problems later.',
     readingTime: '8 min read',
