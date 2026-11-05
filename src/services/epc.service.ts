@@ -21,6 +21,7 @@
  * `epc-lookup` function source for the upstream contract.
  */
 
+import { tidyAddressList } from '@/utils/addressLabel';
 import { supabase } from '../lib/supabase';
 
 /** EPC energy-efficiency band — A (best) … G (worst). */
@@ -118,7 +119,7 @@ export async function listPostcodeAddresses(postcode: string): Promise<PostcodeA
       body: { postcode: normalized, mode: 'addresses' },
     });
     if (error || !data || !Array.isArray(data.addresses)) return null;
-    return data.addresses.filter(isPostcodeAddress);
+    return tidyAddressList(data.addresses.filter(isPostcodeAddress));
   } catch {
     return null;
   }
