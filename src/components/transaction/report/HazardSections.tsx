@@ -99,7 +99,7 @@ export function FloodSection({ report, geometry }: SectionProps): ReactElement {
         </div>
         {showMap && loc && (
           <div className="mt-5 min-w-0">
-            <ReportMap lat={loc.coordinates.lat} lng={loc.coordinates.lng} label={loc.postcode} geometry={geometry} datasets={[...FLOOD_DATASETS]} variant="boundary" caption="The flood zone drawn on the map, with the property marked." heightClass="h-72 lg:h-96" />
+            <ReportMap lat={loc.coordinates.lat} lng={loc.coordinates.lng} label={loc.postcode} geometry={geometry} datasets={[...FLOOD_DATASETS]} variant="boundary" caption="The flood zone drawn on the map, with the property marked." heightClass="h-72 lg:h-96 2xl:h-[30rem]" />
           </div>
         )}
       </div>

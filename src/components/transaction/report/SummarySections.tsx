@@ -62,7 +62,7 @@ export function SummarySection({ report, geometry, placeName }: { report: Proper
           <p className={`mt-4 ${R.source}`}>None of this replaces your conveyancer’s official searches.</p>
         </div>
         {loc && (
-          <ReportMap lat={loc.coordinates.lat} lng={loc.coordinates.lng} label={loc.postcode} geometry={geometry} datasets={[]} variant="street" caption="The plot and its roads." heightClass="h-64 lg:h-full lg:min-h-[16rem]" />
+          <ReportMap lat={loc.coordinates.lat} lng={loc.coordinates.lng} label={loc.postcode} geometry={geometry} datasets={[]} variant="street" caption="The plot and its roads." heightClass="h-64 lg:h-full lg:min-h-[16rem] 2xl:min-h-[22rem]" />
         )}
       </div>
     </ReportSection>
