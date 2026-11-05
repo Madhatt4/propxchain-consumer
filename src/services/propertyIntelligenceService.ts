@@ -42,8 +42,8 @@ export type { TitleBoundary } from './titlePolygon.service';
  */
 const MAX_GEOMETRY_WKT_LENGTH = 1500;
 
-/** property-enrich service holding the OS Open UPRN gazetteer (precise pin). */
-const PROPERTY_ENRICH_BASE = 'https://propxchain-property-enrich.onrender.com';
+/** Cloudflare Worker holding OS Open UPRN (precise pin); source in workers/uprn-coordinate. */
+const UPRN_LOOKUP_BASE = 'https://propxchain-uprn.hatton-marc.workers.dev';
 
 const TTL_MS = {
   postcode: 30 * 24 * 60 * 60 * 1000,
@@ -321,7 +321,7 @@ export async function getPostcodeInfo(postcode: string): Promise<PostcodeInfo> {
 }
 
 // ============================================
-// OS Open UPRN — precise pin (via property-enrich)
+// OS Open UPRN — precise pin (via the propxchain-uprn Worker)
 // ============================================
 
 interface UprnCoordinateResponse {
@@ -334,7 +334,7 @@ interface UprnCoordinateResponse {
 }
 
 /**
- * Resolve a UPRN to its exact OS Open UPRN coordinate via the property-enrich
+ * Resolve a UPRN to its exact OS Open UPRN coordinate via the propxchain-uprn
  * service. Returns null when the UPRN isn't in the dataset (404) or the input is
  * malformed; throws only on an unexpected service error so the caller can record
  * provenance. The coordinate is effectively permanent, so it's cached long.
@@ -347,11 +347,11 @@ export async function getUprnCoordinate(uprn: string): Promise<Coordinates | nul
   const cached = readCache<Coordinates>(cacheKey);
   if (cached) return cached;
 
-  const url = `${PROPERTY_ENRICH_BASE}/uprn-coordinate?uprn=${encodeURIComponent(normalized)}`;
+  const url = `${UPRN_LOOKUP_BASE}/uprn-coordinate?uprn=${encodeURIComponent(normalized)}`;
   const response = await fetch(url, { headers: { Accept: 'application/json' } });
   if (response.status === 404) return null; // UPRN not present in OS Open UPRN
   if (!response.ok) {
-    throw new Error(`property-enrich /uprn-coordinate returned ${response.status}`);
+    throw new Error(`UPRN lookup returned ${response.status}`);
   }
   const body = (await response.json()) as UprnCoordinateResponse;
   if (typeof body.latitude !== 'number' || typeof body.longitude !== 'number') return null;

@@ -1,0 +1,4 @@
+# Built from OS Open UPRN by scripts/build-shards.mjs; about 700 MB.
+shards/
+osuprn.zip
+.wrangler/

@@ -74,7 +74,6 @@ const CSP_DIRECTIVES = {
     'https://*.hatton-marc.workers.dev',
     'https://propxchain.onrender.com',
     'https://propxchain-proxy-render.onrender.com',
-    'https://propxchain-property-enrich.onrender.com',
     'https://propxchain-4k8l.onrender.com',
     'https://*.stripe.com',
     'https://landregistry.data.gov.uk',
