@@ -92,7 +92,7 @@ export function PropertyReport({ report, geometry, addressLine, anomalies, actio
   const place = [addressLine?.trim(), postcode].filter(Boolean).join(', ');
   return (
     <article aria-label="Property report" className={`overflow-hidden rounded-xl border ${R.rule} ${R.paper}`}>
-      <header className="px-5 pb-5 pt-6 sm:px-7">
+      <header className="px-4 pb-5 pt-6 sm:px-7 lg:px-10">
         <p className={`m-0 text-sm ${R.ink2} ${R.mono}`}>{[place, loc?.admin_district].filter(Boolean).join(' · ')}</p>
         <h2 className="m-0 mt-1 font-[Fraunces] text-[2rem] font-black leading-[1.05] tracking-[-0.03em] text-[#1A1A1A] dark:text-[#F1F5F9]">Property report</h2>
         <ul className={`m-0 mt-3 flex list-none flex-wrap gap-x-6 gap-y-1 p-0 font-[DM_Sans] text-sm ${R.ink2}`}>
@@ -107,7 +107,7 @@ export function PropertyReport({ report, geometry, addressLine, anomalies, actio
 
       <ReportNav items={NAV} />
 
-      <div className="px-5 sm:px-7">
+      <div className="px-4 sm:px-7 lg:px-10">
         <SummarySection report={report} geometry={geometry} placeName={place} />
         {anomalies && anomalies.length > 0 && (
           <div className="pb-6">
