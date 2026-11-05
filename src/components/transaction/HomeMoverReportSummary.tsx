@@ -95,7 +95,7 @@ function buildNextSteps(r: PropertyIntelligenceReport): string[] {
     steps.push('Several recent planning applications nearby — review them for developments that could affect the property.');
   if (steps.length === 0)
     steps.push('No major flags on the free public data. Still order the official local searches to confirm before exchange.');
-  steps.push('This is indicative intel from free open-government sources — your conveyancer’s official searches remain the authoritative record.');
+  steps.push('This is indicative intel from free open-government sources — your official searches remain the authoritative record.');
   return steps.slice(0, 5);
 }
 
