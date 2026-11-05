@@ -108,7 +108,7 @@ const PropertyCheckPage: React.FC = () => {
 
       {address && (
         <section ref={resultRef} className={BAND_CLS} aria-label="Your property check">
-          <div className="mx-auto w-full max-w-[1440px] px-3 py-8 sm:px-6 sm:py-12 lg:px-10">
+          <div className="w-full px-3 py-8 sm:px-6 sm:py-12 lg:px-10 2xl:px-16">
             {/* key: a second address mounts a fresh card rather than mixing two reports. */}
             <CheckResult key={`${address.uprn ?? address.houseNumber}|${address.postcode}`} address={address} />
           </div>

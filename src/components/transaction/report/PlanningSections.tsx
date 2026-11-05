@@ -63,7 +63,7 @@ export function DesignationsSection({ report, geometry }: { report: PropertyInte
         <CheckTable rows={rows} showMeaning={false} />
         {loc && hasDataset(geometry, DESIGNATION_DATASETS) && (
           <div className="mt-5">
-            <ReportMap lat={loc.coordinates.lat} lng={loc.coordinates.lng} label={loc.postcode} geometry={geometry} datasets={[...DESIGNATION_DATASETS]} variant="boundary" caption="Designation boundaries around the property." heightClass="h-72 lg:h-96" />
+            <ReportMap lat={loc.coordinates.lat} lng={loc.coordinates.lng} label={loc.postcode} geometry={geometry} datasets={[...DESIGNATION_DATASETS]} variant="boundary" caption="Designation boundaries around the property." heightClass="h-72 lg:h-96 2xl:h-[30rem]" />
           </div>
         )}
       </div>
