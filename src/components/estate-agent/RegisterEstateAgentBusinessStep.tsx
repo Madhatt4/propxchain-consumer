@@ -10,6 +10,8 @@ export interface EstateAgentBusinessDetails {
   branch: string;
   redressScheme: '' | 'PRS' | 'TPO';
   redressNumber: string;
+  /** Applied to the scheme but no membership number yet. */
+  redressPending: boolean;
   companyNumber: string;
   chData: CompaniesHouseCompany | null;
   verified: boolean;
@@ -59,6 +61,36 @@ const EstateAgentRedressSchemeField: React.FC<EstateAgentRedressSchemeFieldProps
       <option value="PRS">Property Redress Scheme</option>
       <option value="TPO">The Property Ombudsman</option>
     </select>
+  </div>
+);
+
+interface EstateAgentRedressPendingFieldProps {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}
+
+/**
+ * For a new agency that has applied to a scheme but has no number yet. The
+ * agent portal asks for the number until one is saved.
+ */
+const EstateAgentRedressPendingField: React.FC<EstateAgentRedressPendingFieldProps> = ({ checked, onChange }) => (
+  <div>
+    <label htmlFor="ea-redress-pending" className="flex items-start gap-3 font-[DM_Sans] text-sm text-[#1A1A1A]">
+      <input
+        id="ea-redress-pending"
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="mt-0.5 h-4 w-4 rounded border-[#E5E7EB] accent-[#0D9488]"
+      />
+      <span>Membership pending: I&apos;ve applied and I&apos;m waiting for my number</span>
+    </label>
+    {checked && (
+      <p className="mt-2 font-[DM_Sans] text-sm text-[#6B7280]">
+        You can carry on now. Your agent portal will ask for the number until you add it. By law, an
+        estate agent must belong to a redress scheme to do residential estate agency work.
+      </p>
+    )}
   </div>
 );
 
@@ -198,7 +230,10 @@ const RegisterEstateAgentBusinessStep: React.FC<RegisterEstateAgentBusinessStepP
       <div className="mt-10 space-y-6">
         {leadingTextFields.map((field) => <EstateAgentBusinessTextField key={field.id} {...field} />)}
         <EstateAgentRedressSchemeField value={value.redressScheme} onChange={(v) => update({ redressScheme: v })} />
-        <EstateAgentBusinessTextField id="ea-membership-number" label="Membership number" value={value.redressNumber} onChange={(v) => update({ redressNumber: v })} />
+        {!value.redressPending && (
+          <EstateAgentBusinessTextField id="ea-membership-number" label="Membership number" value={value.redressNumber} onChange={(v) => update({ redressNumber: v })} />
+        )}
+        <EstateAgentRedressPendingField checked={value.redressPending} onChange={(v) => update({ redressPending: v, redressNumber: '' })} />
         <EstateAgentCompaniesHouseField companyNumber={value.companyNumber} onChange={(v) => update({ companyNumber: v })} chLookupLoading={chLookupLoading} chLookupRan={chLookupRan} chData={value.chData} isDissolved={isDissolved} />
         {error && <div className="rounded-md border border-[#DC2626]/30 bg-[#FEF2F2] p-3 font-[DM_Sans] text-sm text-[#DC2626]">{error}</div>}
       </div>

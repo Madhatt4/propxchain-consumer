@@ -294,7 +294,7 @@ ${categoryOverview('industry-and-reform')}
   <h3>Estate agents — business details</h3>
   <ul>
     <li>Go to propxchain.com/register/estate-agent.</li>
-    <li>Enter your agency name, branch, redress scheme (PRS or TPO) and membership number.</li>
+    <li>Enter your agency name, branch, redress scheme (PRS or TPO) and membership number. A new agency still waiting for its number can tick &ldquo;membership pending&rdquo; and add the number from the agent portal later.</li>
     <li>Companies House number is optional here — it will not block sign-up either way.</li>
     <li>Enter your email, a password, and confirm it, then create the account.</li>
     <li>A verification email arrives — click the link, then sign in.</li>
