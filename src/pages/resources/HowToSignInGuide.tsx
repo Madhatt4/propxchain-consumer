@@ -152,7 +152,8 @@ const HowToSignInGuide: React.FC = () => (
         <>Go to propxchain.com/register/estate-agent.</>,
         <>
           Enter your agency name, branch, redress scheme (<Term>PRS</Term> or{' '}
-          <Term>TPO</Term>) and membership number.
+          <Term>TPO</Term>) and membership number. A new agency still waiting for its number
+          can tick &ldquo;membership pending&rdquo; and add the number from the agent portal later.
         </>,
         <>Companies House number is optional here &mdash; it will not block sign-up either way.</>,
         <>Enter your email, a password, and confirm it, then create the account.</>,

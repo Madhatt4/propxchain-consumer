@@ -22,6 +22,7 @@ const EMPTY_BUSINESS_DETAILS: EstateAgentBusinessDetails = {
   branch: '',
   redressScheme: '',
   redressNumber: '',
+  redressPending: false,
   companyNumber: '',
   chData: null,
   verified: false,
@@ -31,7 +32,9 @@ function validateEstateAgentBusinessDetails(details: EstateAgentBusinessDetails)
   if (!details.agencyName.trim()) return 'Agency name is required';
   if (!details.branch.trim()) return 'Branch is required';
   if (!details.redressScheme) return 'Choose your redress scheme';
-  if (!details.redressNumber.trim()) return 'Membership number is required';
+  if (!details.redressPending && !details.redressNumber.trim()) {
+    return 'Membership number is required — or tick "membership pending" if you are waiting for it';
+  }
   if (details.chData?.isActive === false) {
     return 'This company is dissolved on Companies House — fix the number or clear the optional field';
   }
@@ -64,7 +67,10 @@ async function submitEstateAgentSignup(
       name: businessDetails.agencyName,
       branch: businessDetails.branch,
       redress_scheme: businessDetails.redressScheme as 'PRS' | 'TPO',
-      redress_number: businessDetails.redressNumber,
+      // A pending membership sends no number; the org is created with a null
+      // number, which is what flags it on the agent dashboard.
+      redress_number: businessDetails.redressPending ? null : businessDetails.redressNumber,
+      redress_pending: businessDetails.redressPending,
       companies_house_number: normalizeCompanyNumber(businessDetails.companyNumber) ?? null,
       companies_house_verified: businessDetails.verified,
       companies_house_data: businessDetails.chData,

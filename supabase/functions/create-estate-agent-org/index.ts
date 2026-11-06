@@ -19,10 +19,15 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
  *     name: string,
  *     branch: string,
  *     redress_scheme: 'PRS' | 'TPO',
- *     redress_number: string,
+ *     redress_number: string | null,
+ *     redress_pending?: boolean,
  *     companies_house_number?: string | null,
  *     companies_house_data?: CompaniesHouseCompany | null,
  *   }
+ *
+ * redress_number may be empty only when redress_pending is true: a new
+ * agency that has applied to a scheme but has no number yet. The org row is
+ * then stored with a null number, and the agent portal asks for it.
  *
  * Companies House is optional for estate agents (many independents are
  * sole traders / partnerships) — when companies_house_number is empty or
@@ -69,7 +74,8 @@ interface CreateOrgRequest {
   name?: string;
   branch?: string;
   redress_scheme?: string;
-  redress_number?: string;
+  redress_number?: string | null;
+  redress_pending?: boolean;
   companies_house_number?: string | null;
   companies_house_data?: CompaniesHouseCompany | null;
 }
@@ -170,6 +176,7 @@ serve(async (req) => {
   const clientBranch = parsed.branch?.trim() ?? '';
   const clientRedressScheme = parsed.redress_scheme?.trim() ?? '';
   const clientRedressNumber = parsed.redress_number?.trim() ?? '';
+  const redressPending = parsed.redress_pending === true;
   const rawNumber = parsed.companies_house_number?.trim() ?? '';
   const clientCh = parsed.companies_house_data ?? null;
 
@@ -200,7 +207,7 @@ serve(async (req) => {
   if (clientRedressNumber.length > 40) {
     return jsonResponse({ error: 'bad_request', message: 'redress_number exceeds 40 chars' }, 400);
   }
-  if (!clientRedressNumber) {
+  if (!clientRedressNumber && !redressPending) {
     return jsonResponse({ error: 'bad_request', message: 'redress_number required' }, 400);
   }
 
@@ -247,7 +254,7 @@ serve(async (req) => {
       p_name: clientName,
       p_branch: clientBranch,
       p_redress_scheme: clientRedressScheme,
-      p_redress_number: clientRedressNumber,
+      p_redress_number: clientRedressNumber || null,
       p_companies_house_number: normalizedNumber ?? null,
       p_companies_house_verified: verified,
       p_ch_snapshot: snapshot as unknown as Record<string, unknown> | null,

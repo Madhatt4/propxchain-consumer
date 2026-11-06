@@ -61,7 +61,9 @@ export interface PendingEstateAgentOrg {
   name: string;
   branch: string;
   redress_scheme: 'PRS' | 'TPO';
-  redress_number: string;
+  /** Null while the agency's scheme membership is still pending. */
+  redress_number: string | null;
+  redress_pending: boolean;
   companies_house_number: string | null;
   companies_house_verified: boolean;
   companies_house_data: CompaniesHouseCompany | null;

@@ -64,9 +64,37 @@ describe('<RegisterEstateAgentPage>', () => {
     expect(meta.role).toBe('agent');
     expect(meta[PENDING_ESTATE_AGENT_ORG_KEY]).toMatchObject({
       name: 'Acme Homes', branch: 'Sandy', redress_scheme: 'PRS', redress_number: 'PRS001',
-      companies_house_number: null,
+      redress_pending: false, companies_house_number: null,
     });
     expect(await screen.findByText(/check your email/i)).toBeInTheDocument();
+  });
+
+  it('should block continue when the number is empty and membership is not pending', () => {
+    renderPage();
+    fillRequiredBusinessFields();
+    fireEvent.change(screen.getByLabelText(/membership number/i), { target: { value: '' } });
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }));
+    expect(screen.getByText(/membership number is required/i)).toBeInTheDocument();
+  });
+
+  it('should let a pending agency continue without a number and send redress_number null', async () => {
+    signUp.mockResolvedValue({ error: null });
+    renderPage();
+    fillRequiredBusinessFields();
+    fireEvent.click(screen.getByLabelText(/membership pending/i));
+    expect(screen.queryByLabelText(/membership number/i)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }));
+
+    fireEvent.change(screen.getByLabelText(/^email/i), { target: { value: 'a@b.co' } });
+    fireEvent.change(screen.getByLabelText(/^password/i), { target: { value: 'longenough1' } });
+    fireEvent.change(screen.getByLabelText(/confirm password/i), { target: { value: 'longenough1' } });
+    fireEvent.click(screen.getByRole('button', { name: /create account/i }));
+
+    await waitFor(() => expect(signUp).toHaveBeenCalled());
+    const [, , meta] = signUp.mock.calls[0];
+    expect(meta[PENDING_ESTATE_AGENT_ORG_KEY]).toMatchObject({
+      redress_scheme: 'PRS', redress_number: null, redress_pending: true,
+    });
   });
 
   it('blocks continue and shows an error when the Companies House number is dissolved', async () => {
