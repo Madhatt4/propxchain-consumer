@@ -79,6 +79,8 @@ function renderStage(role: JourneyRole, overrides: Partial<StageProps> = {}): Re
 describe('CompletionStage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockLedger.available = true;
+    mockGetEvents.mockResolvedValue([]);
     mockScheduleExpiry.mockResolvedValue('ok');
   });
 
@@ -213,7 +215,7 @@ describe('CompletionStage', () => {
 });
 
 describe('CompletionStage completion statement', () => {
-  const SELLER_CONV = 'seller-conv-principal';
+  const SELLER_CONV = 'rrkah-fqaaa-aaaaa-aaaaq-cai';
   const FILE_HASH = 'd'.repeat(64);
   const statementEvent = {
     eventType: 'doc_registered',
@@ -265,6 +267,15 @@ describe('CompletionStage completion statement', () => {
     const [, fundsHash, completionHash] = mockInitiate.mock.calls[0] as [string, string, string];
     expect(completionHash).toBe(FILE_HASH);
     expect(fundsHash).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it("should refuse to confirm when a statement exists but the seller's conveyancer is unknown", async () => {
+    mockGetStatus.mockResolvedValue(makeStatus());
+    mockGetEvents.mockResolvedValue([statementEvent]);
+    renderStage('buyer', { sellerConveyancer: null });
+    fireEvent.click(await screen.findByRole('button', { name: 'Confirm funds sent' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent("the seller's conveyancer on this deal could not be confirmed");
+    expect(mockInitiate).not.toHaveBeenCalled();
   });
 
   it('should refuse to confirm when the audit trail cannot be read', async () => {

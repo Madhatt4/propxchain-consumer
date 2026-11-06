@@ -8,13 +8,19 @@ const { ledger, service } = vi.hoisted(() => {
 vi.mock('@/services/icp.service', () => ({ icpService: service }));
 
 import {
+  STATEMENT_UNATTRIBUTED,
+  STATEMENT_UNREADABLE,
   completionStatementFromEvents,
   completionStatementText,
   readCompletionStatement,
+  readStatementHashForCompletion,
   sellerConveyancerOf,
+  statementHashForCompletion,
+  statementUploaderOf,
 } from '../completionStatement';
 
-const SELLER_CONV = 'seller-conv-principal';
+const SELLER_CONV = 'rrkah-fqaaa-aaaaa-aaaaq-cai';
+const BUYER = 'ryjl3-tyaaa-aaaaa-aaaba-cai';
 const HASH_A = 'a'.repeat(64);
 const HASH_B = 'b'.repeat(64);
 // 6 Nov 2026 12:00 UTC in canister nanoseconds.
@@ -44,7 +50,7 @@ describe('completionStatementFromEvents', () => {
   });
 
   it('should ignore a statement registered by anyone other than the seller\'s conveyancer', () => {
-    expect(completionStatementFromEvents([docEvent('completion_statement', HASH_A, 'buyer-principal')], SELLER_CONV)).toBeNull();
+    expect(completionStatementFromEvents([docEvent('completion_statement', HASH_A, BUYER)], SELLER_CONV)).toBeNull();
   });
 
   it('should ignore other document types and malformed hashes', () => {
@@ -62,6 +68,53 @@ describe('completionStatementFromEvents', () => {
 
   it('should return null for a reply that is not a list', () => {
     expect(completionStatementFromEvents(undefined, SELLER_CONV)).toBeNull();
+  });
+});
+
+describe('statementUploaderOf', () => {
+  // Pinned to transaction_manager/audit_text.mo, docRegistered:
+  //   "Document " # safe(docType) # " registered by " # uploadedBy,
+  it('should read the principal from the exact canister sentence', () => {
+    expect(statementUploaderOf(`Document completion_statement registered by ${SELLER_CONV}`)).toBe(SELLER_CONV);
+  });
+
+  it.each([
+    ['other wording', `Completion statement uploaded by ${SELLER_CONV}`],
+    ['trailing text', `Document completion_statement registered by ${SELLER_CONV} (bot)`],
+    ['another document type', `Document tr1_transfer registered by ${SELLER_CONV}`],
+    ['a word, not a principal', 'Document completion_statement registered by someone'],
+    ['nothing', undefined],
+  ])('should read %s as unknown', (_label, details) => {
+    expect(statementUploaderOf(details)).toBeNull();
+  });
+
+  it('should find no statement when the sentence does not match (fail closed)', () => {
+    const event = { ...docEvent('completion_statement', HASH_A, SELLER_CONV), details: `Uploaded by ${SELLER_CONV}` };
+    expect(completionStatementFromEvents([event], SELLER_CONV)).toBeNull();
+  });
+});
+
+describe('statementHashForCompletion', () => {
+  it("should give the seller's conveyancer's statement hash", () => {
+    expect(statementHashForCompletion([docEvent('completion_statement', HASH_A, SELLER_CONV)], SELLER_CONV)).toBe(HASH_A);
+  });
+
+  it('should give null for the deal-facts fallback when there is no statement', () => {
+    expect(statementHashForCompletion([], SELLER_CONV)).toBeNull();
+    expect(statementHashForCompletion([], null)).toBeNull();
+  });
+
+  it("should refuse when a statement exists but the seller's conveyancer is unknown", () => {
+    expect(() => statementHashForCompletion([docEvent('completion_statement', HASH_A, SELLER_CONV)], null)).toThrow(STATEMENT_UNATTRIBUTED);
+  });
+
+  it('should refuse when the trail reply is not a list', () => {
+    expect(() => statementHashForCompletion(undefined, SELLER_CONV)).toThrow(STATEMENT_UNREADABLE);
+  });
+
+  it('should refuse when the trail read fails', async () => {
+    ledger.getEventsByTransaction.mockRejectedValueOnce(new Error('network'));
+    await expect(readStatementHashForCompletion('tx-1', SELLER_CONV)).rejects.toThrow(STATEMENT_UNREADABLE);
   });
 });
 
@@ -91,7 +144,7 @@ describe('readCompletionStatement', () => {
 
   it('should throw when the audit trail cannot be asked, rather than report no statement', async () => {
     service.ledgerManager = null;
-    await expect(readCompletionStatement('tx-1', SELLER_CONV)).rejects.toThrow('The audit trail is not available.');
+    await expect(readCompletionStatement('tx-1', SELLER_CONV)).rejects.toThrow(STATEMENT_UNREADABLE);
   });
 
   it('should not ask the trail when there is no seller\'s conveyancer', async () => {

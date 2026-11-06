@@ -6,7 +6,7 @@ import { icpService } from '@/services/icp.service';
 import { isCompletedStatus } from '@/services/completionStatus';
 import { documentShareService } from '@/services/documentShare.service';
 import { buildCompletionHashes } from '@/utils/completionHashes';
-import { readCompletionStatement } from '@/lib/completionStatement';
+import { CompletionStatementCheckError, STATEMENT_UNREADABLE, readStatementHashForCompletion } from '@/lib/completionStatement';
 import { logger } from '@/utils/logger';
 import type { CompletionStatus } from '@/services/completionStatus';
 import type { CompletionHashInput } from '@/utils/completionHashes';
@@ -65,12 +65,14 @@ export function useCompletionActions({
     void run(async (txId) => {
       // Read at confirm time: the statement may have arrived since the page
       // loaded, and the canister keeps the first statement hash it is given.
+      // Both sides must anchor the same hash, so an unreadable trail, or a
+      // statement whose seller's conveyancer cannot be determined, refuses.
       let statementHash: string | null;
       try {
-        statementHash = (await readCompletionStatement(txId, sellerConveyancer))?.fileHash ?? null;
+        statementHash = await readStatementHashForCompletion(txId, sellerConveyancer);
       } catch (e: unknown) {
-        logger.warn('[completion] could not read the completion statement', e);
-        return { success: false, message: 'Could not check for a completion statement. Please try again.' };
+        logger.warn('[completion] could not settle the completion statement hash', e);
+        return { success: false, message: e instanceof CompletionStatementCheckError ? e.message : STATEMENT_UNREADABLE };
       }
       const { fundsHash, completionHash } = await buildCompletionHashes(hashInput, new Date(), statementHash);
       return icpService.initiateCompletion(txId, fundsHash, completionHash);
