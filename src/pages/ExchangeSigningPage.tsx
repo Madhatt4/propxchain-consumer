@@ -6,6 +6,7 @@ import { generateSignedContractPDF } from '../utils/contractPdfGenerator';
 import { useThemeClasses } from '../hooks/useThemeClasses';
 import { logger } from '@/utils/logger';
 import { isWaitingForOtherSide } from '@/utils/twoSidedSteps';
+import { buildCompletionHashes } from '@/utils/completionHashes';
 import { documentShareService } from '@/services/documentShare.service';
 import { useAuthStore } from '../stores/authStore';
 import OverviewTab from '../components/exchange/OverviewTab';
@@ -273,14 +274,11 @@ const ExchangeSigningPage: React.FC = () => {
     setSigning(true);
     setError(null);
     try {
-      const encoder = new TextEncoder();
-      const fundsHash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',
-        encoder.encode(JSON.stringify({ transactionId: transaction.id, amount: transaction.financialTerms.purchasePrice, timestamp: new Date().toISOString() }))
-      ))).map(b => b.toString(16).padStart(2, '0')).join('');
-
-      const completionHash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',
-        encoder.encode(JSON.stringify({ transactionId: transaction.id, propertyAddress: transaction.propertyAddress, completionDate: new Date().toISOString(), purchasePrice: transaction.financialTerms.purchasePrice }))
-      ))).map(b => b.toString(16).padStart(2, '0')).join('');
+      const { fundsHash, completionHash } = await buildCompletionHashes({
+        transactionId: transaction.id,
+        propertyAddress: transaction.propertyAddress,
+        purchasePrice: transaction.financialTerms.purchasePrice,
+      });
 
       const result = await icpService.initiateCompletion(transaction.id, fundsHash, completionHash);
       if (result.success && isWaitingForOtherSide(result.message)) {

@@ -58,6 +58,12 @@ import { toDocumentStatusRows, type DocumentStatusRow } from '@/lib/documentStat
 import { onChainFileName } from '@/lib/onChainDocument';
 import { normalizeParty } from '../types/multiParty.types';
 import { CANISTER_IDS } from '@/config/canisterIds';
+import {
+  completionIdlFactory,
+  fromCandidCompletionStatus,
+  type CompletionActor,
+  type CompletionStatus,
+} from './completionStatus';
 
 // Canister IDs come from core-client (platform) and canister_ids.json (frontend).
 
@@ -1981,6 +1987,50 @@ class ICPService {
       } catch (error) {
         logger.error('❌ Error initiating completion');
         return { success: false, message: 'Failed to initiate completion' };
+      }
+    });
+  }
+
+  // transaction_manager's completion-confirmation methods, on the same agent
+  // as txActor. A separate actor because the published core-client IDL does
+  // not carry them yet (see completionStatus.ts).
+  private async completionActor(): Promise<CompletionActor> {
+    if (!this.transactionManagerActor) await this.initialize();
+    return Actor.createActor<CompletionActor>(completionIdlFactory, {
+      agent: this.requireActor(this.agent, 'agent'),
+      canisterId: CANISTER_IDS.transaction_manager,
+    });
+  }
+
+  /**
+   * How completion stands: each side's confirmation (by its conveyancer or
+   * client-confirmed), which sides have a verified conveyancer acting, and
+   * keys released. Null when the deal is not found or the caller is not a
+   * member. A failed call rejects, so "could not ask" never reads as "none".
+   */
+  async getCompletionStatus(transactionId: string): Promise<CompletionStatus | null> {
+    return wrapReadCall(async () => {
+      const actor = await this.completionActor();
+      const result = await actor.getCompletionStatus(transactionId);
+      return result.length === 1 ? fromCandidCompletionStatus(result[0]) : null;
+    });
+  }
+
+  /**
+   * Record keys released. The canister allows the seller's estate agent, or
+   * the seller when there is no agent, and only after completion; its #err
+   * text is returned as the message.
+   */
+  async confirmKeysReleased(transactionId: string): Promise<{ success: boolean; message: string }> {
+    return wrapWriteCall(async () => {
+      try {
+        const actor = await this.completionActor();
+        const result = await actor.confirmKeysReleased(transactionId);
+        if ('ok' in result) return { success: true, message: result.ok };
+        return { success: false, message: result.err };
+      } catch (error) {
+        logger.error('❌ Error confirming keys released', error);
+        return { success: false, message: 'Could not record keys released. Please try again.' };
       }
     });
   }
