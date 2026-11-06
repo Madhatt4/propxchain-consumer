@@ -3,6 +3,9 @@
 
 import type { CompletionSide, CompletionStatus, SideConfirmation } from '@/services/completionStatus';
 
+/** Shown instead of hashing a zero price or a blank address. */
+export const MISSING_DEAL_FACTS_TEXT = 'The agreed price or address is missing — ask your conveyancer or support.';
+
 function formatDate(at: Date): string {
   return at.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 }

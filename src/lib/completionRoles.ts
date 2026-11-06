@@ -16,6 +16,20 @@ import type { DealParties } from './dealAccess';
  */
 export type KeysRole = 'agent' | 'seller' | 'seller-with-agent' | 'none';
 
+/**
+ * True when the viewer is a buyer or seller party in their own right, not a
+ * delegate. Only a party (with no conveyancer acting) gets a money button;
+ * an estate agent or other delegate never confirms completion funds.
+ * `buyer === seller` is the canister's "no buyer yet" placeholder.
+ */
+export function isDealParty(parties: DealParties, principal: string | null | undefined): boolean {
+  if (!principal) return false;
+  const { seller, buyer, sellers = [], buyers = [] } = parties;
+  if (principal === seller || sellers.includes(principal)) return true;
+  const hasBuyer = Boolean(buyer) && buyer !== seller;
+  return (hasBuyer && principal === buyer) || buyers.includes(principal);
+}
+
 export function keysRoleOf(parties: DealParties, principal: string | null | undefined): KeysRole {
   if (!principal) return 'none';
   const sellerParties = new Set(

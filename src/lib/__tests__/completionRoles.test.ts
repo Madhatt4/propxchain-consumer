@@ -1,5 +1,27 @@
 import { describe, it, expect } from 'vitest';
-import { keysRoleOf } from '../completionRoles';
+import { isDealParty, keysRoleOf } from '../completionRoles';
+
+describe('isDealParty', () => {
+  const parties = {
+    seller: 'seller-1', buyer: 'buyer-1', sellers: ['seller-2'], buyers: ['buyer-2'],
+    delegates: [['seller-1', 'agent-1']] as Array<[string, string]>,
+  };
+
+  it('should count buyer and seller parties, including joint ones', () => {
+    for (const p of ['seller-1', 'seller-2', 'buyer-1', 'buyer-2']) expect(isDealParty(parties, p)).toBe(true);
+  });
+
+  it('should not count a delegate, a stranger or no principal', () => {
+    expect(isDealParty(parties, 'agent-1')).toBe(false);
+    expect(isDealParty(parties, 'stranger')).toBe(false);
+    expect(isDealParty(parties, null)).toBe(false);
+  });
+
+  it('should not treat the no-buyer placeholder as a buyer', () => {
+    expect(isDealParty({ seller: 'seller-1', buyer: 'seller-1' }, 'seller-1')).toBe(true);
+    expect(isDealParty({ seller: 'seller-1', buyer: 'seller-1' }, 'buyer-x')).toBe(false);
+  });
+});
 
 describe('keysRoleOf', () => {
   const base = { seller: 'seller-1', buyer: 'buyer-1', sellers: ['seller-2'] };

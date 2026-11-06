@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import type {
   ExchangeTransaction,
   EscrowConfirmation,
@@ -11,8 +12,6 @@ interface EscrowTabProps {
   lenderConfirmation: LenderConfirmation | null;
   onEscrowCodeSubmit: (role: string, code: string) => void;
   onDownloadContract: () => void;
-  onInitiateCompletion: () => void;
-  isSigning: boolean;
   themeClasses: Record<string, string>;
 }
 
@@ -22,8 +21,6 @@ const EscrowTab: React.FC<EscrowTabProps> = ({
   lenderConfirmation,
   onEscrowCodeSubmit,
   onDownloadContract,
-  onInitiateCompletion,
-  isSigning,
   themeClasses,
 }) => {
   const [codeInputs, setCodeInputs] = useState<Record<string, string>>({});
@@ -33,7 +30,6 @@ const EscrowTab: React.FC<EscrowTabProps> = ({
   const lenderOk = !transaction.financialTerms.hasMortgage || (lenderConfirmation?.isConfirmed ?? false);
   const allPaymentConfirmed = allEscrowConfirmed && lenderOk;
   const isExchanged = transaction.status === 'exchanged';
-  const canInitiateCompletion = isExchanged && allPaymentConfirmed && transaction.allPartiesSigned;
   const balance = transaction.financialTerms.purchasePrice - transaction.financialTerms.deposit;
 
   const handleSubmitCode = (role: string): void => {
@@ -175,34 +171,15 @@ const EscrowTab: React.FC<EscrowTabProps> = ({
         </div>
       )}
 
-      {/* Initiate Completion */}
-      {canInitiateCompletion && (
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-300 dark:border-blue-700 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-300 mb-3">Ready for Completion</h3>
-          <p className="text-blue-700 dark:text-blue-200 mb-4 text-sm">
-            All signatures collected and funds confirmed. Click below to initiate the blockchain
-            completion process, transferring ownership on-chain.
-          </p>
-          <button
-            onClick={onInitiateCompletion}
-            disabled={isSigning}
-            className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
-          >
-            {isSigning ? (
-              <>
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
-                <span>Initiating Completion...</span>
-              </>
-            ) : (
-              <>
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>Initiate Blockchain Completion</span>
-              </>
-            )}
-          </button>
-        </div>
+      {/* Completion is confirmed in one place only: the transaction's
+          Completion stage, where the canister decides who may confirm. */}
+      {isExchanged && (
+        <p className={`text-sm ${themeClasses.textSecondary}`}>
+          Completion is confirmed on the transaction&apos;s Completion stage.{' '}
+          <Link to={`/transaction/${transaction.id}/flow`} className="underline font-medium">
+            Go to Completion
+          </Link>
+        </p>
       )}
     </div>
   );
