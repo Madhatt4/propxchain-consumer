@@ -24,6 +24,7 @@ import { MortgageFundingStage } from '../components/transaction/flow/stages/Mort
 import { ReviewSellerPackStage } from '../components/transaction/flow/stages/ReviewSellerPackStage';
 import { ContractExchangeStage } from '../components/transaction/flow/stages/ContractExchangeStage';
 import { CompletionStage } from '../components/transaction/flow/stages/CompletionStage';
+import { isDealParty, keysRoleOf, type KeysRole } from '@/lib/completionRoles';
 import { SearchesPanel } from '../components/providers/SearchesPanel';
 import { ConveyancerQuotesStage } from '../components/transaction/flow/stages/ConveyancerQuotesStage';
 import { SurveyPanel } from '../components/providers/SurveyPanel';
@@ -202,6 +203,12 @@ interface StageComponentProps {
    *  page-level invalidationKey bumps and downstream cards (NextStepCard)
    *  refetch on-chain state. */
   onAfterEdit?: () => void;
+  /** Agreed price from the canister, anchored in the completion hashes. */
+  purchasePrice?: number;
+  /** The viewer is a buyer or seller party, not a delegate (Completion stage). */
+  viewerIsParty?: boolean;
+  /** Whether the viewer may confirm keys released (Completion stage). */
+  keysRole?: KeysRole;
 }
 
 function renderStageContent(stageId: string, props: StageComponentProps): ReactElement | null {
@@ -493,6 +500,7 @@ export default function TransactionFlowPage(): ReactElement {
     || supabaseUser?.email?.split('@')[0]
     || 'User';
   const currentUserEmail = supabaseUser?.email ?? '';
+  const principalId = useAuthStore((s) => s.principalId);
 
   const {
     transaction,
@@ -847,6 +855,11 @@ export default function TransactionFlowPage(): ReactElement {
                           onCancelEdit: (sid) => setStageEditing(sid, false),
                           onAfterEdit: bumpInvalidationKey,
                           viewerRole: userRole,
+                          // The canister's agreed price only: a listing price is
+                          // not the price completed at, so it is never hashed.
+                          purchasePrice: transaction?.amount,
+                          viewerIsParty: transaction ? isDealParty(transaction, principalId) : false,
+                          keysRole: transaction ? keysRoleOf(transaction, principalId) : 'none',
                         }))}
                     </StageCard>
                   </div>

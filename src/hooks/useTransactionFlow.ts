@@ -10,6 +10,7 @@ import type { StageConfig, JourneyRole, StageStatus } from '../types/stage.types
 import type { ServiceProvider, ProviderSelection } from '../types/provider.types';
 import type { TransactionFlowState } from '../types/flow.types';
 import { dealSideOf, principalsOf, type DealSide } from '@/lib/dealAccess';
+import { isCompletedStatus } from '@/services/completionStatus';
 
 interface TransactionData {
   id: string;
@@ -25,6 +26,22 @@ interface TransactionData {
   buyers?: string[];
   /** Live delegations as [party, delegate]: a delegate takes their client's side. */
   delegates?: Array<[string, string]>;
+  /** transaction_manager's TransactionStatus as text, e.g. "exchanged". */
+  status?: string;
+  /** Agreed price from the canister record. */
+  amount?: number;
+}
+
+// Completion stages are done only when transaction_manager says the deal has
+// completed. Flow-state flags for them (written by the old local checklist)
+// are ignored, and completeStage never writes one.
+const COMPLETION_STAGE_IDS: ReadonlySet<string> = new Set(['seller-7', 'buyer-7']);
+
+// Candid variant -> its key, e.g. { exchanged: null } -> "exchanged".
+function statusKeyOf(status: unknown): string | undefined {
+  if (typeof status === 'string') return status;
+  if (status && typeof status === 'object') return Object.keys(status)[0];
+  return undefined;
 }
 
 /** On-chain portion of flow state (shared across devices/users) */
@@ -99,7 +116,8 @@ const STAGE_TO_EVENT_TYPE: Record<string, string> = {
   'seller-3': 'seller_forms_completed',    // TA6/TA10/TA7 forms complete
   'seller-5': 'seller_conveyancer_confirmed', // Conveyancer appointed for seller side
   'seller-6': 'contract_exchanged',
-  'seller-7': 'blockchain_completed',
+  // seller-7 / buyer-7 have no entry: completion is recorded by the canister
+  // itself (initiate_blockchain_completion), never by a stage tick.
 
   // Buyer journey
   'buyer-1': 'buyer_onboarded',            // Buyer finished initial join flow
@@ -108,7 +126,6 @@ const STAGE_TO_EVENT_TYPE: Record<string, string> = {
   'buyer-4': 'sellers_pack_reviewed',      // Buyer reviewed seller pack
   'buyer-5': 'buyer_conveyancer_confirmed',// Conveyancer appointed for buyer side
   'buyer-6': 'contract_exchanged',
-  'buyer-7': 'blockchain_completed',
 };
 
 function stageIdToEventType(stageId: string): string {
@@ -279,14 +296,18 @@ function buildCompletedStageIds(
   for (const [stageId, selection] of Object.entries(
     flowState.providerSelections,
   )) {
-    if (selection.completedAt) completed.add(stageId);
+    if (selection.completedAt && !COMPLETION_STAGE_IDS.has(stageId)) completed.add(stageId);
   }
 
   // From localStorage completedStages (non-provider stages like List Property)
   if (flowState.completedStages) {
     for (const stageId of Object.keys(flowState.completedStages)) {
-      completed.add(stageId);
+      if (!COMPLETION_STAGE_IDS.has(stageId)) completed.add(stageId);
     }
+  }
+
+  if (isCompletedStatus(transaction?.status)) {
+    for (const stageId of COMPLETION_STAGE_IDS) completed.add(stageId);
   }
 
   // buyer-1 auto-completes when a real buyer is on chain. `buyer === seller`
@@ -428,6 +449,8 @@ export function useTransactionFlow(
             sellers: principalsOf(fullTx?.sellers),
             buyers: principalsOf(fullTx?.buyers),
             delegates,
+            status: statusKeyOf(fullTx?.status),
+            amount: fullTx?.amount != null ? Number(fullTx.amount) : undefined,
           };
           setTransaction(txData);
 
@@ -702,6 +725,16 @@ export function useTransactionFlow(
 
   const completeStage = useCallback(
     (stageId: string): void => {
+      if (COMPLETION_STAGE_IDS.has(stageId)) {
+        // CompletionStage calls this only after transaction_manager reports
+        // the deal completed. Reflect that status here so the stage shows as
+        // done without a reload; nothing is persisted and no audit event is
+        // logged, because the canister has already recorded completion.
+        setTransaction((prev) => (prev && !isCompletedStatus(prev.status)
+          ? { ...prev, status: 'blockchain_completed' }
+          : prev));
+        return;
+      }
       setChainPersistError(null);
       setFlowState((prev) => {
         const now = Date.now();

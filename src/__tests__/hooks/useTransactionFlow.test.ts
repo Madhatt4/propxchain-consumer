@@ -280,20 +280,50 @@ describe('useTransactionFlow', () => {
       milestones: [{ name: 'Property details confirmed', status: 'completed', order: 1 }],
       parties: [{ principal: 'buyer-principal', role: 'buyer' }],
     });
+    // Completion comes from the canister's transaction status.
     mockGetTransaction.mockResolvedValue({
       seller: { toString: () => 'test-principal' },
       buyer: { toString: () => 'buyer-principal' },
+      status: { blockchain_completed: null },
     });
-    // seller-7 persisted as complete via chain flow-state (no milestone exists
-    // for stages 5–7, so this is the path completion takes).
+    const { result } = renderHook(() => useTransactionFlow('tx-123'));
+    await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
+    const stage4 = result.current.stages.find(s => s.id === 'seller-4');
+    expect(stage4?.status).toBe('completed');
+    expect(result.current.stages.find(s => s.id === 'seller-7')?.status).toBe('completed');
+  });
+
+  it('should not complete seller-7 from a flow-state flag when the canister has not completed', async () => {
+    mockGetTransaction.mockResolvedValue({
+      seller: { toString: () => 'test-principal' },
+      buyer: { toString: () => 'buyer-principal' },
+      status: { exchanged: null },
+    });
     mockGetFlowState.mockResolvedValue({
       completedStages: { 'seller-7': Date.now() },
       providerSelections: {},
     });
     const { result } = renderHook(() => useTransactionFlow('tx-123'));
     await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
-    const stage4 = result.current.stages.find(s => s.id === 'seller-4');
-    expect(stage4?.status).toBe('completed');
+    expect(result.current.stages.find(s => s.id === 'seller-7')?.status).not.toBe('completed');
+  });
+
+  it('should mark seller-7 done on completeStage without writing flow state or an audit event', async () => {
+    mockGetTransaction.mockResolvedValue({
+      seller: { toString: () => 'test-principal' },
+      buyer: { toString: () => 'buyer-principal' },
+      status: { exchanged: null },
+    });
+    const { result } = renderHook(() => useTransactionFlow('tx-123'));
+    await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
+    mockSetFlowState.mockClear();
+    mockLogEvent.mockClear();
+
+    act(() => result.current.completeStage('seller-7'));
+
+    expect(result.current.stages.find(s => s.id === 'seller-7')?.status).toBe('completed');
+    expect(mockSetFlowState).not.toHaveBeenCalled();
+    expect(mockLogEvent).not.toHaveBeenCalled();
   });
 
   it('should resolve buyer-4 as watching while the seller has not completed the property info forms', async () => {

@@ -5,8 +5,6 @@ import SignatureModal from '../components/SignatureModal';
 import { generateSignedContractPDF } from '../utils/contractPdfGenerator';
 import { useThemeClasses } from '../hooks/useThemeClasses';
 import { logger } from '@/utils/logger';
-import { isWaitingForOtherSide } from '@/utils/twoSidedSteps';
-import { documentShareService } from '@/services/documentShare.service';
 import { useAuthStore } from '../stores/authStore';
 import OverviewTab from '../components/exchange/OverviewTab';
 import SellerTab from '../components/exchange/SellerTab';
@@ -268,44 +266,6 @@ const ExchangeSigningPage: React.FC = () => {
     }
   };
 
-  const handleInitiateCompletion = async (): Promise<void> => {
-    if (!transaction) return;
-    setSigning(true);
-    setError(null);
-    try {
-      const encoder = new TextEncoder();
-      const fundsHash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',
-        encoder.encode(JSON.stringify({ transactionId: transaction.id, amount: transaction.financialTerms.purchasePrice, timestamp: new Date().toISOString() }))
-      ))).map(b => b.toString(16).padStart(2, '0')).join('');
-
-      const completionHash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',
-        encoder.encode(JSON.stringify({ transactionId: transaction.id, propertyAddress: transaction.propertyAddress, completionDate: new Date().toISOString(), purchasePrice: transaction.financialTerms.purchasePrice }))
-      ))).map(b => b.toString(16).padStart(2, '0')).join('');
-
-      const result = await icpService.initiateCompletion(transaction.id, fundsHash, completionHash);
-      if (result.success && isWaitingForOtherSide(result.message)) {
-        // Completion needs the buyer side and the seller side (security scan
-        // H6); this confirmation is held until the other side confirms too.
-        alert(result.message);
-        loadTransactionData();
-      } else if (result.success) {
-        // Wallet spec decision 8: shared documents stop being readable 14 days after completion.
-        void documentShareService
-          .scheduleExpiryForDeal(String(transaction.id))
-          .catch((e: unknown) => logger.warn('[completion] could not schedule share expiry', e));
-        alert('Blockchain Completion Initiated!\n\n' + result.message);
-        loadTransactionData();
-      } else {
-        setError(result.message);
-      }
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to initiate completion';
-      setError(msg);
-    } finally {
-      setSigning(false);
-    }
-  };
-
   // Loading state
   if (loading) {
     return (
@@ -408,7 +368,7 @@ const ExchangeSigningPage: React.FC = () => {
           <LenderTab transaction={transaction} lenderConfirmation={lenderConfirmation} onConfirmationCodeSubmit={handleLenderCodeSubmit} themeClasses={themeClasses} />
         )}
         {activeTab === 'escrow' && (
-          <EscrowTab transaction={transaction} escrowConfirmations={escrowConfirmations} lenderConfirmation={lenderConfirmation} onEscrowCodeSubmit={handleEscrowCodeSubmit} onDownloadContract={handleDownloadContract} onInitiateCompletion={handleInitiateCompletion} isSigning={signing} themeClasses={themeClasses} />
+          <EscrowTab transaction={transaction} escrowConfirmations={escrowConfirmations} lenderConfirmation={lenderConfirmation} onEscrowCodeSubmit={handleEscrowCodeSubmit} onDownloadContract={handleDownloadContract} themeClasses={themeClasses} />
         )}
       </main>
 
