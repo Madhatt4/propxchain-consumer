@@ -13,7 +13,7 @@ interface ConveyancerQuoteRow {
   id: string;
   transaction_id: string;
   conveyancer_id: string;
-  conveyancer_panel?: { practice_name?: string } | null;
+  conveyancer_panel?: { practice_name?: string; pexa_enabled?: boolean | null } | null;
   status: ConveyancerQuote['status'];
   property_address: string;
   title_number?: string | null;
@@ -35,6 +35,7 @@ function mapQuoteRow(row: ConveyancerQuoteRow): ConveyancerQuote {
     transactionId: row.transaction_id,
     conveyancerId: row.conveyancer_id,
     conveyancerName: row.conveyancer_panel?.practice_name || 'Unknown',
+    isConveyancerPexaEnabled: row.conveyancer_panel?.pexa_enabled === true,
     status: row.status,
     propertyAddress: row.property_address,
     titleNumber: row.title_number ?? undefined,
@@ -168,7 +169,8 @@ async function requestQuotes(payload: RequestQuotesPayload): Promise<{ success: 
 async function getQuotesForTransaction(transactionId: string): Promise<ConveyancerQuote[]> {
   const { data, error } = await supabase
     .from('conveyancer_quotes')
-    .select('*, conveyancer_panel!inner(practice_name)')
+    // pexa_enabled needs migration 20261106120000 applied first, or this embed errors.
+    .select('*, conveyancer_panel!inner(practice_name, pexa_enabled)')
     .eq('transaction_id', transactionId)
     .order('created_at', { ascending: true });
 

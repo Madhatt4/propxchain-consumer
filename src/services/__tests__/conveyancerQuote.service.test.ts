@@ -142,6 +142,23 @@ describe('pure helpers', () => {
     const mapped = __testing__.mapQuoteRow(makeRow({ conveyancer_panel: null }) as never);
     expect(mapped.conveyancerName).toBe('Unknown');
   });
+
+  it('should map a PEXA-enabled firm to isConveyancerPexaEnabled true', () => {
+    const mapped = __testing__.mapQuoteRow(
+      makeRow({ conveyancer_panel: { practice_name: 'Test Firm LLP', pexa_enabled: true } }) as never,
+    );
+    expect(mapped.isConveyancerPexaEnabled).toBe(true);
+  });
+
+  it('should treat a missing pexa_enabled as not PEXA-enabled', () => {
+    expect(__testing__.mapQuoteRow(makeRow() as never).isConveyancerPexaEnabled).toBe(false);
+    expect(__testing__.mapQuoteRow(makeRow({ conveyancer_panel: null }) as never).isConveyancerPexaEnabled).toBe(false);
+  });
+
+  it('should leave the PEXA flag out of the hashed estimate JSON', () => {
+    const json = __testing__.canonicalQuoteJson(makeQuote({ isConveyancerPexaEnabled: true }));
+    expect(json).not.toContain('Pexa');
+  });
 });
 
 describe('auditQuoteRequested', () => {
@@ -261,6 +278,26 @@ describe('getQuotesForTransaction integration', () => {
 
     await conveyancerQuoteService.getQuotesForTransaction('tx-1');
     await vi.waitFor(() => expect(mockRecordQuoteReceived).toHaveBeenCalledTimes(2));
+  });
+
+  it('should read only the PEXA flag beyond the firm name and map it onto each estimate', async () => {
+    const select = vi.fn().mockReturnValue({
+      eq: vi.fn().mockReturnValue({
+        order: vi.fn().mockResolvedValue({
+          data: [
+            makeRow({ id: 'q-1', status: 'requested', conveyancer_panel: { practice_name: 'A LLP', pexa_enabled: true } }),
+            makeRow({ id: 'q-2', status: 'requested', conveyancer_panel: { practice_name: 'B LLP', pexa_enabled: false } }),
+          ],
+          error: null,
+        }),
+      }),
+    });
+    mockSupabaseFrom.mockReturnValueOnce({ select });
+
+    const quotes = await conveyancerQuoteService.getQuotesForTransaction('tx-1');
+
+    expect(select).toHaveBeenCalledWith('*, conveyancer_panel!inner(practice_name, pexa_enabled)');
+    expect(quotes.map((q) => q.isConveyancerPexaEnabled)).toEqual([true, false]);
   });
 });
 

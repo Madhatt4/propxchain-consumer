@@ -3,6 +3,7 @@ import { formatProviderPrice } from './types';
 import { StarRating } from './StarRating';
 import { TierBadge } from './TierBadge';
 import { SlaIndicator } from './SlaIndicator';
+import { PexaFact } from './PexaFact';
 
 interface ComparePanelProps {
   providerA: Provider;
@@ -120,8 +121,18 @@ export function ComparePanel({
         />
         <CompareField
           label="Regulation"
-          valueA={<span>{providerA.regulated}</span>}
-          valueB={<span>{providerB.regulated}</span>}
+          valueA={
+            <span>
+              {providerA.regulated}
+              <PexaFact isPexaEnabled={providerA.isPexaEnabled} className="mt-0.5 block" />
+            </span>
+          }
+          valueB={
+            <span>
+              {providerB.regulated}
+              <PexaFact isPexaEnabled={providerB.isPexaEnabled} className="mt-0.5 block" />
+            </span>
+          }
         />
         <CompareField
           label="SLA"

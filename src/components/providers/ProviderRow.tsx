@@ -10,6 +10,7 @@
 
 import type { PriceLabel, Provider } from './types';
 import { StarRating } from './StarRating';
+import { PexaFact } from './PexaFact';
 
 interface ProviderRowProps {
   provider: Provider;
@@ -92,6 +93,7 @@ export function ProviderRow({
             <span>{provider.distanceMiles} mi</span>
           )}
           <span className="truncate">{provider.regulated}</span>
+          <PexaFact isPexaEnabled={provider.isPexaEnabled} />
         </div>
       </div>
 
