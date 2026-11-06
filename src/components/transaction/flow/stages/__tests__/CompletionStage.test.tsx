@@ -9,11 +9,16 @@ import type { CompletionStatus } from '@/services/completionStatus';
 const mockGetStatus = vi.fn();
 const mockInitiate = vi.fn();
 const mockConfirmKeys = vi.fn();
+const mockGetEvents = vi.fn();
+const mockLedger = { available: true };
 vi.mock('@/services/icp.service', () => ({
   icpService: {
     getCompletionStatus: (...a: unknown[]) => mockGetStatus(...a),
     initiateCompletion: (...a: unknown[]) => mockInitiate(...a),
     confirmKeysReleased: (...a: unknown[]) => mockConfirmKeys(...a),
+    get ledgerManager() {
+      return mockLedger.available ? { getEventsByTransaction: (...a: unknown[]) => mockGetEvents(...a) } : null;
+    },
   },
 }));
 const mockScheduleExpiry = vi.fn();
@@ -204,6 +209,71 @@ describe('CompletionStage', () => {
     renderStage('buyer');
     expect(await screen.findByText(/Could not load completion from PropXchain/)).toBeInTheDocument();
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
+});
+
+describe('CompletionStage completion statement', () => {
+  const SELLER_CONV = 'seller-conv-principal';
+  const FILE_HASH = 'd'.repeat(64);
+  const statementEvent = {
+    eventType: 'doc_registered',
+    details: `Document completion_statement registered by ${SELLER_CONV}`,
+    metadata: [`docHash=${FILE_HASH};docType=completion_statement`],
+    timestamp: BigInt(AT.getTime()) * 1_000_000n,
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockLedger.available = true;
+    mockScheduleExpiry.mockResolvedValue('ok');
+  });
+
+  it('should show the client a read-only line when the seller\'s conveyancer has uploaded it', async () => {
+    mockGetStatus.mockResolvedValue(makeStatus({ conveyancerActing: { buyer: true, seller: true } }));
+    mockGetEvents.mockResolvedValue([statementEvent]);
+    renderStage('buyer', { sellerConveyancer: SELLER_CONV });
+    expect(await screen.findByTestId('completion-statement-line')).toHaveTextContent(
+      "Completion statement: uploaded by the seller's conveyancer on 6 November 2026. Its fingerprint is recorded on PropXchain.",
+    );
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+  });
+
+  it('should say it is not uploaded yet before completion', async () => {
+    mockGetStatus.mockResolvedValue(makeStatus());
+    mockGetEvents.mockResolvedValue([]);
+    renderStage('seller', { sellerConveyancer: SELLER_CONV });
+    expect(await screen.findByTestId('completion-statement-line')).toHaveTextContent(
+      "Completion statement: not uploaded yet by the seller's conveyancer.",
+    );
+  });
+
+  it('should show no statement line when no seller\'s conveyancer is on the deal', async () => {
+    mockGetStatus.mockResolvedValue(makeStatus());
+    renderStage('buyer');
+    await screen.findByRole('button', { name: 'Confirm funds sent' });
+    expect(screen.queryByTestId('completion-statement-line')).not.toBeInTheDocument();
+    expect(mockGetEvents).not.toHaveBeenCalled();
+  });
+
+  it('should anchor the uploaded statement\'s file hash when a client confirms', async () => {
+    mockGetStatus.mockResolvedValue(makeStatus());
+    mockGetEvents.mockResolvedValue([statementEvent]);
+    mockInitiate.mockResolvedValue({ success: true, message: 'Waiting for the seller side.' });
+    renderStage('buyer', { sellerConveyancer: SELLER_CONV });
+    fireEvent.click(await screen.findByRole('button', { name: 'Confirm funds sent' }));
+    await waitFor(() => expect(mockInitiate).toHaveBeenCalledTimes(1));
+    const [, fundsHash, completionHash] = mockInitiate.mock.calls[0] as [string, string, string];
+    expect(completionHash).toBe(FILE_HASH);
+    expect(fundsHash).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it('should refuse to confirm when the audit trail cannot be read', async () => {
+    mockGetStatus.mockResolvedValue(makeStatus());
+    mockLedger.available = false;
+    renderStage('buyer', { sellerConveyancer: SELLER_CONV });
+    fireEvent.click(await screen.findByRole('button', { name: 'Confirm funds sent' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Could not check for a completion statement. Please try again.');
+    expect(mockInitiate).not.toHaveBeenCalled();
   });
 });
 

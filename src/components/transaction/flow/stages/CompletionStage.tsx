@@ -4,8 +4,10 @@
 import { useEffect, useRef } from 'react';
 import { isCompletedStatus } from '@/services/completionStatus';
 import { completionHashInputOf } from '@/utils/completionHashes';
+import { completionStatementText } from '@/lib/completionStatement';
 import { useCompletionStatus } from './completion/useCompletionStatus';
 import { useCompletionActions } from './completion/useCompletionActions';
+import { useCompletionStatement } from './completion/useCompletionStatement';
 import { CompletionRows } from './completion/CompletionRows';
 import { CompletionCertificate } from './completion/CompletionCertificate';
 import type { ReactNode } from 'react';
@@ -26,6 +28,8 @@ interface StageProps {
   /** Agreed price from the canister, anchored in the completion hashes. */
   purchasePrice?: number;
   keysRole?: KeysRole;
+  /** The seller's conveyancer on the deal, who uploads the completion statement. */
+  sellerConveyancer?: string | null;
 }
 
 const INTRO =
@@ -59,12 +63,16 @@ function ErrorLine({ message }: { message: string }): ReactNode {
  */
 export function CompletionStage({
   stage, onComplete, journeyRole = 'seller', viewerRole, viewerIsParty = false,
-  transactionId, propertyAddress, purchasePrice, keysRole = 'none',
+  transactionId, propertyAddress, purchasePrice, keysRole = 'none', sellerConveyancer = null,
 }: StageProps): ReactNode {
   const { status, loadState, reload } = useCompletionStatus(transactionId);
   const completed = isCompletedStatus(status?.status);
   const hashInput = completionHashInputOf(transactionId, propertyAddress, purchasePrice);
-  const actions = useCompletionActions({ transactionId, hashInput, wasCompleted: completed, reload });
+  const actions = useCompletionActions({ transactionId, hashInput, sellerConveyancer, wasCompleted: completed, reload });
+  const statement = useCompletionStatement(transactionId, sellerConveyancer);
+  // The file stays with the firm (hash-only storage), so there is nothing to
+  // open here; the line says it exists and that its fingerprint is recorded.
+  const showStatement = statement !== undefined && Boolean(sellerConveyancer) && (statement !== null || !completed);
   const reported = useRef(false);
 
   useEffect(() => {
@@ -84,6 +92,11 @@ export function CompletionStage({
       {completed
         ? <CompletionCertificate journeyRole={journeyRole} transactionId={transactionId} status={status} />
         : <p className="text-sm text-gray-600 dark:text-slate-300">{INTRO}</p>}
+      {showStatement && (
+        <p className="text-sm text-gray-600 dark:text-slate-300" data-testid="completion-statement-line">
+          {completionStatementText(statement ?? null)}
+        </p>
+      )}
       {actions.error && <ErrorLine message={actions.error} />}
       <CompletionRows
         status={status}

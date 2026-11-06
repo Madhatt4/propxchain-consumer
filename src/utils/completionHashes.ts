@@ -45,9 +45,15 @@ async function sha256Hex(value: unknown): Promise<string> {
     .join('');
 }
 
+/**
+ * `statementHash` is the SHA-256 of the completion statement file the
+ * seller's conveyancer uploaded. When there is one it is the anchor; the
+ * hash of the deal facts is only the fallback for a deal with no statement.
+ */
 export async function buildCompletionHashes(
   input: CompletionHashInput,
   now: Date = new Date(),
+  statementHash: string | null = null,
 ): Promise<CompletionHashes> {
   const at = now.toISOString();
   const fundsHash = await sha256Hex({
@@ -55,6 +61,7 @@ export async function buildCompletionHashes(
     amount: input.purchasePrice,
     timestamp: at,
   });
+  if (statementHash) return { fundsHash, completionHash: statementHash };
   const completionHash = await sha256Hex({
     transactionId: input.transactionId,
     propertyAddress: input.propertyAddress,

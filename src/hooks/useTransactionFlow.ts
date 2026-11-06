@@ -11,6 +11,7 @@ import type { ServiceProvider, ProviderSelection } from '../types/provider.types
 import type { TransactionFlowState } from '../types/flow.types';
 import { dealSideOf, principalsOf, type DealSide } from '@/lib/dealAccess';
 import { isCompletedStatus } from '@/services/completionStatus';
+import { sellerConveyancerOf } from '@/lib/completionStatement';
 
 interface TransactionData {
   id: string;
@@ -30,6 +31,8 @@ interface TransactionData {
   status?: string;
   /** Agreed price from the canister record. */
   amount?: number;
+  /** The seller's conveyancer from the solicitor slot, who uploads the completion statement. */
+  sellerConveyancer?: string | null;
 }
 
 // Completion stages are done only when transaction_manager says the deal has
@@ -451,6 +454,7 @@ export function useTransactionFlow(
             delegates,
             status: statusKeyOf(fullTx?.status),
             amount: fullTx?.amount != null ? Number(fullTx.amount) : undefined,
+            sellerConveyancer: sellerConveyancerOf(fullTx?.sellerSolicitor),
           };
           setTransaction(txData);
 
