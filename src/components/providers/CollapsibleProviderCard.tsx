@@ -10,11 +10,6 @@ interface CollapsibleProviderCardProps {
   defaultExpanded?: boolean;
   /** Optional PropXchain-style prefix shown above the provider name. */
   propxchainBranded?: boolean;
-  /**
-   * Keep the teal "recommended" border even when collapsed, so a featured
-   * provider stays visually prominent in its small state.
-   */
-  highlighted?: boolean;
   children: ReactNode;
 }
 
@@ -31,7 +26,6 @@ export default function CollapsibleProviderCard({
   badge,
   defaultExpanded = false,
   propxchainBranded = false,
-  highlighted = false,
   children,
 }: CollapsibleProviderCardProps): React.ReactElement {
   const [expanded, setExpanded] = useState(defaultExpanded);
@@ -40,7 +34,7 @@ export default function CollapsibleProviderCard({
     <div
       className={[
         'overflow-hidden rounded-xl border bg-white shadow-sm transition-colors dark:bg-[#0F1729]',
-        expanded || highlighted
+        expanded
           ? 'border-[#0D9488]/40 dark:border-[#14B8A6]/30'
           : 'border-gray-200 hover:border-gray-300 dark:border-[#1E2A3A] dark:hover:border-[#2A3A52]',
       ].join(' ')}
