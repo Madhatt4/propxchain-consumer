@@ -270,7 +270,7 @@ describe('fetchAuditReport', () => {
 
     expect(mockEnsureDocumentStorage).toHaveBeenCalledTimes(1);
     expect(mockEnsureDocumentStorage.mock.invocationCallOrder[0])
-      .toBeLessThan(mockFetchTransactionDocuments.mock.invocationCallOrder.at(-1) ?? 0);
+      .toBeLessThan(Math.max(...mockFetchTransactionDocuments.mock.invocationCallOrder));
   });
 
   it('should still build the report when the actors cannot be prepared', async () => {
