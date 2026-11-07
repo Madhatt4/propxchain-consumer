@@ -196,7 +196,7 @@ export default function QuoteFormPage(): JSX.Element {
       <div className="min-h-screen bg-gray-50 dark:bg-[#0B1120] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-teal-600 mx-auto mb-3" />
-          <p className="text-gray-500 dark:text-[#94A3B8] text-sm">Loading quote request…</p>
+          <p className="text-gray-500 dark:text-[#94A3B8] text-sm">Loading estimate request…</p>
         </div>
       </div>
     );
@@ -206,8 +206,8 @@ export default function QuoteFormPage(): JSX.Element {
     return (
       <StatusCard
         icon={<ClockIcon />}
-        title="Quote link has expired"
-        body="This quote request is no longer accepting responses. Please contact PropXchain if you believe this is an error."
+        title="Estimate link has expired"
+        body="This estimate request is no longer accepting responses. Please contact PropXchain if you believe this is an error."
       />
     );
   }
@@ -216,8 +216,8 @@ export default function QuoteFormPage(): JSX.Element {
     return (
       <StatusCard
         icon={<CheckCircleIcon />}
-        title="Quote already submitted"
-        body="A quote has already been received for this request. Thank you for your response."
+        title="Estimate already submitted"
+        body="An estimate has already been received for this request. Thank you for your response."
       />
     );
   }
@@ -226,7 +226,7 @@ export default function QuoteFormPage(): JSX.Element {
     return (
       <StatusCard
         icon={<XCircleIcon />}
-        title="Invalid quote link"
+        title="Invalid estimate link"
         body="This link is not valid. Please check the URL or contact PropXchain for a new invitation."
       />
     );
@@ -237,7 +237,7 @@ export default function QuoteFormPage(): JSX.Element {
       <StatusCard
         icon={<XCircleIcon />}
         title="Something went wrong"
-        body="We couldn't load this quote request. Please try refreshing the page or contact PropXchain for assistance."
+        body="We couldn't load this estimate request. Please try refreshing the page or contact PropXchain for assistance."
       />
     );
   }
@@ -247,10 +247,10 @@ export default function QuoteFormPage(): JSX.Element {
       <div className="min-h-screen bg-gray-50 dark:bg-[#0B1120] flex items-center justify-center p-4">
         <div className="bg-white dark:bg-[#0F1729] border border-gray-200 dark:border-[#1E293B] rounded-2xl shadow-sm p-10 max-w-md w-full text-center">
           <CheckCircleIcon />
-          <h1 className="text-xl font-semibold text-gray-800 dark:text-[#E5E7EB] mb-2">Quote submitted</h1>
+          <h1 className="text-xl font-semibold text-gray-800 dark:text-[#E5E7EB] mb-2">Estimate submitted</h1>
           <p className="text-gray-500 dark:text-[#94A3B8] text-sm leading-relaxed">
-            Thank you. Your quote has been received and will be reviewed by the client's solicitor.
-            We'll be in touch if your quote is selected.
+            Thank you. Your estimate has been received and passed to the client to compare.
+            We'll be in touch if they accept it.
           </p>
         </div>
       </div>
@@ -270,10 +270,10 @@ export default function QuoteFormPage(): JSX.Element {
       <div className="max-w-2xl mx-auto mb-8 text-center">
         <p className="text-teal-600 text-xs font-semibold tracking-widest uppercase mb-2">PropXchain</p>
         <h1 className="text-2xl font-serif text-gray-900 dark:text-[#F1F5F9]" style={{ fontFamily: 'Georgia, serif' }}>
-          Conveyancing Quote Request
+          Conveyancing Estimate Request
         </h1>
         <p className="text-gray-500 dark:text-[#94A3B8] text-sm mt-2">
-          Please review the property details below and submit your quote.
+          Please review the property details below and submit your estimate.
         </p>
       </div>
 
@@ -318,7 +318,7 @@ export default function QuoteFormPage(): JSX.Element {
         {/* Quote form card */}
         <form onSubmit={handleSubmit} noValidate>
           <div className="bg-white dark:bg-[#0F1729] border border-gray-200 dark:border-[#1E293B] rounded-xl p-6">
-            <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-5">Your Quote</h2>
+            <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-5">Your Estimate</h2>
 
             <div className="space-y-5">
               {/* Legal Fee */}
@@ -416,7 +416,7 @@ export default function QuoteFormPage(): JSX.Element {
                   value={form.conditions}
                   onChange={e => handleFieldChange('conditions', e.target.value)}
                   className="w-full px-4 py-2.5 text-sm border border-gray-300 dark:border-[#334155] rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-y"
-                  placeholder="Any conditions, assumptions, or additional notes about your quote…"
+                  placeholder="Any conditions, assumptions, or additional notes about your estimate…"
                 />
               </div>
             </div>
@@ -456,13 +456,13 @@ export default function QuoteFormPage(): JSX.Element {
               disabled={isSubmitting}
               className="mt-6 w-full py-3 px-6 bg-teal-600 hover:bg-teal-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
             >
-              {isSubmitting ? 'Submitting…' : 'Submit Quote'}
+              {isSubmitting ? 'Submitting…' : 'Submit Estimate'}
             </button>
           </div>
         </form>
 
         <p className="text-center text-xs text-gray-400 pb-8">
-          This quote request was sent via PropXchain — the digital property conveyancing platform.
+          This estimate request was sent via PropXchain — the digital property conveyancing platform.
         </p>
       </div>
     </div>
