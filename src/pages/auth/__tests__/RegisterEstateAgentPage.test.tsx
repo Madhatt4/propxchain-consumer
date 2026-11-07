@@ -150,4 +150,27 @@ describe('<RegisterEstateAgentPage>', () => {
       companies_house_number: 'SC123456',
     });
   });
+  it('stores a seller invitation from ?invite= and says what happens to the sale after verification', async () => {
+    localStorage.clear();
+    const code = 'b'.repeat(64);
+    signUp.mockResolvedValue({ error: null });
+    render(<MemoryRouter initialEntries={[`/register/estate-agent?invite=${code}`]}><RegisterEstateAgentPage /></MemoryRouter>);
+    expect(screen.getByTestId('agent-invite-note')).toHaveTextContent('the sale is added to your listings');
+    expect(localStorage.getItem('propxchain_pending_invite_url')).toBe(`/agent/join/${code}`);
+
+    fillRequiredBusinessFields();
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }));
+    fireEvent.change(screen.getByLabelText(/^email/i), { target: { value: 'a@b.co' } });
+    fireEvent.change(screen.getByLabelText(/^password/i), { target: { value: 'longenough1' } });
+    fireEvent.change(screen.getByLabelText(/confirm password/i), { target: { value: 'longenough1' } });
+    fireEvent.click(screen.getByRole('button', { name: /create account/i }));
+    expect(await screen.findByTestId('agent-invite-next')).toHaveTextContent('added to your listings');
+  });
+
+  it('ignores a malformed invite parameter', () => {
+    localStorage.clear();
+    render(<MemoryRouter initialEntries={['/register/estate-agent?invite=/dashboard']}><RegisterEstateAgentPage /></MemoryRouter>);
+    expect(screen.queryByTestId('agent-invite-note')).not.toBeInTheDocument();
+    expect(localStorage.getItem('propxchain_pending_invite_url')).toBeNull();
+  });
 });

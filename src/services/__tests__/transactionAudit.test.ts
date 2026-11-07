@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type {
   AuditEvent,
 } from '../transactionAudit';
-import { extractParties, fetchAuditReport, formatTransactionStatus, groupEventsIntoMilestones } from '../transactionAudit';
+import { describeEventDetails, extractParties, fetchAuditReport, formatTransactionStatus, groupEventsIntoMilestones } from '../transactionAudit';
 import { icpService } from '../icp.service';
 
 // ============================================
@@ -462,6 +462,16 @@ describe('fetchAuditReport', () => {
 // ============================================
 
 describe('groupEventsIntoMilestones', () => {
+  it('should put an estate agent joining under its own heading without making it where the deal is', () => {
+    const milestones = groupEventsIntoMilestones([
+      makeEvent({ eventId: 1, eventType: 'transaction_created' }),
+      makeEvent({ eventId: 2, eventType: 'delegation_granted', details: 'Estate agent added by the seller' }),
+    ]);
+    expect(milestones.map(m => m.name)).toEqual(['Property Listed', 'Estate Agent']);
+    expect(milestones.find(m => m.name === 'Estate Agent')?.status).toBe('completed');
+    expect(milestones.find(m => m.name === 'Property Listed')?.status).toBe('active');
+  });
+
   it('should group events into correct milestone categories', () => {
     const events: AuditEvent[] = [
       makeEvent({ eventId: 1, eventType: 'transaction_created' }),
@@ -769,5 +779,18 @@ describe('seller handover milestone', () => {
     });
     const milestones = groupEventsIntoMilestones([ev('seller_handed_over', 2), ev('transaction_created', 1)] as never);
     expect(milestones.map(m => m.name)).toEqual(['Property Listed', 'Seller Joined']);
+  });
+});
+
+describe('describeEventDetails', () => {
+  it('should say in words who added or removed the estate agent', () => {
+    expect(describeEventDetails('delegation_granted', 'seller|granted')).toBe('Estate agent added by the seller');
+    expect(describeEventDetails('delegation_revoked', 'seller|revoked')).toBe('Estate agent removed by the seller');
+    expect(describeEventDetails('delegation_granted', 'buyer|granted')).toBe('Estate agent added by the buyer');
+  });
+
+  it('should leave every other event and any unknown delegation detail as recorded', () => {
+    expect(describeEventDetails('document_uploaded', 'seller|granted')).toBe('seller|granted');
+    expect(describeEventDetails('delegation_granted', 'other')).toBe('other');
   });
 });

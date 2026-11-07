@@ -40,4 +40,19 @@ describe('pendingInviteUrl', () => {
     storePendingInviteUrl('/dashboard');
     expect(consumePendingInviteUrl()).toBeNull();
   });
+
+  it('should store an estate agent invitation path with a 64-hex code', () => {
+    const path = `/agent/join/${'a'.repeat(64)}`;
+    storePendingInviteUrl(path);
+    expect(consumePendingInviteUrl()).toBe(path);
+  });
+
+  it('should refuse an agent path with a malformed code or anything after it', () => {
+    storePendingInviteUrl('/agent/join/not-a-code');
+    expect(consumePendingInviteUrl()).toBeNull();
+    storePendingInviteUrl(`/agent/join/${'a'.repeat(64)}/../../dashboard`);
+    expect(consumePendingInviteUrl()).toBeNull();
+    storePendingInviteUrl(`/agent/join/${'a'.repeat(64)}?next=https://evil.example`);
+    expect(consumePendingInviteUrl()).toBeNull();
+  });
 });

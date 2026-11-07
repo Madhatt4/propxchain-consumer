@@ -36,6 +36,7 @@ import { StallLine } from '../components/transaction/flow/StallLine';
 import { OfferExpiryLine } from '../components/transaction/flow/OfferExpiryLine';
 import { SearchAgeLine } from '../components/transaction/flow/SearchAgeLine';
 import { MandateBanners } from '../components/transaction/flow/MandateBanners';
+import { AddEstateAgentPanel } from '../components/transaction/flow/AddEstateAgentPanel';
 import { TOPBAR_ACTION_SLOT_ID } from '../components/navigation/AppTopBar';
 import { flashNextStepTarget } from '../utils/nextStepHighlight';
 import MoveNarratorBanner from '../components/transaction/MoveNarratorBanner';
@@ -760,6 +761,15 @@ export default function TransactionFlowPage(): ReactElement {
 
         {/* Agent CRM: whom the viewer acts for, or who acts for the viewer, with the withdrawal. */}
         {id && <MandateBanners transactionId={id} myRole={userRole} className="mb-4" />}
+        {/* The seller adds their estate agent; once accepted the banner above takes over. */}
+        {id && (
+          <AddEstateAgentPanel
+            transactionId={id}
+            myRole={userRole}
+            propertyAddress={propertyAddress !== 'Unknown property' ? propertyAddress : undefined}
+            className="mb-4"
+          />
+        )}
 
         {/* Onboarding banner */}
         <div className="mb-4">

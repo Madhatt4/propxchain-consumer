@@ -14,14 +14,22 @@
 
 export const PENDING_INVITE_URL_KEY = 'propxchain_pending_invite_url';
 
+/** A seller's invitation to their estate agent: exactly one 64-hex code, nothing after it. */
+const AGENT_JOIN_PATH = /^\/agent\/join\/[0-9a-f]{64}$/;
+
 /**
  * Store a path + search string to return to after login. Only `/join...`
- * paths are accepted — this value is later fed straight into `navigate()`,
- * so anything else (an absolute URL, an unrelated in-app path) is rejected
- * to prevent it being used as an open-redirect vector via localStorage.
+ * paths and the estate agent invitation path `/agent/join/<code>` are
+ * accepted — this value is later fed straight into `navigate()`, so anything
+ * else (an absolute URL, an unrelated in-app path) is rejected to prevent it
+ * being used as an open-redirect vector via localStorage.
+ *
+ * The agent path is what carries a seller's invitation through estate agent
+ * sign-up and email verification: the first sign-in afterwards lands back on
+ * the invitation, which then adds the sale to the agent's listings.
  */
 export function storePendingInviteUrl(pathWithSearch: string): void {
-  if (!pathWithSearch.startsWith('/join')) return;
+  if (!pathWithSearch.startsWith('/join') && !AGENT_JOIN_PATH.test(pathWithSearch)) return;
   localStorage.setItem(PENDING_INVITE_URL_KEY, pathWithSearch);
 }
 

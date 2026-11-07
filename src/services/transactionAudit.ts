@@ -205,6 +205,9 @@ const MILESTONE_MAP: Record<string, string> = {
   transaction_created: 'Property Listed',
   // An agent-led deal's invited seller signed in and took the seller slot.
   seller_handed_over: 'Seller Joined',
+  // A seller or buyer lets an estate agency act for them (or withdraws it).
+  delegation_granted: 'Estate Agent',
+  delegation_revoked: 'Estate Agent',
   // Stage-1 title pull — deliberately NOT the terminal 'Land Registry'
   // milestone (that's the AP1 submission at completion); mapping it there
   // would render a freshly-listed transaction as journey-complete.
@@ -247,7 +250,7 @@ const MILESTONE_MAP: Record<string, string> = {
 };
 
 const MILESTONE_ORDER = [
-  'Property Listed', 'Seller Joined', 'Title Register Fetched', 'Searches Ordered', 'Searches Signed Off', 'Seller Forms Complete',
+  'Property Listed', 'Seller Joined', 'Estate Agent', 'Title Register Fetched', 'Searches Ordered', 'Searches Signed Off', 'Seller Forms Complete',
   'Buyer Joined', 'Buyer Onboarded', 'Mortgage Confirmed',
   'Survey Complete', 'Seller Pack Reviewed',
   'Quotes Requested', 'Quotes Received', 'Providers Selected',
@@ -259,6 +262,26 @@ const MILESTONE_ORDER = [
 // Reaching either of these means the transaction has finished its journey, so
 // the furthest-progressed milestone is itself "completed" rather than "active".
 const TERMINAL_MILESTONES = new Set(['Completion', 'Land Registry']);
+// Recorded and shown, but never where the deal "is": 'Other' is the catch-all
+// and an agent joining or leaving is not a step of the sale itself.
+const NON_PROGRESS_MILESTONES = new Set(['Other', 'Estate Agent']);
+
+const DELEGATION_DETAILS: Record<string, string> = {
+  'seller|granted': 'Estate agent added by the seller',
+  'seller|revoked': 'Estate agent removed by the seller',
+  'buyer|granted': 'Estate agent added by the buyer',
+  'buyer|revoked': 'Estate agent removed by the buyer',
+};
+
+/**
+ * The ledger records a delegation as `role|kind` (message_manager
+ * delegation_events.mo): roles only, no names. Say it in words on the audit
+ * trail; every other event keeps its own details.
+ */
+export function describeEventDetails(eventType: string, details: string): string {
+  if (eventType !== 'delegation_granted' && eventType !== 'delegation_revoked') return details;
+  return DELEGATION_DETAILS[details] ?? details;
+}
 
 export function groupEventsIntoMilestones(events: AuditEvent[]): Milestone[] {
   const grouped = new Map<string, AuditEvent[]>();
@@ -277,7 +300,7 @@ export function groupEventsIntoMilestones(events: AuditEvent[]): Milestone[] {
   // milestone with events: everything before it is done, that frontier is
   // "active". If a terminal milestone was reached the whole journey is complete.
   // 'Other' is a catch-all for un-mapped/anomaly events — never the frontier.
-  const progressMilestones = present.filter(name => name !== 'Other');
+  const progressMilestones = present.filter(name => !NON_PROGRESS_MILESTONES.has(name));
   const reachedTerminal = progressMilestones.some(name => TERMINAL_MILESTONES.has(name));
   const frontier = reachedTerminal
     ? null
@@ -520,7 +543,7 @@ export async function fetchAuditReport(transactionId: string): Promise<AuditRepo
       eventType: String(e.eventType),
       timestamp: Number(e.timestamp),
       caller: String(e.caller),
-      details: sanitizeText(String(e.details)),
+      details: describeEventDetails(String(e.eventType), sanitizeText(String(e.details))),
       metadata: e.metadata ? sanitizeText(String(e.metadata)) : null,
     }));
   } else if (eventsResult.status === 'rejected') {
