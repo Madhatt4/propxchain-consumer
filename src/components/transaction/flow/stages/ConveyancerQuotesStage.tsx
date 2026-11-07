@@ -21,8 +21,23 @@ import type { ConveyancerQuote } from '../../../providers/types';
 import type { PropertyListing } from '../../../../types/listing.types';
 import { getRightmoveData, getTitleNumber, syncListingFromChain } from '../../../../utils/rightmoveStorage';
 import { seedTransactionFactsFromListing, tenureLabel } from '../../../../services/transactionFacts.service';
+import { quoteTransactionTypeFor, sideOfQuoteType } from './conveyancerQuoteSide';
+import type { QuoteSideBlock } from './conveyancerQuoteSide';
+import type { DealSide } from '../../../../lib/dealAccess';
+import type { JourneyRole } from '../../../../types/stage.types';
+
+const SIDE_BLOCK_COPY: Record<QuoteSideBlock, string> = {
+  side_unknown:
+    "We couldn't confirm whether you're the buyer or the seller on this deal, so you can't request estimates here yet. Reload the page, and contact support if this keeps happening.",
+  other_side:
+    "This stage is for the other side's conveyancer. You can request estimates for your own conveyancer at your own conveyancer stage.",
+};
 
 interface ConveyancerQuotesStageProps {
+  /** Whose conveyancer this stage instructs: seller-5 is 'seller', buyer-5 'buyer'. */
+  stageSide: JourneyRole;
+  /** The viewer's real side on the deal ('other' when it can't be established). */
+  viewerSide: DealSide | undefined;
   transactionId: string;
   postcode: string;
   partyName: string;
@@ -37,6 +52,8 @@ interface ConveyancerQuotesStageProps {
 }
 
 export function ConveyancerQuotesStage({
+  stageSide,
+  viewerSide,
   transactionId,
   postcode,
   partyName,
@@ -56,14 +73,18 @@ export function ConveyancerQuotesStage({
   // property type and tenure without the party answering them again.
   const [listing, setListing] = useState<PropertyListing | null>(() => (transactionId ? getRightmoveData(transactionId) : null));
 
+  const side = quoteTransactionTypeFor(stageSide, viewerSide);
+
   const loadQuotes = useCallback(async (): Promise<void> => {
     if (!transactionId) {
       setQuotes([]);
       return;
     }
     const loaded = await conveyancerQuoteService.getQuotesForTransaction(transactionId);
-    setQuotes(loaded);
-  }, [transactionId]);
+    // RLS returns every quote the viewer requested on the deal; this stage
+    // shows only the ones for its own side.
+    setQuotes(loaded.filter((q) => sideOfQuoteType(q.transactionType) === stageSide));
+  }, [transactionId, stageSide]);
 
   useEffect(() => {
     void loadQuotes();
@@ -103,12 +124,20 @@ export function ConveyancerQuotesStage({
     );
   }
 
-  if (quotes.length === 0 || showPanel) {
+  if ((quotes.length === 0 || showPanel) && !side.ok) {
+    return (
+      <p role="status" className="py-4 text-sm text-gray-600 dark:text-slate-300">
+        {SIDE_BLOCK_COPY[side.reason]}
+      </p>
+    );
+  }
+
+  if ((quotes.length === 0 || showPanel) && side.ok) {
     return (
       <ConveyancerPanel
         postcode={postcode}
         transactionId={transactionId}
-        transactionType="sale"
+        transactionType={side.transactionType}
         partyName={partyName}
         partyEmail={partyEmail}
         propertyAddress={propertyAddress}
@@ -151,7 +180,7 @@ export function ConveyancerQuotesStage({
 
       <QuoteComparisonView quotes={quotes} onAccepted={() => { void loadQuotes(); }} />
 
-      {!acceptedQuote && (
+      {!acceptedQuote && side.ok && (
         <button
           type="button"
           onClick={() => setShowPanel(true)}
