@@ -23,9 +23,9 @@ export function ConveyancersLine({ conveyancers, dealSide, hasBuyer, className =
   return (
     <div data-testid="conveyancers-line" className={className}>
       {lines.map((line, i) => (
-        <p key={line} className={`flex items-start gap-2 font-sans text-sm text-stone-700 dark:text-slate-300${i > 0 ? ' mt-1' : ''}`}>
+        <p key={line.side} className={`flex items-start gap-2 font-sans text-sm text-stone-700 dark:text-slate-300${i > 0 ? ' mt-1' : ''}`}>
           <Scale className={`mt-0.5 h-4 w-4 shrink-0 text-stone-400 dark:text-slate-500${i > 0 ? ' invisible' : ''}`} aria-hidden />
-          <span>{line}</span>
+          <span>{line.text}</span>
         </p>
       ))}
     </div>

@@ -34,7 +34,7 @@ import BotPanelCard from '../components/transaction/BotPanelCard';
 import NextStepCard from '../components/common/NextStepCard';
 import { StallLine } from '../components/transaction/flow/StallLine';
 import { ConveyancersLine } from '../components/transaction/flow/ConveyancersLine';
-import { conveyancerMatterPath, NO_CONVEYANCERS } from '@/lib/dealConveyancers';
+import { conveyancerMatterPath, hasRealBuyer, NO_CONVEYANCERS } from '@/lib/dealConveyancers';
 import { OfferExpiryLine } from '../components/transaction/flow/OfferExpiryLine';
 import { SearchAgeLine } from '../components/transaction/flow/SearchAgeLine';
 import { MandateBanners } from '../components/transaction/flow/MandateBanners';
@@ -772,7 +772,7 @@ export default function TransactionFlowPage(): ReactElement {
         <ConveyancersLine
           conveyancers={transaction?.conveyancers ?? NO_CONVEYANCERS}
           dealSide={dealSide}
-          hasBuyer={Boolean(transaction?.buyer) && transaction?.buyer !== transaction?.seller}
+          hasBuyer={hasRealBuyer(transaction?.buyer, transaction?.seller)}
           className="mb-4"
         />
         {id && <SearchAgeLine transactionId={id} refreshKey={invalidationKey} className="mb-4" />}

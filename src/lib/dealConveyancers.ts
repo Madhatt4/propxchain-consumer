@@ -76,9 +76,25 @@ export function conveyancerMatterPath(
   return `/pro/conveyancer/matters/${encodeURIComponent(transactionId)}`;
 }
 
+/**
+ * Has a real buyer joined? The canister keeps the seller in the buyer slot
+ * until one does. Compared as principal text: two Principal objects for the
+ * same principal are never equal by reference.
+ */
+export function hasRealBuyer(buyer: unknown, seller: unknown): boolean {
+  const b = principalText(buyer);
+  return b !== '' && b !== principalText(seller);
+}
+
 function firmOf(c: DealConveyancer | null): string | null {
   if (!c) return null;
   return c.firmName ?? 'a firm on the PropXchain panel';
+}
+
+export interface ConveyancerLine {
+  /** Whose conveyancer the line is about; also the line's stable key. */
+  side: 'buyer' | 'seller';
+  text: string;
 }
 
 /**
@@ -86,19 +102,23 @@ function firmOf(c: DealConveyancer | null): string | null {
  * other side's once it has a firm. Anyone not on a side (the agent) sees
  * whichever sides have one. Empty when there is nothing to say.
  */
-export function conveyancerLines(c: DealConveyancers, viewer: DealSide, hasBuyer: boolean): string[] {
+export function conveyancerLines(c: DealConveyancers, viewer: DealSide, hasBuyer: boolean): ConveyancerLine[] {
   const seller = firmOf(c.seller);
   const buyer = firmOf(c.buyer);
   if (viewer === 'seller' || viewer === 'buyer') {
+    const otherSide = viewer === 'seller' ? 'buyer' : 'seller';
     const own = viewer === 'seller' ? seller : buyer;
     const other = viewer === 'seller' ? buyer : seller;
-    const otherLabel = viewer === 'seller' ? "The buyer's conveyancer" : "The seller's conveyancer";
-    const lines = [own ? `Your conveyancer: ${own}` : 'Your conveyancer: not instructed yet'];
-    if (other && (viewer === 'buyer' || hasBuyer)) lines.push(`${otherLabel}: ${other}`);
+    const lines: ConveyancerLine[] = [
+      { side: viewer, text: own ? `Your conveyancer: ${own}` : 'Your conveyancer: not instructed yet' },
+    ];
+    if (other && (viewer === 'buyer' || hasBuyer)) {
+      lines.push({ side: otherSide, text: `The ${otherSide}'s conveyancer: ${other}` });
+    }
     return lines;
   }
-  const lines: string[] = [];
-  if (seller) lines.push(`The seller's conveyancer: ${seller}`);
-  if (buyer && hasBuyer) lines.push(`The buyer's conveyancer: ${buyer}`);
+  const lines: ConveyancerLine[] = [];
+  if (seller) lines.push({ side: 'seller', text: `The seller's conveyancer: ${seller}` });
+  if (buyer && hasBuyer) lines.push({ side: 'buyer', text: `The buyer's conveyancer: ${buyer}` });
   return lines;
 }

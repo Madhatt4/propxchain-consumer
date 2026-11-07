@@ -8,12 +8,22 @@ import {
   conveyancerOfSlot,
   conveyancerSideOf,
   dealConveyancersOf,
+  hasRealBuyer,
   NO_CONVEYANCERS,
 } from '../dealConveyancers';
 
 const BUYER_FIRM = { principal: 'buyer-firm', firmName: 'Test Firm One' };
 const SELLER_FIRM = { principal: 'seller-firm', firmName: 'Test Firm Two' };
 const BOTH = { buyer: BUYER_FIRM, seller: SELLER_FIRM };
+
+function texts(...args: Parameters<typeof conveyancerLines>): string[] {
+  return conveyancerLines(...args).map((l) => l.text);
+}
+
+/** A Candid-style Principal: a fresh object each time, equal only by text. */
+function principal(text: string): { toText: () => string } {
+  return { toText: () => text };
+}
 
 describe('conveyancerOfSlot', () => {
   it('should read a Candid opt holding a record with a Principal object', () => {
@@ -72,41 +82,67 @@ describe('conveyancerMatterPath', () => {
 
 describe('conveyancerLines', () => {
   it('should name the buyer\'s own firm first, then the seller\'s', () => {
-    expect(conveyancerLines(BOTH, 'buyer', true)).toEqual([
+    expect(texts(BOTH, 'buyer', true)).toEqual([
       'Your conveyancer: Test Firm One',
       "The seller's conveyancer: Test Firm Two",
     ]);
   });
 
   it('should name the seller\'s own firm first, then the buyer\'s', () => {
-    expect(conveyancerLines(BOTH, 'seller', true)).toEqual([
+    expect(texts(BOTH, 'seller', true)).toEqual([
       'Your conveyancer: Test Firm Two',
       "The buyer's conveyancer: Test Firm One",
     ]);
   });
 
   it('should tell a client with no firm yet', () => {
-    expect(conveyancerLines({ buyer: null, seller: SELLER_FIRM }, 'buyer', true)).toEqual([
+    expect(texts({ buyer: null, seller: SELLER_FIRM }, 'buyer', true)).toEqual([
       'Your conveyancer: not instructed yet',
       "The seller's conveyancer: Test Firm Two",
     ]);
   });
 
   it('should not show a buyer\'s firm to the seller before a buyer is on the deal', () => {
-    expect(conveyancerLines(BOTH, 'seller', false)).toEqual(['Your conveyancer: Test Firm Two']);
+    expect(texts(BOTH, 'seller', false)).toEqual(['Your conveyancer: Test Firm Two']);
   });
 
   it('should show the agent whichever sides have a firm', () => {
-    expect(conveyancerLines(BOTH, 'other', true)).toEqual([
+    expect(texts(BOTH, 'other', true)).toEqual([
       "The seller's conveyancer: Test Firm Two",
       "The buyer's conveyancer: Test Firm One",
     ]);
-    expect(conveyancerLines(NO_CONVEYANCERS, 'other', true)).toEqual([]);
+    expect(texts(NO_CONVEYANCERS, 'other', true)).toEqual([]);
   });
 
   it('should fall back to a neutral label when the slot has no firm name', () => {
-    expect(conveyancerLines({ buyer: null, seller: { principal: 'p', firmName: null } }, 'seller', false)).toEqual([
+    expect(texts({ buyer: null, seller: { principal: 'p', firmName: null } }, 'seller', false)).toEqual([
       'Your conveyancer: a firm on the PropXchain panel',
     ]);
+  });
+});
+
+describe('conveyancerLines keys', () => {
+  it('should key each line by the side it is about', () => {
+    expect(conveyancerLines(BOTH, 'buyer', true).map((l) => l.side)).toEqual(['buyer', 'seller']);
+    expect(conveyancerLines(BOTH, 'other', true).map((l) => l.side)).toEqual(['seller', 'buyer']);
+  });
+});
+
+describe('hasRealBuyer', () => {
+  it('should be false when the buyer slot holds the seller as distinct Principal objects', () => {
+    const a = principal('seller-p');
+    const b = principal('seller-p');
+    expect(a).not.toBe(b);
+    expect(hasRealBuyer(a, b)).toBe(false);
+  });
+
+  it('should be true for a different principal, as objects or text', () => {
+    expect(hasRealBuyer(principal('buyer-p'), principal('seller-p'))).toBe(true);
+    expect(hasRealBuyer('buyer-p', 'seller-p')).toBe(true);
+  });
+
+  it('should be false with no buyer at all', () => {
+    expect(hasRealBuyer(null, 'seller-p')).toBe(false);
+    expect(hasRealBuyer(undefined, undefined)).toBe(false);
   });
 });
