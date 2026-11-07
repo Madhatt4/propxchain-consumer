@@ -85,4 +85,55 @@ describe('ConveyancerQuotesStage', () => {
     expect(screen.getByText(/activation link/i)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /request more quotes/i })).not.toBeInTheDocument();
   });
+
+  describe('once the firm for the side has joined', () => {
+    const joined = { principal: 'rrkah-fqaaa-aaaaa-aaaaq-cai', firmName: 'Laburnum Law LLP' };
+
+    it('should say the firm is on the transaction instead of waiting for it to join', async () => {
+      vi.mocked(conveyancerQuoteService.getQuotesForTransaction).mockResolvedValue([
+        makeQuote({ id: 'q-1', status: 'accepted', conveyancerName: 'Laburnum Law' }),
+      ]);
+
+      render(<ConveyancerQuotesStage {...baseProps} joinedConveyancer={joined} />);
+
+      expect(await screen.findByTestId('conveyancer-joined')).toHaveTextContent(
+        'Laburnum Law LLP is on this transaction as your conveyancer.',
+      );
+      expect(screen.queryByText(/once they join/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/instructed$/i)).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /request more/i })).not.toBeInTheDocument();
+    });
+
+    it('should name the side for a viewer on the other side', async () => {
+      vi.mocked(conveyancerQuoteService.getQuotesForTransaction).mockResolvedValue([]);
+
+      render(<ConveyancerQuotesStage {...baseProps} stageSide="buyer" viewerSide="seller" joinedConveyancer={joined} />);
+
+      expect(await screen.findByTestId('conveyancer-joined')).toHaveTextContent(
+        "Laburnum Law LLP is on this transaction as the buyer's conveyancer.",
+      );
+    });
+
+    it('should show the joined firm, not the panel, when there were no estimates on PropXchain', async () => {
+      vi.mocked(conveyancerQuoteService.getQuotesForTransaction).mockResolvedValue([]);
+
+      render(<ConveyancerQuotesStage {...baseProps} joinedConveyancer={joined} />);
+
+      expect(await screen.findByTestId('conveyancer-joined')).toBeInTheDocument();
+      expect(screen.queryByTestId('conveyancer-panel')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('quote-comparison')).not.toBeInTheDocument();
+    });
+
+    it('should fall back to the accepted firm name when the slot has none', async () => {
+      vi.mocked(conveyancerQuoteService.getQuotesForTransaction).mockResolvedValue([
+        makeQuote({ id: 'q-1', status: 'accepted', conveyancerName: 'Laburnum Law' }),
+      ]);
+
+      render(<ConveyancerQuotesStage {...baseProps} joinedConveyancer={{ ...joined, firmName: null }} />);
+
+      expect(await screen.findByTestId('conveyancer-joined')).toHaveTextContent(
+        'Laburnum Law is on this transaction as your conveyancer.',
+      );
+    });
+  });
 });

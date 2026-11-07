@@ -2024,7 +2024,7 @@ class ICPService {
       const actor = await this.completionActor();
       const result = await actor.getCompletionStatus(transactionId);
       return result.length === 1 ? fromCandidCompletionStatus(result[0]) : null;
-    });
+    }, { cacheKey: callerKey('getCompletionStatus', transactionId) });
   }
 
   /**

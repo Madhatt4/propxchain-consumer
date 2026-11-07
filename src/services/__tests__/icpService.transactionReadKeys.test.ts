@@ -51,6 +51,16 @@ describe('icpService transaction reads share one call per caller and deal', () =
     ]);
   });
 
+  it('should key getCompletionStatus by caller and deal', async () => {
+    const completion = { getCompletionStatus: vi.fn().mockResolvedValue([]) };
+    vi.spyOn(icpService as unknown as { completionActor: () => Promise<unknown> }, 'completionActor')
+      .mockResolvedValue(completion);
+
+    await icpService.getCompletionStatus('tx_1');
+
+    expect(readConfigs.map((c) => c?.cacheKey)).toEqual(['getCompletionStatus:alice:tx_1']);
+  });
+
   it('should not share a result between two callers', async () => {
     await icpService.getTransaction('tx_1');
     useAuthStore.setState({ principalId: 'bob' });
