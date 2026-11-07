@@ -33,6 +33,8 @@ function makeQuote(overrides: Partial<ConveyancerQuote>): ConveyancerQuote {
 }
 
 const baseProps = {
+  stageSide: 'seller' as const,
+  viewerSide: 'seller' as const,
   transactionId: 'tx-1',
   postcode: 'MK40 1AA',
   partyName: 'Seller One',

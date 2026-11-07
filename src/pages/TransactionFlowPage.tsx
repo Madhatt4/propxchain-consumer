@@ -80,6 +80,7 @@ import type { RightmovePropertyListing } from '../types/rightmove.types';
 import type { Tenure } from '../types/listing.types';
 import type { StructuredAddress } from '../services/pafAddress';
 import type { StageConfig, JourneyRole } from '../types/stage.types';
+import type { DealSide } from '../lib/dealAccess';
 import { resolveNextStepDestination } from '../utils/nextStepDestination';
 import { accessFor, accessForId, canAct } from '@/lib/dealAccess';
 import { ViewOnlyFrame } from '@/components/transaction/ViewOnlyFrame';
@@ -167,6 +168,10 @@ interface StageComponentProps {
    *  viewed) — the Seller/Buyer toggle lets a buyer browse seller stages,
    *  and seller-only forms must render read-only for them. */
   viewerRole?: JourneyRole;
+  /** The viewer's real side, 'other' when it can't be established. Unlike
+   *  viewerRole it never defaults to 'seller', so the conveyancer stage can
+   *  refuse to guess which side an estimate request is for. */
+  dealSide?: DealSide;
   inviteCode?: string;
   transactionId?: string;
   onListingImported?: (listing: RightmovePropertyListing) => void;
@@ -337,6 +342,8 @@ function renderStageContent(stageId: string, props: StageComponentProps): ReactE
       const canCaptureLender = stageId === 'buyer-5' && !!props.transactionId;
       return (
         <ConveyancerQuotesStage
+          stageSide={stageId === 'buyer-5' ? 'buyer' : 'seller'}
+          viewerSide={props.dealSide}
           postcode={postcode || ''}
           transactionId={props.transactionId || ''}
           partyName={props.partyName ?? ''}
@@ -857,6 +864,7 @@ export default function TransactionFlowPage(): ReactElement {
                           onCancelEdit: (sid) => setStageEditing(sid, false),
                           onAfterEdit: bumpInvalidationKey,
                           viewerRole: userRole,
+                          dealSide,
                           // The canister's agreed price only: a listing price is
                           // not the price completed at, so it is never hashed.
                           purchasePrice: transaction?.amount,
