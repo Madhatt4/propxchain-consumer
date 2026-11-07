@@ -1,6 +1,5 @@
 import type { PriceLabel, Provider } from './types';
 import { formatProviderPrice } from './types';
-import { HighlightBadge } from './HighlightBadge';
 import { StarRating } from './StarRating';
 import { TierBadge } from './TierBadge';
 import { SlaIndicator } from './SlaIndicator';
@@ -33,8 +32,6 @@ export function ProviderCard({
           : 'border-gray-200 hover:border-gray-300 dark:border-[#1E2A3A] dark:hover:border-[#2a3a4f]'
       } bg-white dark:bg-[#0E1425]`}
     >
-      {provider.highlight && <HighlightBadge type={provider.highlight} />}
-
       {/* Header: logo + name + location/distance */}
       <div className="flex items-start gap-3">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-100 font-geist-mono text-sm font-semibold text-gray-600 dark:bg-[#141C2E] dark:text-gray-300">

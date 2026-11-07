@@ -50,11 +50,6 @@ export function ProviderRow({
           <h3 className="truncate font-dm-sans text-sm font-semibold text-gray-900 dark:text-gray-100">
             {provider.name}
           </h3>
-          {provider.highlight && (
-            <span className="shrink-0 rounded-full bg-[#0D9488]/10 px-2 py-0.5 text-[10px] font-medium text-[#0D9488] dark:bg-[#14B8A6]/10 dark:text-[#14B8A6]">
-              {provider.highlight}
-            </span>
-          )}
           {provider.lenderPanelStatus === 'on' && provider.lenderPanelName && (
             <span className="shrink-0 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-600 dark:bg-emerald-400/10 dark:text-emerald-400">
               On {provider.lenderPanelName}&apos;s panel ✓

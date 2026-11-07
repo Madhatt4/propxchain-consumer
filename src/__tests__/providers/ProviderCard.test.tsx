@@ -14,7 +14,6 @@ const mockProvider: Provider = {
   rating: 4.5,
   reviews: 100,
   features: ['Feature 1', 'Feature 2', 'Feature 3', 'Feature 4'],
-  highlight: 'Recommended',
   regulated: 'FCA Authorised',
   location: 'Bedford',
 };
@@ -44,19 +43,6 @@ describe('ProviderCard', () => {
     render(<ProviderCard {...defaultProps} selected={true} />);
     expect(screen.getByText('Selected')).toBeDefined();
     expect(screen.queryByText('Select')).toBeNull();
-  });
-
-  it('should render highlight badge when highlight prop exists', () => {
-    render(<ProviderCard {...defaultProps} />);
-    expect(screen.getByText('Recommended')).toBeDefined();
-  });
-
-  it('should not render highlight badge when no highlight', () => {
-    const noHighlightProvider = { ...mockProvider, highlight: undefined };
-    render(
-      <ProviderCard {...defaultProps} provider={noHighlightProvider} />,
-    );
-    expect(screen.queryByText('Recommended')).toBeNull();
   });
 
   it('should render location when provided', () => {

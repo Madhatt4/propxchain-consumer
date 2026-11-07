@@ -10,7 +10,6 @@ export interface Provider {
   rating: number;
   reviews: number;
   features: [string, string, string, string];
-  highlight?: HighlightType;
   regulated: string;
   location?: string;
   postcode?: string;
@@ -37,15 +36,6 @@ export function formatProviderPrice(provider: Pick<Provider, 'price'>, priceLabe
   if (provider.price === undefined || provider.price <= 0) return 'Quote on request';
   return priceLabel ? `£${provider.price.toFixed(2)} ${priceLabel}` : `£${provider.price.toFixed(2)}`;
 }
-
-export type HighlightType =
-  | 'Recommended'
-  | 'Best Value'
-  | 'Fastest'
-  | 'Top Rated'
-  | 'Local'
-  | 'Local Expert'
-  | 'Budget';
 
 export type PriceLabel = 'inc VAT' | '+ disbursements' | 'from';
 

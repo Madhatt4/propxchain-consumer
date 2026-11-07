@@ -26,7 +26,6 @@ export interface SearchProvider {
   turnaroundPriority?: string;
   priorityFeePence?: number;
   regulated: string;
-  highlight?: 'Budget' | 'Direct';
   instantOrder: boolean;
   standardPackPence: number;
   standardPackSearches: SearchItem[];
