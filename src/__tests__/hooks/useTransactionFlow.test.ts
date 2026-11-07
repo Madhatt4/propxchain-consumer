@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { StrictMode, createElement } from 'react';
+import type { ReactNode } from 'react';
 import { renderHook, act } from '@testing-library/react';
 import { useTransactionFlow } from '../../hooks/useTransactionFlow';
 
@@ -570,6 +572,49 @@ describe('useTransactionFlow', () => {
       const { result } = renderHook(() => useTransactionFlow('tx-123'));
       await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
       expect(() => act(() => result.current.completeStage('seller-1'))).not.toThrow();
+    });
+  });
+
+  describe('flow-state writes happen once, outside setState updaters', () => {
+    const strict = ({ children }: { children: ReactNode }): ReturnType<typeof createElement> => createElement(StrictMode, null, children);
+
+    it('should write completeStage to chain once under StrictMode', async () => {
+      const { result } = renderHook(() => useTransactionFlow('tx-123'), { wrapper: strict });
+      await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
+      mockSetFlowState.mockClear();
+      mockLogEvent.mockClear();
+
+      act(() => result.current.completeStage('seller-3'));
+
+      expect(mockSetFlowState).toHaveBeenCalledTimes(1);
+      expect(mockLogEvent).toHaveBeenCalledTimes(1);
+    });
+
+    it('should write the client confirmation once, and not again on a second click', async () => {
+      const { result } = renderHook(() => useTransactionFlow('tx-123'), { wrapper: strict });
+      await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
+      mockSetFlowState.mockClear();
+      mockLogEvent.mockClear();
+
+      act(() => result.current.confirmConveyancerDirect('seller-5'));
+      act(() => result.current.confirmConveyancerDirect('seller-5'));
+
+      expect(mockSetFlowState).toHaveBeenCalledTimes(1);
+      expect(mockLogEvent).toHaveBeenCalledTimes(1);
+    });
+
+    it('should keep both of two back-to-back changes made in one tick', async () => {
+      const { result } = renderHook(() => useTransactionFlow('tx-123'));
+      await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      act(() => {
+        result.current.completeStage('seller-1');
+        result.current.completeStage('seller-3');
+      });
+
+      const stages = result.current.stages;
+      expect(stages.find((s) => s.id === 'seller-1')?.status).toBe('completed');
+      expect(stages.find((s) => s.id === 'seller-3')?.status).toBe('completed');
     });
   });
 
