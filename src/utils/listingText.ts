@@ -29,7 +29,7 @@ export function listingDescriptionText(raw: string | null | undefined): string {
     text = withBreaks.replace(/<(script|style)[^>]*>[\s\S]*?<\/\1\s*>/gi, '').replace(ANY_TAG, '');
   }
   return text
-    .replace(/ /g, ' ')
+    .replace(/\u00a0/g, ' ')
     .replace(/[ \t]+\n/g, '\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
