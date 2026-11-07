@@ -53,4 +53,19 @@ describe('QuoteFormPage', () => {
     expect(screen.getByText('A planning notice is recorded.')).toBeInTheDocument();
     expect(screen.queryByText('Flood risk: confirm insurability')).not.toBeInTheDocument();
   });
+
+  // Solicitors prefer "estimate": a quote is binding.
+  it('should ask the firm for an estimate and never say quote', async () => {
+    render(
+      <MemoryRouter initialEntries={['/quote/token-1']}>
+        <Routes>
+          <Route path="/quote/:token" element={<QuoteFormPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText('Conveyancing Estimate Request')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Submit Estimate' })).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/quote/i);
+  });
 });

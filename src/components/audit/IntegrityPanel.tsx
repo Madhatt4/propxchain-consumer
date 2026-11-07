@@ -39,10 +39,29 @@ const STATUS_CONFIG = {
   },
 } as const;
 
+// What each source holds, in the words a home mover uses.
+const SOURCE_LABELS: Record<string, string> = {
+  transaction_manager: 'transaction record',
+  document_storage: 'document list',
+  ledger_manager: 'event log',
+};
+
+function sourceLabel(name: string): string {
+  return SOURCE_LABELS[name] ?? name.replace(/_/g, ' ');
+}
+
+function joinWithAnd(items: string[]): string {
+  if (items.length <= 1) return items.join('');
+  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
+}
+
 const IntegrityPanel: React.FC<IntegrityPanelProps> = ({ integrity }) => {
   const theme = useThemeClasses();
   const config = STATUS_CONFIG[integrity.overallStatus];
   const Icon = config.icon;
+  const unreadable = Object.entries(integrity.canisterAvailability)
+    .filter(([, available]) => !available)
+    .map(([name]) => sourceLabel(name));
 
   return (
     <div className={`rounded-lg border ${config.border} ${config.bg} p-4`}>
@@ -52,6 +71,13 @@ const IntegrityPanel: React.FC<IntegrityPanelProps> = ({ integrity }) => {
           {config.label}
         </h3>
       </div>
+      {unreadable.length > 0 && (
+        <p className={`mb-3 text-sm ${theme.textSecondary}`}>
+          We couldn&rsquo;t load the {joinWithAnd(unreadable)} just now. That is a
+          connection problem, not a problem with your transaction. Reload the page in a
+          minute; if it keeps happening, contact support.
+        </p>
+      )}
       <div className="flex flex-wrap gap-3">
         {Object.entries(integrity.canisterAvailability).map(([name, available]) => (
           <div key={name} className="flex items-center gap-1.5 text-sm">
@@ -61,7 +87,7 @@ const IntegrityPanel: React.FC<IntegrityPanelProps> = ({ integrity }) => {
               }`}
             />
             <span className={theme.textSecondary}>
-              {name.replace(/_/g, ' ')}
+              {sourceLabel(name)}
             </span>
           </div>
         ))}

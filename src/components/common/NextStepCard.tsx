@@ -368,7 +368,7 @@ const NextStepCard: React.FC<NextStepCardProps> = ({
                 {opt.displayLabel}
                 {opt.panelMatchCount !== undefined && (
                   <span className="ml-1 font-mono text-xs text-sage-dark dark:text-emerald-400">
-                    ({opt.panelMatchCount} firms)
+                    ({opt.panelMatchCount} {opt.panelMatchCount === 1 ? 'firm' : 'firms'})
                   </span>
                 )}
                 {opt.estimatedDelayIfSkipped !== undefined && (

@@ -36,12 +36,43 @@ interface TransactionData {
   sellerConveyancer?: string | null;
   /** Each side's conveyancer from the on-chain solicitor slots. */
   conveyancers?: DealConveyancers;
+  /** The legacy single `solicitor` principal, from deals made before the per-side slots. */
+  legacySolicitor?: string | null;
 }
 
 // Completion stages are done only when transaction_manager says the deal has
 // completed. Flow-state flags for them (written by the old local checklist)
 // are ignored, and completeStage never writes one.
 const COMPLETION_STAGE_IDS: ReadonlySet<string> = new Set(['seller-7', 'buyer-7']);
+
+// Conveyancer stages are done when, for that side: the firm is on the deal
+// (its solicitor slot on chain, filled when it redeems its join link), the
+// legacy single `solicitor` field is set, or the client has said their
+// conveyancer is not on PropXchain and was instructed directly (Marc's
+// completion rule: shown as client-confirmed, not verified). Requesting
+// estimates used to tick the stage, so a seller saw "Completed" before any
+// estimate was accepted; those old bare flags are ignored, and completeStage
+// never writes one.
+const CONVEYANCER_STAGE_IDS: ReadonlySet<string> = new Set(['seller-5', 'buyer-5']);
+
+/** Flow-state key for the client's own confirmation, distinct from the old bare flag. */
+export function clientConfirmedKey(stageId: string): string {
+  return `${stageId}:client-confirmed`;
+}
+
+/** Text of a Candid `opt Principal` (`[] | [p]`), or null. */
+function optPrincipalText(value: unknown): string | null {
+  const p: unknown = Array.isArray(value) ? value[0] : value;
+  if (!p) return null;
+  if (typeof p === 'string') return p || null;
+  if (typeof p === 'object' && 'toText' in p) return String((p as { toText: () => string }).toText()) || null;
+  return null;
+}
+
+/** Stages whose completion comes from chain state, never from a flow-state flag. */
+function isDerivedStage(stageId: string): boolean {
+  return COMPLETION_STAGE_IDS.has(stageId) || CONVEYANCER_STAGE_IDS.has(stageId);
+}
 
 // Candid variant -> its key, e.g. { exchanged: null } -> "exchanged".
 function statusKeyOf(status: unknown): string | undefined {
@@ -74,6 +105,9 @@ interface UseTransactionFlowReturn {
   clearProvider: (stageId: string) => void;
   rateProvider: (stageId: string, rating: number, comment?: string) => void;
   completeStage: (stageId: string) => void;
+  /** The client says their conveyancer is not on PropXchain and was
+   *  instructed directly: completes seller-5/buyer-5 as client-confirmed. */
+  confirmConveyancerDirect: (stageId: string) => void;
   totalCostPence: number;
   expandedStageIds: string[];
   toggleStage: (stageId: string) => void;
@@ -134,6 +168,9 @@ const STAGE_TO_EVENT_TYPE: Record<string, string> = {
   'buyer-4': 'sellers_pack_reviewed',      // Buyer reviewed seller pack
   'buyer-5': 'buyer_conveyancer_confirmed',// Conveyancer appointed for buyer side
   'buyer-6': 'contract_exchanged',
+  // The client's word that their conveyancer is instructed off PropXchain.
+  'seller-5:client-confirmed': 'seller_conveyancer_client_confirmed',
+  'buyer-5:client-confirmed': 'buyer_conveyancer_client_confirmed',
 };
 
 function stageIdToEventType(stageId: string): string {
@@ -304,18 +341,22 @@ function buildCompletedStageIds(
   for (const [stageId, selection] of Object.entries(
     flowState.providerSelections,
   )) {
-    if (selection.completedAt && !COMPLETION_STAGE_IDS.has(stageId)) completed.add(stageId);
+    if (selection.completedAt && !isDerivedStage(stageId)) completed.add(stageId);
   }
 
   // From localStorage completedStages (non-provider stages like List Property)
   if (flowState.completedStages) {
     for (const stageId of Object.keys(flowState.completedStages)) {
-      if (!COMPLETION_STAGE_IDS.has(stageId)) completed.add(stageId);
+      if (!isDerivedStage(stageId)) completed.add(stageId);
     }
   }
 
   if (isCompletedStatus(transaction?.status)) {
     for (const stageId of COMPLETION_STAGE_IDS) completed.add(stageId);
+  }
+
+  for (const stageId of CONVEYANCER_STAGE_IDS) {
+    if (conveyancerBasis(stageId, transaction, flowState)) completed.add(stageId);
   }
 
   // buyer-1 auto-completes when a real buyer is on chain. `buyer === seller`
@@ -327,6 +368,23 @@ function buildCompletedStageIds(
   }
 
   return completed;
+}
+
+/**
+ * Why a conveyancer stage is complete, or null when it is not. A filled slot
+ * or the legacy field is verified on chain; otherwise the client's explicit
+ * confirmation counts, marked as theirs.
+ */
+function conveyancerBasis(
+  stageId: string,
+  transaction: TransactionData | null,
+  flowState: TransactionFlowState,
+): 'verified' | 'client-confirmed' | null {
+  // The same slots the deal page's conveyancer line reads (lib/dealConveyancers).
+  const slot = stageId === 'seller-5' ? transaction?.conveyancers?.seller : transaction?.conveyancers?.buyer;
+  if (slot || transaction?.legacySolicitor) return 'verified';
+  if (flowState.completedStages?.[clientConfirmedKey(stageId)]) return 'client-confirmed';
+  return null;
 }
 
 function resolveStageStatus(
@@ -388,19 +446,27 @@ function resolveStages(
   journey: JourneyRole,
   transaction: TransactionData | null,
   completedIds: Set<string>,
+  flowState: TransactionFlowState,
 ): StageConfig[] {
   const templates = getStagesForJourney(journey);
 
-  return templates.map((template) => ({
-    ...template,
-    status: resolveStageStatus(
-      template.id,
-      template.prerequisiteStageIds,
-      completedIds,
-      journey,
-      transaction,
-    ),
-  }));
+  return templates.map((template) => {
+    const stage: StageConfig = {
+      ...template,
+      status: resolveStageStatus(
+        template.id,
+        template.prerequisiteStageIds,
+        completedIds,
+        journey,
+        transaction,
+      ),
+    };
+    if (CONVEYANCER_STAGE_IDS.has(template.id)
+      && conveyancerBasis(template.id, transaction, flowState) === 'client-confirmed') {
+      stage.completionBasis = 'client-confirmed';
+    }
+    return stage;
+  });
 }
 
 export function useTransactionFlow(
@@ -416,6 +482,12 @@ export function useTransactionFlow(
     loadFlowState(transactionId, principalId ?? null),
   );
   const chainSynced = useRef(false);
+  // Latest flow state for event handlers, so they compute the next state
+  // outside a setState updater (see commitFlowState). Kept in step on every
+  // render and set at once by commitFlowState, so back-to-back calls in one
+  // tick each see the previous call's result.
+  const flowStateRef = useRef(flowState);
+  flowStateRef.current = flowState;
   const [invalidationKey, setInvalidationKey] = useState(0);
   const bumpInvalidationKey = useCallback((): void => {
     setInvalidationKey((k) => k + 1);
@@ -461,6 +533,7 @@ export function useTransactionFlow(
             amount: fullTx?.amount != null ? Number(fullTx.amount) : undefined,
             sellerConveyancer: sellerConveyancerOf(fullTx?.sellerSolicitor),
             conveyancers: dealConveyancersOf(fullTx),
+            legacySolicitor: optPrincipalText(fullTx?.solicitor),
           };
           setTransaction(txData);
 
@@ -556,15 +629,15 @@ export function useTransactionFlow(
   );
 
   const stages = useMemo(
-    () => resolveStages(activeJourney, transaction, completedIds),
-    [activeJourney, transaction, completedIds],
+    () => resolveStages(activeJourney, transaction, completedIds, flowState),
+    [activeJourney, transaction, completedIds, flowState],
   );
 
   const otherJourney: JourneyRole =
     activeJourney === 'seller' ? 'buyer' : 'seller';
   const otherPartyStages = useMemo(
-    () => resolveStages(otherJourney, transaction, completedIds),
-    [otherJourney, transaction, completedIds],
+    () => resolveStages(otherJourney, transaction, completedIds, flowState),
+    [otherJourney, transaction, completedIds, flowState],
   );
 
   const providerSelections = useMemo(() => {
@@ -592,6 +665,7 @@ export function useTransactionFlow(
   const syntheticEvents = useMemo(() => {
     const out: Array<{ eventType: string; timestamp: number }> = [];
     for (const [stageId, ts] of Object.entries(flowState.completedStages)) {
+      if (CONVEYANCER_STAGE_IDS.has(stageId)) continue; // stale flag, see CONVEYANCER_STAGE_IDS
       out.push({ eventType: stageIdToEventType(stageId), timestamp: Number(ts) || Date.now() });
     }
     for (const [, sel] of Object.entries(flowState.providerSelections)) {
@@ -602,19 +676,29 @@ export function useTransactionFlow(
     return out;
   }, [flowState.completedStages, flowState.providerSelections]);
 
+  /**
+   * The one place flow state changes after load. The next state is computed
+   * from flowStateRef outside any setState updater, then stored, saved and
+   * (when asked) written to chain exactly once. Updaters must be pure: React
+   * may run them twice (StrictMode, interrupted renders), and the old
+   * updaters wrote to chain, and so double-wrote, on every extra run.
+   */
+  const commitFlowState = useCallback(
+    (next: TransactionFlowState, persistChain: boolean): Promise<boolean> | null => {
+      flowStateRef.current = next;
+      setFlowState(next);
+      saveFlowState(transactionId, principalId ?? null, next);
+      return persistChain ? persistToChain(transactionId, next) : null;
+    },
+    [transactionId, principalId],
+  );
+
   /** Update flow state in localStorage + chain (for shared data changes). */
   function updateFlowState(
     partial: Partial<TransactionFlowState>,
     persistChain = false,
   ): void {
-    setFlowState((prev) => {
-      const next = { ...prev, ...partial };
-      saveFlowState(transactionId, principalId ?? null, next);
-      if (persistChain && chainSynced.current) {
-        persistToChain(transactionId, next);
-      }
-      return next;
-    });
+    commitFlowState({ ...flowStateRef.current, ...partial }, persistChain && chainSynced.current);
   }
 
   const setActiveJourney = useCallback(
@@ -626,7 +710,7 @@ export function useTransactionFlow(
       updateFlowState({ activeJourney: j, userPreferredJourney: j });
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [transactionId],
+    [commitFlowState],
   );
 
   const selectProvider = useCallback(
@@ -637,18 +721,11 @@ export function useTransactionFlow(
         costPence: provider.priceInPence,
         selectedAt: Date.now(),
       };
-      setFlowState((prev) => {
-        const next = {
-          ...prev,
-          providerSelections: {
-            ...prev.providerSelections,
-            [stageId]: selection,
-          },
-        };
-        saveFlowState(transactionId, principalId ?? null, next);
-        persistToChain(transactionId, next);
-        return next;
-      });
+      const prev = flowStateRef.current;
+      commitFlowState({
+        ...prev,
+        providerSelections: { ...prev.providerSelections, [stageId]: selection },
+      }, true);
 
       // Fire-and-forget audit event — must not block the UI. Bumps the
       // invalidation key on success so PhaseIndicator / PhaseChecklist
@@ -663,7 +740,7 @@ export function useTransactionFlow(
         .then(() => bumpInvalidationKey())
         .catch((err: unknown) => logger.error('[audit] logEvent failed', { transactionId, eventType: 'provider_selected', err }));
     },
-    [transactionId],
+    [transactionId, commitFlowState, bumpInvalidationKey],
   );
 
   /**
@@ -679,20 +756,16 @@ export function useTransactionFlow(
    */
   const clearProvider = useCallback(
     (stageId: string): void => {
-      setFlowState((prev) => {
-        const nextProviderSelections = { ...prev.providerSelections };
-        delete nextProviderSelections[stageId];
-        const nextCompletedStages = { ...prev.completedStages };
-        delete nextCompletedStages[stageId];
-        const next = {
-          ...prev,
-          providerSelections: nextProviderSelections,
-          completedStages: nextCompletedStages,
-        };
-        saveFlowState(transactionId, principalId ?? null, next);
-        persistToChain(transactionId, next);
-        return next;
-      });
+      const prev = flowStateRef.current;
+      const nextProviderSelections = { ...prev.providerSelections };
+      delete nextProviderSelections[stageId];
+      const nextCompletedStages = { ...prev.completedStages };
+      delete nextCompletedStages[stageId];
+      commitFlowState({
+        ...prev,
+        providerSelections: nextProviderSelections,
+        completedStages: nextCompletedStages,
+      }, true);
 
       void icpService.ledgerManager
         ?.logEvent(
@@ -704,36 +777,32 @@ export function useTransactionFlow(
         .then(() => bumpInvalidationKey())
         .catch((err: unknown) => logger.error('[audit] logEvent failed', { transactionId, eventType: 'provider_cleared', err }));
     },
-    [transactionId],
+    [transactionId, commitFlowState, bumpInvalidationKey],
   );
 
   const rateProvider = useCallback(
     (stageId: string, rating: number, comment?: string): void => {
-      setFlowState((prev) => {
-        const existing = prev.providerSelections[stageId];
-        if (!existing) return prev;
-        const next = {
-          ...prev,
-          providerSelections: {
-            ...prev.providerSelections,
-            [stageId]: {
-              ...existing,
-              review: {
-                providerId: existing.providerId,
-                transactionId,
-                rating,
-                comment,
-                createdAt: Date.now(),
-              },
+      const prev = flowStateRef.current;
+      const existing = prev.providerSelections[stageId];
+      if (!existing) return;
+      commitFlowState({
+        ...prev,
+        providerSelections: {
+          ...prev.providerSelections,
+          [stageId]: {
+            ...existing,
+            review: {
+              providerId: existing.providerId,
+              transactionId,
+              rating,
+              comment,
+              createdAt: Date.now(),
             },
           },
-        };
-        saveFlowState(transactionId, principalId ?? null, next);
-        persistToChain(transactionId, next);
-        return next;
-      });
+        },
+      }, true);
     },
-    [transactionId],
+    [transactionId, commitFlowState],
   );
 
   const [chainPersistError, setChainPersistError] = useState<string | null>(null);
@@ -750,31 +819,26 @@ export function useTransactionFlow(
           : prev));
         return;
       }
+      // The conveyancer's join is recorded on chain by the firm itself;
+      // a flag or a "confirmed" audit event from here would be a false claim.
+      if (CONVEYANCER_STAGE_IDS.has(stageId)) return;
       setChainPersistError(null);
-      setFlowState((prev) => {
-        const now = Date.now();
-        // The stage's panel calls this only once the order, referral or quote
-        // request has really gone through, so this is where a picked provider
-        // is marked done — never on a timer after merely picking one.
-        const selection = prev.providerSelections[stageId];
-        const next = {
-          ...prev,
-          providerSelections: selection && !selection.completedAt
-            ? { ...prev.providerSelections, [stageId]: { ...selection, completedAt: now } }
-            : prev.providerSelections,
-          completedStages: {
-            ...prev.completedStages,
-            [stageId]: now,
-          },
-        };
-        saveFlowState(transactionId, principalId ?? null, next);
-        // Persist to chain outside the state setter so we can await
-        persistToChain(transactionId, next).then((success) => {
-          if (!success) {
-            setChainPersistError(`Stage ${stageId} saved locally but failed to record on-chain. Please retry.`);
-          }
-        });
-        return next;
+      const prev = flowStateRef.current;
+      const now = Date.now();
+      // The stage's panel calls this only once the order, referral or quote
+      // request has really gone through, so this is where a picked provider
+      // is marked done — never on a timer after merely picking one.
+      const selection = prev.providerSelections[stageId];
+      void commitFlowState({
+        ...prev,
+        providerSelections: selection && !selection.completedAt
+          ? { ...prev.providerSelections, [stageId]: { ...selection, completedAt: now } }
+          : prev.providerSelections,
+        completedStages: { ...prev.completedStages, [stageId]: now },
+      }, true)?.then((success) => {
+        if (!success) {
+          setChainPersistError(`Stage ${stageId} saved locally but failed to record on-chain. Please retry.`);
+        }
       });
 
       // Fire-and-forget audit event — must not block the UI. Bumps the
@@ -790,46 +854,62 @@ export function useTransactionFlow(
         .then(() => bumpInvalidationKey())
         .catch((err: unknown) => logger.error('[audit] logEvent failed', { transactionId, eventType: stageIdToEventType(stageId), err }));
     },
-    [transactionId],
+    [transactionId, commitFlowState, bumpInvalidationKey],
+  );
+
+  const confirmConveyancerDirect = useCallback(
+    (stageId: string): void => {
+      if (!CONVEYANCER_STAGE_IDS.has(stageId)) return;
+      const key = clientConfirmedKey(stageId);
+      const prev = flowStateRef.current;
+      if (prev.completedStages[key]) return; // already confirmed: no second write or event
+      setChainPersistError(null);
+      void commitFlowState(
+        { ...prev, completedStages: { ...prev.completedStages, [key]: Date.now() } },
+        true,
+      )?.then((success) => {
+        if (!success) setChainPersistError('Your confirmation was saved on this device but not recorded on-chain. Please try again.');
+      });
+      // The audit trail records it as the client's word, under its own event type.
+      void icpService.ledgerManager
+        ?.logEvent(transactionId, stageIdToEventType(key), `${stageId}: client confirmed a conveyancer instructed off PropXchain`, [])
+        .then(() => bumpInvalidationKey())
+        .catch((err: unknown) => logger.error('[audit] logEvent failed', { transactionId, eventType: stageIdToEventType(key), err }));
+    },
+    [transactionId, commitFlowState, bumpInvalidationKey],
   );
 
   const toggleStage = useCallback(
     (stageId: string): void => {
-      setFlowState((prev) => {
-        const isOpen = prev.expandedStageIds.includes(stageId);
-        const nextIds = isOpen
-          ? prev.expandedStageIds.filter((id) => id !== stageId)
-          : [...prev.expandedStageIds, stageId];
-        const next = { ...prev, expandedStageIds: nextIds };
-        saveFlowState(transactionId, principalId ?? null, next);
-        return next;
-      });
+      const prev = flowStateRef.current;
+      const isOpen = prev.expandedStageIds.includes(stageId);
+      const nextIds = isOpen
+        ? prev.expandedStageIds.filter((id) => id !== stageId)
+        : [...prev.expandedStageIds, stageId];
+      commitFlowState({ ...prev, expandedStageIds: nextIds }, false);
     },
-    [transactionId],
+    [commitFlowState],
   );
 
   const setStageEditing = useCallback(
     (stageId: string, editing: boolean): void => {
-      setFlowState((prev) => {
-        const already = prev.editingStageIds.includes(stageId);
-        if (editing === already) return prev;
-        const nextIds = editing
-          ? [...prev.editingStageIds, stageId]
-          : prev.editingStageIds.filter((id) => id !== stageId);
-        // Editing implies the card must be expanded so the form is visible.
-        const nextExpanded = editing && !prev.expandedStageIds.includes(stageId)
-          ? [...prev.expandedStageIds, stageId]
-          : prev.expandedStageIds;
-        const next = {
-          ...prev,
-          editingStageIds: nextIds,
-          expandedStageIds: nextExpanded,
-        };
-        saveFlowState(transactionId, principalId ?? null, next);
-        return next;
-      });
+      const prev = flowStateRef.current;
+      const already = prev.editingStageIds.includes(stageId);
+      if (editing === already) return;
+      const nextIds = editing
+        ? [...prev.editingStageIds, stageId]
+        : prev.editingStageIds.filter((id) => id !== stageId);
+      // Editing implies the card must be expanded so the form is visible.
+      const nextExpanded = editing && !prev.expandedStageIds.includes(stageId)
+        ? [...prev.expandedStageIds, stageId]
+        : prev.expandedStageIds;
+      commitFlowState({
+        ...prev,
+        editingStageIds: nextIds,
+        expandedStageIds: nextExpanded,
+      }, false);
     },
-    [transactionId, principalId],
+    [commitFlowState],
   );
 
   return {
@@ -846,6 +926,7 @@ export function useTransactionFlow(
     clearProvider,
     rateProvider,
     completeStage,
+    confirmConveyancerDirect,
     totalCostPence,
     expandedStageIds: flowState.expandedStageIds,
     toggleStage,

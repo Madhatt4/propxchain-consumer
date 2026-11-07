@@ -6,9 +6,9 @@
  *
  * Bridges the canister rules engine with off-chain enrichment. The canister
  * `getNextStep` composite query is the source of truth for blockers and
- * options; this service layers on a count of CLC-licensed conveyancer firms
- * from Supabase when the blocker is `no_solicitor`, so the "Browse the
- * conveyancer panel" option can advertise how many firms are ready to quote.
+ * options; this service layers on a count of the firms on the conveyancer
+ * panel when the blocker is `no_solicitor`, so the "Browse the conveyancer
+ * panel" option can say how many firms are ready to give an estimate.
  *
  * Failure mode: if Supabase enrichment fails the canister recommendation is
  * returned untouched. Off-chain data is decoration, not gate.
@@ -16,6 +16,7 @@
 
 import { icpService } from './icp.service';
 import { supabase } from '../lib/supabase';
+import { currentUserIsTestAccount, keepFirmsFor } from './testFirm';
 import { logger } from '@/utils/logger';
 
 export type NextStepUrgency = 'blocking' | 'soon' | 'later';
@@ -140,15 +141,23 @@ async function enrichWithConveyancerPanel(
   base: NextStepRecommendation,
 ): Promise<NextStepRecommendation> {
   try {
-    const { count, error } = await supabase
-      .from('clc_practices')
-      .select('clc_id', { count: 'exact', head: true })
-      .eq('status', 'active');
+    // Count the firms the panel itself lists: the same table, the same
+    // filters and the same test-firm rule as SupabaseProviderDataSource.
+    // Counting clc_practices instead gave "(0 firms)" beside a panel that
+    // showed two.
+    const { data, error } = await supabase
+      .from('conveyancer_panel')
+      .select('id, is_test')
+      .eq('active_on_panel', true)
+      .eq('status', 'Active');
     if (error) {
       logger.warn('[next-step] panel-match lookup failed', error.message);
       return base;
     }
-    if (typeof count !== 'number') return base;
+    const firms = keepFirmsFor((data ?? []) as Array<{ is_test?: boolean | null }>, await currentUserIsTestAccount());
+    const count = firms.length;
+    // "(0 firms)" next to "Browse the panel" reads as broken; say nothing instead.
+    if (count === 0) return base;
     const options = base.options.map((o) =>
       o.action === 'browse_conveyancer_panel'
         ? { ...o, panelMatchCount: count }

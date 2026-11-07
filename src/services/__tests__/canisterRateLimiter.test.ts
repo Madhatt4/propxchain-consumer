@@ -193,6 +193,19 @@ describe('CanisterRateLimiter Integration Tests', () => {
       expect(stats.deduplicationHits).toBe(4);
     });
 
+    it('should drop a rejected in-flight read so a retry with the same key calls again', async () => {
+      const mockFn = vi.fn()
+        .mockRejectedValueOnce(new Error('transient'))
+        .mockResolvedValueOnce('recovered');
+      const config = { operationType: 'read' as const, cacheKey: 'getTransaction:alice:tx_1', retryConfig: { maxRetries: 0 } };
+
+      await expect(settle(rateLimiter.call(mockFn, config))).rejects.toThrow('transient');
+      const second = await settle(rateLimiter.call(mockFn, config));
+
+      expect(second).toBe('recovered');
+      expect(mockFn).toHaveBeenCalledTimes(2);
+    });
+
     it('should emit deduplication hit events', async () => {
       const mockFn = vi.fn(async () => 'success');
       const eventListener = vi.fn();

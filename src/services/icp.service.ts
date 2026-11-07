@@ -99,6 +99,17 @@ type CanisterActor = any;
 // `ok` shape explicitly to recover narrowing on `'err' in result`.
 type CandidResult<T> = { ok: T } | { err: string };
 
+/**
+ * Dedupe key for a per-caller read. A deal page mounts several views that ask
+ * for the same transaction at once; each ask spent its own token from the
+ * 10-read client budget, so one page load tipped the "approaching rate limit"
+ * warning. Concurrent asks with the same key now share one call. The caller is
+ * in the key because the answer depends on who asks.
+ */
+function callerKey(method: string, id: string): string {
+  return `${method}:${getStorePrincipalId() ?? 'anonymous'}:${id}`;
+}
+
 // `strict` gives catch bindings type `unknown`, which is correct — a thrown
 // value need not be an Error. Narrow through here rather than asserting
 // `error.message` on something that may be a string, a Candid reject object,
@@ -1577,7 +1588,7 @@ class ICPService {
 
       const result = await this.txActor.getTransaction(txId);
       return result[0] || null;
-    });
+    }, { cacheKey: callerKey('getTransaction', String(id)) });
   }
 
   /**
@@ -1605,7 +1616,7 @@ class ICPService {
     return wrapReadCall(async () => {
       if (!this.transactionManagerActor) await this.initialize();
       return this.txActor.getNextStep(transactionId);
-    });
+    }, { cacheKey: callerKey('getNextStep', transactionId) });
   }
 
   /**
@@ -1725,7 +1736,7 @@ class ICPService {
         return JSON.parse(result[0]) as { completedStages: Record<string, number>; providerSelections: Record<string, unknown> };
       }
       return null;
-    });
+    }, { cacheKey: callerKey('getFlowState', transactionId) });
   }
 
   /**

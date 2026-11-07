@@ -3,6 +3,8 @@ import { getNextStep } from '../next-step.service';
 
 const mockIcpGetNextStep = vi.fn();
 const mockSupabaseSelect = vi.fn();
+const mockFrom = vi.fn();
+const mockIsTestAccount = vi.fn().mockResolvedValue(false);
 
 vi.mock('../icp.service', () => ({
   icpService: {
@@ -10,14 +12,23 @@ vi.mock('../icp.service', () => ({
   },
 }));
 
+// from(table).select(cols).eq(...).eq(...) resolves to mockSupabaseSelect's value.
 vi.mock('../../lib/supabase', () => ({
   supabase: {
-    from: vi.fn(() => ({
-      select: vi.fn(() => ({
-        eq: (...args: unknown[]) => mockSupabaseSelect(...args),
-      })),
-    })),
+    from: (table: string) => {
+      mockFrom(table);
+      return {
+        select: () => ({
+          eq: () => ({ eq: (...args: unknown[]) => mockSupabaseSelect(...args) }),
+        }),
+      };
+    },
   },
+}));
+
+vi.mock('../testFirm', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../testFirm')>()),
+  currentUserIsTestAccount: () => mockIsTestAccount(),
 }));
 
 vi.mock('@/utils/logger', () => ({
@@ -47,6 +58,8 @@ describe('next-step.service', () => {
   beforeEach(() => {
     mockIcpGetNextStep.mockReset();
     mockSupabaseSelect.mockReset();
+    mockFrom.mockReset();
+    mockIsTestAccount.mockResolvedValue(false);
   });
 
   it('unwraps the canister Result and converts urgency variant to text', async () => {
@@ -104,19 +117,38 @@ describe('next-step.service', () => {
     }
   });
 
-  it('enriches no_solicitor blocker with panel-match count from supabase', async () => {
+  it('should count the firms the conveyancer panel lists, not clc_practices', async () => {
     mockIcpGetNextStep.mockResolvedValue({ ok: rawCanisterRec() });
-    mockSupabaseSelect.mockResolvedValue({ count: 42, error: null });
+    mockSupabaseSelect.mockResolvedValue({
+      data: [{ id: 'a', is_test: false }, { id: 'b', is_test: null }, { id: 't', is_test: true }],
+      error: null,
+    });
     const out = await getNextStep('tx_test');
-    if ('ok' in out) {
-      const browse = out.ok.options.find((o) => o.action === 'browse_conveyancer_panel');
-      expect(browse?.panelMatchCount).toBe(42);
-    }
+    expect(mockFrom).toHaveBeenCalledWith('conveyancer_panel');
+    expect('ok' in out && out.ok.options[0].panelMatchCount).toBe(2);
+  });
+
+  it('should count only test firms for a test account, matching the panel it is shown', async () => {
+    mockIcpGetNextStep.mockResolvedValue({ ok: rawCanisterRec() });
+    mockIsTestAccount.mockResolvedValue(true);
+    mockSupabaseSelect.mockResolvedValue({
+      data: [{ id: 'a', is_test: false }, { id: 't1', is_test: true }, { id: 't2', is_test: true }],
+      error: null,
+    });
+    const out = await getNextStep('tx_test');
+    expect('ok' in out && out.ok.options[0].panelMatchCount).toBe(2);
+  });
+
+  it('should leave the count off rather than show zero firms', async () => {
+    mockIcpGetNextStep.mockResolvedValue({ ok: rawCanisterRec() });
+    mockSupabaseSelect.mockResolvedValue({ data: [], error: null });
+    const out = await getNextStep('tx_test');
+    expect('ok' in out && out.ok.options[0].panelMatchCount).toBeUndefined();
   });
 
   it('falls back to canister-only output when supabase enrichment fails', async () => {
     mockIcpGetNextStep.mockResolvedValue({ ok: rawCanisterRec() });
-    mockSupabaseSelect.mockResolvedValue({ count: null, error: { message: 'rls' } });
+    mockSupabaseSelect.mockResolvedValue({ data: null, error: { message: 'rls' } });
     const out = await getNextStep('tx_test');
     if ('ok' in out) {
       const browse = out.ok.options.find((o) => o.action === 'browse_conveyancer_panel');

@@ -412,12 +412,32 @@ export function sanitizeText(text: string): string {
 // MAIN FETCH FUNCTION
 // ============================================
 
+/**
+ * The report reads the raw actors, which icpService creates lazily. The
+ * document storage actor in particular is only made on demand and is reset
+ * on every sign-in, so opening this page straight after login found it null
+ * and reported document storage "unavailable" without ever asking it. Create
+ * the actors first; if that fails the reads below record the failure.
+ */
+async function prepareAuditActors(): Promise<void> {
+  try {
+    if (!icpService.transactionManager || !icpService.ledgerManager) {
+      await icpService.initialize();
+    }
+    await icpService.ensureDocumentStorageActor();
+  } catch (err) {
+    logger.warn('Audit report: could not prepare canister actors', err);
+  }
+}
+
 export async function fetchAuditReport(transactionId: string): Promise<AuditReport> {
   const startTime = new Date().toISOString();
   const errors: Record<string, string> = {};
   const canisterAvailability: Record<string, boolean> = {};
 
   logger.info(`Fetching audit report for transaction: ${transactionId}`);
+
+  await prepareAuditActors();
 
   // `getEventsByTransaction` is not part of the published ledger_manager
   // binding yet — events are written via `logEvent`, but no read-back query
@@ -473,7 +493,9 @@ export async function fetchAuditReport(transactionId: string): Promise<AuditRepo
   let transaction: Record<string, unknown> | null = null;
   let landRegistry: Record<string, unknown> | null = null;
   let parties: AuditParty[] = [];
-  canisterAvailability['transaction_manager'] = txResult.status === 'fulfilled';
+  // An absent actor resolves undefined rather than rejecting: that is a read
+  // that never happened, not an available canister.
+  canisterAvailability['transaction_manager'] = txResult.status === 'fulfilled' && txResult.value !== undefined;
 
   // The raw actor returns Candid `opt Transaction` as `[] | [tx]` — unwrap
   // before reading fields, or every field is `undefined` and the page shows
@@ -490,6 +512,8 @@ export async function fetchAuditReport(transactionId: string): Promise<AuditRepo
     parties = extractParties(tx);
   } else if (txResult.status === 'rejected') {
     errors['transaction_manager'] = String(txResult.reason);
+  } else if (txResult.value === undefined) {
+    errors['transaction_manager'] = 'Transaction record was not available';
   }
 
   // Extract documents

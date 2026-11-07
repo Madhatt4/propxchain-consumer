@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { StrictMode, createElement } from 'react';
+import type { ReactNode } from 'react';
 import { renderHook, act } from '@testing-library/react';
 import { useTransactionFlow } from '../../hooks/useTransactionFlow';
 
@@ -326,6 +328,136 @@ describe('useTransactionFlow', () => {
     expect(mockLogEvent).not.toHaveBeenCalled();
   });
 
+  describe('conveyancer stages complete only when the firm is on the deal', () => {
+    it('should not complete seller-5 from a flag written when estimates were requested', async () => {
+      mockGetTransaction.mockResolvedValue({
+        seller: { toString: () => 'test-principal' },
+        buyer: { toString: () => 'buyer-principal' },
+        sellerSolicitor: [],
+      });
+      mockGetFlowState.mockResolvedValue({
+        completedStages: { 'seller-5': Date.now() },
+        providerSelections: {},
+      });
+      const { result } = renderHook(() => useTransactionFlow('tx-123'));
+      await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
+      expect(result.current.stages.find((s) => s.id === 'seller-5')?.status).toBe('active');
+      expect(result.current.stages.find((s) => s.id === 'seller-6')?.status).toBe('locked');
+      expect(result.current.syntheticEvents.map((e) => e.eventType)).not.toContain('seller_conveyancer_confirmed');
+    });
+
+    it('should complete seller-5 once the seller conveyancer slot is filled on chain', async () => {
+      mockGetTransaction.mockResolvedValue({
+        seller: { toString: () => 'test-principal' },
+        buyer: { toString: () => 'buyer-principal' },
+        sellerSolicitor: [{ principal: 'firm-principal' }],
+      });
+      const { result } = renderHook(() => useTransactionFlow('tx-123'));
+      await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
+      expect(result.current.stages.find((s) => s.id === 'seller-5')?.status).toBe('completed');
+    });
+
+    it('should complete buyer-5 from the buyer conveyancer slot, not the seller one', async () => {
+      mockGetTransaction.mockResolvedValue({
+        seller: { toString: () => 'seller-principal' },
+        buyer: { toString: () => 'test-principal' },
+        sellerSolicitor: [{ principal: 'seller-firm' }],
+        buyerSolicitor: [],
+      });
+      const { result } = renderHook(() => useTransactionFlow('tx-123'));
+      await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
+      expect(result.current.stages.find((s) => s.id === 'buyer-5')?.status).toBe('active');
+    });
+
+    it('should complete seller-5 and unlock Contract & Exchange when the legacy solicitor field is set', async () => {
+      mockGetTransaction.mockResolvedValue({
+        seller: { toString: () => 'test-principal' },
+        buyer: { toString: () => 'buyer-principal' },
+        sellerSolicitor: [],
+        solicitor: [{ toText: () => 'legacy-firm' }],
+      });
+      const { result } = renderHook(() => useTransactionFlow('tx-123'));
+      await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
+      const seller5 = result.current.stages.find((s) => s.id === 'seller-5');
+      expect(seller5?.status).toBe('completed');
+      expect(seller5?.completionBasis).toBeUndefined();
+      expect(result.current.stages.find((s) => s.id === 'seller-6')?.status).toBe('active');
+    });
+
+    it('should unlock Contract & Exchange once the slot is filled, as verified', async () => {
+      mockGetTransaction.mockResolvedValue({
+        seller: { toString: () => 'test-principal' },
+        buyer: { toString: () => 'buyer-principal' },
+        sellerSolicitor: [{ principal: 'firm-principal' }],
+      });
+      const { result } = renderHook(() => useTransactionFlow('tx-123'));
+      await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
+      expect(result.current.stages.find((s) => s.id === 'seller-5')?.completionBasis).toBeUndefined();
+      expect(result.current.stages.find((s) => s.id === 'seller-6')?.status).toBe('active');
+    });
+
+    it('should complete seller-5 as client-confirmed from the explicit flow-state value', async () => {
+      mockGetTransaction.mockResolvedValue({
+        seller: { toString: () => 'test-principal' },
+        buyer: { toString: () => 'buyer-principal' },
+      });
+      mockGetFlowState.mockResolvedValue({
+        completedStages: { 'seller-5:client-confirmed': Date.now() },
+        providerSelections: {},
+      });
+      const { result } = renderHook(() => useTransactionFlow('tx-123'));
+      await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
+      const seller5 = result.current.stages.find((s) => s.id === 'seller-5');
+      expect(seller5?.status).toBe('completed');
+      expect(seller5?.completionBasis).toBe('client-confirmed');
+      expect(result.current.stages.find((s) => s.id === 'seller-6')?.status).toBe('active');
+    });
+
+    it('should record the client confirmation under its own key and audit event type', async () => {
+      mockGetTransaction.mockResolvedValue({
+        seller: { toString: () => 'test-principal' },
+        buyer: { toString: () => 'buyer-principal' },
+      });
+      const { result } = renderHook(() => useTransactionFlow('tx-123'));
+      await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
+      mockSetFlowState.mockClear();
+      mockLogEvent.mockClear();
+
+      act(() => result.current.confirmConveyancerDirect('seller-5'));
+
+      expect(result.current.stages.find((s) => s.id === 'seller-5')?.completionBasis).toBe('client-confirmed');
+      expect(result.current.stages.find((s) => s.id === 'seller-6')?.status).toBe('active');
+      const saved = mockSetFlowState.mock.calls[0]?.[1] as { completedStages: Record<string, number> };
+      expect(Object.keys(saved.completedStages)).toEqual(['seller-5:client-confirmed']);
+      await vi.waitFor(() => expect(mockLogEvent).toHaveBeenCalledWith(
+        'tx-123', 'seller_conveyancer_client_confirmed', expect.any(String), [],
+      ));
+    });
+
+    it('should ignore confirmConveyancerDirect for a stage that is not a conveyancer stage', async () => {
+      const { result } = renderHook(() => useTransactionFlow('tx-123'));
+      await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
+      mockSetFlowState.mockClear();
+
+      act(() => result.current.confirmConveyancerDirect('seller-3'));
+
+      expect(mockSetFlowState).not.toHaveBeenCalled();
+    });
+
+    it('should write no flag and no audit event when completeStage is called for seller-5', async () => {
+      const { result } = renderHook(() => useTransactionFlow('tx-123'));
+      await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
+      mockSetFlowState.mockClear();
+      mockLogEvent.mockClear();
+
+      act(() => result.current.completeStage('seller-5'));
+
+      expect(mockSetFlowState).not.toHaveBeenCalled();
+      expect(mockLogEvent).not.toHaveBeenCalled();
+      expect(result.current.stages.find((s) => s.id === 'seller-5')?.status).not.toBe('completed');
+    });
+  });
+
   it('should resolve buyer-4 as watching while the seller has not completed the property info forms', async () => {
     mockGetTransactionProgress.mockResolvedValue({
       id: 'tx-123', seller: 'seller-principal', buyer: 'test-principal',
@@ -440,6 +572,49 @@ describe('useTransactionFlow', () => {
       const { result } = renderHook(() => useTransactionFlow('tx-123'));
       await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
       expect(() => act(() => result.current.completeStage('seller-1'))).not.toThrow();
+    });
+  });
+
+  describe('flow-state writes happen once, outside setState updaters', () => {
+    const strict = ({ children }: { children: ReactNode }): ReturnType<typeof createElement> => createElement(StrictMode, null, children);
+
+    it('should write completeStage to chain once under StrictMode', async () => {
+      const { result } = renderHook(() => useTransactionFlow('tx-123'), { wrapper: strict });
+      await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
+      mockSetFlowState.mockClear();
+      mockLogEvent.mockClear();
+
+      act(() => result.current.completeStage('seller-3'));
+
+      expect(mockSetFlowState).toHaveBeenCalledTimes(1);
+      expect(mockLogEvent).toHaveBeenCalledTimes(1);
+    });
+
+    it('should write the client confirmation once, and not again on a second click', async () => {
+      const { result } = renderHook(() => useTransactionFlow('tx-123'), { wrapper: strict });
+      await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
+      mockSetFlowState.mockClear();
+      mockLogEvent.mockClear();
+
+      act(() => result.current.confirmConveyancerDirect('seller-5'));
+      act(() => result.current.confirmConveyancerDirect('seller-5'));
+
+      expect(mockSetFlowState).toHaveBeenCalledTimes(1);
+      expect(mockLogEvent).toHaveBeenCalledTimes(1);
+    });
+
+    it('should keep both of two back-to-back changes made in one tick', async () => {
+      const { result } = renderHook(() => useTransactionFlow('tx-123'));
+      await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      act(() => {
+        result.current.completeStage('seller-1');
+        result.current.completeStage('seller-3');
+      });
+
+      const stages = result.current.stages;
+      expect(stages.find((s) => s.id === 'seller-1')?.status).toBe('completed');
+      expect(stages.find((s) => s.id === 'seller-3')?.status).toBe('completed');
     });
   });
 
