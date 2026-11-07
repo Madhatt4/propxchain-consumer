@@ -4,6 +4,7 @@ import { HighlightBadge } from './HighlightBadge';
 import { StarRating } from './StarRating';
 import { TierBadge } from './TierBadge';
 import { SlaIndicator } from './SlaIndicator';
+import { PexaFact } from './PexaFact';
 
 interface ProviderCardProps {
   provider: Provider;
@@ -57,6 +58,10 @@ export function ProviderCard({
           <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
             {provider.tagline}
           </p>
+          <PexaFact
+            isPexaEnabled={provider.isPexaEnabled}
+            className="mt-0.5 block text-xs text-gray-500 dark:text-gray-400"
+          />
         </div>
       </div>
 

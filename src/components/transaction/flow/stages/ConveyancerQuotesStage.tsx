@@ -14,6 +14,7 @@ import type { ReactNode } from 'react';
 import { Loader2, MailCheck } from 'lucide-react';
 import { ConveyancerPanel } from '../../../providers/ConveyancerPanel';
 import { QuoteComparisonView } from '../../../providers/QuoteComparisonView';
+import { PexaFact } from '../../../providers/PexaFact';
 import { conveyancerQuoteService } from '../../../../services/conveyancerQuote.service';
 import { loadBuyerPack } from '../../../../services/buyerPack.service';
 import type { ConveyancerQuote } from '../../../providers/types';
@@ -136,6 +137,10 @@ export function ConveyancerQuotesStage({
             <p className="text-sm font-medium text-teal-700 dark:text-teal-300">
               {acceptedQuote.conveyancerName} instructed
             </p>
+            <PexaFact
+              isPexaEnabled={acceptedQuote.isConveyancerPexaEnabled}
+              className="mt-1 block text-xs text-teal-600 dark:text-teal-400"
+            />
             <p className="text-xs text-teal-600 dark:text-teal-400 mt-1">
               We&rsquo;ve emailed the firm an activation link. They&rsquo;ll appear on this
               transaction with their CLC-registered details once they join.

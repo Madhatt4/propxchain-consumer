@@ -22,6 +22,8 @@ export interface ConveyancerPanelRow {
   review_count: number | null;
   active_on_panel: boolean;
   status: string;
+  /** Optional so a row read before the column existed still maps. */
+  pexa_enabled?: boolean | null;
 }
 
 function deriveFeatures(services: string | null): [string, string, string, string] {
@@ -56,6 +58,7 @@ export function rowToProvider(row: ConveyancerPanelRow, distanceMiles?: number):
     postcode: row.postcode ?? undefined,
     distanceMiles: (distanceMiles !== undefined && !isNaN(distanceMiles)) ? Math.round(distanceMiles * 10) / 10 : undefined,
     highlight: row.recommended ? 'Recommended' : undefined,
+    isPexaEnabled: row.pexa_enabled === true,
   };
 }
 

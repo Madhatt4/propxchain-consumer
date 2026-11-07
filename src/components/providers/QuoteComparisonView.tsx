@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { ConveyancerQuote } from './types';
 import { conveyancerQuoteService } from '../../services/conveyancerQuote.service';
+import { PexaFact } from './PexaFact';
 
 interface QuoteComparisonViewProps {
   quotes: ConveyancerQuote[];
@@ -67,9 +68,15 @@ function QuoteCard({ quote, hasAccepted, onAccept, isAccepting }: QuoteCardProps
     >
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
-        <h3 className="font-semibold text-base text-[#1A1A1A] dark:text-[#F1F5F9] leading-snug">
-          {quote.conveyancerName}
-        </h3>
+        <div className="min-w-0">
+          <h3 className="font-semibold text-base text-[#1A1A1A] dark:text-[#F1F5F9] leading-snug">
+            {quote.conveyancerName}
+          </h3>
+          <PexaFact
+            isPexaEnabled={quote.isConveyancerPexaEnabled}
+            className="mt-1 block text-xs text-[#6B7280] dark:text-[#94A3B8]"
+          />
+        </div>
         <span
           className={[
             'shrink-0 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',

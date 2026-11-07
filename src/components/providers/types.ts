@@ -26,6 +26,10 @@ export interface Provider {
   searchCompatibility?: 'accepts' | 'reorders' | 'unknown' | 'not_applicable';
   /** Short human-readable reason for the badge, e.g. "Accepts your existing searches". */
   searchCompatibilityReason?: string;
+  /** Conveyancer firm completes on PEXA (conveyancer_panel.pexa_enabled). A
+   *  plain fact for the client — never sort, filter or badge on it. Absent for
+   *  non-conveyancer providers. */
+  isPexaEnabled?: boolean;
 }
 
 /** "Quote on request" when no partner has quoted — the UI never shows £0.00 or an estimate. */
@@ -76,6 +80,8 @@ export interface ConveyancerQuote {
   transactionId: string;
   conveyancerId: string;
   conveyancerName: string;
+  /** The estimating firm completes on PEXA. A plain fact, never a ranking. */
+  isConveyancerPexaEnabled?: boolean;
   status: 'requested' | 'quoted' | 'accepted' | 'declined' | 'expired';
   propertyAddress: string;
   titleNumber?: string;
