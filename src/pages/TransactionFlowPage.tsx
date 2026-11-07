@@ -35,7 +35,7 @@ import BotPanelCard from '../components/transaction/BotPanelCard';
 import NextStepCard from '../components/common/NextStepCard';
 import { StallLine } from '../components/transaction/flow/StallLine';
 import { ConveyancersLine } from '../components/transaction/flow/ConveyancersLine';
-import { conveyancerMatterPath, hasRealBuyer, NO_CONVEYANCERS } from '@/lib/dealConveyancers';
+import { conveyancerMatterPath, hasRealBuyer, NO_CONVEYANCERS, type DealConveyancers } from '@/lib/dealConveyancers';
 import { OfferExpiryLine } from '../components/transaction/flow/OfferExpiryLine';
 import { SearchAgeLine } from '../components/transaction/flow/SearchAgeLine';
 import { MandateBanners } from '../components/transaction/flow/MandateBanners';
@@ -216,6 +216,8 @@ interface StageComponentProps {
   onAfterEdit?: () => void;
   /** Agreed price from the canister, anchored in the completion hashes. */
   purchasePrice?: number;
+  /** Each side's firm from the on-chain solicitor slots (lib/dealConveyancers). */
+  conveyancers?: DealConveyancers;
   /** The viewer is a buyer or seller party, not a delegate (Completion stage). */
   viewerIsParty?: boolean;
   /** Whether the viewer may confirm keys released (Completion stage). */
@@ -362,6 +364,7 @@ function renderStageContent(stageId: string, props: StageComponentProps): ReactE
           // refresh the next-step readers.
           onQuotesRequested={props.isEditing ? handleProviderEditComplete : (): void => props.onAfterEdit?.()}
           readBuyerLender={stageId === 'buyer-5'}
+          joinedConveyancer={props.conveyancers?.[stageSide] ?? null}
           onLenderCaptured={
             canCaptureLender
               ? (lender): void => { void declareBuyerPack(props.transactionId as string, { lenderName: lender }).catch((err: unknown) => logger.warn('[funding] lender capture failed', err)); }
@@ -906,6 +909,7 @@ export default function TransactionFlowPage(): ReactElement {
                           viewerIsParty: transaction ? isDealParty(transaction, principalId) : false,
                           keysRole: transaction ? keysRoleOf(transaction, principalId) : 'none',
                           sellerConveyancer: transaction?.sellerConveyancer ?? null,
+                          conveyancers: transaction?.conveyancers ?? NO_CONVEYANCERS,
                         }))}
                     </StageCard>
                   </div>

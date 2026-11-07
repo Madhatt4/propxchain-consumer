@@ -8,10 +8,12 @@
  *   quote accepted     → instructed state; the winning firm has been emailed
  *                        a one-time activation link and appears on the
  *                        transaction once they redeem it
+ *   firm joined        → the side's solicitor slot is filled: the firm is on
+ *                        the deal, so the stage says so instead
  */
 import { useCallback, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Loader2, MailCheck } from 'lucide-react';
+import { Loader2, MailCheck, Scale } from 'lucide-react';
 import { ConveyancerPanel } from '../../../providers/ConveyancerPanel';
 import { QuoteComparisonView } from '../../../providers/QuoteComparisonView';
 import { PexaFact } from '../../../providers/PexaFact';
@@ -24,6 +26,7 @@ import { seedTransactionFactsFromListing, tenureLabel } from '../../../../servic
 import { quoteTransactionTypeFor, sideOfQuoteType } from './conveyancerQuoteSide';
 import type { QuoteSideBlock } from './conveyancerQuoteSide';
 import type { DealSide } from '../../../../lib/dealAccess';
+import type { DealConveyancer } from '../../../../lib/dealConveyancers';
 import type { JourneyRole } from '../../../../types/stage.types';
 
 const SIDE_BLOCK_COPY: Record<QuoteSideBlock, string> = {
@@ -49,6 +52,14 @@ interface ConveyancerQuotesStageProps {
   readBuyerLender?: boolean;
   /** Fires when a fresh batch of quotes has been requested (stage-complete signal). */
   onQuotesRequested: () => void;
+  /** This side's firm from the on-chain solicitor slot, once it has joined. */
+  joinedConveyancer?: DealConveyancer | null;
+}
+
+/** The joined line: "your" for the side's own party, the side's name for anyone else. */
+function joinedConveyancerText(firmName: string, stageSide: JourneyRole, viewerSide: DealSide | undefined): string {
+  const whose = viewerSide === stageSide ? 'your' : `the ${stageSide}'s`;
+  return `${firmName} is on this transaction as ${whose} conveyancer.`;
 }
 
 export function ConveyancerQuotesStage({
@@ -63,6 +74,7 @@ export function ConveyancerQuotesStage({
   readBuyerLender = false,
   onLenderCaptured,
   onQuotesRequested,
+  joinedConveyancer = null,
 }: ConveyancerQuotesStageProps): ReactNode {
   const [buyerLender, setBuyerLender] = useState<string | undefined>(lenderName);
   const [buyerIsCash, setBuyerIsCash] = useState(false);
@@ -124,7 +136,10 @@ export function ConveyancerQuotesStage({
     );
   }
 
-  if ((quotes.length === 0 || showPanel) && !side.ok) {
+  // A firm already on this side needs no panel: only an explicit ask opens it.
+  const needsPanel = showPanel || (quotes.length === 0 && !joinedConveyancer);
+
+  if (needsPanel && !side.ok) {
     return (
       <p role="status" className="py-4 text-sm text-gray-600 dark:text-slate-300">
         {SIDE_BLOCK_COPY[side.reason]}
@@ -132,7 +147,7 @@ export function ConveyancerQuotesStage({
     );
   }
 
-  if ((quotes.length === 0 || showPanel) && side.ok) {
+  if (needsPanel && side.ok) {
     return (
       <ConveyancerPanel
         postcode={postcode}
@@ -157,9 +172,32 @@ export function ConveyancerQuotesStage({
 
   const acceptedQuote = quotes.find((q) => q.status === 'accepted');
 
+  const joinedFirm = joinedConveyancer
+    ? joinedConveyancer.firmName ?? acceptedQuote?.conveyancerName ?? 'A firm on the PropXchain panel'
+    : null;
+
   return (
     <div className="flex flex-col gap-4">
-      {acceptedQuote && (
+      {joinedFirm && (
+        <div
+          data-testid="conveyancer-joined"
+          className="flex items-start gap-3 rounded-lg border border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-900/20 px-4 py-3"
+        >
+          <Scale className="h-5 w-5 text-teal-600 dark:text-teal-400 shrink-0 mt-0.5" aria-hidden />
+          <div>
+            <p className="text-sm font-medium text-teal-700 dark:text-teal-300">
+              {joinedConveyancerText(joinedFirm, stageSide, viewerSide)}
+            </p>
+            {acceptedQuote && (
+              <PexaFact
+                isPexaEnabled={acceptedQuote.isConveyancerPexaEnabled}
+                className="mt-1 block text-xs text-teal-600 dark:text-teal-400"
+              />
+            )}
+          </div>
+        </div>
+      )}
+      {acceptedQuote && !joinedFirm && (
         <div className="flex items-start gap-3 rounded-lg border border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-900/20 px-4 py-3">
           <MailCheck className="h-5 w-5 text-teal-600 dark:text-teal-400 shrink-0 mt-0.5" aria-hidden />
           <div>
@@ -178,9 +216,9 @@ export function ConveyancerQuotesStage({
         </div>
       )}
 
-      <QuoteComparisonView quotes={quotes} onAccepted={() => { void loadQuotes(); }} />
+      {quotes.length > 0 && <QuoteComparisonView quotes={quotes} onAccepted={() => { void loadQuotes(); }} />}
 
-      {!acceptedQuote && side.ok && (
+      {!acceptedQuote && !joinedFirm && side.ok && (
         <button
           type="button"
           onClick={() => setShowPanel(true)}
