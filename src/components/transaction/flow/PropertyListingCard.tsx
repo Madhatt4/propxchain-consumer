@@ -4,6 +4,7 @@ import { Home, Camera, BedDouble, ShowerHead, Check } from 'lucide-react';
 import type { RightmovePropertyListing } from '../../../types/rightmove.types';
 import { GlassCard } from '../../ui/GlassCard';
 import { safeExternalUrl } from '@/utils/externalUrl';
+import { listingDescriptionText } from '@/utils/listingText';
 
 interface PropertyListingCardProps {
   listing: RightmovePropertyListing | null;
@@ -158,7 +159,7 @@ export function PropertyListingCard({ listing }: PropertyListingCardProps): Reac
       <hr className="border-gray-200 dark:border-slate-700/8 my-4" />
 
       {/* Description */}
-      <p className="text-xs text-gray-500 dark:text-slate-400 leading-relaxed line-clamp-4">{listing.description}</p>
+      <p className="whitespace-pre-line text-xs text-gray-500 dark:text-slate-400 leading-relaxed line-clamp-4">{listingDescriptionText(listing.description)}</p>
 
       {/* Tags */}
       <div className="flex gap-2 mt-3 flex-wrap">

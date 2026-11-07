@@ -10,6 +10,7 @@
 import type { ListingImage } from '@/types/listing.types';
 import type { AgentListingStatus } from '@/types/estateAgentListing.types';
 import { STATUS_LABELS } from '@/components/estate-agent/ListingStatusBadge';
+import { listingDescriptionText } from '@/utils/listingText';
 
 const GBP_FORMATTER = new Intl.NumberFormat('en-GB', {
   style: 'currency',
@@ -91,7 +92,7 @@ export interface DescriptionAndFeaturesProps {
 export function DescriptionAndFeatures({ description, keyFeatures }: DescriptionAndFeaturesProps): JSX.Element {
   return (
     <div className="space-y-3 px-4">
-      <p className="font-[DM_Sans] text-sm leading-relaxed text-[#1A1A1A]">{description}</p>
+      <p className="whitespace-pre-line font-[DM_Sans] text-sm leading-relaxed text-[#1A1A1A]">{listingDescriptionText(description)}</p>
       {keyFeatures.length > 0 && (
         <ul className="list-inside list-disc space-y-1 font-[DM_Sans] text-sm text-[#1A1A1A]">
           {keyFeatures.map((feature) => (

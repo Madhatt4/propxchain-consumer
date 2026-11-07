@@ -3,6 +3,7 @@ import { Home, BedDouble, Bath, MapPin, Building2, ChevronDown, ChevronUp } from
 import type { PropertyListing, ProvenanceMap, FieldProvenance } from '@/types/listing.types';
 import { formatPrice } from '@/services/landRegistryService';
 import { safeExternalUrl } from '@/utils/externalUrl';
+import { listingDescriptionText } from '@/utils/listingText';
 
 interface Props {
   listing: PropertyListing;
@@ -159,7 +160,7 @@ const ListingPreviewCard: React.FC<Props> = ({ listing, provenance }) => {
             </button>
             {showDescription && (
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 whitespace-pre-line max-h-40 overflow-y-auto">
-                {listing.description}
+                {listingDescriptionText(listing.description)}
               </p>
             )}
           </div>
