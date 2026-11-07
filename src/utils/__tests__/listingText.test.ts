@@ -21,6 +21,10 @@ describe('listingDescriptionText', () => {
     expect(listingDescriptionText('Garden &amp; garage<br/>Freehold')).toBe('Garden & garage\nFreehold');
   });
 
+  it('should turn non-breaking spaces into ordinary spaces', () => {
+    expect(listingDescriptionText('<p>Two&nbsp;bedrooms</p>')).toBe('Two bedrooms');
+  });
+
   it('should never keep script or style content, or any markup', () => {
     const raw = '<p onclick="x()">Hello</p><script>alert(1)</script><style>p{}</style><img src=x onerror=alert(1)>';
     const out = listingDescriptionText(raw);
