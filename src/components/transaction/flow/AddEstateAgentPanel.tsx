@@ -8,23 +8,24 @@
  * the agent accepts, MandateBanners takes over: it names the agency and
  * carries the Withdraw button, which is how the seller removes them.
  *
- * Shown only to the seller themselves: not to an agency member acting for
- * the seller (they see the acting-for banner), and not once an agency
- * already acts for this seller.
+ * Shown only to the seller themselves, keyed on the real deal side (the
+ * chain's seller slot), never on the page's role label, which defaults to
+ * seller: not to an agency member acting for the seller (they see the
+ * acting-for banner), and not once an agency already acts for this seller.
  */
 import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMandate } from '@/hooks/useMandate';
 import { useEstateAgentOrg } from '@/hooks/useEstateAgentOrg';
 import {
-  AgentInviteError, SEND_ERROR_COPY, cancelAgentInvite, listAgentInvites, openInvite, sendAgentInvite, type AgentInvite,
+  cancelAgentInvite, listAgentInvites, openInvite, sendAgentInvite, sendErrorText, type AgentInvite,
 } from '@/services/agentInvite.service';
-import type { DealSide } from '@/services/shareParty.service';
+import type { DealSide } from '@/lib/dealAccess';
 
 interface AddEstateAgentPanelProps {
   transactionId: string;
-  myRole: DealSide;
-  propertyAddress?: string;
+  /** The viewer's side on the deal from the chain (dealSideOf), not the page's role label. */
+  dealSide: DealSide;
   className?: string;
 }
 
@@ -36,11 +37,6 @@ const LINK = 'font-[DM_Sans] text-sm text-[#0F766E] underline-offset-2 hover:und
 
 function ukDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-}
-
-function errorText(err: unknown): string {
-  const code = err instanceof AgentInviteError ? err.code : 'request_failed';
-  return SEND_ERROR_COPY[code] ?? 'Something went wrong. Try again in a moment.';
 }
 
 function PendingInvite({ invite, onCancel, isCancelling, cancelFailed, className }: {
@@ -88,16 +84,16 @@ function InviteForm({ onSend, isSending, sendError, className }: {
         </label>
         <button type="submit" className={BUTTON} disabled={isSending}>{isSending ? 'Sending…' : 'Send invitation'}</button>
       </form>
-      {sendError ? <p role="alert" className="mt-2 font-[DM_Sans] text-sm text-[#9A3412]">{errorText(sendError)}</p> : null}
+      {sendError ? <p role="alert" className="mt-2 font-[DM_Sans] text-sm text-[#9A3412]">{sendErrorText(sendError)}</p> : null}
     </section>
   );
 }
 
-export function AddEstateAgentPanel({ transactionId, myRole, propertyAddress, className = '' }: AddEstateAgentPanelProps): JSX.Element | null {
-  const mandate = useMandate(transactionId, myRole);
+export function AddEstateAgentPanel({ transactionId, dealSide, className = '' }: AddEstateAgentPanelProps): JSX.Element | null {
+  const mandate = useMandate(transactionId, 'seller');
   const { organisationId } = useEstateAgentOrg();
   const queryClient = useQueryClient();
-  const isSeller = myRole === 'seller' && !organisationId && mandate.actingFor.length === 0;
+  const isSeller = dealSide === 'seller' && !organisationId && mandate.actingFor.length === 0;
   const canInvite = isSeller && !mandate.isLoading && !mandate.grantedByMe;
 
   const invites = useQuery({
@@ -107,12 +103,20 @@ export function AddEstateAgentPanel({ transactionId, myRole, propertyAddress, cl
   });
   const refresh = (): void => { void queryClient.invalidateQueries({ queryKey: ['agent-invites', transactionId] }); };
   const send = useMutation({
-    mutationFn: (v: { email: string; agencyName: string }) => sendAgentInvite({ transactionId, agentEmail: v.email, agencyName: v.agencyName, propertyAddress }),
+    mutationFn: (v: { email: string; agencyName: string }) => sendAgentInvite({ transactionId, agentEmail: v.email, agencyName: v.agencyName }),
     onSuccess: refresh,
   });
   const cancel = useMutation({ mutationFn: (id: string) => cancelAgentInvite(id), onSuccess: refresh });
 
   if (!canInvite || invites.isLoading) return null;
+  // A failed read must never look like "no invitation yet": that would invite a second agent over a pending one.
+  if (invites.isError) {
+    return (
+      <p role="alert" data-testid="agent-invite-load-error" className={`${PANEL} ${className} font-[DM_Sans] text-sm text-[#9A3412]`}>
+        Couldn&rsquo;t load your agent invitations. Refresh the page to try again.
+      </p>
+    );
+  }
   const pending = openInvite(invites.data ?? []);
   if (pending) {
     return <PendingInvite invite={pending} onCancel={() => cancel.mutate(pending.id)} isCancelling={cancel.isPending} cancelFailed={cancel.isError} className={className} />;

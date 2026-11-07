@@ -27,11 +27,11 @@ import { AgentInviteError } from '@/services/agentInvite.service';
 
 const FUTURE = new Date(Date.now() + 7 * 86400000).toISOString();
 
-function renderPanel(myRole: 'seller' | 'buyer' = 'seller'): void {
+function renderPanel(dealSide: 'seller' | 'buyer' | 'other' = 'seller'): void {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   render(
     <QueryClientProvider client={qc}>
-      <AddEstateAgentPanel transactionId="tx_1" myRole={myRole} propertyAddress="12 High Street, Sandy" />
+      <AddEstateAgentPanel transactionId="tx_1" dealSide={dealSide} />
     </QueryClientProvider>,
   );
 }
@@ -44,14 +44,14 @@ describe('AddEstateAgentPanel', () => {
     listAgentInvites.mockResolvedValue([]);
   });
 
-  it('should let the seller invite their agent by email, with the property address', async () => {
+  it('should let the seller invite their agent by email; the address is the server\'s to add', async () => {
     sendAgentInvite.mockResolvedValue({ inviteId: 'i1', expiresAt: FUTURE });
     renderPanel();
     fireEvent.change(await screen.findByLabelText(/Agent.s email/), { target: { value: 'agent@agency.co.uk' } });
     fireEvent.change(screen.getByLabelText(/Agency name/), { target: { value: 'Smith & Co' } });
     fireEvent.click(screen.getByRole('button', { name: 'Send invitation' }));
     await waitFor(() => expect(sendAgentInvite).toHaveBeenCalledWith({
-      transactionId: 'tx_1', agentEmail: 'agent@agency.co.uk', agencyName: 'Smith & Co', propertyAddress: '12 High Street, Sandy',
+      transactionId: 'tx_1', agentEmail: 'agent@agency.co.uk', agencyName: 'Smith & Co',
     }));
     expect(listAgentInvites).toHaveBeenCalledTimes(2);
   });
@@ -81,7 +81,7 @@ describe('AddEstateAgentPanel', () => {
 
   it('should stay hidden once an agency acts for the seller, for the agent, and for the buyer', () => {
     mockMandate.mockReturnValue({ actingFor: [], grantedByMe: { id: 'd1' }, agencyName: 'Smith & Co', isLoading: false });
-    const { unmount } = render(<QueryClientProvider client={new QueryClient()}><AddEstateAgentPanel transactionId="tx_1" myRole="seller" /></QueryClientProvider>);
+    const { unmount } = render(<QueryClientProvider client={new QueryClient()}><AddEstateAgentPanel transactionId="tx_1" dealSide="seller" /></QueryClientProvider>);
     expect(screen.queryByTestId('add-estate-agent')).not.toBeInTheDocument();
     unmount();
 
@@ -92,6 +92,23 @@ describe('AddEstateAgentPanel', () => {
     mockMandate.mockReturnValue({ actingFor: [], grantedByMe: null, agencyName: null, isLoading: false });
     renderPanel('buyer');
     expect(screen.queryByTestId('add-estate-agent')).not.toBeInTheDocument();
+    renderPanel('other');
+    expect(screen.queryByTestId('add-estate-agent')).not.toBeInTheDocument();
     expect(listAgentInvites).not.toHaveBeenCalled();
+  });
+
+  it('should say the invitations could not be loaded instead of offering the form', async () => {
+    listAgentInvites.mockRejectedValue(new Error('load_failed'));
+    renderPanel();
+    expect(await screen.findByTestId('agent-invite-load-error')).toHaveTextContent('Couldn\u2019t load your agent invitations');
+    expect(screen.queryByTestId('add-estate-agent')).not.toBeInTheDocument();
+  });
+
+  it('should tell the seller plainly when another agency already lists the sale', async () => {
+    sendAgentInvite.mockRejectedValue(new AgentInviteError('deal_already_listed', 'Other Agency'));
+    renderPanel();
+    fireEvent.change(await screen.findByLabelText(/Agent.s email/), { target: { value: 'agent@agency.co.uk' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Send invitation' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Other Agency already has this sale in its PropXchain listings');
   });
 });

@@ -156,7 +156,7 @@ describe('<RegisterEstateAgentPage>', () => {
     signUp.mockResolvedValue({ error: null });
     render(<MemoryRouter initialEntries={[`/register/estate-agent?invite=${code}`]}><RegisterEstateAgentPage /></MemoryRouter>);
     expect(screen.getByTestId('agent-invite-note')).toHaveTextContent('the sale is added to your listings');
-    expect(localStorage.getItem('propxchain_pending_invite_url')).toBe(`/agent/join/${code}`);
+    expect(JSON.parse(localStorage.getItem('propxchain_pending_agent_invite') ?? '{}').path).toBe(`/agent/join/${code}`);
 
     fillRequiredBusinessFields();
     fireEvent.click(screen.getByRole('button', { name: /continue/i }));
@@ -172,5 +172,6 @@ describe('<RegisterEstateAgentPage>', () => {
     render(<MemoryRouter initialEntries={['/register/estate-agent?invite=/dashboard']}><RegisterEstateAgentPage /></MemoryRouter>);
     expect(screen.queryByTestId('agent-invite-note')).not.toBeInTheDocument();
     expect(localStorage.getItem('propxchain_pending_invite_url')).toBeNull();
+    expect(localStorage.getItem('propxchain_pending_agent_invite')).toBeNull();
   });
 });

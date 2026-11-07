@@ -10,7 +10,7 @@ const { invoke, getSession, buildPrincipalProof } = vi.hoisted(() => ({
 vi.mock('../../lib/supabase', () => ({ supabase: { functions: { invoke }, auth: { getSession } } }));
 vi.mock('../principalProof', () => ({ buildPrincipalProof }));
 
-import { AgentInviteError, openInvite, sendAgentInvite, type AgentInvite } from '../agentInvite.service';
+import { AgentInviteError, openInvite, sendAgentInvite, sendErrorText, type AgentInvite } from '../agentInvite.service';
 
 const NOW = new Date('2026-11-07T12:00:00Z');
 const invite = (over: Partial<AgentInvite>): AgentInvite => ({
@@ -37,10 +37,10 @@ describe('sendAgentInvite', () => {
 
   it('should sign a proof bound to the deal and the seller, and send it with the invite', async () => {
     invoke.mockResolvedValue({ data: { inviteId: 'i1', expiresAt: 'x' }, error: null });
-    await sendAgentInvite({ transactionId: 'tx_1', agentEmail: 'a@b.co', agencyName: '', propertyAddress: '12 High St' });
+    await sendAgentInvite({ transactionId: 'tx_1', agentEmail: 'a@b.co', agencyName: '' });
     expect(buildPrincipalProof).toHaveBeenCalledWith('agent-invite:create:tx_1:seller-user');
     expect(invoke).toHaveBeenCalledWith('agent-invite', {
-      body: { action: 'create', transactionId: 'tx_1', agentEmail: 'a@b.co', agencyName: null, propertyAddress: '12 High St', principal: 'p', publicKeyDer: 'k', signature: 's' },
+      body: { action: 'create', transactionId: 'tx_1', agentEmail: 'a@b.co', agencyName: null, principal: 'p', publicKeyDer: 'k', signature: 's' },
     });
   });
 
@@ -55,5 +55,13 @@ describe('sendAgentInvite', () => {
     getSession.mockResolvedValue({ data: { session: { user: { id: 'u' } } } });
     buildPrincipalProof.mockRejectedValue(new Error('no_identity'));
     await expect(sendAgentInvite({ transactionId: 'tx_1', agentEmail: 'a@b.co' })).rejects.toHaveProperty('code', 'no_identity');
+  });
+});
+
+describe('sendErrorText', () => {
+  it('should name the agency that already lists the sale', () => {
+    expect(sendErrorText(new AgentInviteError('deal_already_listed', 'Smith & Co'))).toMatch(/^Smith & Co already has this sale/);
+    expect(sendErrorText(new AgentInviteError('deal_already_listed'))).toMatch(/^Another estate agency/);
+    expect(sendErrorText(new Error('x'))).toBe('Something went wrong. Try again in a moment.');
   });
 });

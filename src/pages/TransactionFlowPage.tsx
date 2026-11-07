@@ -763,12 +763,7 @@ export default function TransactionFlowPage(): ReactElement {
         {id && <MandateBanners transactionId={id} myRole={userRole} className="mb-4" />}
         {/* The seller adds their estate agent; once accepted the banner above takes over. */}
         {id && (
-          <AddEstateAgentPanel
-            transactionId={id}
-            myRole={userRole}
-            propertyAddress={propertyAddress !== 'Unknown property' ? propertyAddress : undefined}
-            className="mb-4"
-          />
+          <AddEstateAgentPanel transactionId={id} dealSide={dealSide} className="mb-4" />
         )}
 
         {/* Onboarding banner */}
