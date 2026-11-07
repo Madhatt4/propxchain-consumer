@@ -4,6 +4,7 @@
 import { supabase } from '../lib/supabase';
 import type { Provider } from '../components/providers/types';
 import { rowToProvider, type ConveyancerPanelRow } from './supabaseProviderDataSource';
+import { currentUserIsTestAccount, keepFirmsFor } from './testFirm';
 
 const DEFAULT_LIMIT = 10;
 
@@ -34,6 +35,6 @@ export async function searchConveyancerPanel(
     throw new Error(`Conveyancer search failed: ${error.message}`);
   }
 
-  const rows: ConveyancerPanelRow[] = data ?? [];
+  const rows: ConveyancerPanelRow[] = keepFirmsFor(data ?? [], await currentUserIsTestAccount());
   return rows.map((r) => rowToProvider(r));
 }
