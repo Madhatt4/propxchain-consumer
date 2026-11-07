@@ -3,6 +3,8 @@ import { Ed25519KeyIdentity } from '@propxchain/core-client';
 import {
   conveyancerJoinService,
   PENDING_JOIN_CODE_KEY,
+  PENDING_JOIN_CODE_TTL_MS,
+  joinOfferText,
 } from '../../services/conveyancerJoin.service';
 import { supabase } from '../../lib/supabase';
 import { icpService } from '../../services/icp.service';
@@ -162,9 +164,38 @@ describe('pending join code stash', () => {
   it('should stash, read, and clear the pending code', () => {
     expect(conveyancerJoinService.readPendingJoinCode()).toBeNull();
     conveyancerJoinService.stashPendingJoinCode(CODE);
-    expect(localStorage.getItem(PENDING_JOIN_CODE_KEY)).toBe(CODE);
+    expect(localStorage.getItem(PENDING_JOIN_CODE_KEY)).toContain(CODE);
     expect(conveyancerJoinService.readPendingJoinCode()).toBe(CODE);
     conveyancerJoinService.clearPendingJoinCode();
     expect(conveyancerJoinService.readPendingJoinCode()).toBeNull();
+  });
+
+  it('should still return a code saved exactly 24 hours ago', () => {
+    const t0 = 1_800_000_000_000;
+    conveyancerJoinService.stashPendingJoinCode(CODE, t0);
+    expect(conveyancerJoinService.readPendingJoinCode(t0 + PENDING_JOIN_CODE_TTL_MS)).toBe(CODE);
+  });
+
+  it('should drop a code saved more than 24 hours ago', () => {
+    const t0 = 1_800_000_000_000;
+    conveyancerJoinService.stashPendingJoinCode(CODE, t0);
+    expect(conveyancerJoinService.readPendingJoinCode(t0 + PENDING_JOIN_CODE_TTL_MS + 1)).toBeNull();
+    expect(localStorage.getItem(PENDING_JOIN_CODE_KEY)).toBeNull();
+  });
+
+  it('should drop the old plain-string form, which has no age', () => {
+    localStorage.setItem(PENDING_JOIN_CODE_KEY, CODE);
+    expect(conveyancerJoinService.readPendingJoinCode()).toBeNull();
+    expect(localStorage.getItem(PENDING_JOIN_CODE_KEY)).toBeNull();
+  });
+});
+
+describe('joinOfferText', () => {
+  it('should name the firm and the property', () => {
+    expect(joinOfferText({ firmName: 'Acme Law', propertyAddress: '1 High Street' })).toBe('Join Acme Law on 1 High Street?');
+  });
+
+  it('should fall back when the firm or property is unknown', () => {
+    expect(joinOfferText({ firmName: null, propertyAddress: null })).toBe('Join your firm on this property?');
   });
 });

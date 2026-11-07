@@ -2,19 +2,22 @@
 // Copyright (C) 2026 PropXchain Ltd
 
 /**
- * Finishes a conveyancer's quote-accept activation on the shared dashboard.
+ * Finishes a conveyancer's estimate-accept activation on the shared dashboard
+ * and the conveyancer workspace.
  *
- * A winning firm arrives with a join code stashed by /conveyancer/join/:code
- * (when it signed up before its ICP principal existed). This redeems it on the
- * dashboard, which is where every role now lands, and says what happened:
- * a first-run banner on success, an alert on failure. Never silent: the firm
- * has been told by email that it won the work (2026-07-27 defect).
- * Renders nothing for anyone without a pending code or a ?joined= arrival.
+ * A winning firm arrives with a join code saved by /pro/conveyancer/join/:code
+ * (when it signed up before its ICP principal existed). This asks before
+ * redeeming it: "Join <firm> on <property>?" with an explicit button, never
+ * on its own (card 5de4b8d4), because the saved code would otherwise bind
+ * itself to whichever account next signed in on that browser. Then it says
+ * what happened: a first-run banner on success, an alert on failure. Never
+ * silent: the firm has been told by email that it won the work (2026-07-27
+ * defect). Renders nothing for anyone without a saved code or a ?joined= arrival.
  */
 
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { conveyancerJoinService } from '@/services/conveyancerJoin.service';
+import { conveyancerJoinService, joinOfferText, type JoinPreview } from '@/services/conveyancerJoin.service';
 import { useAuthStore } from '@/stores/authStore';
 
 interface JoinedFirm {
@@ -25,6 +28,12 @@ interface JoinFailure {
   reason: string;
   retryable: boolean;
 }
+interface PendingOffer {
+  code: string;
+  preview: JoinPreview;
+}
+
+const DEAD_CODE_ERRORS = new Set(['invalid_code', 'already_redeemed', 'expired']);
 
 export const PendingJoinBanners: React.FC<{ onJoined?: () => void }> = ({ onJoined }) => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -32,6 +41,8 @@ export const PendingJoinBanners: React.FC<{ onJoined?: () => void }> = ({ onJoin
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [joinedFirm, setJoinedFirm] = useState<JoinedFirm | null>(null);
   const [joinFailure, setJoinFailure] = useState<JoinFailure | null>(null);
+  const [offer, setOffer] = useState<PendingOffer | null>(null);
+  const [isJoining, setIsJoining] = useState(false);
 
   // Arrival from JoinConveyancerPage's success screen: show the first-run
   // banner, then strip the params so a refresh doesn't repeat it.
@@ -46,41 +57,78 @@ export const PendingJoinBanners: React.FC<{ onJoined?: () => void }> = ({ onJoin
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // A saved code is only previewed here; joining waits for the click.
   useEffect(() => {
     if (!principalId || !isAuthenticated) return;
     const pendingCode = conveyancerJoinService.readPendingJoinCode();
     if (!pendingCode) return;
     let cancelled = false;
     void (async () => {
-      const redeem = await conveyancerJoinService.redeemJoinCode(pendingCode);
+      const result = await conveyancerJoinService.previewJoinCode(pendingCode);
       if (cancelled) return;
-      if (redeem.success) {
+      if (result.preview) {
+        setOffer({ code: pendingCode, preview: result.preview });
+      } else if (result.error && DEAD_CODE_ERRORS.has(result.error)) {
+        // Dead code: stop offering it on every visit.
         conveyancerJoinService.clearPendingJoinCode();
-        setJoinedFirm({ firmName: redeem.firmName, clcId: redeem.clcId });
-        setJoinFailure(null);
-        onJoined?.();
-      } else if (
-        redeem.error === 'invalid_code' ||
-        redeem.error === 'already_redeemed' ||
-        redeem.error === 'expired'
-      ) {
-        // Dead code: stop retrying it on every visit.
-        conveyancerJoinService.clearPendingJoinCode();
-        setJoinFailure({ reason: redeem.detail ?? redeem.error, retryable: false });
-      } else {
-        // Transient: keep the code stashed for the next visit, but say so.
-        setJoinFailure({ reason: redeem.detail ?? redeem.error ?? 'Activation failed', retryable: true });
+        setJoinFailure({ reason: result.error, retryable: false });
       }
+      // A network failure keeps the code for the next visit and shows nothing.
     })();
     return () => {
       cancelled = true;
     };
-    // onJoined is a refresh callback; re-running redemption on its identity would double-redeem.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [principalId, isAuthenticated]);
+
+  const join = async (): Promise<void> => {
+    if (!offer || isJoining) return;
+    setIsJoining(true);
+    const redeem = await conveyancerJoinService.redeemJoinCode(offer.code);
+    setIsJoining(false);
+    if (redeem.success) {
+      conveyancerJoinService.clearPendingJoinCode();
+      setOffer(null);
+      setJoinedFirm({ firmName: redeem.firmName, clcId: redeem.clcId });
+      setJoinFailure(null);
+      onJoined?.();
+    } else if (redeem.error && DEAD_CODE_ERRORS.has(redeem.error)) {
+      conveyancerJoinService.clearPendingJoinCode();
+      setOffer(null);
+      setJoinFailure({ reason: redeem.detail ?? redeem.error, retryable: false });
+    } else {
+      // Transient: keep the offer up so the firm can try again.
+      setJoinFailure({ reason: redeem.detail ?? redeem.error ?? 'Activation failed', retryable: true });
+    }
+  };
+
+  const decline = (): void => {
+    conveyancerJoinService.clearPendingJoinCode();
+    setOffer(null);
+  };
 
   return (
     <>
+      {offer && (
+        <div className="mb-6 rounded-lg border border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3">
+          <p className="text-sm font-medium text-stone-900 dark:text-slate-100">{joinOfferText(offer.preview)}</p>
+          <p className="mt-1 text-xs text-stone-600 dark:text-slate-400">
+            You opened this invitation on this browser. Joining puts this account on the transaction as the firm&rsquo;s conveyancer.
+          </p>
+          <div className="mt-3 flex items-center gap-4">
+            <button
+              type="button"
+              onClick={() => void join()}
+              disabled={isJoining}
+              className="rounded-md bg-[#0D9488] px-4 py-2 text-sm font-medium text-white hover:bg-[#0F766E] disabled:opacity-60"
+            >
+              {isJoining ? 'Joining…' : 'Join'}
+            </button>
+            <button type="button" onClick={decline} className="text-sm text-stone-600 underline dark:text-slate-400">
+              Don&rsquo;t join
+            </button>
+          </div>
+        </div>
+      )}
       {joinFailure && (
         <div
           role="alert"
@@ -92,7 +140,7 @@ export const PendingJoinBanners: React.FC<{ onJoined?: () => void }> = ({ onJoin
           <p className="mt-1 text-xs text-amber-800 dark:text-amber-400">{joinFailure.reason}</p>
           <p className="mt-2 text-xs text-amber-800 dark:text-amber-400">
             {joinFailure.retryable
-              ? 'We’ll try again next time you open this page. If it keeps happening, email '
+              ? 'Please try again. If it keeps happening, email '
               : 'This activation link can no longer be used. Please email '}
             <a className="underline" href="mailto:support@propxchain.com">support@propxchain.com</a>
             {' '}and we&rsquo;ll sort it out.
