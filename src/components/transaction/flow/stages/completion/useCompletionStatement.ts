@@ -2,31 +2,37 @@
 // Copyright (C) 2026 PropXchain Ltd
 
 import { useEffect, useState } from 'react';
-import { readCompletionStatement } from '@/lib/completionStatement';
+import { readCompletionStatements } from '@/lib/completionStatement';
 import { logger } from '@/utils/logger';
 import type { CompletionStatementRecord } from '@/lib/completionStatement';
 
-/** undefined while loading or when the trail could not be read; null when there is none. */
-export type LoadedStatement = CompletionStatementRecord | null | undefined;
+export type StatementLoad =
+  | { state: 'loading' }
+  | { state: 'failed' }
+  | { state: 'ready'; statements: CompletionStatementRecord[] };
 
-/** The seller's conveyancer's completion statement, read once when the stage opens. */
+/** The seller's conveyancer's completion statements, read once when the stage opens. */
 export function useCompletionStatement(
   transactionId: string | undefined,
   sellerConveyancer: string | null | undefined,
-): LoadedStatement {
-  const [statement, setStatement] = useState<LoadedStatement>(undefined);
+): StatementLoad {
+  const [load, setLoad] = useState<StatementLoad>({ state: 'loading' });
 
   useEffect(() => {
     let active = true;
     if (!transactionId || !sellerConveyancer) {
-      setStatement(null);
+      setLoad({ state: 'ready', statements: [] });
       return undefined;
     }
-    readCompletionStatement(transactionId, sellerConveyancer)
-      .then((s) => { if (active) setStatement(s); })
-      .catch((e: unknown) => logger.warn('[completion] could not read the completion statement', e));
+    setLoad({ state: 'loading' });
+    readCompletionStatements(transactionId, sellerConveyancer)
+      .then((statements) => { if (active) setLoad({ state: 'ready', statements }); })
+      .catch((e: unknown) => {
+        logger.warn('[completion] could not read the completion statement', e);
+        if (active) setLoad({ state: 'failed' });
+      });
     return () => { active = false; };
   }, [transactionId, sellerConveyancer]);
 
-  return statement;
+  return load;
 }

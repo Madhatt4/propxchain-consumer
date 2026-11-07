@@ -34,6 +34,8 @@ interface SideActionProps {
   /** Agreed price or address missing, so nothing honest can be hashed. */
   isMissingDealFacts: boolean;
   busy: boolean;
+  /** A warning to read before confirming, e.g. that no completion statement was uploaded. */
+  confirmNote: string | null;
   onConfirm: () => void;
 }
 
@@ -46,7 +48,7 @@ function sideNote(waitingForBuyer: boolean, isMissingDealFacts: boolean): string
 // What the viewer can do for their own side. Once a verified conveyancer is
 // acting, only that conveyancer confirms, so the client just watches. A
 // delegate (the estate agent) never confirms money, so sees the rows only.
-function SideAction({ side, status, viewerIsParty, isMissingDealFacts, busy, onConfirm }: SideActionProps): ReactNode {
+function SideAction({ side, status, viewerIsParty, isMissingDealFacts, busy, confirmNote, onConfirm }: SideActionProps): ReactNode {
   if (status[side]) return null;
   if (status.conveyancerActing[side]) {
     return viewerIsParty ? <p className={NOTE}>Your conveyancer confirms this on PropXchain.</p> : null;
@@ -55,6 +57,7 @@ function SideAction({ side, status, viewerIsParty, isMissingDealFacts, busy, onC
   const waitingForBuyer = side === 'seller' && !status.buyer;
   return (
     <div>
+      {confirmNote && <p className={NOTE}>{confirmNote}</p>}
       <button type="button" onClick={onConfirm} disabled={busy || waitingForBuyer || isMissingDealFacts} className={BUTTON}>
         {side === 'buyer' ? 'Confirm funds sent' : 'Confirm funds received'}
       </button>
@@ -92,12 +95,14 @@ export interface CompletionRowsProps {
   /** Completion has happened, so the keys row applies. */
   completed: boolean;
   busy: boolean;
+  /** Read before confirming a side; null for none. */
+  confirmNote?: string | null;
   onConfirmSide: () => void;
   onConfirmKeys: () => void;
 }
 
 export function CompletionRows({
-  status, viewerSide, viewerIsParty, isMissingDealFacts, keysRole, completed, busy, onConfirmSide, onConfirmKeys,
+  status, viewerSide, viewerIsParty, isMissingDealFacts, keysRole, completed, busy, confirmNote = null, onConfirmSide, onConfirmKeys,
 }: CompletionRowsProps): ReactNode {
   const action = (side: CompletionSide): ReactNode =>
     side === viewerSide && !completed ? (
@@ -107,6 +112,7 @@ export function CompletionRows({
         viewerIsParty={viewerIsParty}
         isMissingDealFacts={isMissingDealFacts}
         busy={busy}
+        confirmNote={confirmNote}
         onConfirm={onConfirmSide}
       />
     ) : null;

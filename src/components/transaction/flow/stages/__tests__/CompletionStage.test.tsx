@@ -101,7 +101,7 @@ describe('CompletionStage', () => {
     expect(txId).toBe('tx-1');
     expect(fundsHash).toMatch(/^[0-9a-f]{64}$/);
     expect(completionHash).toMatch(/^[0-9a-f]{64}$/);
-    await waitFor(() => expect(mockGetStatus).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(mockGetStatus).toHaveBeenCalledTimes(3));
   });
 
   it('should never give a delegate such as the estate agent a money button', async () => {
@@ -269,13 +269,24 @@ describe('CompletionStage completion statement', () => {
     expect(fundsHash).toMatch(/^[0-9a-f]{64}$/);
   });
 
-  it("should refuse to confirm when a statement exists but the seller's conveyancer is unknown", async () => {
-    mockGetStatus.mockResolvedValue(makeStatus());
+  it("should refuse to confirm when the seller's conveyancer is acting but cannot be resolved", async () => {
+    mockGetStatus.mockResolvedValue(makeStatus({ conveyancerActing: { buyer: false, seller: true } }));
     mockGetEvents.mockResolvedValue([statementEvent]);
     renderStage('buyer', { sellerConveyancer: null });
     fireEvent.click(await screen.findByRole('button', { name: 'Confirm funds sent' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent("the seller's conveyancer on this deal could not be confirmed");
+    expect(await screen.findByRole('alert')).toHaveTextContent("The seller's conveyancer on this deal could not be confirmed");
     expect(mockInitiate).not.toHaveBeenCalled();
+  });
+
+  it("should ignore statements and record the deal details when no seller's conveyancer is on the deal", async () => {
+    mockGetStatus.mockResolvedValue(makeStatus());
+    mockGetEvents.mockResolvedValue([statementEvent]);
+    mockInitiate.mockResolvedValue({ success: true, message: 'Waiting for the seller side.' });
+    renderStage('buyer', { sellerConveyancer: null });
+    fireEvent.click(await screen.findByRole('button', { name: 'Confirm funds sent' }));
+    await waitFor(() => expect(mockInitiate).toHaveBeenCalledTimes(1));
+    expect(mockInitiate.mock.calls[0][2]).not.toBe(FILE_HASH);
+    expect(screen.queryByText(/No completion statement has been uploaded/)).not.toBeInTheDocument();
   });
 
   it('should refuse to confirm when the audit trail cannot be read', async () => {
@@ -285,6 +296,57 @@ describe('CompletionStage completion statement', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Confirm funds sent' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Could not check for a completion statement. Please try again.');
     expect(mockInitiate).not.toHaveBeenCalled();
+  });
+
+  it('should say the statement could not be loaded when the read fails', async () => {
+    mockGetStatus.mockResolvedValue(makeStatus());
+    mockGetEvents.mockRejectedValue(new Error('network'));
+    renderStage('buyer', { sellerConveyancer: SELLER_CONV });
+    expect(await screen.findByText('Could not load the completion statement.')).toBeInTheDocument();
+  });
+
+  it('should warn before confirming when no statement has been uploaded', async () => {
+    mockGetStatus.mockResolvedValue(makeStatus());
+    mockGetEvents.mockResolvedValue([]);
+    renderStage('buyer', { sellerConveyancer: SELLER_CONV });
+    expect(await screen.findByText(
+      "No completion statement has been uploaded. The deal details will be recorded instead, and a statement can't be added after this.",
+    )).toBeInTheDocument();
+  });
+
+  it('should not warn when a statement has been uploaded', async () => {
+    mockGetStatus.mockResolvedValue(makeStatus());
+    mockGetEvents.mockResolvedValue([statementEvent]);
+    renderStage('buyer', { sellerConveyancer: SELLER_CONV });
+    await screen.findByText(/Its fingerprint is recorded on PropXchain/);
+    expect(screen.queryByText(/No completion statement has been uploaded/)).not.toBeInTheDocument();
+  });
+
+  it('should show a statement uploaded after the first confirmation as not the recorded one', async () => {
+    const lateEvent = { ...statementEvent, timestamp: BigInt(AT.getTime() + 3_600_000) * 1_000_000n };
+    mockGetStatus.mockResolvedValue(makeStatus({ buyer: BY_CONVEYANCER, conveyancerActing: { buyer: true, seller: true } }));
+    mockGetEvents.mockResolvedValue([lateEvent]);
+    renderStage('buyer', { sellerConveyancer: SELLER_CONV });
+    const line = await screen.findByTestId('completion-statement-line');
+    expect(line).toHaveTextContent('none was uploaded before completion was confirmed, so the deal details were recorded instead.');
+    expect(line).toHaveTextContent('A statement uploaded on 6 November 2026: uploaded after completion was confirmed — not the recorded statement.');
+    expect(line).not.toHaveTextContent('Its fingerprint is recorded on PropXchain');
+  });
+
+  it('should send the statement in force at the first confirmation, never a later one', async () => {
+    const LATER_HASH = 'f'.repeat(64);
+    const lateEvent = {
+      ...statementEvent,
+      metadata: [`docHash=${LATER_HASH};docType=completion_statement`],
+      timestamp: BigInt(AT.getTime() + 3_600_000) * 1_000_000n,
+    };
+    mockGetStatus.mockResolvedValue(makeStatus({ buyer: BY_CLIENT }));
+    mockGetEvents.mockResolvedValue([statementEvent, lateEvent]);
+    mockInitiate.mockResolvedValue({ success: true, message: 'Completed.' });
+    renderStage('seller', { sellerConveyancer: SELLER_CONV });
+    fireEvent.click(await screen.findByRole('button', { name: 'Confirm funds received' }));
+    await waitFor(() => expect(mockInitiate).toHaveBeenCalledTimes(1));
+    expect(mockInitiate.mock.calls[0][2]).toBe(FILE_HASH);
   });
 });
 

@@ -4,10 +4,10 @@
 import { useEffect, useRef } from 'react';
 import { isCompletedStatus } from '@/services/completionStatus';
 import { completionHashInputOf } from '@/utils/completionHashes';
-import { completionStatementText } from '@/lib/completionStatement';
 import { useCompletionStatus } from './completion/useCompletionStatus';
 import { useCompletionActions } from './completion/useCompletionActions';
 import { useCompletionStatement } from './completion/useCompletionStatement';
+import { CompletionStatementLines, noStatementWarningOf, statementViewOf } from './completion/CompletionStatementLines';
 import { CompletionRows } from './completion/CompletionRows';
 import { CompletionCertificate } from './completion/CompletionCertificate';
 import type { ReactNode } from 'react';
@@ -69,10 +69,7 @@ export function CompletionStage({
   const completed = isCompletedStatus(status?.status);
   const hashInput = completionHashInputOf(transactionId, propertyAddress, purchasePrice);
   const actions = useCompletionActions({ transactionId, hashInput, sellerConveyancer, wasCompleted: completed, reload });
-  const statement = useCompletionStatement(transactionId, sellerConveyancer);
-  // The file stays with the firm (hash-only storage), so there is nothing to
-  // open here; the line says it exists and that its fingerprint is recorded.
-  const showStatement = statement !== undefined && Boolean(sellerConveyancer) && (statement !== null || !completed);
+  const statementLoad = useCompletionStatement(transactionId, sellerConveyancer);
   const reported = useRef(false);
 
   useEffect(() => {
@@ -86,17 +83,14 @@ export function CompletionStage({
     return <p className="text-sm text-gray-500 dark:text-slate-400">Loading completion from PropXchain…</p>;
   }
   if (loadState === 'failed' || !status) return <StatusMessage failed={loadState === 'failed'} />;
+  const view = statementViewOf(statementLoad, status);
 
   return (
     <div className="flex flex-col gap-4">
       {completed
         ? <CompletionCertificate journeyRole={journeyRole} transactionId={transactionId} status={status} />
         : <p className="text-sm text-gray-600 dark:text-slate-300">{INTRO}</p>}
-      {showStatement && (
-        <p className="text-sm text-gray-600 dark:text-slate-300" data-testid="completion-statement-line">
-          {completionStatementText(statement ?? null)}
-        </p>
-      )}
+      {sellerConveyancer && <CompletionStatementLines load={statementLoad} view={view} status={status} />}
       {actions.error && <ErrorLine message={actions.error} />}
       <CompletionRows
         status={status}
@@ -106,6 +100,7 @@ export function CompletionStage({
         keysRole={keysRole}
         completed={completed}
         busy={actions.busy}
+        confirmNote={noStatementWarningOf(view, sellerConveyancer)}
         onConfirmSide={actions.confirmSide}
         onConfirmKeys={actions.confirmKeys}
       />

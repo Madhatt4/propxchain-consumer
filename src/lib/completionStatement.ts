@@ -70,8 +70,8 @@ function metadataFields(metadata: unknown): Map<string, string> {
   return fields;
 }
 
-/** A doc_registered event for a completion statement: its hash and time, uploader not yet checked. */
-function statementEventOf(event: unknown): { fileHash: string; uploadedAt: Date; details: unknown } | null {
+/** A doc_registered event for a completion statement, with its uploader if it can be read. */
+function statementEventOf(event: unknown): CompletionStatementRecord | null {
   if (!event || typeof event !== 'object') return null;
   const e = event as Record<string, unknown>;
   if (e.eventType !== DOC_REGISTERED) return null;
@@ -80,51 +80,98 @@ function statementEventOf(event: unknown): { fileHash: string; uploadedAt: Date;
   const fileHash = (fields.get('docHash') ?? '').toLowerCase();
   if (!SHA256_HEX.test(fileHash)) return null;
   // Canister time is nanoseconds.
-  return { fileHash, uploadedAt: new Date(Math.floor(Number(e.timestamp ?? 0) / 1e6)), details: e.details };
+  const uploadedAt = new Date(Math.floor(Number(e.timestamp ?? 0) / 1e6));
+  return { fileHash, uploadedAt, uploadedBy: statementUploaderOf(e.details) ?? '' };
 }
 
 /**
- * The latest completion statement registered by the seller's conveyancer.
- * Null when there is none, when no seller's conveyancer is on the deal, or
- * when the uploader cannot be read: a statement nobody can attribute to the
- * seller's conveyancer is not the seller's conveyancer's statement.
+ * Every completion statement registered by the seller's conveyancer, oldest
+ * first. Empty when no seller's conveyancer is on the deal or the uploader
+ * cannot be read: a statement nobody can attribute to the seller's
+ * conveyancer is not the seller's conveyancer's statement.
  */
+export function completionStatementsFromEvents(
+  events: unknown,
+  sellerConveyancer: string | null | undefined,
+): CompletionStatementRecord[] {
+  if (!sellerConveyancer || !Array.isArray(events)) return [];
+  return events
+    .map(statementEventOf)
+    .filter((s): s is CompletionStatementRecord => s !== null && s.uploadedBy === sellerConveyancer)
+    .sort((a, b) => a.uploadedAt.getTime() - b.uploadedAt.getTime());
+}
+
+/** The latest of them, or null. */
 export function completionStatementFromEvents(
   events: unknown,
   sellerConveyancer: string | null | undefined,
 ): CompletionStatementRecord | null {
-  if (!sellerConveyancer || !Array.isArray(events)) return null;
-  let latest: CompletionStatementRecord | null = null;
-  for (const event of events) {
-    const found = statementEventOf(event);
-    if (!found || statementUploaderOf(found.details) !== sellerConveyancer) continue;
-    if (!latest || found.uploadedAt.getTime() >= latest.uploadedAt.getTime()) {
-      latest = { fileHash: found.fileHash, uploadedAt: found.uploadedAt, uploadedBy: sellerConveyancer };
-    }
-  }
-  return latest;
+  const statements = completionStatementsFromEvents(events, sellerConveyancer);
+  return statements.length > 0 ? statements[statements.length - 1] : null;
+}
+
+/**
+ * Which statement completion records. The first side's confirmation fixes it:
+ * the latest statement uploaded at or before that moment. Both sides send
+ * that one (the canister stores the completing side's hash), so a statement
+ * uploaded later is never the recorded one. While nobody has confirmed, the
+ * latest statement is the one that will be used.
+ */
+export interface StatementView {
+  recorded: CompletionStatementRecord | null;
+  /** The latest statement uploaded after the first confirmation, if any. */
+  late: CompletionStatementRecord | null;
+}
+
+function lastOf(statements: CompletionStatementRecord[]): CompletionStatementRecord | null {
+  return statements.length > 0 ? statements[statements.length - 1] : null;
+}
+
+export function statementView(statements: CompletionStatementRecord[], firstConfirmedAt: number | null): StatementView {
+  if (firstConfirmedAt === null) return { recorded: lastOf(statements), late: null };
+  return {
+    recorded: lastOf(statements.filter((s) => s.uploadedAt.getTime() <= firstConfirmedAt)),
+    late: lastOf(statements.filter((s) => s.uploadedAt.getTime() > firstConfirmedAt)),
+  };
+}
+
+/** The earliest side confirmation, in ms, or null when nobody has confirmed. */
+export function firstConfirmedAtMs(times: Array<number | null | undefined>): number | null {
+  const known = times.filter((t): t is number => typeof t === 'number' && Number.isFinite(t));
+  return known.length > 0 ? Math.min(...known) : null;
 }
 
 export const STATEMENT_UNREADABLE = 'Could not check for a completion statement. Please try again.';
 export const STATEMENT_UNATTRIBUTED =
-  "A completion statement has been uploaded, but the seller's conveyancer on this deal could not be confirmed, so completion cannot go ahead yet. Please contact support.";
+  "The seller's conveyancer on this deal could not be confirmed, so the completion statement cannot be checked. Please contact support.";
+export const NO_STATEMENT_WARNING =
+  "No completion statement has been uploaded. The deal details will be recorded instead, and a statement can't be added after this.";
 
 /** Why completion cannot pick a statement hash; the message is shown as written. */
 export class CompletionStatementCheckError extends Error {}
 
+export interface CompletionContext {
+  /** The seller solicitor slot's principal, if it could be read. */
+  sellerConveyancer: string | null | undefined;
+  /** The canister reports a verified conveyancer acting for the seller. */
+  isSellerConveyancerActing: boolean;
+  firstConfirmedAt: number | null;
+}
+
 /**
  * The statement hash completion must anchor, or null for the deal-facts
- * fallback. Both sides must anchor the same hash, so this throws rather than
- * fall back when the trail cannot be read, or when a statement exists but the
- * seller's conveyancer cannot be determined.
+ * fallback. With no seller's conveyancer on the deal, statements are ignored.
+ * Throws when one is acting but cannot be resolved, or the trail cannot be
+ * read: both sides must anchor the same hash.
  */
-export function statementHashForCompletion(events: unknown, sellerConveyancer: string | null | undefined): string | null {
-  if (!Array.isArray(events)) throw new CompletionStatementCheckError(STATEMENT_UNREADABLE);
-  if (!sellerConveyancer) {
-    if (events.some((e) => statementEventOf(e) !== null)) throw new CompletionStatementCheckError(STATEMENT_UNATTRIBUTED);
+export function statementHashForCompletion(events: unknown, context: CompletionContext): string | null {
+  if (!context.sellerConveyancer) {
+    if (context.isSellerConveyancerActing) throw new CompletionStatementCheckError(STATEMENT_UNATTRIBUTED);
     return null;
   }
-  return completionStatementFromEvents(events, sellerConveyancer)?.fileHash ?? null;
+  if (!Array.isArray(events)) throw new CompletionStatementCheckError(STATEMENT_UNREADABLE);
+  const statements = completionStatementsFromEvents(events, context.sellerConveyancer);
+  return statementView(statements, context.firstConfirmedAt).recorded?.fileHash ?? null;
 }
 
 async function readEvents(transactionId: string): Promise<unknown> {
@@ -137,30 +184,40 @@ async function readEvents(transactionId: string): Promise<unknown> {
   }
 }
 
-/** Read the statement for display. Throws when the trail cannot be asked. */
-export async function readCompletionStatement(
+/** Read the statements for display. Throws when the trail cannot be asked. */
+export async function readCompletionStatements(
   transactionId: string,
   sellerConveyancer: string | null | undefined,
-): Promise<CompletionStatementRecord | null> {
-  if (!sellerConveyancer) return null;
-  return completionStatementFromEvents(await readEvents(transactionId), sellerConveyancer);
+): Promise<CompletionStatementRecord[]> {
+  if (!sellerConveyancer) return [];
+  return completionStatementsFromEvents(await readEvents(transactionId), sellerConveyancer);
 }
 
 /** Read the trail at confirm time and pick the hash; throws CompletionStatementCheckError. */
 export async function readStatementHashForCompletion(
   transactionId: string,
-  sellerConveyancer: string | null | undefined,
+  context: CompletionContext,
 ): Promise<string | null> {
-  return statementHashForCompletion(await readEvents(transactionId), sellerConveyancer);
+  if (!context.sellerConveyancer) return statementHashForCompletion([], context);
+  return statementHashForCompletion(await readEvents(transactionId), context);
 }
 
-function formatDate(at: Date): string {
+export function formatStatementDate(at: Date): string {
   return at.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
-/** The client's read-only line. */
-export function completionStatementText(statement: CompletionStatementRecord | null): string {
-  return statement
-    ? `Completion statement: uploaded by the seller's conveyancer on ${formatDate(statement.uploadedAt)}. Its fingerprint is recorded on PropXchain.`
-    : "Completion statement: not uploaded yet by the seller's conveyancer.";
+/** The client's read-only lines. */
+export function completionStatementLines(view: StatementView, isConfirmed: boolean): string[] {
+  const lines: string[] = [];
+  if (view.recorded) {
+    lines.push(`Completion statement: uploaded by the seller's conveyancer on ${formatStatementDate(view.recorded.uploadedAt)}. Its fingerprint is recorded on PropXchain.`);
+  } else if (isConfirmed) {
+    lines.push('Completion statement: none was uploaded before completion was confirmed, so the deal details were recorded instead.');
+  } else {
+    lines.push("Completion statement: not uploaded yet by the seller's conveyancer.");
+  }
+  if (view.late) {
+    lines.push(`A statement uploaded on ${formatStatementDate(view.late.uploadedAt)}: uploaded after completion was confirmed — not the recorded statement.`);
+  }
+  return lines;
 }
