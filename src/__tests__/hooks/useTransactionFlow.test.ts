@@ -326,6 +326,61 @@ describe('useTransactionFlow', () => {
     expect(mockLogEvent).not.toHaveBeenCalled();
   });
 
+  describe('conveyancer stages complete only when the firm is on the deal', () => {
+    it('should not complete seller-5 from a flag written when estimates were requested', async () => {
+      mockGetTransaction.mockResolvedValue({
+        seller: { toString: () => 'test-principal' },
+        buyer: { toString: () => 'buyer-principal' },
+        sellerSolicitor: [],
+      });
+      mockGetFlowState.mockResolvedValue({
+        completedStages: { 'seller-5': Date.now() },
+        providerSelections: {},
+      });
+      const { result } = renderHook(() => useTransactionFlow('tx-123'));
+      await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
+      expect(result.current.stages.find((s) => s.id === 'seller-5')?.status).toBe('active');
+      expect(result.current.stages.find((s) => s.id === 'seller-6')?.status).toBe('locked');
+      expect(result.current.syntheticEvents.map((e) => e.eventType)).not.toContain('seller_conveyancer_confirmed');
+    });
+
+    it('should complete seller-5 once the seller conveyancer slot is filled on chain', async () => {
+      mockGetTransaction.mockResolvedValue({
+        seller: { toString: () => 'test-principal' },
+        buyer: { toString: () => 'buyer-principal' },
+        sellerSolicitor: [{ principal: 'firm-principal' }],
+      });
+      const { result } = renderHook(() => useTransactionFlow('tx-123'));
+      await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
+      expect(result.current.stages.find((s) => s.id === 'seller-5')?.status).toBe('completed');
+    });
+
+    it('should complete buyer-5 from the buyer conveyancer slot, not the seller one', async () => {
+      mockGetTransaction.mockResolvedValue({
+        seller: { toString: () => 'seller-principal' },
+        buyer: { toString: () => 'test-principal' },
+        sellerSolicitor: [{ principal: 'seller-firm' }],
+        buyerSolicitor: [],
+      });
+      const { result } = renderHook(() => useTransactionFlow('tx-123'));
+      await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
+      expect(result.current.stages.find((s) => s.id === 'buyer-5')?.status).toBe('active');
+    });
+
+    it('should write no flag and no audit event when completeStage is called for seller-5', async () => {
+      const { result } = renderHook(() => useTransactionFlow('tx-123'));
+      await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
+      mockSetFlowState.mockClear();
+      mockLogEvent.mockClear();
+
+      act(() => result.current.completeStage('seller-5'));
+
+      expect(mockSetFlowState).not.toHaveBeenCalled();
+      expect(mockLogEvent).not.toHaveBeenCalled();
+      expect(result.current.stages.find((s) => s.id === 'seller-5')?.status).not.toBe('completed');
+    });
+  });
+
   it('should resolve buyer-4 as watching while the seller has not completed the property info forms', async () => {
     mockGetTransactionProgress.mockResolvedValue({
       id: 'tx-123', seller: 'seller-principal', buyer: 'test-principal',

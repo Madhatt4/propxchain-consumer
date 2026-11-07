@@ -352,7 +352,10 @@ function renderStageContent(stageId: string, props: StageComponentProps): ReactE
           partyName={props.partyName ?? ''}
           partyEmail={props.partyEmail ?? ''}
           propertyAddress={props.propertyAddress ?? ''}
-          onQuotesRequested={onPanelDone}
+          // Requesting estimates does not finish the stage: it completes when
+          // the instructed firm joins the deal (see useTransactionFlow). Just
+          // refresh the next-step readers.
+          onQuotesRequested={props.isEditing ? handleProviderEditComplete : (): void => props.onAfterEdit?.()}
           readBuyerLender={stageId === 'buyer-5'}
           onLenderCaptured={
             canCaptureLender

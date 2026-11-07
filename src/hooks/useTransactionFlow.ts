@@ -43,6 +43,18 @@ interface TransactionData {
 // are ignored, and completeStage never writes one.
 const COMPLETION_STAGE_IDS: ReadonlySet<string> = new Set(['seller-7', 'buyer-7']);
 
+// Conveyancer stages are done only when that side's conveyancer is on the
+// deal (the solicitor slot on chain, filled when the firm redeems its join
+// link). Requesting estimates used to tick the stage, so a seller saw
+// "Completed" before any estimate was accepted; those old flow-state flags
+// are ignored, and completeStage never writes a new one.
+const CONVEYANCER_STAGE_IDS: ReadonlySet<string> = new Set(['seller-5', 'buyer-5']);
+
+/** Stages whose completion comes from chain state, never from a flow-state flag. */
+function isDerivedStage(stageId: string): boolean {
+  return COMPLETION_STAGE_IDS.has(stageId) || CONVEYANCER_STAGE_IDS.has(stageId);
+}
+
 // Candid variant -> its key, e.g. { exchanged: null } -> "exchanged".
 function statusKeyOf(status: unknown): string | undefined {
   if (typeof status === 'string') return status;
@@ -304,19 +316,22 @@ function buildCompletedStageIds(
   for (const [stageId, selection] of Object.entries(
     flowState.providerSelections,
   )) {
-    if (selection.completedAt && !COMPLETION_STAGE_IDS.has(stageId)) completed.add(stageId);
+    if (selection.completedAt && !isDerivedStage(stageId)) completed.add(stageId);
   }
 
   // From localStorage completedStages (non-provider stages like List Property)
   if (flowState.completedStages) {
     for (const stageId of Object.keys(flowState.completedStages)) {
-      if (!COMPLETION_STAGE_IDS.has(stageId)) completed.add(stageId);
+      if (!isDerivedStage(stageId)) completed.add(stageId);
     }
   }
 
   if (isCompletedStatus(transaction?.status)) {
     for (const stageId of COMPLETION_STAGE_IDS) completed.add(stageId);
   }
+
+  if (transaction?.conveyancers?.seller) completed.add('seller-5');
+  if (transaction?.conveyancers?.buyer) completed.add('buyer-5');
 
   // buyer-1 auto-completes when a real buyer is on chain. `buyer === seller`
   // is the placeholder seeded by createTransaction before assignBuyer fires,
@@ -592,6 +607,7 @@ export function useTransactionFlow(
   const syntheticEvents = useMemo(() => {
     const out: Array<{ eventType: string; timestamp: number }> = [];
     for (const [stageId, ts] of Object.entries(flowState.completedStages)) {
+      if (CONVEYANCER_STAGE_IDS.has(stageId)) continue; // stale flag, see CONVEYANCER_STAGE_IDS
       out.push({ eventType: stageIdToEventType(stageId), timestamp: Number(ts) || Date.now() });
     }
     for (const [, sel] of Object.entries(flowState.providerSelections)) {
@@ -750,6 +766,9 @@ export function useTransactionFlow(
           : prev));
         return;
       }
+      // The conveyancer's join is recorded on chain by the firm itself;
+      // a flag or a "confirmed" audit event from here would be a false claim.
+      if (CONVEYANCER_STAGE_IDS.has(stageId)) return;
       setChainPersistError(null);
       setFlowState((prev) => {
         const now = Date.now();
