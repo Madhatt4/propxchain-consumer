@@ -18,6 +18,8 @@ export interface ConveyancerPanelRow {
   lat: number | null;
   lng: number | null;
   services: string | null;
+  /** Still in the table, deliberately never read: PropXchain is provider-neutral,
+   *  so no firm is badged or sorted ahead of another for being "recommended". */
   recommended: boolean | null;
   rating: number | null;
   review_count: number | null;
@@ -60,9 +62,12 @@ export function rowToProvider(row: ConveyancerPanelRow, distanceMiles?: number):
     location: locationParts.join(', ') || undefined,
     postcode: row.postcode ?? undefined,
     distanceMiles: (distanceMiles !== undefined && !isNaN(distanceMiles)) ? Math.round(distanceMiles * 10) / 10 : undefined,
-    highlight: row.recommended ? 'Recommended' : undefined,
     isPexaEnabled: row.pexa_enabled === true,
   };
+}
+
+function sortByRating(rows: ConveyancerPanelRow[]): ConveyancerPanelRow[] {
+  return [...rows].sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
 }
 
 export class SupabaseProviderDataSource implements ProviderDataSource {
@@ -86,29 +91,17 @@ export class SupabaseProviderDataSource implements ProviderDataSource {
       rows = rows.filter((r) => allow.has(r.id));
     }
 
-    // No postcode or empty — return recommended first, then by rating, top 5
+    // No postcode or empty — by rating, top 5
     if (!options?.postcode?.trim()) {
-      const sorted = [...rows].sort((a, b) => {
-        if ((b.recommended ? 1 : 0) !== (a.recommended ? 1 : 0)) {
-          return (b.recommended ? 1 : 0) - (a.recommended ? 1 : 0);
-        }
-        return (b.rating ?? 0) - (a.rating ?? 0);
-      });
-      return sorted.slice(0, 5).map((r) => rowToProvider(r));
+      return sortByRating(rows).slice(0, 5).map((r) => rowToProvider(r));
     }
 
     // Postcode provided — lookup lat/lng and sort by distance
     const geo = await postcodeService.lookupPostcode(options.postcode);
 
     if (!geo || geo.latitude === null || geo.longitude === null) {
-      // Postcode lookup failed — fall back to recommended/rating sort
-      const sorted = [...rows].sort((a, b) => {
-        if ((b.recommended ? 1 : 0) !== (a.recommended ? 1 : 0)) {
-          return (b.recommended ? 1 : 0) - (a.recommended ? 1 : 0);
-        }
-        return (b.rating ?? 0) - (a.rating ?? 0);
-      });
-      return sorted.slice(0, 5).map((r) => rowToProvider(r));
+      // Postcode lookup failed — fall back to rating sort
+      return sortByRating(rows).slice(0, 5).map((r) => rowToProvider(r));
     }
 
     const userLat = geo.latitude;
@@ -123,11 +116,8 @@ export class SupabaseProviderDataSource implements ProviderDataSource {
           : undefined,
     }));
 
-    // Sort: recommended first, then by distance (nulls last), then by rating
+    // Sort: by distance (nulls last), then by rating
     withDistance.sort((a, b) => {
-      const aRec = a.row.recommended ? 1 : 0;
-      const bRec = b.row.recommended ? 1 : 0;
-      if (bRec !== aRec) return bRec - aRec;
       if (a.distance !== undefined && b.distance !== undefined) return a.distance - b.distance;
       if (a.distance !== undefined) return -1;
       if (b.distance !== undefined) return 1;

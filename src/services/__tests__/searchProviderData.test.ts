@@ -179,7 +179,7 @@ describe('onesearchProvider (PISCES metadata)', () => {
     expect(onesearchProvider.tier).toBe(1);
     expect(onesearchProvider.instantOrder).toBe(true);
     // No search provider is recommended over another; the customer chooses.
-    expect(onesearchProvider.highlight).toBeUndefined();
+    expect('highlight' in onesearchProvider).toBe(false);
   });
 
   it('should carry a £259.20 "from" price equal to the Standard pack VAT-inclusive RRP', () => {

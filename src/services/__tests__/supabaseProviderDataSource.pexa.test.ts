@@ -30,7 +30,7 @@ describe('rowToProvider PEXA flag', () => {
   });
 
   it('should never turn the PEXA flag into a highlight badge', () => {
-    expect(rowToProvider(makeRow({ pexa_enabled: true })).highlight).toBeUndefined();
+    expect('highlight' in rowToProvider(makeRow({ pexa_enabled: true }))).toBe(false);
   });
 });
 
