@@ -6,7 +6,7 @@ import type { ReactElement, ReactNode } from 'react';
 import { useAuthStore } from '../stores/authStore';
 // Note: React.ReactElement used in BuyerSideStagePlaceholder return type below
 // is provided via the ReactElement named import.
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, Navigate } from 'react-router-dom';
 import { useTransactionFlow } from '../hooks/useTransactionFlow';
 import { useMoveNarrator } from '../hooks/useMoveNarrator';
 import { TopBar } from '../components/transaction/flow/TopBar';
@@ -33,6 +33,8 @@ import { BuyerInviteCard } from '../components/transaction/flow/BuyerInviteCard'
 import BotPanelCard from '../components/transaction/BotPanelCard';
 import NextStepCard from '../components/common/NextStepCard';
 import { StallLine } from '../components/transaction/flow/StallLine';
+import { ConveyancersLine } from '../components/transaction/flow/ConveyancersLine';
+import { conveyancerMatterPath, NO_CONVEYANCERS } from '@/lib/dealConveyancers';
 import { OfferExpiryLine } from '../components/transaction/flow/OfferExpiryLine';
 import { SearchAgeLine } from '../components/transaction/flow/SearchAgeLine';
 import { MandateBanners } from '../components/transaction/flow/MandateBanners';
@@ -516,6 +518,7 @@ export default function TransactionFlowPage(): ReactElement {
     transaction,
     userRole,
     dealSide,
+    conveyancerSide,
     stages,
     otherPartyStages,
     activeJourney,
@@ -603,6 +606,10 @@ export default function TransactionFlowPage(): ReactElement {
   if (isLoading) return <LoadingState />;
   if (error) return <ErrorState message={error} onRetry={() => window.location.reload()} />;
   if (accessDenied) return <NotAPartyState />;
+  // A firm acting on the deal works it from its matter page, which says which
+  // side it acts for; this page is a client's journey (card 5de4b8d4).
+  const matterPath = conveyancerMatterPath(id, conveyancerSide, dealSide);
+  if (matterPath) return <Navigate to={matterPath} replace />;
 
   const inviteCode = transaction?.inviteCode ?? null;
   // Prefer the canister's stored address; fall back to the imported listing
@@ -762,6 +769,12 @@ export default function TransactionFlowPage(): ReactElement {
             the stage against its benchmark, shown whichever of the next-step or
             AI cards is on screen. */}
         {id && <StallLine transactionId={id} refreshKey={invalidationKey} className="mb-4" />}
+        <ConveyancersLine
+          conveyancers={transaction?.conveyancers ?? NO_CONVEYANCERS}
+          dealSide={dealSide}
+          hasBuyer={Boolean(transaction?.buyer) && transaction?.buyer !== transaction?.seller}
+          className="mb-4"
+        />
         {id && <SearchAgeLine transactionId={id} refreshKey={invalidationKey} className="mb-4" />}
         {/* Mortgage offer expiry: every party sees it once the buyer's offer is within a month of running out. */}
         {id && <OfferExpiryLine transactionId={id} refreshKey={invalidationKey} className="mb-4" />}

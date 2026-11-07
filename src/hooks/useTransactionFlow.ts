@@ -12,6 +12,7 @@ import type { TransactionFlowState } from '../types/flow.types';
 import { dealSideOf, principalsOf, type DealSide } from '@/lib/dealAccess';
 import { isCompletedStatus } from '@/services/completionStatus';
 import { sellerConveyancerOf } from '@/lib/completionStatement';
+import { conveyancerSideOf, dealConveyancersOf, NO_CONVEYANCERS, type DealConveyancers } from '@/lib/dealConveyancers';
 
 interface TransactionData {
   id: string;
@@ -33,6 +34,8 @@ interface TransactionData {
   amount?: number;
   /** The seller's conveyancer from the solicitor slot, who uploads the completion statement. */
   sellerConveyancer?: string | null;
+  /** Each side's conveyancer from the on-chain solicitor slots. */
+  conveyancers?: DealConveyancers;
 }
 
 // Completion stages are done only when transaction_manager says the deal has
@@ -58,6 +61,8 @@ interface UseTransactionFlowReturn {
   userRole: JourneyRole;
   /** The viewer's side on the deal; drives the access map in lib/dealAccess. */
   dealSide: DealSide;
+  /** The side the viewer is the assigned conveyancer for, from the solicitor slots; null for everyone else. */
+  conveyancerSide: 'buyer' | 'seller' | null;
   stages: StageConfig[];
   otherPartyStages: StageConfig[];
   activeJourney: JourneyRole;
@@ -455,6 +460,7 @@ export function useTransactionFlow(
             status: statusKeyOf(fullTx?.status),
             amount: fullTx?.amount != null ? Number(fullTx.amount) : undefined,
             sellerConveyancer: sellerConveyancerOf(fullTx?.sellerSolicitor),
+            conveyancers: dealConveyancersOf(fullTx),
           };
           setTransaction(txData);
 
@@ -531,6 +537,11 @@ export function useTransactionFlow(
 
   const dealSide = useMemo(
     () => deriveDealSide(transaction, principalId ?? null),
+    [transaction, principalId],
+  );
+
+  const conveyancerSide = useMemo(
+    () => conveyancerSideOf(transaction?.conveyancers ?? NO_CONVEYANCERS, principalId ?? null),
     [transaction, principalId],
   );
 
@@ -825,6 +836,7 @@ export function useTransactionFlow(
     transaction,
     userRole,
     dealSide,
+    conveyancerSide,
     stages,
     otherPartyStages,
     activeJourney,
