@@ -29,6 +29,13 @@ export interface JoinPreview {
   expiresAt: string;
 }
 
+/** The question PendingJoinBanners asks before redeeming a saved code: "Join Acme Law on 1 High Street?" */
+export function joinOfferText(preview: Pick<JoinPreview, 'firmName' | 'propertyAddress'>): string {
+  const firm = preview.firmName ?? 'your firm';
+  const property = preview.propertyAddress ?? 'this property';
+  return `Join ${firm} on ${property}?`;
+}
+
 export type JoinPreviewError = 'invalid_code' | 'already_redeemed' | 'expired' | 'network';
 
 export interface RedeemResult {
@@ -110,12 +117,45 @@ async function redeemJoinCode(code: string): Promise<RedeemResult> {
   return { success: true, ...(data as Omit<RedeemResult, 'success'>) };
 }
 
-function stashPendingJoinCode(code: string): void {
-  localStorage.setItem(PENDING_JOIN_CODE_KEY, code);
+/**
+ * A saved code lives a day (card 5de4b8d4): long enough to verify an email
+ * and sign in, short enough that a code left on a shared machine does not
+ * wait for the next person to sign in. It is never redeemed without a click
+ * (PendingJoinBanners asks first).
+ */
+export const PENDING_JOIN_CODE_TTL_MS = 24 * 60 * 60 * 1000;
+
+interface StashedCode {
+  code: string;
+  savedAt: number;
 }
 
-function readPendingJoinCode(): string | null {
-  return localStorage.getItem(PENDING_JOIN_CODE_KEY);
+function stashPendingJoinCode(code: string, now: number = Date.now()): void {
+  const value: StashedCode = { code, savedAt: now };
+  localStorage.setItem(PENDING_JOIN_CODE_KEY, JSON.stringify(value));
+}
+
+function parseStash(raw: string): StashedCode | null {
+  try {
+    const value: unknown = JSON.parse(raw);
+    if (!value || typeof value !== 'object') return null;
+    const { code, savedAt } = value as Partial<StashedCode>;
+    return typeof code === 'string' && typeof savedAt === 'number' ? { code, savedAt } : null;
+  } catch {
+    return null;
+  }
+}
+
+/** The saved code, or null. An expired or unreadable entry (including the old plain-string form) is removed. */
+function readPendingJoinCode(now: number = Date.now()): string | null {
+  const raw = localStorage.getItem(PENDING_JOIN_CODE_KEY);
+  if (raw === null) return null;
+  const stash = parseStash(raw);
+  if (!stash || now - stash.savedAt > PENDING_JOIN_CODE_TTL_MS || stash.savedAt > now) {
+    localStorage.removeItem(PENDING_JOIN_CODE_KEY);
+    return null;
+  }
+  return stash.code;
 }
 
 function clearPendingJoinCode(): void {
