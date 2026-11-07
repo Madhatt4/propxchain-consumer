@@ -160,6 +160,12 @@ const ConveyancerJoinRedirect = () => {
   const { code = '' } = useParams<{ code: string }>();
   return <Navigate to={`/pro/conveyancer/join/${encodeURIComponent(code)}`} replace />;
 };
+// A seller's invitation to their estate agent: the emailed link is short and
+// stable; the page itself lives in the estate agent workspace.
+const AgentJoinRedirect = () => {
+  const { code = '' } = useParams<{ code: string }>();
+  return <Navigate to={`/pro/estate-agent/join/${encodeURIComponent(code)}`} replace />;
+};
 
 function App() {
   // Set up auto-logout functionality with warning modal
@@ -270,6 +276,7 @@ function App() {
               <Route path="/register/conveyancer" element={<RegisterConveyancerPage />} />
               <Route path="/register/estate-agent" element={<RegisterEstateAgentPage />} />
               <Route path="/conveyancer/join/:code" element={<ConveyancerJoinRedirect />} />
+              <Route path="/agent/join/:code" element={<AgentJoinRedirect />} />
               <Route path="/auth/callback" element={<Suspense fallback={<div />}><AuthCallback /></Suspense>} />
               <Route path="/reset-password" element={<Suspense fallback={<div />}><ResetPasswordPage /></Suspense>} />
               <Route path="/forgot-password" element={<PasswordResetForm />} />
