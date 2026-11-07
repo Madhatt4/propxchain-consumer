@@ -3,6 +3,7 @@
 
 import { supabase } from '../lib/supabase';
 import { postcodeService, calculateDistanceMiles } from './postcodeService';
+import { currentUserIsTestAccount, keepFirmsFor } from './testFirm';
 import type { Provider } from '../components/providers/types';
 import type { ProviderDataSource, ProviderDataSourceOptions } from './providerDataSource';
 
@@ -24,6 +25,8 @@ export interface ConveyancerPanelRow {
   status: string;
   /** Optional so a row read before the column existed still maps. */
   pexa_enabled?: boolean | null;
+  /** Hidden test firm (see ./testFirm). Optional for the same reason. */
+  is_test?: boolean | null;
 }
 
 function deriveFeatures(services: string | null): [string, string, string, string] {
@@ -77,7 +80,7 @@ export class SupabaseProviderDataSource implements ProviderDataSource {
       throw new Error(`Failed to load conveyancers: ${error.message}`);
     }
 
-    let rows: ConveyancerPanelRow[] = data ?? [];
+    let rows: ConveyancerPanelRow[] = keepFirmsFor(data ?? [], await currentUserIsTestAccount());
     if (options?.filterIds) {
       const allow = new Set(options.filterIds);
       rows = rows.filter((r) => allow.has(r.id));
@@ -142,6 +145,7 @@ export class SupabaseProviderDataSource implements ProviderDataSource {
       .single();
 
     if (error || !data) return null;
-    return rowToProvider(data as ConveyancerPanelRow);
+    const [row] = keepFirmsFor([data as ConveyancerPanelRow], await currentUserIsTestAccount());
+    return row ? rowToProvider(row) : null;
   }
 }
