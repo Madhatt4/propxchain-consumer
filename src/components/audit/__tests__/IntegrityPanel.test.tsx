@@ -74,7 +74,25 @@ describe('IntegrityPanel', () => {
 
     render(<IntegrityPanel integrity={integrity} />);
 
-    expect(screen.getByText('transaction manager')).toBeInTheDocument();
-    expect(screen.getByText('document storage')).toBeInTheDocument();
+    expect(screen.getByText('transaction record')).toBeInTheDocument();
+    expect(screen.getByText('document list')).toBeInTheDocument();
+  });
+
+  it('should say plainly which records failed to load and what to do', () => {
+    const integrity = makeIntegrity({
+      overallStatus: 'warning',
+      canisterAvailability: { transaction_manager: true, document_storage: false, ledger_manager: false },
+    });
+
+    render(<IntegrityPanel integrity={integrity} />);
+
+    expect(screen.getByText(/couldn.t load the document list and event log/)).toBeInTheDocument();
+    expect(screen.getByText(/Reload the page in a minute/)).toBeInTheDocument();
+  });
+
+  it('should not show the could-not-load message when every read succeeded', () => {
+    render(<IntegrityPanel integrity={makeIntegrity({ overallStatus: 'warning' })} />);
+
+    expect(screen.queryByText(/couldn.t load/)).not.toBeInTheDocument();
   });
 });

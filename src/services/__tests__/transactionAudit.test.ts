@@ -17,8 +17,13 @@ const mockGetTransactionChain = vi.fn();
 const mockGetBlockchainEfficiencyMetrics = vi.fn();
 const mockGetHmlrFetch = vi.fn();
 
+const mockInitialize = vi.fn().mockResolvedValue(undefined);
+const mockEnsureDocumentStorage = vi.fn().mockResolvedValue(undefined);
+
 vi.mock('../icp.service', () => ({
   icpService: {
+    initialize: (...args: unknown[]) => mockInitialize(...args),
+    ensureDocumentStorageActor: (...args: unknown[]) => mockEnsureDocumentStorage(...args),
     transactionManager: {
       getTransaction: (...args: unknown[]) => mockGetTransaction(...args),
       getTransactionChain: (...args: unknown[]) => mockGetTransactionChain(...args),
@@ -256,6 +261,37 @@ describe('fetchAuditReport', () => {
       expect(report.withheldDocuments).toEqual([]);
       expect(report.errors['document_storage']).toContain('list down');
     });
+  });
+
+  it('should create the lazily-made document storage actor before reading it', async () => {
+    mockEnsureDocumentStorage.mockClear();
+
+    await fetchAuditReport(TX_ID);
+
+    expect(mockEnsureDocumentStorage).toHaveBeenCalledTimes(1);
+    expect(mockEnsureDocumentStorage.mock.invocationCallOrder[0])
+      .toBeLessThan(mockFetchTransactionDocuments.mock.invocationCallOrder.at(-1) ?? 0);
+  });
+
+  it('should still build the report when the actors cannot be prepared', async () => {
+    mockEnsureDocumentStorage.mockRejectedValueOnce(new Error('no agent'));
+
+    const report = await fetchAuditReport(TX_ID);
+
+    expect(report.transaction).not.toBeNull();
+  });
+
+  it('should not call the transaction record available when its actor was absent', async () => {
+    const svc = icpService as unknown as { transactionManager: unknown };
+    const original = svc.transactionManager;
+    svc.transactionManager = undefined;
+    try {
+      const report = await fetchAuditReport(TX_ID);
+      expect(report.integrityVerification.canisterAvailability['transaction_manager']).toBe(false);
+      expect(report.errors['transaction_manager']).toBeDefined();
+    } finally {
+      svc.transactionManager = original;
+    }
   });
 
   it('should set error for each failed canister section', async () => {
