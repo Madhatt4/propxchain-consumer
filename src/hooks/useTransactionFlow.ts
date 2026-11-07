@@ -36,6 +36,8 @@ interface TransactionData {
   sellerConveyancer?: string | null;
   /** Each side's conveyancer from the on-chain solicitor slots. */
   conveyancers?: DealConveyancers;
+  /** The legacy single `solicitor` principal, from deals made before the per-side slots. */
+  legacySolicitor?: string | null;
 }
 
 // Completion stages are done only when transaction_manager says the deal has
@@ -43,12 +45,29 @@ interface TransactionData {
 // are ignored, and completeStage never writes one.
 const COMPLETION_STAGE_IDS: ReadonlySet<string> = new Set(['seller-7', 'buyer-7']);
 
-// Conveyancer stages are done only when that side's conveyancer is on the
-// deal (the solicitor slot on chain, filled when the firm redeems its join
-// link). Requesting estimates used to tick the stage, so a seller saw
-// "Completed" before any estimate was accepted; those old flow-state flags
-// are ignored, and completeStage never writes a new one.
+// Conveyancer stages are done when, for that side: the firm is on the deal
+// (its solicitor slot on chain, filled when it redeems its join link), the
+// legacy single `solicitor` field is set, or the client has said their
+// conveyancer is not on PropXchain and was instructed directly (Marc's
+// completion rule: shown as client-confirmed, not verified). Requesting
+// estimates used to tick the stage, so a seller saw "Completed" before any
+// estimate was accepted; those old bare flags are ignored, and completeStage
+// never writes one.
 const CONVEYANCER_STAGE_IDS: ReadonlySet<string> = new Set(['seller-5', 'buyer-5']);
+
+/** Flow-state key for the client's own confirmation, distinct from the old bare flag. */
+export function clientConfirmedKey(stageId: string): string {
+  return `${stageId}:client-confirmed`;
+}
+
+/** Text of a Candid `opt Principal` (`[] | [p]`), or null. */
+function optPrincipalText(value: unknown): string | null {
+  const p: unknown = Array.isArray(value) ? value[0] : value;
+  if (!p) return null;
+  if (typeof p === 'string') return p || null;
+  if (typeof p === 'object' && 'toText' in p) return String((p as { toText: () => string }).toText()) || null;
+  return null;
+}
 
 /** Stages whose completion comes from chain state, never from a flow-state flag. */
 function isDerivedStage(stageId: string): boolean {
@@ -86,6 +105,9 @@ interface UseTransactionFlowReturn {
   clearProvider: (stageId: string) => void;
   rateProvider: (stageId: string, rating: number, comment?: string) => void;
   completeStage: (stageId: string) => void;
+  /** The client says their conveyancer is not on PropXchain and was
+   *  instructed directly: completes seller-5/buyer-5 as client-confirmed. */
+  confirmConveyancerDirect: (stageId: string) => void;
   totalCostPence: number;
   expandedStageIds: string[];
   toggleStage: (stageId: string) => void;
@@ -146,6 +168,9 @@ const STAGE_TO_EVENT_TYPE: Record<string, string> = {
   'buyer-4': 'sellers_pack_reviewed',      // Buyer reviewed seller pack
   'buyer-5': 'buyer_conveyancer_confirmed',// Conveyancer appointed for buyer side
   'buyer-6': 'contract_exchanged',
+  // The client's word that their conveyancer is instructed off PropXchain.
+  'seller-5:client-confirmed': 'seller_conveyancer_client_confirmed',
+  'buyer-5:client-confirmed': 'buyer_conveyancer_client_confirmed',
 };
 
 function stageIdToEventType(stageId: string): string {
@@ -330,8 +355,9 @@ function buildCompletedStageIds(
     for (const stageId of COMPLETION_STAGE_IDS) completed.add(stageId);
   }
 
-  if (transaction?.conveyancers?.seller) completed.add('seller-5');
-  if (transaction?.conveyancers?.buyer) completed.add('buyer-5');
+  for (const stageId of CONVEYANCER_STAGE_IDS) {
+    if (conveyancerBasis(stageId, transaction, flowState)) completed.add(stageId);
+  }
 
   // buyer-1 auto-completes when a real buyer is on chain. `buyer === seller`
   // is the placeholder seeded by createTransaction before assignBuyer fires,
@@ -342,6 +368,23 @@ function buildCompletedStageIds(
   }
 
   return completed;
+}
+
+/**
+ * Why a conveyancer stage is complete, or null when it is not. A filled slot
+ * or the legacy field is verified on chain; otherwise the client's explicit
+ * confirmation counts, marked as theirs.
+ */
+function conveyancerBasis(
+  stageId: string,
+  transaction: TransactionData | null,
+  flowState: TransactionFlowState,
+): 'verified' | 'client-confirmed' | null {
+  // The same slots the deal page's conveyancer line reads (lib/dealConveyancers).
+  const slot = stageId === 'seller-5' ? transaction?.conveyancers?.seller : transaction?.conveyancers?.buyer;
+  if (slot || transaction?.legacySolicitor) return 'verified';
+  if (flowState.completedStages?.[clientConfirmedKey(stageId)]) return 'client-confirmed';
+  return null;
 }
 
 function resolveStageStatus(
@@ -403,19 +446,27 @@ function resolveStages(
   journey: JourneyRole,
   transaction: TransactionData | null,
   completedIds: Set<string>,
+  flowState: TransactionFlowState,
 ): StageConfig[] {
   const templates = getStagesForJourney(journey);
 
-  return templates.map((template) => ({
-    ...template,
-    status: resolveStageStatus(
-      template.id,
-      template.prerequisiteStageIds,
-      completedIds,
-      journey,
-      transaction,
-    ),
-  }));
+  return templates.map((template) => {
+    const stage: StageConfig = {
+      ...template,
+      status: resolveStageStatus(
+        template.id,
+        template.prerequisiteStageIds,
+        completedIds,
+        journey,
+        transaction,
+      ),
+    };
+    if (CONVEYANCER_STAGE_IDS.has(template.id)
+      && conveyancerBasis(template.id, transaction, flowState) === 'client-confirmed') {
+      stage.completionBasis = 'client-confirmed';
+    }
+    return stage;
+  });
 }
 
 export function useTransactionFlow(
@@ -476,6 +527,7 @@ export function useTransactionFlow(
             amount: fullTx?.amount != null ? Number(fullTx.amount) : undefined,
             sellerConveyancer: sellerConveyancerOf(fullTx?.sellerSolicitor),
             conveyancers: dealConveyancersOf(fullTx),
+            legacySolicitor: optPrincipalText(fullTx?.solicitor),
           };
           setTransaction(txData);
 
@@ -571,15 +623,15 @@ export function useTransactionFlow(
   );
 
   const stages = useMemo(
-    () => resolveStages(activeJourney, transaction, completedIds),
-    [activeJourney, transaction, completedIds],
+    () => resolveStages(activeJourney, transaction, completedIds, flowState),
+    [activeJourney, transaction, completedIds, flowState],
   );
 
   const otherJourney: JourneyRole =
     activeJourney === 'seller' ? 'buyer' : 'seller';
   const otherPartyStages = useMemo(
-    () => resolveStages(otherJourney, transaction, completedIds),
-    [otherJourney, transaction, completedIds],
+    () => resolveStages(otherJourney, transaction, completedIds, flowState),
+    [otherJourney, transaction, completedIds, flowState],
   );
 
   const providerSelections = useMemo(() => {
@@ -812,6 +864,28 @@ export function useTransactionFlow(
     [transactionId],
   );
 
+  const confirmConveyancerDirect = useCallback(
+    (stageId: string): void => {
+      if (!CONVEYANCER_STAGE_IDS.has(stageId)) return;
+      const key = clientConfirmedKey(stageId);
+      setChainPersistError(null);
+      setFlowState((prev) => {
+        const next = { ...prev, completedStages: { ...prev.completedStages, [key]: Date.now() } };
+        saveFlowState(transactionId, principalId ?? null, next);
+        persistToChain(transactionId, next).then((success) => {
+          if (!success) setChainPersistError('Your confirmation was saved on this device but not recorded on-chain. Please try again.');
+        });
+        return next;
+      });
+      // The audit trail records it as the client's word, under its own event type.
+      void icpService.ledgerManager
+        ?.logEvent(transactionId, stageIdToEventType(key), `${stageId}: client confirmed a conveyancer instructed off PropXchain`, [])
+        .then(() => bumpInvalidationKey())
+        .catch((err: unknown) => logger.error('[audit] logEvent failed', { transactionId, eventType: stageIdToEventType(key), err }));
+    },
+    [transactionId, principalId, bumpInvalidationKey],
+  );
+
   const toggleStage = useCallback(
     (stageId: string): void => {
       setFlowState((prev) => {
@@ -865,6 +939,7 @@ export function useTransactionFlow(
     clearProvider,
     rateProvider,
     completeStage,
+    confirmConveyancerDirect,
     totalCostPence,
     expandedStageIds: flowState.expandedStageIds,
     toggleStage,

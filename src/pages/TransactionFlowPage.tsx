@@ -12,6 +12,7 @@ import { useMoveNarrator } from '../hooks/useMoveNarrator';
 import { TopBar } from '../components/transaction/flow/TopBar';
 import { StageCard } from '../components/transaction/flow/StageCard';
 import { StageTabs, BUYER_SIDE_TAB_ID, SALES_PACK_TAB_ID } from '../components/transaction/flow/StageTabs';
+import { ConveyancerDirectConfirm } from '../components/transaction/flow/ConveyancerDirectConfirm';
 import { OtherPartyProgressCard } from '../components/transaction/flow/OtherPartyProgressCard';
 import { CostFooterMobile } from '../components/transaction/flow/CostFooterMobile';
 import { PropertyListingCard } from '../components/transaction/flow/PropertyListingCard';
@@ -165,6 +166,8 @@ interface StageComponentProps {
   onClearProvider?: (stageId: string) => void;
   onRateProvider?: (stageId: string, rating: number, comment?: string) => void;
   onComplete?: (stageId: string) => void;
+  /** Conveyancer stages: the client confirms a conveyancer instructed off PropXchain. */
+  onConfirmConveyancerDirect?: (stageId: string) => void;
   providerSelection?: ProviderSelection;
   journeyRole?: JourneyRole;
   /** The viewer's ACTUAL role on the transaction (not the journey being
@@ -343,7 +346,9 @@ function renderStageContent(stageId: string, props: StageComponentProps): ReactE
       // The buyer's lender lives in the Buyer Pack now (spec 2026-09-05); the
       // stage reads it itself and a picked lender is declared back into the pack.
       const canCaptureLender = stageId === 'buyer-5' && !!props.transactionId;
+      const stageSide = stageId === 'buyer-5' ? 'buyer' : 'seller';
       return (
+        <>
         <ConveyancerQuotesStage
           stageSide={stageId === 'buyer-5' ? 'buyer' : 'seller'}
           viewerSide={props.dealSide}
@@ -363,6 +368,13 @@ function renderStageContent(stageId: string, props: StageComponentProps): ReactE
               : undefined
           }
         />
+        <ConveyancerDirectConfirm
+          isClientConfirmed={stage.completionBasis === 'client-confirmed'}
+          isComplete={stage.status === 'completed'}
+          canConfirm={props.dealSide === stageSide && !!props.onConfirmConveyancerDirect}
+          onConfirm={() => props.onConfirmConveyancerDirect?.(stageId)}
+        />
+        </>
       );
     }
     case 'seller-6': return <ContractExchangeStage {...props} journeyRole="seller" />;
@@ -530,6 +542,7 @@ export default function TransactionFlowPage(): ReactElement {
     clearProvider,
     rateProvider,
     completeStage: rawCompleteStage,
+    confirmConveyancerDirect,
     totalCostPence,
     editingStageIds,
     setStageEditing,
@@ -851,6 +864,7 @@ export default function TransactionFlowPage(): ReactElement {
                           onClearProvider: clearProvider,
                           onRateProvider: rateProvider,
                           onComplete: completeStage,
+                          onConfirmConveyancerDirect: confirmConveyancerDirect,
                           providerSelection: providerSelections.get(activeStage.id),
                           postcode: postcode || undefined,
                           turboMode,

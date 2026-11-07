@@ -17,4 +17,7 @@ export interface StageConfig {
   completedAt?: number;
   serviceMode: 'real-read' | 'real-readwrite' | 'mock';
   serviceKey?: 'rightmove' | 'searchflow' | 'conveyancer';
+  /** Set when a completed stage rests on the client's word, not a verified
+   *  party (a conveyancer instructed off PropXchain). Shown on the tab. */
+  completionBasis?: 'client-confirmed';
 }

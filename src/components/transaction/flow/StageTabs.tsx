@@ -25,7 +25,8 @@ interface StageTabItem {
   order: number;
   title: string;
   status: TabStatus;
-  /** Badge text for the sales-pack pseudo tab ("6 of 9" / "Complete"). */
+  /** Badge text for the sales-pack pseudo tab ("6 of 9" / "Complete"), or a
+   *  completed stage's basis ("Client-confirmed"). */
   badgeText?: string;
 }
 
@@ -50,6 +51,8 @@ function buildItems(
     order: s.order,
     title: s.title,
     status: s.status,
+    // A stage resting on the client's word must not read as verified.
+    badgeText: s.completionBasis === 'client-confirmed' ? 'Client-confirmed' : undefined,
   }));
   if (buyerSideOrder !== undefined) {
     const pseudo: StageTabItem = {
@@ -131,7 +134,7 @@ function TabBadge({ status, text }: { status: TabStatus; text?: string }): React
       return (
         <span className={`${base} border-green-500/20 bg-green-500/12 text-green-600 dark:text-green-400`}>
           <Check className="h-2.5 w-2.5" />
-          Completed
+          {text ?? 'Completed'}
         </span>
       );
     case 'buyer-side':
