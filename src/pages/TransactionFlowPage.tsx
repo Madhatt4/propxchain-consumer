@@ -209,6 +209,8 @@ interface StageComponentProps {
   viewerIsParty?: boolean;
   /** Whether the viewer may confirm keys released (Completion stage). */
   keysRole?: KeysRole;
+  /** The seller's conveyancer, who uploads the completion statement (Completion stage). */
+  sellerConveyancer?: string | null;
 }
 
 function renderStageContent(stageId: string, props: StageComponentProps): ReactElement | null {
@@ -860,6 +862,7 @@ export default function TransactionFlowPage(): ReactElement {
                           purchasePrice: transaction?.amount,
                           viewerIsParty: transaction ? isDealParty(transaction, principalId) : false,
                           keysRole: transaction ? keysRoleOf(transaction, principalId) : 'none',
+                          sellerConveyancer: transaction?.sellerConveyancer ?? null,
                         }))}
                     </StageCard>
                   </div>

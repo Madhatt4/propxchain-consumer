@@ -39,4 +39,28 @@ describe('buildCompletionHashes', () => {
       await sha256Hex({ transactionId: 'tx-1', propertyAddress: '1 Test Street', completionDate: now.toISOString(), purchasePrice: 250000 }),
     );
   });
+
+  it('should anchor the uploaded completion statement\'s file hash when there is one', async () => {
+    const now = new Date('2026-11-06T12:00:00.000Z');
+    const input = { transactionId: 'tx-1', propertyAddress: '1 Test Street', purchasePrice: 250000 };
+    const fileHash = 'c'.repeat(64);
+
+    const hashes = await buildCompletionHashes(input, now, fileHash);
+
+    expect(hashes.completionHash).toBe(fileHash);
+    expect(hashes.fundsHash).toBe(
+      await sha256Hex({ transactionId: 'tx-1', amount: 250000, timestamp: now.toISOString() }),
+    );
+  });
+
+  it('should fall back to the deal-facts hash when there is no statement', async () => {
+    const now = new Date('2026-11-06T12:00:00.000Z');
+    const input = { transactionId: 'tx-1', propertyAddress: '1 Test Street', purchasePrice: 250000 };
+
+    const hashes = await buildCompletionHashes(input, now, null);
+
+    expect(hashes.completionHash).toBe(
+      await sha256Hex({ transactionId: 'tx-1', propertyAddress: '1 Test Street', completionDate: now.toISOString(), purchasePrice: 250000 }),
+    );
+  });
 });

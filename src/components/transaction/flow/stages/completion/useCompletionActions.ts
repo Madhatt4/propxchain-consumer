@@ -6,6 +6,12 @@ import { icpService } from '@/services/icp.service';
 import { isCompletedStatus } from '@/services/completionStatus';
 import { documentShareService } from '@/services/documentShare.service';
 import { buildCompletionHashes } from '@/utils/completionHashes';
+import {
+  CompletionStatementCheckError,
+  STATEMENT_UNREADABLE,
+  firstConfirmedAtMs,
+  readStatementHashForCompletion,
+} from '@/lib/completionStatement';
 import { logger } from '@/utils/logger';
 import type { CompletionStatus } from '@/services/completionStatus';
 import type { CompletionHashInput } from '@/utils/completionHashes';
@@ -24,12 +30,16 @@ interface Options {
   transactionId: string | undefined;
   /** Null when the price or address is missing; confirmSide then does nothing. */
   hashInput: CompletionHashInput | null;
+  /** The seller's conveyancer, whose uploaded statement is the anchor. */
+  sellerConveyancer?: string | null;
   wasCompleted: boolean;
   reload: () => Promise<CompletionStatus | null>;
 }
 
 /** The two writes the Completion stage makes, each followed by a re-read. */
-export function useCompletionActions({ transactionId, hashInput, wasCompleted, reload }: Options): UseCompletionActionsResult {
+export function useCompletionActions({
+  transactionId, hashInput, sellerConveyancer, wasCompleted, reload,
+}: Options): UseCompletionActionsResult {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -58,7 +68,25 @@ export function useCompletionActions({ transactionId, hashInput, wasCompleted, r
   function confirmSide(): void {
     if (!hashInput) return;
     void run(async (txId) => {
-      const { fundsHash, completionHash } = await buildCompletionHashes(hashInput);
+      // Read at confirm time, from server state: the statement may have
+      // arrived since the page loaded, and a side may have confirmed. The
+      // statement in force at the first confirmation is the one both sides
+      // send. An unreadable trail or status, or a seller's conveyancer who is
+      // acting but cannot be resolved, refuses rather than falls back.
+      let statementHash: string | null;
+      try {
+        const fresh = await icpService.getCompletionStatus(txId);
+        if (!fresh) return { success: false, message: STATEMENT_UNREADABLE };
+        statementHash = await readStatementHashForCompletion(txId, {
+          sellerConveyancer,
+          isSellerConveyancerActing: fresh.conveyancerActing.seller,
+          firstConfirmedAt: firstConfirmedAtMs([fresh.buyer?.at.getTime(), fresh.seller?.at.getTime()]),
+        });
+      } catch (e: unknown) {
+        logger.warn('[completion] could not settle the completion statement hash', e);
+        return { success: false, message: e instanceof CompletionStatementCheckError ? e.message : STATEMENT_UNREADABLE };
+      }
+      const { fundsHash, completionHash } = await buildCompletionHashes(hashInput, new Date(), statementHash);
       return icpService.initiateCompletion(txId, fundsHash, completionHash);
     });
   }
