@@ -58,9 +58,13 @@ function SideAction({ side, status, viewerIsParty, isMissingDealFacts, busy, con
   return (
     <div>
       {confirmNote && <p className={NOTE}>{confirmNote}</p>}
-      <button type="button" onClick={onConfirm} disabled={busy || waitingForBuyer || isMissingDealFacts} className={BUTTON}>
-        {side === 'buyer' ? 'Confirm funds sent' : 'Confirm funds received'}
-      </button>
+      <ConfirmStep
+        label={side === 'buyer' ? 'Confirm funds sent' : 'Confirm funds received'}
+        records={side === 'buyer' ? 'that completion funds were sent' : 'that completion funds were received'}
+        busy={busy}
+        disabled={waitingForBuyer || isMissingDealFacts}
+        onConfirm={onConfirm}
+      />
       <p className={NOTE}>{sideNote(waitingForBuyer, isMissingDealFacts)}</p>
     </div>
   );
@@ -76,36 +80,50 @@ interface KeysActionProps {
 const SECONDARY =
   'mt-2 px-4 py-2 rounded-lg border border-gray-300 dark:border-slate-600 text-sm font-semibold text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors';
 
-// Releasing the keys is recorded on chain and cannot be undone, so it asks
-// once, as the conveyancer portal does for the money (card 852523fc).
-function KeysAction({ status, keysRole, busy, onConfirm }: KeysActionProps): ReactNode {
+interface ConfirmStepProps {
+  /** The button that opens the step, e.g. "Confirm keys released". */
+  label: string;
+  /** What gets recorded, e.g. "that the keys were released". */
+  records: string;
+  busy: boolean;
+  disabled?: boolean;
+  onConfirm: () => void;
+}
+
+// Each of these is recorded on chain and cannot be undone, so it asks once,
+// as the conveyancer portal does for the money (card 852523fc).
+function ConfirmStep({ label, records, busy, disabled = false, onConfirm }: ConfirmStepProps): ReactNode {
   const [isAsking, setIsAsking] = useState(false);
-  if (status.keysReleased) return null;
-  if (keysRole === 'seller-with-agent') {
-    return <p className={NOTE}>Your estate agent confirms this on PropXchain.</p>;
-  }
-  if (keysRole !== 'agent' && keysRole !== 'seller') return null;
   if (!isAsking) {
     return (
-      <button type="button" onClick={() => setIsAsking(true)} disabled={busy} className={BUTTON}>
-        Confirm keys released
+      <button type="button" onClick={() => setIsAsking(true)} disabled={busy || disabled} className={BUTTON}>
+        {label}
       </button>
     );
   }
   return (
-    <div role="group" aria-label="Confirm keys released?">
-      <p className="mt-2 text-sm font-medium text-gray-800 dark:text-gray-200">Confirm keys released?</p>
-      <p className={NOTE}>This records on PropXchain that the keys were released. It cannot be undone.</p>
+    <div role="group" aria-label={`${label}?`}>
+      <p className="mt-2 text-sm font-medium text-gray-800 dark:text-gray-200">{label}?</p>
+      <p className={NOTE}>This records on PropXchain {records}. It cannot be undone.</p>
       <div className="flex gap-2">
         <button type="button" onClick={() => setIsAsking(false)} disabled={busy} className={SECONDARY}>
           Cancel
         </button>
-        <button type="button" onClick={onConfirm} disabled={busy} className={BUTTON}>
+        <button type="button" onClick={onConfirm} disabled={busy || disabled} className={BUTTON}>
           Record it
         </button>
       </div>
     </div>
   );
+}
+
+function KeysAction({ status, keysRole, busy, onConfirm }: KeysActionProps): ReactNode {
+  if (status.keysReleased) return null;
+  if (keysRole === 'seller-with-agent') {
+    return <p className={NOTE}>Your estate agent confirms this on PropXchain.</p>;
+  }
+  if (keysRole !== 'agent' && keysRole !== 'seller') return null;
+  return <ConfirmStep label="Confirm keys released" records="that the keys were released" busy={busy} onConfirm={onConfirm} />;
 }
 
 export interface CompletionRowsProps {

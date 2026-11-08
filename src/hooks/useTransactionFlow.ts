@@ -11,6 +11,7 @@ import type { ServiceProvider, ProviderSelection } from '../types/provider.types
 import type { TransactionFlowState } from '../types/flow.types';
 import { dealSideOf, principalsOf, type DealSide } from '@/lib/dealAccess';
 import { isCompletedStatus } from '@/services/completionStatus';
+import { isAtLeastStatus } from '@/types/transactionStatus';
 import { sellerConveyancerOf } from '@/lib/completionStatement';
 import { conveyancerSideOf, dealConveyancersOf, NO_CONVEYANCERS, type DealConveyancers } from '@/lib/dealConveyancers';
 
@@ -45,6 +46,13 @@ interface TransactionData {
 // are ignored, and completeStage never writes one.
 const COMPLETION_STAGE_IDS: ReadonlySet<string> = new Set(['seller-7', 'buyer-7']);
 
+// Contract & Exchange is done when transaction_manager says contracts have
+// exchanged. Exchange is recorded by the conveyancers in /pro, so no client
+// action ever ticked it, and after a real exchange the client still saw
+// "Contract & Exchange: action needed" and "Completion: locked" (card
+// 852523fc). Old flow-state flags for it are ignored, like completion's.
+const EXCHANGE_STAGE_IDS: ReadonlySet<string> = new Set(['seller-6', 'buyer-6']);
+
 // Conveyancer stages are done when, for that side: the firm is on the deal
 // (its solicitor slot on chain, filled when it redeems its join link), the
 // legacy single `solicitor` field is set, or the client has said their
@@ -71,7 +79,7 @@ function optPrincipalText(value: unknown): string | null {
 
 /** Stages whose completion comes from chain state, never from a flow-state flag. */
 function isDerivedStage(stageId: string): boolean {
-  return COMPLETION_STAGE_IDS.has(stageId) || CONVEYANCER_STAGE_IDS.has(stageId);
+  return COMPLETION_STAGE_IDS.has(stageId) || CONVEYANCER_STAGE_IDS.has(stageId) || EXCHANGE_STAGE_IDS.has(stageId);
 }
 
 // Candid variant -> its key, e.g. { exchanged: null } -> "exchanged".
@@ -353,6 +361,10 @@ function buildCompletedStageIds(
 
   if (isCompletedStatus(transaction?.status)) {
     for (const stageId of COMPLETION_STAGE_IDS) completed.add(stageId);
+  }
+
+  if (isAtLeastStatus(transaction?.status, 'exchanged')) {
+    for (const stageId of EXCHANGE_STAGE_IDS) completed.add(stageId);
   }
 
   for (const stageId of CONVEYANCER_STAGE_IDS) {
