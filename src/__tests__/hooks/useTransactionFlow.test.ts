@@ -46,6 +46,11 @@ vi.mock('../../services/icp.service', () => ({
 }));
 
 const mockListForTransaction = vi.fn().mockResolvedValue([]);
+const mockLoadStageEvidence = vi.fn();
+vi.mock('@/services/stageEvidence.service', () => ({
+  loadStageEvidence: (...a: unknown[]) => mockLoadStageEvidence(...a),
+}));
+
 vi.mock('../../services/partyRole.service', () => ({
   partyRoleService: { listForTransaction: (...args: unknown[]) => mockListForTransaction(...args) },
 }));
@@ -65,6 +70,10 @@ vi.mock('@/utils/logger', () => ({
 
 describe('useTransactionFlow', () => {
   beforeEach(() => {
+    mockLoadStageEvidence.mockReset();
+    mockLoadStageEvidence.mockResolvedValue({
+      eventTypes: new Set(), hasOrderedSearches: false, hasPropertyForms: false, hasListing: false, pack: new Map(),
+    });
     localStorage.clear();
     vi.clearAllMocks();
     mockGetTransactionProgress.mockResolvedValue(null);
@@ -306,6 +315,22 @@ describe('useTransactionFlow', () => {
 
     expect(result.current.stages.find(s => s.id === 'seller-6')?.status).toBe('completed');
     expect(result.current.stages.find(s => s.id === 'seller-7')?.status).not.toBe('locked');
+  });
+
+  it('should tick a stage from shared evidence, for a viewer whose own flow state never ticked it', async () => {
+    mockLoadStageEvidence.mockResolvedValue({
+      eventTypes: new Set(['seller_forms_completed']), hasOrderedSearches: true, hasPropertyForms: false, hasListing: true, pack: new Map(),
+    });
+    mockGetTransaction.mockResolvedValue({
+      seller: { toString: () => 'test-principal' },
+      buyer: { toString: () => 'buyer-principal' },
+      status: { active: null },
+    });
+    const { result } = renderHook(() => useTransactionFlow('tx-123'));
+    await vi.waitFor(() => expect(result.current.stages.find(s => s.id === 'seller-3')?.status).toBe('completed'));
+
+    expect(result.current.stages.find(s => s.id === 'seller-1')?.status).toBe('completed');
+    expect(result.current.stages.find(s => s.id === 'seller-2')?.status).toBe('completed');
   });
 
   it('should show every stage before exchange as done once the canister says exchanged', async () => {

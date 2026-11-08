@@ -12,6 +12,8 @@ import type { TransactionFlowState } from '../types/flow.types';
 import { dealSideOf, principalsOf, type DealSide } from '@/lib/dealAccess';
 import { isCompletedStatus } from '@/services/completionStatus';
 import { isAtLeastStatus } from '@/types/transactionStatus';
+import { stagesDoneByEvidence } from '@/lib/stageEvidence';
+import { loadStageEvidence } from '@/services/stageEvidence.service';
 import { sellerConveyancerOf } from '@/lib/completionStatement';
 import { conveyancerSideOf, dealConveyancersOf, NO_CONVEYANCERS, type DealConveyancers } from '@/lib/dealConveyancers';
 
@@ -334,8 +336,15 @@ function deriveDealSide(transaction: TransactionData | null, principalId: string
 function buildCompletedStageIds(
   transaction: TransactionData | null,
   flowState: TransactionFlowState,
+  evidenceDone: ReadonlySet<string> = new Set(),
 ): Set<string> {
   const completed = new Set<string>();
+
+  // From shared evidence on the deal (stageEvidence.ts): an item uploaded or
+  // a stage completed shows as done for every party, on every device.
+  for (const stageId of evidenceDone) {
+    if (!isDerivedStage(stageId)) completed.add(stageId);
+  }
 
   // From canister milestones
   if (transaction?.milestones) {
@@ -644,9 +653,23 @@ export function useTransactionFlow(
   // put a buyer into the seller's journey, or the reverse.
   const activeJourney = transaction && principalId ? userRole : flowState.activeJourney;
 
+  // Evidence is read once per deal and re-read when this viewer's flow state
+  // changes (they just completed or uploaded something).
+  const [evidenceDone, setEvidenceDone] = useState<ReadonlySet<string>>(() => new Set());
+  const flowStateVersion = Object.keys(flowState.completedStages ?? {}).length
+    + Object.keys(flowState.providerSelections).length;
+  useEffect(() => {
+    if (!transactionId) return undefined;
+    let active = true;
+    void loadStageEvidence(transactionId).then((evidence) => {
+      if (active) setEvidenceDone(stagesDoneByEvidence(evidence));
+    });
+    return () => { active = false; };
+  }, [transactionId, flowStateVersion]);
+
   const completedIds = useMemo(
-    () => buildCompletedStageIds(transaction, flowState),
-    [transaction, flowState],
+    () => buildCompletedStageIds(transaction, flowState, evidenceDone),
+    [transaction, flowState, evidenceDone],
   );
 
   const stages = useMemo(
