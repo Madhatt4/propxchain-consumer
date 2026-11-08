@@ -408,7 +408,7 @@ function renderStageContent(stageId: string, props: StageComponentProps): ReactE
             if (props.isEditing) handleProviderEditComplete();
             else onComplete?.(stageId);
           }}
-          onSkip={onPanelDone}
+          onReportUploaded={onPanelDone}
           postcode={postcode}
           transactionId={props.transactionId}
           partyName={props.partyName}

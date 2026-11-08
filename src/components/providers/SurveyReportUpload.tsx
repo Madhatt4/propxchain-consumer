@@ -1,6 +1,8 @@
 import { useState, type ReactElement } from 'react';
 import { FileUp, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
 import { uploadSurveyReport } from '../../services/surveyDocument.service';
+import { declareBuyerPack } from '../../services/buyerPack.service';
+import { fileToBase64, runSurveyScan } from '../../services/scan.service';
 import { logger } from '../../utils/logger';
 
 interface Props {
@@ -14,6 +16,29 @@ interface Props {
 interface UploadedMeta {
   name: string;
   hash: string;
+  /** The AI scan read the report; false if it could not, which never undoes the upload. */
+  isScanned: boolean;
+}
+
+/**
+ * After the report is stored: scan it (the result is saved against the deal
+ * by survey-scan) and mark the survey received in the buyer pack, so the
+ * stage shows done for every party. Neither failing undoes the upload.
+ */
+async function afterUpload(file: File, transactionId: string): Promise<boolean> {
+  const [scan] = await Promise.all([
+    fileToBase64(file)
+      .then((contentBase64) => runSurveyScan({
+        sourceRef: `survey:${transactionId}:${file.name}`,
+        transactionId,
+        contentBase64,
+        filename: file.name,
+      }))
+      .catch((err: unknown) => { logger.warn('[survey] scan failed', err); return null; }),
+    declareBuyerPack(transactionId, { surveyReceived: true })
+      .catch((err: unknown) => logger.warn('[survey] could not mark the survey received', err)),
+  ]);
+  return scan !== null;
 }
 
 /**
@@ -46,7 +71,8 @@ export function SurveyReportUpload({
     setUploading(true);
     try {
       const record = await uploadSurveyReport(file, { transactionId, propertyId });
-      setUploaded({ name: file.name, hash: record.fileHash });
+      const isScanned = await afterUpload(file, transactionId);
+      setUploaded({ name: file.name, hash: record.fileHash, isScanned });
       onUploaded?.(record.fileHash);
     } catch (err) {
       logger.error('[survey] report upload failed', err);
@@ -89,6 +115,11 @@ export function SurveyReportUpload({
                 </p>
                 <p className="mt-0.5 font-mono text-xs text-gray-500 dark:text-gray-400">
                   {uploaded.hash.slice(0, 16)}&hellip;
+                </p>
+                <p className="mt-1 text-xs text-gray-600 dark:text-gray-300">
+                  {uploaded.isScanned
+                    ? 'Scanned. The findings are in the AI scans tab.'
+                    : 'Uploaded. The scan did not run; you can scan it from the AI scans tab.'}
                 </p>
               </div>
             </div>
