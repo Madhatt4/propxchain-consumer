@@ -52,6 +52,8 @@ const COMPLETION_STAGE_IDS: ReadonlySet<string> = new Set(['seller-7', 'buyer-7'
 // "Contract & Exchange: action needed" and "Completion: locked" (card
 // 852523fc). Old flow-state flags for it are ignored, like completion's.
 const EXCHANGE_STAGE_IDS: ReadonlySet<string> = new Set(['seller-6', 'buyer-6']);
+/** Contract & Exchange's place in both journeys (stageConfig). */
+const EXCHANGE_STAGE_ORDER = 6;
 
 // Conveyancer stages are done when, for that side: the firm is on the deal
 // (its solicitor slot on chain, filled when it redeems its join link), the
@@ -363,8 +365,15 @@ function buildCompletedStageIds(
     for (const stageId of COMPLETION_STAGE_IDS) completed.add(stageId);
   }
 
+  // Once contracts have exchanged, everything before exchange is behind the
+  // deal: a stage the client never ticked here (a survey or mortgage sorted
+  // elsewhere) must not read "action needed" on an exchanged deal (Marc,
+  // 2026-11-08). Exchange itself comes from the chain, as above.
   if (isAtLeastStatus(transaction?.status, 'exchanged')) {
     for (const stageId of EXCHANGE_STAGE_IDS) completed.add(stageId);
+    for (const stage of [...getStagesForJourney('seller'), ...getStagesForJourney('buyer')]) {
+      if (stage.order < EXCHANGE_STAGE_ORDER) completed.add(stage.id);
+    }
   }
 
   for (const stageId of CONVEYANCER_STAGE_IDS) {
