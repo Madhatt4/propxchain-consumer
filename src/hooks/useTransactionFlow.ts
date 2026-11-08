@@ -12,6 +12,8 @@ import type { TransactionFlowState } from '../types/flow.types';
 import { dealSideOf, principalsOf, type DealSide } from '@/lib/dealAccess';
 import { isCompletedStatus } from '@/services/completionStatus';
 import { isAtLeastStatus } from '@/types/transactionStatus';
+import { stagesDoneByEvidence } from '@/lib/stageEvidence';
+import { loadStageEvidence } from '@/services/stageEvidence.service';
 import { sellerConveyancerOf } from '@/lib/completionStatement';
 import { conveyancerSideOf, dealConveyancersOf, NO_CONVEYANCERS, type DealConveyancers } from '@/lib/dealConveyancers';
 
@@ -52,6 +54,8 @@ const COMPLETION_STAGE_IDS: ReadonlySet<string> = new Set(['seller-7', 'buyer-7'
 // "Contract & Exchange: action needed" and "Completion: locked" (card
 // 852523fc). Old flow-state flags for it are ignored, like completion's.
 const EXCHANGE_STAGE_IDS: ReadonlySet<string> = new Set(['seller-6', 'buyer-6']);
+/** Contract & Exchange's place in both journeys (stageConfig). */
+const EXCHANGE_STAGE_ORDER = 6;
 
 // Conveyancer stages are done when, for that side: the firm is on the deal
 // (its solicitor slot on chain, filled when it redeems its join link), the
@@ -332,8 +336,15 @@ function deriveDealSide(transaction: TransactionData | null, principalId: string
 function buildCompletedStageIds(
   transaction: TransactionData | null,
   flowState: TransactionFlowState,
+  evidenceDone: ReadonlySet<string> = new Set(),
 ): Set<string> {
   const completed = new Set<string>();
+
+  // From shared evidence on the deal (stageEvidence.ts): an item uploaded or
+  // a stage completed shows as done for every party, on every device.
+  for (const stageId of evidenceDone) {
+    if (!isDerivedStage(stageId)) completed.add(stageId);
+  }
 
   // From canister milestones
   if (transaction?.milestones) {
@@ -363,8 +374,15 @@ function buildCompletedStageIds(
     for (const stageId of COMPLETION_STAGE_IDS) completed.add(stageId);
   }
 
+  // Once contracts have exchanged, everything before exchange is behind the
+  // deal: a stage the client never ticked here (a survey or mortgage sorted
+  // elsewhere) must not read "action needed" on an exchanged deal (Marc,
+  // 2026-11-08). Exchange itself comes from the chain, as above.
   if (isAtLeastStatus(transaction?.status, 'exchanged')) {
     for (const stageId of EXCHANGE_STAGE_IDS) completed.add(stageId);
+    for (const stage of [...getStagesForJourney('seller'), ...getStagesForJourney('buyer')]) {
+      if (stage.order < EXCHANGE_STAGE_ORDER) completed.add(stage.id);
+    }
   }
 
   for (const stageId of CONVEYANCER_STAGE_IDS) {
@@ -635,9 +653,23 @@ export function useTransactionFlow(
   // put a buyer into the seller's journey, or the reverse.
   const activeJourney = transaction && principalId ? userRole : flowState.activeJourney;
 
+  // Evidence is read once per deal and re-read when this viewer's flow state
+  // changes (they just completed or uploaded something).
+  const [evidenceDone, setEvidenceDone] = useState<ReadonlySet<string>>(() => new Set());
+  const flowStateVersion = Object.keys(flowState.completedStages ?? {}).length
+    + Object.keys(flowState.providerSelections ?? {}).length;
+  useEffect(() => {
+    if (!transactionId) return undefined;
+    let active = true;
+    loadStageEvidence(transactionId)
+      .then((evidence) => { if (active) setEvidenceDone(stagesDoneByEvidence(evidence)); })
+      .catch((error: unknown) => logger.warn('Stage evidence unavailable', error));
+    return () => { active = false; };
+  }, [transactionId, flowStateVersion]);
+
   const completedIds = useMemo(
-    () => buildCompletedStageIds(transaction, flowState),
-    [transaction, flowState],
+    () => buildCompletedStageIds(transaction, flowState, evidenceDone),
+    [transaction, flowState, evidenceDone],
   );
 
   const stages = useMemo(
