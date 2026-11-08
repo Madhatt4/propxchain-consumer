@@ -33,10 +33,10 @@ export async function loadStageEvidence(transactionId: string): Promise<StageEvi
     if (typeof e.eventType === 'string') eventTypes.add(e.eventType);
   }
   const packMap = new Map<BuyerPackItemId, BuyerPackStatus>();
-  for (const item of pack ?? []) packMap.set(item.item, item.status);
+  for (const item of Array.isArray(pack) ? pack : []) packMap.set(item.item, item.status);
   return {
     eventTypes,
-    hasOrderedSearches: (orders ?? []).some((o) => ORDERED_SEARCH_STATUSES.includes(o.status)),
+    hasOrderedSearches: (Array.isArray(orders) ? orders : []).some((o) => ORDERED_SEARCH_STATUSES.includes(o.status)),
     hasPropertyForms: ta6 != null && ta10 != null,
     hasListing: listing != null,
     pack: packMap,

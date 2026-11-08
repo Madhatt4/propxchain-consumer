@@ -657,13 +657,13 @@ export function useTransactionFlow(
   // changes (they just completed or uploaded something).
   const [evidenceDone, setEvidenceDone] = useState<ReadonlySet<string>>(() => new Set());
   const flowStateVersion = Object.keys(flowState.completedStages ?? {}).length
-    + Object.keys(flowState.providerSelections).length;
+    + Object.keys(flowState.providerSelections ?? {}).length;
   useEffect(() => {
     if (!transactionId) return undefined;
     let active = true;
-    void loadStageEvidence(transactionId).then((evidence) => {
-      if (active) setEvidenceDone(stagesDoneByEvidence(evidence));
-    });
+    loadStageEvidence(transactionId)
+      .then((evidence) => { if (active) setEvidenceDone(stagesDoneByEvidence(evidence)); })
+      .catch((error: unknown) => logger.warn('Stage evidence unavailable', error));
     return () => { active = false; };
   }, [transactionId, flowStateVersion]);
 
