@@ -15,7 +15,11 @@ interface SurveyPanelProps {
   onSelect: (providerId: string) => void;
   selectedId?: string;
   onContinue: (providerId: string) => void;
-  onSkip?: () => void;
+  /**
+   * The buyer uploaded their own survey report: the stage is done. There is
+   * no skip (Marc, 2026-11-08): a buyer books a survey here or uploads one.
+   */
+  onReportUploaded?: () => void;
   postcode?: string;
   /** Referral context — when absent, referral providers fall back to
    *  plain selection (e.g. dashboards that render the panel standalone). */
@@ -33,7 +37,7 @@ export function SurveyPanel({
   onSelect,
   selectedId,
   onContinue,
-  onSkip,
+  onReportUploaded,
   postcode,
   transactionId,
   partyName,
@@ -102,7 +106,7 @@ export function SurveyPanel({
         subtitle="Commission an independent RICS-accredited survey"
         stageNumber={4}
         badge="Buyer Only"
-        description="A property survey gives you an independent assessment of the property's condition. While optional, it's recommended for most purchases, especially older or unusual properties."
+        description="A property survey gives you an independent assessment of the property's condition. Book one through PropXchain, or upload the report from a survey you already have."
         providers={providers}
         isLoading={isLoading}
         error={error}
@@ -110,14 +114,12 @@ export function SurveyPanel({
         onSelect={onSelect}
         selectedId={selectedId}
         onContinue={handleContinue}
-        skippable
-        onSkip={onSkip}
         priceLabel="from"
         compareIds={compareIds}
         onCompareToggle={toggleCompare}
         onCompareClear={clearCompare}
       />
-      <SurveyReportUpload transactionId={transactionId} propertyId={propertyId} />
+      <SurveyReportUpload transactionId={transactionId} propertyId={propertyId} onUploaded={onReportUploaded} />
       <SurveyReferralDialog
         open={referralProviderId !== null}
         providerName={referralProviderName}
