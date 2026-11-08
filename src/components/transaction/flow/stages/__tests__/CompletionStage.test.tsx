@@ -91,11 +91,24 @@ describe('CompletionStage', () => {
     expect(screen.queryByRole('button', { name: 'Confirm funds sent' })).not.toBeInTheDocument();
   });
 
+  it('should ask before a client with no conveyancer records funds sent, and record nothing on cancel', async () => {
+    mockGetStatus.mockResolvedValue(makeStatus());
+    renderStage('buyer');
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Confirm funds sent' }));
+
+    expect(screen.getByText('This records on PropXchain that completion funds were sent. It cannot be undone.')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(await screen.findByRole('button', { name: 'Confirm funds sent' })).toBeInTheDocument();
+    expect(mockInitiate).not.toHaveBeenCalled();
+  });
+
   it('should call initiateCompletion with SHA-256 hashes when a buyer with no conveyancer confirms funds sent', async () => {
     mockGetStatus.mockResolvedValue(makeStatus());
     mockInitiate.mockResolvedValue({ success: true, message: 'Waiting for the seller side.' });
     renderStage('buyer');
     fireEvent.click(await screen.findByRole('button', { name: 'Confirm funds sent' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Record it' }));
     await waitFor(() => expect(mockInitiate).toHaveBeenCalledTimes(1));
     const [txId, fundsHash, completionHash] = mockInitiate.mock.calls[0] as [string, string, string];
     expect(txId).toBe('tx-1');
@@ -152,6 +165,7 @@ describe('CompletionStage', () => {
     mockInitiate.mockResolvedValue({ success: false, message: 'Your conveyancer confirms completion for your side.' });
     renderStage('buyer');
     fireEvent.click(await screen.findByRole('button', { name: 'Confirm funds sent' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Record it' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Your conveyancer confirms completion for your side.');
   });
 
@@ -277,6 +291,7 @@ describe('CompletionStage completion statement', () => {
     mockInitiate.mockResolvedValue({ success: true, message: 'Waiting for the seller side.' });
     renderStage('buyer', { sellerConveyancer: SELLER_CONV });
     fireEvent.click(await screen.findByRole('button', { name: 'Confirm funds sent' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Record it' }));
     await waitFor(() => expect(mockInitiate).toHaveBeenCalledTimes(1));
     const [, fundsHash, completionHash] = mockInitiate.mock.calls[0] as [string, string, string];
     expect(completionHash).toBe(FILE_HASH);
@@ -288,6 +303,7 @@ describe('CompletionStage completion statement', () => {
     mockGetEvents.mockResolvedValue([statementEvent]);
     renderStage('buyer', { sellerConveyancer: null });
     fireEvent.click(await screen.findByRole('button', { name: 'Confirm funds sent' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Record it' }));
     expect(await screen.findByRole('alert')).toHaveTextContent("The seller's conveyancer on this deal could not be confirmed");
     expect(mockInitiate).not.toHaveBeenCalled();
   });
@@ -298,6 +314,7 @@ describe('CompletionStage completion statement', () => {
     mockInitiate.mockResolvedValue({ success: true, message: 'Waiting for the seller side.' });
     renderStage('buyer', { sellerConveyancer: null });
     fireEvent.click(await screen.findByRole('button', { name: 'Confirm funds sent' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Record it' }));
     await waitFor(() => expect(mockInitiate).toHaveBeenCalledTimes(1));
     expect(mockInitiate.mock.calls[0][2]).not.toBe(FILE_HASH);
     expect(screen.queryByText(/No completion statement has been uploaded/)).not.toBeInTheDocument();
@@ -308,6 +325,7 @@ describe('CompletionStage completion statement', () => {
     mockLedger.available = false;
     renderStage('buyer', { sellerConveyancer: SELLER_CONV });
     fireEvent.click(await screen.findByRole('button', { name: 'Confirm funds sent' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Record it' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Could not check for a completion statement. Please try again.');
     expect(mockInitiate).not.toHaveBeenCalled();
   });
@@ -359,6 +377,7 @@ describe('CompletionStage completion statement', () => {
     mockInitiate.mockResolvedValue({ success: true, message: 'Completed.' });
     renderStage('seller', { sellerConveyancer: SELLER_CONV });
     fireEvent.click(await screen.findByRole('button', { name: 'Confirm funds received' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Record it' }));
     await waitFor(() => expect(mockInitiate).toHaveBeenCalledTimes(1));
     expect(mockInitiate.mock.calls[0][2]).toBe(FILE_HASH);
   });

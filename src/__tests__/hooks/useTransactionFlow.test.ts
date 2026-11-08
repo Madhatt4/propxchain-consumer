@@ -295,6 +295,31 @@ describe('useTransactionFlow', () => {
     expect(result.current.stages.find(s => s.id === 'seller-7')?.status).toBe('completed');
   });
 
+  it('should complete Contract & Exchange and open Completion once the canister says exchanged', async () => {
+    mockGetTransaction.mockResolvedValue({
+      seller: { toString: () => 'test-principal' },
+      buyer: { toString: () => 'buyer-principal' },
+      status: { exchanged: null },
+    });
+    const { result } = renderHook(() => useTransactionFlow('tx-123'));
+    await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.stages.find(s => s.id === 'seller-6')?.status).toBe('completed');
+    expect(result.current.stages.find(s => s.id === 'seller-7')?.status).not.toBe('locked');
+  });
+
+  it('should not complete Contract & Exchange before the canister says exchanged', async () => {
+    mockGetTransaction.mockResolvedValue({
+      seller: { toString: () => 'test-principal' },
+      buyer: { toString: () => 'buyer-principal' },
+      status: { active: null },
+    });
+    const { result } = renderHook(() => useTransactionFlow('tx-123'));
+    await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.stages.find(s => s.id === 'seller-6')?.status).not.toBe('completed');
+  });
+
   it('should not complete seller-7 from a flow-state flag when the canister has not completed', async () => {
     mockGetTransaction.mockResolvedValue({
       seller: { toString: () => 'test-principal' },
