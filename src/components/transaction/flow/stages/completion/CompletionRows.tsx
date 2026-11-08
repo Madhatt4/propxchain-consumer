@@ -2,7 +2,7 @@
 // Copyright (C) 2026 PropXchain Ltd
 
 import { MISSING_DEAL_FACTS_TEXT, keysReleasedText, sideConfirmationText } from '@/lib/completionText';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import type { CompletionSide, CompletionStatus } from '@/services/completionStatus';
 import type { KeysRole } from '@/lib/completionRoles';
 
@@ -73,16 +73,38 @@ interface KeysActionProps {
   onConfirm: () => void;
 }
 
+const SECONDARY =
+  'mt-2 px-4 py-2 rounded-lg border border-gray-300 dark:border-slate-600 text-sm font-semibold text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors';
+
+// Releasing the keys is recorded on chain and cannot be undone, so it asks
+// once, as the conveyancer portal does for the money (card 852523fc).
 function KeysAction({ status, keysRole, busy, onConfirm }: KeysActionProps): ReactNode {
+  const [isAsking, setIsAsking] = useState(false);
   if (status.keysReleased) return null;
   if (keysRole === 'seller-with-agent') {
     return <p className={NOTE}>Your estate agent confirms this on PropXchain.</p>;
   }
   if (keysRole !== 'agent' && keysRole !== 'seller') return null;
+  if (!isAsking) {
+    return (
+      <button type="button" onClick={() => setIsAsking(true)} disabled={busy} className={BUTTON}>
+        Confirm keys released
+      </button>
+    );
+  }
   return (
-    <button type="button" onClick={onConfirm} disabled={busy} className={BUTTON}>
-      Confirm keys released
-    </button>
+    <div role="group" aria-label="Confirm keys released?">
+      <p className="mt-2 text-sm font-medium text-gray-800 dark:text-gray-200">Confirm keys released?</p>
+      <p className={NOTE}>This records on PropXchain that the keys were released. It cannot be undone.</p>
+      <div className="flex gap-2">
+        <button type="button" onClick={() => setIsAsking(false)} disabled={busy} className={SECONDARY}>
+          Cancel
+        </button>
+        <button type="button" onClick={onConfirm} disabled={busy} className={BUTTON}>
+          Record it
+        </button>
+      </div>
+    </div>
   );
 }
 

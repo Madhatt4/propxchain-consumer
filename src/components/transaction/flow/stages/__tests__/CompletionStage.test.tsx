@@ -180,8 +180,22 @@ describe('CompletionStage', () => {
     mockConfirmKeys.mockResolvedValue({ success: true, message: "Keys released, confirmed by the seller's agent" });
     renderStage('seller', { keysRole: 'agent', viewerIsParty: false });
     fireEvent.click(await screen.findByRole('button', { name: 'Confirm keys released' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Record it' }));
     expect(await screen.findByText(/Confirmed by the seller's agent on 6 November 2026/)).toBeInTheDocument();
     expect(mockConfirmKeys).toHaveBeenCalledWith('tx-1');
+  });
+
+  it('should ask before recording keys released, and record nothing on cancel', async () => {
+    mockGetStatus.mockResolvedValue(makeStatus({ status: 'blockchain_completed', buyer: BY_CONVEYANCER, seller: BY_CONVEYANCER }));
+    renderStage('seller', { keysRole: 'agent', viewerIsParty: false });
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Confirm keys released' }));
+
+    expect(screen.getByText('This records on PropXchain that the keys were released. It cannot be undone.')).toBeInTheDocument();
+    expect(mockConfirmKeys).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(await screen.findByRole('button', { name: 'Confirm keys released' })).toBeInTheDocument();
+    expect(mockConfirmKeys).not.toHaveBeenCalled();
   });
 
   it('should show the completion record only when the canister status is completed', async () => {

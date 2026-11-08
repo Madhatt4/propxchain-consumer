@@ -81,6 +81,7 @@ import { fireConfetti } from '../utils/confetti';
 import { syncListingFromChain } from '../utils/rightmoveStorage';
 import { resolvePropertyPostcode } from '../utils/propertyFields';
 import type { RightmovePropertyListing } from '../types/rightmove.types';
+import { isCompletedStatus } from '../types/transactionStatus';
 import type { Tenure } from '../types/listing.types';
 import type { StructuredAddress } from '../services/pafAddress';
 import type { StageConfig, JourneyRole } from '../types/stage.types';
@@ -787,7 +788,10 @@ export default function TransactionFlowPage(): ReactElement {
         {/* Stall attribution: who the deal is waiting on and for how long, with
             the stage against its benchmark, shown whichever of the next-step or
             AI cards is on screen. */}
-        {id && <StallLine transactionId={id} refreshKey={invalidationKey} className="mb-4" />}
+        {/* A completed deal waits on nobody; hidden at once, before the chain mirror catches up. */}
+        {id && !isCompletedStatus(transaction?.status) && (
+          <StallLine transactionId={id} refreshKey={invalidationKey} className="mb-4" />
+        )}
         <ConveyancersLine
           conveyancers={transaction?.conveyancers ?? NO_CONVEYANCERS}
           dealSide={dealSide}
