@@ -27,6 +27,8 @@ import {
   type FundingDocumentRecord,
 } from './fundingDocument.service';
 import { isPackDocument, packDocLabel } from '../lib/packDocKinds';
+import { fileExtension } from '../lib/onChainDocument';
+import { EXT_BY_MIME } from '../types/vault.types';
 
 /** Storage sub-folder under `transactions/<id>/`. */
 export const SALES_PACK_FOLDER = 'sales-pack';
@@ -34,13 +36,21 @@ export const SALES_PACK_FOLDER = 'sales-pack';
 /** Same limit the pack's IndexedDB slot always used. */
 export const MAX_SALES_PACK_BYTES = 10 * 1024 * 1024;
 
-export const SALES_PACK_ACCEPTED_TYPES = ['application/pdf', 'image/jpeg', 'image/png'] as const;
+// image/jpg is not a registered MIME type, but some browsers and OSes report
+// it for .jpg files. It is accepted here and checked as JPEG.
+export const SALES_PACK_ACCEPTED_TYPES = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'] as const;
+
+type AcceptedType = (typeof SALES_PACK_ACCEPTED_TYPES)[number];
+
+const JPEG_MAGIC = [0xff, 0xd8, 0xff] as const;
 
 // Leading bytes for each accepted type. The browser's MIME type comes from the
-// file extension, which the uploader controls, so it proves nothing on its own.
-const MAGIC: Record<(typeof SALES_PACK_ACCEPTED_TYPES)[number], readonly number[]> = {
+// file extension, which the uploader controls, so it proves nothing on its own;
+// the bytes are the real gate.
+const MAGIC: Record<AcceptedType, readonly number[]> = {
   'application/pdf': [0x25, 0x50, 0x44, 0x46, 0x2d],
-  'image/jpeg': [0xff, 0xd8, 0xff],
+  'image/jpeg': JPEG_MAGIC,
+  'image/jpg': JPEG_MAGIC,
   'image/png': [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a],
 };
 
@@ -179,10 +189,22 @@ export async function fetchSalesPackFile(doc: SalesPackDocument): Promise<Blob> 
   return data;
 }
 
+/**
+ * The name a downloaded copy is saved under: the type label plus a short hash,
+ * never the uploader's own filename. The extension comes from the on-chain
+ * name, else from the content type, so a file still opens in the right app.
+ */
+export function packDownloadName(doc: SalesPackDocument, blobType = ''): string {
+  const ext =
+    fileExtension(doc.fileName) || EXT_BY_MIME[doc.contentType] || EXT_BY_MIME[blobType] || '';
+  return `${doc.label.replace(/[^a-z0-9]+/gi, '-')}-${doc.fileHash.slice(0, 8)}${ext}`;
+}
+
 export const salesPackDocumentService = {
   validateSalesPackFile,
   uploadSalesPackDocument,
   listSalesPackDocuments,
   fetchSalesPackFile,
+  packDownloadName,
 };
 export default salesPackDocumentService;

@@ -25,6 +25,7 @@ import {
   SALES_PACK_FOLDER,
   fetchSalesPackFile,
   listSalesPackDocuments,
+  packDownloadName,
   uploadSalesPackDocument,
   validateSalesPackFile,
   type SalesPackDocument,
@@ -119,6 +120,14 @@ describe('validateSalesPackFile', () => {
     expect(await validateSalesPackFile(new File([], 'empty.pdf', { type: 'application/pdf' }))).toMatch(/empty/);
   });
 
+  it('should accept image/jpg as JPEG when the bytes are a real JPEG', async () => {
+    expect(await validateSalesPackFile(fileWith([0xff, 0xd8, 0xff, 0xe0], 'image/jpg', 64, 'plan.jpg'))).toBeNull();
+  });
+
+  it('should reject image/jpg when the bytes are not a JPEG', async () => {
+    expect(await validateSalesPackFile(fileWith(PDF_MAGIC, 'image/jpg', 64, 'plan.jpg'))).toMatch(/doesn't look like/);
+  });
+
   it('should pass a genuine PDF', async () => {
     expect(await validateSalesPackFile(fileWith(PDF_MAGIC, 'application/pdf'))).toBeNull();
   });
@@ -183,5 +192,38 @@ describe('fetchSalesPackFile', () => {
   it('should refuse a document with no server copy', async () => {
     await expect(fetchSalesPackFile({ ...doc, storageLocation: 'onchain' })).rejects.toThrow(/no stored copy/);
     expect(download).not.toHaveBeenCalled();
+  });
+});
+
+describe('packDownloadName', () => {
+  const base: SalesPackDocument = {
+    id: 'doc_3',
+    kind: 'sales_pack_floor_plan',
+    label: 'Floor plan',
+    fileName: 'sales_pack_floor_plan.pdf',
+    uploadedAt: null,
+    storageLocation: LOCATION,
+    fileHash: 'abcdef1234567890',
+    contentType: 'application/pdf',
+  };
+
+  it('should name the copy by type and short hash with the on-chain extension', () => {
+    expect(packDownloadName(base)).toBe('Floor-plan-abcdef12.pdf');
+  });
+
+  it('should take the extension from the content type when the name has none', () => {
+    expect(packDownloadName({ ...base, fileName: 'sales_pack_floor_plan', contentType: 'image/png' })).toBe(
+      'Floor-plan-abcdef12.png',
+    );
+  });
+
+  it('should fall back to the blob type when the row has no usable content type', () => {
+    expect(packDownloadName({ ...base, fileName: 'sales_pack_floor_plan', contentType: '' }, 'image/jpeg')).toBe(
+      'Floor-plan-abcdef12.jpg',
+    );
+  });
+
+  it('should leave the extension off when nothing says what the file is', () => {
+    expect(packDownloadName({ ...base, fileName: 'sales_pack_floor_plan', contentType: '' })).toBe('Floor-plan-abcdef12');
   });
 });

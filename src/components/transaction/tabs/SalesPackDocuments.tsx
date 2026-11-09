@@ -1,6 +1,5 @@
-// PropXchain - Open Source Blockchain Property Conveyancing Platform
-// Copyright (C) 2026 PropXchain Contributors
-// SPDX-License-Identifier: Proprietary
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 PropXchain Ltd
 
 /**
  * The sales pack's "other documents" area. Documents are stored with the deal
@@ -16,11 +15,11 @@ import {
   SALES_PACK_ACCEPTED_TYPES,
   fetchSalesPackFile,
   listSalesPackDocuments,
+  packDownloadName,
   uploadSalesPackDocument,
   type SalesPackDocument,
 } from '@/services/salesPackDocument.service';
 import { PACK_DOC_KINDS, isPackDocument, packDocLabel } from '@/lib/packDocKinds';
-import { fileExtension } from '@/lib/onChainDocument';
 
 const BUTTON =
   'rounded-lg border border-teal-600/40 px-3 py-2 text-sm font-semibold text-teal-700 transition-colors hover:bg-teal-500/[0.08] disabled:opacity-50 dark:text-teal-300';
@@ -28,7 +27,10 @@ const BUTTON =
 interface PackDocs {
   server: SalesPackDocument[];
   local: StoredDocument[];
+  /** The latest server read failed; any rows shown are from an earlier read. */
   loadFailed: boolean;
+  /** At least one server read has succeeded, so an empty list means empty. */
+  hasLoaded: boolean;
   reload: () => Promise<void>;
 }
 
@@ -36,13 +38,19 @@ function usePackDocuments(transactionId: string): PackDocs {
   const [server, setServer] = useState<SalesPackDocument[]>([]);
   const [local, setLocal] = useState<StoredDocument[]>([]);
   const [loadFailed, setLoadFailed] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false);
 
   const reload = useCallback(async (): Promise<void> => {
     const [serverResult, localResult] = await Promise.allSettled([
       listSalesPackDocuments(transactionId),
       web2DocumentService.getDocumentsByTransaction(transactionId),
     ]);
-    if (serverResult.status === 'fulfilled') setServer(serverResult.value);
+    // On failure the previous rows stay: hiding a document the seller can see
+    // a moment ago is worse than showing it with a staleness warning.
+    if (serverResult.status === 'fulfilled') {
+      setServer(serverResult.value);
+      setHasLoaded(true);
+    }
     setLoadFailed(serverResult.status === 'rejected');
     // A local read failure leaves the honest fallback: no local-only rows.
     if (localResult.status === 'fulfilled') {
@@ -54,7 +62,7 @@ function usePackDocuments(transactionId: string): PackDocs {
     void reload();
   }, [reload]);
 
-  return { server, local, loadFailed, reload };
+  return { server, local, loadFailed, hasLoaded, reload };
 }
 
 function formatDate(iso: string | null): string {
@@ -65,16 +73,20 @@ function formatDate(iso: string | null): string {
     : date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
+// Some browsers start the download asynchronously after click(); revoking the
+// URL straight away can cancel it, so the revoke waits.
+const REVOKE_DELAY_MS = 10_000;
+
 /** Save the stored bytes with a name built from the type, never the user's filename. */
 function saveBlob(blob: Blob, doc: SalesPackDocument): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `${doc.label.replace(/[^a-z0-9]+/gi, '-')}-${doc.fileHash.slice(0, 8)}${fileExtension(doc.fileName)}`;
+  a.download = packDownloadName(doc, blob.type);
   document.body.appendChild(a);
   a.click();
   a.remove();
-  URL.revokeObjectURL(url);
+  setTimeout(() => URL.revokeObjectURL(url), REVOKE_DELAY_MS);
 }
 
 function DocRow({ label, name, children }: { label: string; name: string; children?: ReactNode }): JSX.Element {
@@ -187,7 +199,7 @@ export function ExtraDocumentsSlot({
   transactionId,
   readOnly,
 }: { transactionId: string; readOnly: boolean }): JSX.Element {
-  const { server, local, loadFailed, reload } = usePackDocuments(transactionId);
+  const { server, local, loadFailed, hasLoaded, reload } = usePackDocuments(transactionId);
   const isEmpty = server.length === 0 && local.length === 0;
 
   return (
@@ -199,9 +211,13 @@ export function ExtraDocumentsSlot({
           : 'Anything else a buyer should see — floor plan, FENSA or gas certificates, warranties. Stored securely with this deal, not on your device, and each file is fingerprinted on-chain for the audit trail.'}
       </p>
       {loadFailed && (
-        <p className="mt-3 text-sm text-amber-700 dark:text-amber-300">Couldn&apos;t load the pack documents. Try again shortly.</p>
+        <p className="mt-3 text-sm text-amber-700 dark:text-amber-300">
+          {hasLoaded || !isEmpty
+            ? "Couldn't refresh the pack documents. What's shown may be out of date."
+            : "Couldn't load the pack documents. Try again shortly."}
+        </p>
       )}
-      {readOnly && !loadFailed && isEmpty && (
+      {readOnly && hasLoaded && !loadFailed && isEmpty && (
         <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">Nothing added yet.</p>
       )}
       <PackDocumentList server={server} local={local} />

@@ -1,6 +1,5 @@
-// PropXchain - Open Source Blockchain Property Conveyancing Platform
-// Copyright (C) 2026 PropXchain Contributors
-// SPDX-License-Identifier: Proprietary
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 PropXchain Ltd
 
 /**
  * The pack's "other documents": listed from the deal for every party, with
@@ -19,6 +18,7 @@ vi.mock('@/services/salesPackDocument.service', () => ({
   listSalesPackDocuments: (...a: unknown[]) => listSalesPackDocuments(...a),
   uploadSalesPackDocument: (...a: unknown[]) => uploadSalesPackDocument(...a),
   fetchSalesPackFile: (...a: unknown[]) => fetchSalesPackFile(...a),
+  packDownloadName: () => 'Floor-plan-abcdef12.pdf',
 }));
 vi.mock('@/services/web2-document.service', () => ({
   web2DocumentService: { getDocumentsByTransaction: (...a: unknown[]) => getLocalDocuments(...a) },
@@ -74,6 +74,27 @@ describe('ExtraDocumentsSlot for the buyer', () => {
     expect(screen.queryByText('Nothing added yet.')).toBeNull();
   });
 
+  it('should defer revoking the download URL so the browser can start the download', async () => {
+    listSalesPackDocuments.mockResolvedValue([FLOOR_PLAN]);
+    fetchSalesPackFile.mockResolvedValue(new Blob(['x'], { type: 'application/pdf' }));
+    const create = vi.fn(() => 'blob:pack');
+    const revoke = vi.fn();
+    Object.assign(URL, { createObjectURL: create, revokeObjectURL: revoke });
+    const timeout = vi.spyOn(globalThis, 'setTimeout');
+
+    render(<ExtraDocumentsSlot transactionId="tx_5" readOnly />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Open Floor plan' }));
+
+    await waitFor(() => expect(create).toHaveBeenCalled());
+    expect(revoke).not.toHaveBeenCalled();
+    // findByRole/waitFor schedule their own 1s timers; the revoke delay is longer.
+    const deferred = timeout.mock.calls.find(([, ms]) => typeof ms === 'number' && ms >= 5000);
+    expect(deferred).toBeDefined();
+    (deferred?.[0] as () => void)();
+    expect(revoke).toHaveBeenCalledWith('blob:pack');
+    timeout.mockRestore();
+  });
+
   it('should show the reason when a file cannot be opened', async () => {
     listSalesPackDocuments.mockResolvedValue([FLOOR_PLAN]);
     fetchSalesPackFile.mockRejectedValue(new Error("This file can't be opened from your account yet."));
@@ -118,6 +139,24 @@ describe('ExtraDocumentsSlot for the seller', () => {
     await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Floor plan added to the pack.'));
     expect(uploadSalesPackDocument).toHaveBeenCalledWith(file, { transactionId: 'tx_5', kind: 'sales_pack_floor_plan' });
     expect(screen.getByRole('button', { name: 'Open Floor plan' })).toBeInTheDocument();
+  });
+
+  it('should keep the earlier rows and say they may be out of date when a refresh fails', async () => {
+    getLocalDocuments.mockResolvedValue([]);
+    uploadSalesPackDocument.mockResolvedValue({});
+    listSalesPackDocuments.mockResolvedValueOnce([FLOOR_PLAN]).mockRejectedValue(new Error('canister down'));
+
+    render(<ExtraDocumentsSlot transactionId="tx_5" readOnly={false} />);
+    await screen.findByRole('button', { name: 'Open Floor plan' });
+    fireEvent.change(screen.getByLabelText('Document type'), { target: { value: 'sales_pack_epc' } });
+    fireEvent.change(screen.getByTestId('sales-pack-file'), {
+      target: { files: [new File(['%PDF-'], 'epc.pdf', { type: 'application/pdf' })] },
+    });
+
+    expect(await screen.findByText(/may be out of date/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Open Floor plan' })).toBeInTheDocument();
+    expect(screen.queryByText(/Couldn't load/)).toBeNull();
+    expect(screen.queryByText('Nothing added yet.')).toBeNull();
   });
 
   it('should show the upload error message', async () => {
