@@ -21,6 +21,7 @@ import { hmlrTitleService } from './hmlrTitle.service';
 import { fetchReturnedOneSearchResults } from './onesearchResults';
 import { icpService } from './icp.service';
 import { web2DocumentService } from './web2-document.service';
+import { listSalesPackDocuments } from './salesPackDocument.service';
 import { isPackDocument, packDocLabel } from '@/lib/packDocKinds';
 import { redactTa6ForSharing, redactTa10ForSharing } from '@/utils/packRedaction';
 import type {
@@ -63,12 +64,13 @@ export async function assemblePackSnapshot(transactionId: string): Promise<PackS
   const inputs = await loadPackReadinessInputs(transactionId);
   const readiness = computePackReadiness(inputs);
 
-  const [register, returned, ta6Raw, ta10Raw, storedDocs] = await Promise.all([
+  const [register, returned, ta6Raw, ta10Raw, storedDocs, dealDocs] = await Promise.all([
     swallow(hmlrTitleService.getStoredRegisterForTransaction(transactionId), null),
     swallow(fetchReturnedOneSearchResults(transactionId), []),
     swallow(icpService.getTA6(transactionId), null),
     swallow(icpService.getTA10(transactionId), null),
     swallow(web2DocumentService.getDocumentsByTransaction(transactionId), []),
+    swallow(listSalesPackDocuments(transactionId), []),
   ]);
 
   const listing = inputs.listing;
@@ -125,9 +127,14 @@ export async function assemblePackSnapshot(transactionId: string): Promise<PackS
     },
     ta6: ta6Raw ? redactTa6ForSharing(ta6Raw) : null,
     ta10: ta10Raw ? redactTa10ForSharing(ta10Raw) : null,
-    extraDocuments: storedDocs
-      .filter((d) => isPackDocument(d.documentType))
-      .map((d) => ({ fileName: d.fileName, kind: packDocLabel(d.documentType) })),
+    // Documents stored with the deal, then older copies held only in this
+    // browser, so a pack shared before the move still lists what it did.
+    extraDocuments: [
+      ...dealDocs.map((d) => ({ fileName: d.fileName, kind: d.label })),
+      ...storedDocs
+        .filter((d) => isPackDocument(d.documentType))
+        .map((d) => ({ fileName: d.fileName, kind: packDocLabel(d.documentType) })),
+    ],
   };
 }
 

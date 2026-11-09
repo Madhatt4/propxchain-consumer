@@ -40,6 +40,13 @@ vi.mock('@/services/web2-document.service', () => ({
   },
 }));
 
+vi.mock('@/services/salesPackDocument.service', () => ({
+  SALES_PACK_ACCEPTED_TYPES: ['application/pdf', 'image/jpeg', 'image/png'],
+  listSalesPackDocuments: vi.fn().mockResolvedValue([]),
+  uploadSalesPackDocument: vi.fn(),
+  fetchSalesPackFile: vi.fn(),
+}));
+
 function renderTab(onGoToStage?: (stageId: string) => void, readOnly?: boolean): void {
   render(
     <MemoryRouter>
@@ -135,12 +142,17 @@ describe('SalesPackTab other documents', () => {
     expect(screen.getByRole('button', { name: 'Add a document' })).toBeEnabled();
   });
 
-  it('should route an identity document to the wallet instead of the pack', () => {
+  it('should not offer identity documents as a pack type, since ID is shared from the wallet', () => {
     renderTab();
-    fireEvent.change(screen.getByLabelText('Document type'), { target: { value: 'identity_document' } });
-    expect(screen.queryByRole('button', { name: 'Add a document' })).toBeNull();
-    expect(screen.getByRole('link', { name: 'Upload to Transaction Wallet' })).toHaveAttribute('href', '/transaction/tx-1/flow?tab=wallet');
-    expect(screen.getByText(/never go in the pack/)).toBeInTheDocument();
+    const options = Array.from(screen.getByLabelText('Document type').querySelectorAll('option'));
+    expect(options.map((o) => o.getAttribute('value'))).not.toContain('identity_document');
+    expect(screen.queryByText(/Passport/)).toBeNull();
+  });
+
+  it('should no longer say documents are stored on this device', () => {
+    renderTab();
+    expect(screen.queryByText(/Stored on this device for now/)).toBeNull();
+    expect(screen.getByText(/Stored securely with this deal/)).toBeInTheDocument();
   });
 });
 

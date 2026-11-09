@@ -5,7 +5,6 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  ID_DOC_KIND,
   PACK_DOC_KINDS,
   SALES_PACK_EXTRA_DOC_TYPE,
   isPackDocument,
@@ -32,6 +31,17 @@ describe('packDocLabel', () => {
   });
 });
 
+describe('PACK_DOC_KINDS', () => {
+  it('should not offer any identity document kind, since ID is shared from the wallet', () => {
+    // Arrange
+    const ids: readonly string[] = PACK_DOC_KINDS.map((k) => k.id);
+    // Act
+    const idKinds = ids.filter((id) => /identity|passport|licence/.test(id));
+    // Assert
+    expect(idKinds).toEqual([]);
+  });
+});
+
 describe('isPackDocument', () => {
   it('should accept every kind the picker offers, including the Other slot', () => {
     // Arrange
@@ -45,7 +55,7 @@ describe('isPackDocument', () => {
 
   it('should never treat an identity document as part of the pack', () => {
     // Arrange
-    const documentType = ID_DOC_KIND;
+    const documentType = 'identity_document';
     // Act
     const result = isPackDocument(documentType);
     // Assert

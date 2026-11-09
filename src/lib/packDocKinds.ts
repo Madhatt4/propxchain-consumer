@@ -16,9 +16,9 @@ export const SALES_PACK_EXTRA_DOC_TYPE = 'sales_pack_extra';
 /**
  * What a seller can put in the pack, one documentType per kind so the share
  * link and conveyancer brief can label them. Identity documents are
- * deliberately absent: the picker offers them as a separate option
- * (ID_DOC_KIND) that routes to the Transaction Wallet instead, because the
- * pack's share link must never carry personal ID.
+ * deliberately absent and the picker does not offer them at all: proof of ID
+ * is shared from the Transaction Wallet, never placed in the pack, and every
+ * party on the deal can open what is in the pack.
  */
 export const PACK_DOC_KINDS = [
   { id: 'sales_pack_epc', label: 'EPC certificate' },
@@ -31,9 +31,6 @@ export const PACK_DOC_KINDS = [
   { id: 'sales_pack_title_plan', label: 'Title plan' },
   { id: SALES_PACK_EXTRA_DOC_TYPE, label: 'Other' },
 ] as const;
-
-/** Chosen from the same picker, but never stored in the pack. */
-export const ID_DOC_KIND = 'identity_document';
 
 const PACK_DOC_TYPE_IDS: readonly string[] = PACK_DOC_KINDS.map((k) => k.id);
 
