@@ -89,40 +89,13 @@ import type { DealSide } from '../lib/dealAccess';
 import { resolveNextStepDestination } from '../utils/nextStepDestination';
 import { accessFor, accessForId, canAct } from '@/lib/dealAccess';
 import { ViewOnlyFrame } from '@/components/transaction/ViewOnlyFrame';
+import { canReopenStage, reopenNeedsConfirm } from '@/components/transaction/flow/stageReopen';
 import type { ServiceProvider, ProviderSelection } from '../types/provider.types';
 
 /** Stage IDs that are not rendered as stage cards (displayed as sidebar components instead) */
 const HIDDEN_STAGE_IDS = new Set(['seller-4']);
 
-/** Stage IDs whose content components understand the `isEditing` prop and
- *  re-render their input UI with current values pre-filled. The Edit button
- *  is only shown for completed stages in this set — others get no edit
- *  affordance until their component is updated.
- *
- *  Tier A — provider stages: edits trigger a ConfirmEditDialog because
- *  swapping a provider mid-transaction cancels the existing quote request.
- *  Tier B (TA6/TA10/TA7 forms) and Tier C (Mortgage/Funding) are wired —
- *  funding lives in the Buyer Pack so the edit re-opens pre-filled from the server.
- *  Exchange/Completion stay out: on-chain-final, nothing to safely re-edit. */
-const EDITABLE_STAGE_IDS = new Set([
-  'seller-1', // List Property
-  // seller-2 (Searches) intentionally omitted: the stage-card pencil
-  // doesn't re-render SearchesPanel content (browser-harness confirmed
-  // 2026-05-21). Edit affordance moved into the panel's OrderConfirmation
-  // card as a "Re-order searches" link, which calls onClearProvider and
-  // resets local panel state — works reliably regardless of why the
-  // pencil flow renders empty.
-  'seller-3', // TA6/TA10/TA7 forms
-  'buyer-2',  // Mortgage / Funding (the Buyer Pack declaration)
-  'buyer-3',  // Survey
-  'seller-5', // Conveyancer (seller-side)
-  'buyer-5',  // Conveyancer (buyer-side)
-]);
-
-/** Subset of EDITABLE_STAGE_IDS that need a ConfirmEditDialog before saving
- *  the edit, because the change has real-world consequences (cancelling a
- *  provider's quote request, etc.). */
-const PROVIDER_EDIT_STAGE_IDS = new Set(['buyer-3', 'seller-5', 'buyer-5']);
+// Which completed stages reopen (and which confirm first): flow/stageReopen.
 
 /** Non-interactive card showing where a buyer-only stage fits in the seller
  *  timeline. Avoids the previous "Stage 3 → Stage 5" jump in the seller view
@@ -852,9 +825,9 @@ export default function TransactionFlowPage(): ReactElement {
                       onToggle={() => setDetailOpen((open) => !open)}
                       onHelpClick={setHelpStageId}
                       isEditing={editingStageIds.includes(activeStage.id)}
-                      onEditClick={EDITABLE_STAGE_IDS.has(activeStage.id) && activeStageLevel === 'act'
+                      onEditClick={canReopenStage(activeStage.id) && activeStageLevel === 'act'
                         ? (sid) => {
-                            if (PROVIDER_EDIT_STAGE_IDS.has(sid)) {
+                            if (reopenNeedsConfirm(sid)) {
                               // Provider swaps cancel the existing quote
                               // request — gate entry behind a confirm dialog.
                               setConfirmingProviderEdit(sid);
@@ -863,6 +836,7 @@ export default function TransactionFlowPage(): ReactElement {
                             }
                           }
                         : undefined}
+                      onCloseEdit={(sid) => setStageEditing(sid, false)}
                     >
                       {detailOpen &&
                         withStageAccess(renderStageContent(activeStage.id, {

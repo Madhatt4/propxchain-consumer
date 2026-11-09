@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Check, Lock, Eye, ChevronDown, HelpCircle, Pencil } from 'lucide-react';
+import { Check, Lock, Eye, ChevronDown, HelpCircle, Pencil, X } from 'lucide-react';
 import type { StageConfig, StageStatus } from '../../../types/stage.types';
 
 interface StageCardProps {
@@ -9,9 +9,11 @@ interface StageCardProps {
   onHelpClick?: (stageId: string) => void;
   /** Whether this card is currently in edit mode (re-opened after completion). */
   isEditing?: boolean;
-  /** Click handler for the Edit button. Only rendered for completed stages
-   *  whose content components support editing — pass undefined to hide. */
+  /** Click handler for "Review or update". Only rendered for completed
+   *  stages whose content components support editing — pass undefined to hide. */
   onEditClick?: (stageId: string) => void;
+  /** Leaves edit mode and returns the card to its completed summary. */
+  onCloseEdit?: (stageId: string) => void;
   children?: ReactNode;
   costDisplay?: string;
   staggerIndex?: number;
@@ -76,10 +78,68 @@ function StatusIcon({ stage }: { stage: StageConfig }): ReactNode {
   );
 }
 
-export function StageCard({ stage, isExpanded, onToggle, onHelpClick, isEditing, onEditClick, children, costDisplay, staggerIndex }: StageCardProps): ReactNode {
+interface ReopenControlsProps {
+  stage: StageConfig;
+  isEditing?: boolean;
+  onEditClick?: (stageId: string) => void;
+  onCloseEdit?: (stageId: string) => void;
+}
+
+/** Whether a completed stage has a reopen or close control to show. */
+function hasReopenControls(
+  stage: StageConfig,
+  isEditing: boolean | undefined,
+  onEditClick: ReopenControlsProps['onEditClick'],
+  onCloseEdit: ReopenControlsProps['onCloseEdit'],
+): boolean {
+  if (stage.status !== 'completed') return false;
+  return isEditing ? !!onCloseEdit : !!onEditClick;
+}
+
+/**
+ * The way back into a completed stage, and out again. A labelled button under
+ * the summary rather than the old icon-only pencil in the header: on the live
+ * test of 2026-11-09 the seller and buyer both read the collapsed summary as
+ * the end of the road. It sits outside the header's toggle button so the two
+ * clicks never share a target.
+ */
+function ReopenControls({ stage, isEditing, onEditClick, onCloseEdit }: ReopenControlsProps): ReactNode {
+  const btn = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors';
+  if (!hasReopenControls(stage, isEditing, onEditClick, onCloseEdit)) return null;
+  if (isEditing && onCloseEdit) {
+    return (
+      <div className="mt-3 flex justify-end">
+        <button
+          type="button"
+          onClick={() => onCloseEdit(stage.id)}
+          className={`${btn} border-gray-300 dark:border-slate-600 text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800`}
+        >
+          <X className="w-3.5 h-3.5" aria-hidden="true" />
+          Close
+        </button>
+      </div>
+    );
+  }
+  if (!onEditClick) return null;
+  return (
+    <div className="mt-3">
+      <button
+        type="button"
+        onClick={() => onEditClick(stage.id)}
+        className={`${btn} border-teal-300 dark:border-teal-700 text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-teal-900/20`}
+      >
+        <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
+        Review or update
+      </button>
+    </div>
+  );
+}
+
+export function StageCard({ stage, isExpanded, onToggle, onHelpClick, isEditing, onEditClick, onCloseEdit, children, costDisplay, staggerIndex }: StageCardProps): ReactNode {
   const styles = getStatusStyles(stage.status);
   const isLocked = stage.status === 'locked';
   const staggerClass = staggerIndex !== undefined ? `animate-stagger-${staggerIndex + 1}` : '';
+  const showReopen = hasReopenControls(stage, isEditing, onEditClick, onCloseEdit);
 
   const handleClick = (): void => {
     if (!isLocked) {
@@ -132,17 +192,6 @@ export function StageCard({ stage, isExpanded, onToggle, onHelpClick, isEditing,
               Editing
             </span>
           )}
-          {stage.status === 'completed' && !isEditing && onEditClick && (
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); onEditClick(stage.id); }}
-              className="p-1.5 rounded-md text-gray-400 dark:text-slate-500 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/20 transition-colors"
-              aria-label={`Edit ${stage.title}`}
-              title="Edit this stage"
-            >
-              <Pencil className="w-3.5 h-3.5" />
-            </button>
-          )}
           {isLocked && (
             <span className="text-[10px] text-gray-400 dark:text-slate-700">Locked</span>
           )}
@@ -157,9 +206,12 @@ export function StageCard({ stage, isExpanded, onToggle, onHelpClick, isEditing,
         </div>
       </button>
 
-      {isExpanded && children && (
+      {/* The reopen controls are not tied to children: a completed stage whose
+          content renders nothing must still offer the way back in and out. */}
+      {isExpanded && (children || showReopen) && (
         <div className="px-4 pb-4 border-t border-gray-200 dark:border-slate-700/10 pt-3">
           {children}
+          <ReopenControls stage={stage} isEditing={isEditing} onEditClick={onEditClick} onCloseEdit={onCloseEdit} />
         </div>
       )}
     </div>

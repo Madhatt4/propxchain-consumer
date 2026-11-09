@@ -32,7 +32,7 @@ interface StageProps {
   stage: StageConfig;
   onComplete?: (stageId: string) => void;
   transactionId?: string;
-  /** Completed stage re-opened via the Edit pencil: render the form, not the summary. */
+  /** Completed stage re-opened via "Review or update": render the form, not the summary. */
   isEditing?: boolean;
   onCancelEdit?: () => void;
   onAfterEdit?: () => void;
@@ -161,7 +161,7 @@ export function MortgageFundingStage({ stage, onComplete, transactionId, isEditi
   }, []);
 
   // The pack is the source of truth; re-read when edit mode toggles so the
-  // pencil re-opens the form with what the server holds.
+  // reopened stage shows the form with what the server holds.
   useEffect(() => {
     if (!transactionId) return;
     let live = true;
