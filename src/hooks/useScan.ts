@@ -10,7 +10,14 @@
  * useSavedScan so a reload does not lose them.
  */
 
-import { useMutation, useQuery, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+  type UseMutationResult,
+  type UseQueryResult,
+} from '@tanstack/react-query';
 import { queryKeys } from '../lib/queryClient';
 import { hmlrTitleService } from '../services/hmlrTitle.service';
 import {
@@ -102,16 +109,25 @@ export function useSavedScan(
   });
 }
 
+// A remount after a fresh scan must read the new row, not a cached older one.
+function invalidateSaved(client: QueryClient, kind: SavedScanKind, data: ScanRunResult | null): void {
+  if (data) void client.invalidateQueries({ queryKey: [...queryKeys.scans.all, 'saved', kind] });
+}
+
 export function useSearchScan(): UseMutationResult<ScanRunResult | null, Error, RunSearchScanInput> {
+  const client = useQueryClient();
   return useMutation({
     mutationKey: [...queryKeys.scans.all, 'search'],
     mutationFn: (input: RunSearchScanInput) => runSearchScan(input),
+    onSuccess: (data) => invalidateSaved(client, 'search', data),
   });
 }
 
 export function useSurveyScan(): UseMutationResult<ScanRunResult | null, Error, RunSurveyScanInput> {
+  const client = useQueryClient();
   return useMutation({
     mutationKey: [...queryKeys.scans.all, 'survey'],
     mutationFn: (input: RunSurveyScanInput) => runSurveyScan(input),
+    onSuccess: (data) => invalidateSaved(client, 'survey', data),
   });
 }

@@ -54,6 +54,14 @@ function renderTab(): void {
   render(<AiScansTab transactionId="tx_1" />, { wrapper });
 }
 
+function uploadSurvey(): void {
+  // The survey card is last on the tab, so its picker is the last file input.
+  const inputs = document.querySelectorAll<HTMLInputElement>('input[type="file"]');
+  const input = inputs[inputs.length - 1];
+  if (!input) throw new Error('survey file input not rendered');
+  fireEvent.change(input, { target: { files: [new File(['pdf'], 'new.pdf', { type: 'application/pdf' })] } });
+}
+
 function savedBy(kind: 'survey' | 'search', runs: ScanRunResult[]): void {
   svc.fetchSavedScans.mockImplementation(async (k: string) => (k === kind ? runs : []));
 }
@@ -107,17 +115,40 @@ describe('AiScansTab saved scans', () => {
     renderTab();
     await screen.findByText('The saved survey says the roof needs work.');
 
-    // The survey card is last on the tab, so its picker is the last file input.
-    const inputs = document.querySelectorAll<HTMLInputElement>('input[type="file"]');
-    const input = inputs[inputs.length - 1];
-    if (!input) throw new Error('survey file input not rendered');
-    fireEvent.change(input, { target: { files: [new File(['pdf'], 'new.pdf', { type: 'application/pdf' })] } });
+    uploadSurvey();
 
     expect(await screen.findByText('The fresh survey is clean.')).toBeInTheDocument();
+    expect(screen.queryByText(/Showing your last scan/)).not.toBeInTheDocument();
     expect(screen.queryByText('The saved survey says the roof needs work.')).not.toBeInTheDocument();
     expect(svc.runSurveyScan).toHaveBeenCalledWith(expect.objectContaining({
       sourceRef: 'survey:tx_1:new.pdf',
       transactionId: 'tx_1',
     }));
+  });
+
+  it('should re-read the saved survey scan after a fresh scan succeeds', async () => {
+    savedBy('survey', [SAVED_SURVEY]);
+    svc.runSurveyScan.mockResolvedValue(run('survey', 'survey:tx_1:new.pdf', 'The fresh survey is clean.'));
+    renderTab();
+    await screen.findByText('The saved survey says the roof needs work.');
+    const surveyReads = (): number =>
+      svc.fetchSavedScans.mock.calls.filter(([kind]) => kind === 'survey').length;
+    const before = surveyReads();
+
+    uploadSurvey();
+    await screen.findByText('The fresh survey is clean.');
+
+    await waitFor(() => expect(surveyReads()).toBe(before + 1));
+  });
+
+  it('should not re-read the saved survey scan when a fresh scan fails', async () => {
+    svc.runSurveyScan.mockResolvedValue(null);
+    renderTab();
+    await waitFor(() => expect(svc.fetchSavedScans).toHaveBeenCalledTimes(2));
+
+    uploadSurvey();
+    await screen.findByText(/Please try again/);
+
+    expect(svc.fetchSavedScans).toHaveBeenCalledTimes(2);
   });
 });

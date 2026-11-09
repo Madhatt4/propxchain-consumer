@@ -73,7 +73,10 @@ export function savedRowToRun(kind: SavedScanKind, row: SavedScanRow): ScanRunRe
   };
 }
 
-/** The caller's saved scans of one kind on a transaction, newest first. */
+/**
+ * The caller's newest saved scan of one kind on a transaction, as a list of at
+ * most one (empty when there is none or the read fails).
+ */
 export async function fetchSavedScans(
   kind: SavedScanKind,
   transactionId: string,

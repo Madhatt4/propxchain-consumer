@@ -180,7 +180,7 @@ function SurveyPanel({ transactionId, propertyRef }: FilePanelProps): JSX.Elemen
       description={
         filename
           ? `Scanning ${filename}`
-          : `${savedLead(saved.data, transactionId)}Upload the RICS survey PDF (Level 1 / 2 / 3) to scan it.`
+          : `${savedLead(scan.data ? null : saved.data, transactionId)}Upload the RICS survey PDF (Level 1 / 2 / 3) to scan it.`
       }
       trigger={
         <ScanTriggerButton
