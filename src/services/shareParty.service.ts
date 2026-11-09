@@ -69,7 +69,9 @@ class SharePartyService {
     const others = roster.filter((r) => r.principal !== me);
 
     const offChain = new Map<string, PartySideRow>();
-    const unlabelled = others.filter((p) => p.role === 'other').map((p) => p.principal);
+    // Solicitors too: the on-chain record says "solicitor" but not for which
+    // side, and "the other side" / "my conveyancer" choices depend on it.
+    const unlabelled = others.filter((p) => p.role === 'other' || p.role === 'solicitor').map((p) => p.principal);
     if (unlabelled.length > 0) {
       const { data, error } = await supabase.rpc('get_share_party_sides', {
         p_transaction_id: transactionId,
@@ -86,10 +88,11 @@ class SharePartyService {
       if (p.role === 'buyer' || p.role === 'seller') {
         return { principal: p.principal, label: `${p.roleDisplay} — ${p.name}`, role: p.role, side: p.role };
       }
-      if (p.role === 'solicitor') {
-        return { principal: p.principal, label: `Conveyancer — ${p.name}`, role: 'conveyancer', side: null };
-      }
       const row = offChain.get(p.principal);
+      if (p.role === 'solicitor') {
+        const firm = row?.firm_name ?? p.name;
+        return { principal: p.principal, label: `Conveyancer — ${firm}`, role: 'conveyancer', side: asSide(row?.side ?? null) };
+      }
       if (!row) {
         return { principal: p.principal, label: `${p.roleDisplay} — ${p.name}`, role: 'other', side: null };
       }

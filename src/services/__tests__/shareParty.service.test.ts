@@ -87,6 +87,34 @@ describe('sharePartyService.listShareableParties', () => {
     expect(splitBySide(parties, null).yours).toEqual([]);
   });
 
+  it('should resolve an on-chain solicitor side from the side lookup', async () => {
+    mockGetChaseableStakeholders.mockResolvedValue([
+      roster[0],
+      { principal: 'sol-p', name: 'sol-p…999', role: 'solicitor', roleDisplay: 'Solicitor' },
+    ]);
+    mockRpc.mockResolvedValue({
+      data: [{ icp_principal: 'sol-p', party_role: 'conveyancer', firm_name: 'Jones LLP', side: 'buyer' }],
+      error: null,
+    });
+
+    const parties = await sharePartyService.listShareableParties('tx1');
+
+    expect(mockRpc).toHaveBeenCalledWith('get_share_party_sides', { p_transaction_id: 'tx1', p_principals: ['sol-p'] });
+    expect(parties[0]).toMatchObject({ label: 'Conveyancer — Jones LLP', role: 'conveyancer', side: 'buyer' });
+  });
+
+  it('should keep an on-chain solicitor as a side-less conveyancer when the lookup has no row', async () => {
+    mockGetChaseableStakeholders.mockResolvedValue([
+      roster[0],
+      { principal: 'sol-p', name: 'Sol S.', role: 'solicitor', roleDisplay: 'Solicitor' },
+    ]);
+    mockRpc.mockResolvedValue({ data: [], error: null });
+
+    const parties = await sharePartyService.listShareableParties('tx1');
+
+    expect(parties[0]).toMatchObject({ label: 'Conveyancer — Sol S.', role: 'conveyancer', side: null });
+  });
+
   it('should not call the RPC when no accessList (role=other) parties exist', async () => {
     mockGetChaseableStakeholders.mockResolvedValue(roster.slice(0, 2));
 

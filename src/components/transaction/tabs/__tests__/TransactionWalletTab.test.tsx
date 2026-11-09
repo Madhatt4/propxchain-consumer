@@ -10,6 +10,9 @@ vi.mock('@/services/walletVc.service', () => ({
 vi.mock('../TransactionDocumentsTab', () => ({
   TransactionDocumentsTab: () => <div>DOCS SURFACE</div>,
 }));
+vi.mock('../SharedWithYouSection', () => ({
+  SharedWithYouSection: ({ transactionId }: { transactionId: string }) => <div>SHARED WITH YOU {transactionId}</div>,
+}));
 vi.mock('../WalletVcTab', () => ({
   WalletVcTab: () => <div>CREDS SURFACE</div>,
 }));
@@ -31,6 +34,7 @@ describe('TransactionWalletTab', () => {
   it('should show the Documents sub-tab by default', () => {
     render(<TransactionWalletTab {...props} />);
     expect(screen.getByText('DOCS SURFACE')).toBeInTheDocument();
+    expect(screen.getByText('SHARED WITH YOU TX-1')).toBeInTheDocument();
     expect(screen.queryByText('CREDS SURFACE')).not.toBeInTheDocument();
   });
 
