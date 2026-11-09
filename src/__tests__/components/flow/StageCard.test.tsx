@@ -93,6 +93,35 @@ describe('StageCard', () => {
       expect(screen.queryByRole('button', { name: 'Review or update' })).not.toBeInTheDocument();
     });
 
+    it('should still offer "Review or update" and Close when the stage content is null', () => {
+      const onEditClick = vi.fn();
+      const onCloseEdit = vi.fn();
+      const { rerender } = render(
+        <StageCard stage={completed} isExpanded={true} onToggle={vi.fn()} onEditClick={onEditClick} onCloseEdit={onCloseEdit}>
+          {null}
+        </StageCard>,
+      );
+      fireEvent.click(screen.getByRole('button', { name: 'Review or update' }));
+      expect(onEditClick).toHaveBeenCalledWith('seller-1');
+
+      rerender(
+        <StageCard stage={completed} isExpanded={true} onToggle={vi.fn()} isEditing onEditClick={onEditClick} onCloseEdit={onCloseEdit}>
+          {null}
+        </StageCard>,
+      );
+      fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+      expect(onCloseEdit).toHaveBeenCalledWith('seller-1');
+    });
+
+    it('should render no body for a null-content stage that cannot be reopened', () => {
+      const { container } = render(
+        <StageCard stage={completed} isExpanded={true} onToggle={vi.fn()}>
+          {null}
+        </StageCard>,
+      );
+      expect(container.querySelector('.border-t')).toBeNull();
+    });
+
     it('should offer Close in edit mode and return to the summary through onCloseEdit', () => {
       const onCloseEdit = vi.fn();
       render(

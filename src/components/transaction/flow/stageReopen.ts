@@ -15,10 +15,11 @@
 /** Stage IDs whose content components understand the `isEditing` prop and
  *  re-render their input UI with current values pre-filled.
  *
- *  Tier A — provider stages: edits trigger a ConfirmEditDialog because
- *  swapping a provider mid-transaction cancels the existing quote request.
- *  Tier B (TA6/TA10/TA7 forms) and Tier C (Mortgage/Funding) reopen directly —
- *  funding lives in the Buyer Pack so the edit re-opens pre-filled from the server.
+ *  List Property (seller-1), the TA6/TA10/TA7 forms (seller-3) and Mortgage /
+ *  Funding (buyer-2) reopen directly; funding lives in the Buyer Pack, so its
+ *  edit re-opens pre-filled from the server. The provider stages (survey and
+ *  the two conveyancer stages) also reopen, but only after a confirm: see
+ *  CONFIRM_BEFORE_REOPEN_STAGE_IDS.
  *  Exchange (seller-6/buyer-6) and Completion (seller-7/buyer-7) stay out:
  *  their completion is a chain fact, and nothing in their panels may undo it. */
 const REOPENABLE_STAGE_IDS: ReadonlySet<string> = new Set([
@@ -37,9 +38,9 @@ const REOPENABLE_STAGE_IDS: ReadonlySet<string> = new Set([
   'buyer-5',
 ]);
 
-/** Subset of REOPENABLE_STAGE_IDS that need a ConfirmEditDialog before
- *  entering edit mode, because a change has real-world consequences
- *  (cancelling a provider's quote request, etc.). */
+/** The provider stages: a subset of REOPENABLE_STAGE_IDS that need a
+ *  ConfirmEditDialog before entering edit mode, because swapping a provider
+ *  mid-transaction cancels the existing quote request. */
 const CONFIRM_BEFORE_REOPEN_STAGE_IDS: ReadonlySet<string> = new Set(['buyer-3', 'seller-5', 'buyer-5']);
 
 /** True when a completed stage offers "Review or update". */

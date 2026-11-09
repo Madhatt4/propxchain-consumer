@@ -85,6 +85,17 @@ interface ReopenControlsProps {
   onCloseEdit?: (stageId: string) => void;
 }
 
+/** Whether a completed stage has a reopen or close control to show. */
+function hasReopenControls(
+  stage: StageConfig,
+  isEditing: boolean | undefined,
+  onEditClick: ReopenControlsProps['onEditClick'],
+  onCloseEdit: ReopenControlsProps['onCloseEdit'],
+): boolean {
+  if (stage.status !== 'completed') return false;
+  return isEditing ? !!onCloseEdit : !!onEditClick;
+}
+
 /**
  * The way back into a completed stage, and out again. A labelled button under
  * the summary rather than the old icon-only pencil in the header: on the live
@@ -94,9 +105,8 @@ interface ReopenControlsProps {
  */
 function ReopenControls({ stage, isEditing, onEditClick, onCloseEdit }: ReopenControlsProps): ReactNode {
   const btn = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors';
-  if (stage.status !== 'completed') return null;
-  if (isEditing) {
-    if (!onCloseEdit) return null;
+  if (!hasReopenControls(stage, isEditing, onEditClick, onCloseEdit)) return null;
+  if (isEditing && onCloseEdit) {
     return (
       <div className="mt-3 flex justify-end">
         <button
@@ -129,6 +139,7 @@ export function StageCard({ stage, isExpanded, onToggle, onHelpClick, isEditing,
   const styles = getStatusStyles(stage.status);
   const isLocked = stage.status === 'locked';
   const staggerClass = staggerIndex !== undefined ? `animate-stagger-${staggerIndex + 1}` : '';
+  const showReopen = hasReopenControls(stage, isEditing, onEditClick, onCloseEdit);
 
   const handleClick = (): void => {
     if (!isLocked) {
@@ -195,7 +206,9 @@ export function StageCard({ stage, isExpanded, onToggle, onHelpClick, isEditing,
         </div>
       </button>
 
-      {isExpanded && children && (
+      {/* The reopen controls are not tied to children: a completed stage whose
+          content renders nothing must still offer the way back in and out. */}
+      {isExpanded && (children || showReopen) && (
         <div className="px-4 pb-4 border-t border-gray-200 dark:border-slate-700/10 pt-3">
           {children}
           <ReopenControls stage={stage} isEditing={isEditing} onEditClick={onEditClick} onCloseEdit={onCloseEdit} />

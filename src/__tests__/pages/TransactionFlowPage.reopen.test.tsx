@@ -5,7 +5,7 @@
  * Funding stage (to reach the offer expiry and its AI read). Reopening puts the
  * stage into edit mode only: it must never un-complete it or write anything.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -60,17 +60,6 @@ vi.mock('../../utils/rightmoveStorage', () => ({
   storeTitleNumber: vi.fn(),
   syncListingFromChain: vi.fn(() => Promise.resolve(null)),
 }));
-// The forms stage hydrates from the canister: a TA6 filled online, no TA10.
-vi.mock('@/services/icp.service', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/services/icp.service')>();
-  Object.assign(actual.icpService, {
-    getTA6: vi.fn().mockResolvedValue(null),
-    getTA10: vi.fn().mockResolvedValue(null),
-    getTA7: vi.fn().mockResolvedValue(null),
-    getTransaction: vi.fn().mockResolvedValue({ sellers: [[{ ta6FormUploaded: true, ta10FormUploaded: true }]] }),
-  });
-  return actual;
-});
 vi.mock('@/services/documentFindings.service', () => ({ loadPaperworkFindings: vi.fn().mockResolvedValue([]) }));
 vi.mock('../../components/explainer/ExplainerModal', () => ({ default: () => null }));
 vi.mock('../../components/explainer/ExplainerCard', () => ({ default: () => null }));
@@ -89,6 +78,8 @@ vi.mock('@/services/buyerPack.service', async (importOriginal) => {
 });
 
 const { default: TransactionFlowPage } = await import('../../pages/TransactionFlowPage');
+const { icpService } = await import('@/services/icp.service');
+type Tx = Awaited<ReturnType<typeof icpService.getTransaction>>;
 
 function stage(id: string, order: number, title: string, role: 'seller' | 'buyer'): StageConfig {
   return {
@@ -118,6 +109,19 @@ describe('TransactionFlowPage — reopening a completed stage', () => {
     mockSetStageEditing.mockReset();
     mockDeclare.mockReset();
     flow.editing = [];
+    // The forms stage hydrates from the canister: TA6 and TA10 uploaded as
+    // PDFs, nothing filled online. Spies on the shared singleton, restored
+    // after each test so nothing leaks into other suites.
+    vi.spyOn(icpService, 'getTA6').mockResolvedValue(null);
+    vi.spyOn(icpService, 'getTA10').mockResolvedValue(null);
+    vi.spyOn(icpService, 'getTA7').mockResolvedValue(null);
+    vi.spyOn(icpService, 'getTransaction').mockResolvedValue(
+      { sellers: [[{ ta6FormUploaded: true, ta10FormUploaded: true }]] } as unknown as Tx,
+    );
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('should offer "Review or update" on completed Property Info Forms and enter edit mode without completing anything', async () => {
