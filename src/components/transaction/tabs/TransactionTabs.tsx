@@ -30,9 +30,10 @@ import { ViewOnlyFrame } from '../ViewOnlyFrame';
  * Sections that already gate their own controls by the viewer's party role
  * (Buyer Pack, Enquiries, Searches sign-off) or by `readOnly` (Property), and
  * still have things a view-only reader needs to click: they get `readOnly`
- * but no disabling frame.
+ * but no disabling frame. Documents on this deal is view-only for everyone,
+ * but its Open buttons are how a reader views a file, so it is never framed.
  */
-const SELF_GATED_SECTIONS = new Set(['property', 'buyer-pack', 'enquiries', 'searches']);
+const SELF_GATED_SECTIONS = new Set(['property', 'buyer-pack', 'enquiries', 'searches', 'documents']);
 
 interface TransactionTabsProps {
   context: TransactionTabContext;

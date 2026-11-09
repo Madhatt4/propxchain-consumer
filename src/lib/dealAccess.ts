@@ -57,6 +57,7 @@ export type DealItem =
   | 'enquiries'
   | 'searches'
   | 'certificates'
+  | 'dealDocuments'
   // Standing cards and list actions
   | 'buyerInvite'
   | 'deleteDeal';
@@ -91,6 +92,9 @@ export const DEAL_ACCESS: Readonly<Record<DealItem, Row>> = {
   searches: row('view', 'act', 'view'),
   // Read-only for everyone: the seller confirms facts on the TA6 upload row.
   certificates: row('view', 'view', 'view'),
+  // Read-only for everyone: documents are added where they belong (sales
+  // pack, forms, survey), this only lists and opens them (Marc, 2026-11-09).
+  dealDocuments: row('view', 'view', 'view'),
 
   buyerInvite: row('act', 'hidden', 'act'),
   // Only the seller deletes (round 2, 2026-10-08); everyone else leaves,
@@ -130,6 +134,7 @@ export const SECTION_ITEM: Readonly<Record<string, DealItem>> = {
   enquiries: 'enquiries',
   searches: 'searches',
   certificates: 'certificates',
+  documents: 'dealDocuments',
 };
 
 export function accessFor(item: DealItem, side: DealSide): AccessLevel {
