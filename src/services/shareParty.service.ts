@@ -39,7 +39,7 @@ export interface ShareRoster {
   parties: ShareParty[];
 }
 
-interface PartySideRow {
+export interface PartySideRow {
   icp_principal: string;
   party_role: string;
   firm_name: string | null;
@@ -60,6 +60,22 @@ const KNOWN_ROLES: readonly PartyRole[] = ['buyer', 'seller', 'conveyancer', 'es
 const asRole = (r: string): PartyRole => (KNOWN_ROLES as readonly string[]).includes(r) ? (r as PartyRole) : 'other';
 const asSide = (s: string | null): DealSide | null => (s === 'buyer' || s === 'seller' ? s : null);
 
+/**
+ * One row per principal. A principal the lookup puts on BOTH sides (e.g. a
+ * firm with accepted quotes for buyer and seller) gets side null: an unknown
+ * side is never auto-added to a side's share, so a conflict fails closed.
+ */
+export function indexSideRows(rows: PartySideRow[], into: Map<string, PartySideRow>): void {
+  for (const row of rows) {
+    const prev = into.get(row.icp_principal);
+    if (!prev) {
+      into.set(row.icp_principal, row);
+    } else if (asSide(prev.side) !== asSide(row.side)) {
+      into.set(row.icp_principal, { ...prev, side: null });
+    }
+  }
+}
+
 class SharePartyService {
   async loadRoster(transactionId: string): Promise<ShareRoster> {
     const roster = await messageService.getChaseableStakeholders(transactionId);
@@ -69,7 +85,9 @@ class SharePartyService {
     const others = roster.filter((r) => r.principal !== me);
 
     const offChain = new Map<string, PartySideRow>();
-    const unlabelled = others.filter((p) => p.role === 'other').map((p) => p.principal);
+    // Solicitors too: the on-chain record says "solicitor" but not for which
+    // side, and "the other side" / "my conveyancer" choices depend on it.
+    const unlabelled = others.filter((p) => p.role === 'other' || p.role === 'solicitor').map((p) => p.principal);
     if (unlabelled.length > 0) {
       const { data, error } = await supabase.rpc('get_share_party_sides', {
         p_transaction_id: transactionId,
@@ -78,7 +96,7 @@ class SharePartyService {
       if (error) {
         logger.warn('[shareParty] side lookup failed — using roster labels', error);
       } else {
-        for (const row of (data ?? []) as PartySideRow[]) offChain.set(row.icp_principal, row);
+        indexSideRows((data ?? []) as PartySideRow[], offChain);
       }
     }
 
@@ -86,10 +104,11 @@ class SharePartyService {
       if (p.role === 'buyer' || p.role === 'seller') {
         return { principal: p.principal, label: `${p.roleDisplay} — ${p.name}`, role: p.role, side: p.role };
       }
-      if (p.role === 'solicitor') {
-        return { principal: p.principal, label: `Conveyancer — ${p.name}`, role: 'conveyancer', side: null };
-      }
       const row = offChain.get(p.principal);
+      if (p.role === 'solicitor') {
+        const firm = row?.firm_name ?? p.name;
+        return { principal: p.principal, label: `Conveyancer — ${firm}`, role: 'conveyancer', side: asSide(row?.side ?? null) };
+      }
       if (!row) {
         return { principal: p.principal, label: `${p.roleDisplay} — ${p.name}`, role: 'other', side: null };
       }

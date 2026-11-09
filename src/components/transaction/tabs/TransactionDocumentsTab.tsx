@@ -4,10 +4,10 @@
 /**
  * TransactionDocumentsTab — the "Documents" sub-tab of a deal's Transaction
  * Wallet (wallet spec 2026-08-18). Lists the PropXchain Wallet documents the
- * user has explicitly SENT to this deal (decision 1); each carries a share
- * switch per party, grouped your side / other side (decision 5); a sent
- * document is private until a switch is on (decision 11). Grants whose file
- * has left the wallet are listed separately so they can still be closed.
+ * user has explicitly SENT to this deal (decision 1); each has a "Who can see
+ * this" chooser (Custom = per-party switches by side, decision 5) and stays
+ * private until the owner confirms a choice (decision 11; Marc 2026-11-09).
+ * Grants whose file has left the wallet are listed so they can be closed.
  */
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -21,6 +21,7 @@ import { transactionWalletService, type SentItem } from '@/services/transactionW
 import { walletProofService, type ProofLink } from '@/services/walletProof.service';
 import { applyCompletionLifecycle, type CompletionLifecycle } from '@/services/walletCompletion';
 import { loadBuyerPack } from '@/services/buyerPack.service';
+import { slotDisplayLabel } from '@/utils/vaultSlotLabel';
 import type { VaultDocument } from '@/types/vault.types';
 import { logger } from '@/utils/logger';
 import { TransactionDocCard } from './TransactionDocCard';
@@ -30,11 +31,9 @@ import { CompletionNotice } from './CompletionNotice';
 import { OrphanGrantsList } from './OrphanGrantsList';
 import { buildDocHistory } from './docHistory';
 import { grantKey } from './grantKey';
-
-interface Notice {
-  kind: 'error' | 'warning';
-  text: string;
-}
+import { useDocVisibility, type VisibilityNotice } from './useDocVisibility';
+import { WalletNotice } from './WalletNotice';
+import { ShareConfirmDialog } from './ShareConfirmDialog';
 
 export function TransactionDocumentsTab({ transactionId }: TransactionTabProps): JSX.Element {
   const [principal, setPrincipal] = useState('');
@@ -46,7 +45,7 @@ export function TransactionDocumentsTab({ transactionId }: TransactionTabProps):
   const [grants, setGrants] = useState<Map<string, ShareGrant>>(new Map());
   const [history, setHistory] = useState<ShareGrant[]>([]);
   const [busy, setBusy] = useState<Set<string>>(new Set());
-  const [notice, setNotice] = useState<Notice | null>(null);
+  const [notice, setNotice] = useState<VisibilityNotice | null>(null);
   const [loading, setLoading] = useState(true);
   const [picking, setPicking] = useState(false);
   const [proving, setProving] = useState(false);
@@ -120,32 +119,20 @@ export function TransactionDocumentsTab({ transactionId }: TransactionTabProps):
       return next;
     });
 
-  const handleToggle = async (item: SentItem, party: ShareParty): Promise<void> => {
-    const key = grantKey(item.doc.fileHash, party.principal);
-    if (busy.has(key)) return;
-    setNotice(null);
-    setKeyBusy(key, true);
-    try {
-      const existing = grants.get(key);
-      if (existing) {
-        const { auditLogged } = await documentShareService.revokeShare(existing);
-        dropGrant(key);
-        const revokedAt = new Date().toISOString();
-        setHistory((prev) => prev.map((g) => (g.id === existing.id ? { ...g, status: 'revoked', revokedAt } : g)));
-        if (!auditLogged) {
-          setNotice({ kind: 'warning', text: 'Sharing was revoked, but the on-chain audit entry failed to record.' });
-        }
-      } else {
-        const grant = await documentShareService.shareDocument(item.doc, transactionId, party.principal);
-        setGrants((prev) => new Map(prev).set(key, grant));
-        setHistory((prev) => [...prev, grant]);
-      }
-    } catch (err) {
-      setNotice({ kind: 'error', text: err instanceof Error ? err.message : 'Sharing failed.' });
-    } finally {
-      setKeyBusy(key, false);
-    }
-  };
+  const visibility = useDocVisibility({
+    transactionId,
+    parties,
+    mySide,
+    grants,
+    setGrants,
+    setHistory,
+    onRoster: (roster) => {
+      setParties(roster.parties);
+      setMySide(roster.mySide);
+    },
+    onNotice: setNotice,
+    setBusy: setKeyBusy,
+  });
 
   const handleSend = async (doc: VaultDocument): Promise<void> => {
     setKeyBusy(doc.id, true);
@@ -206,7 +193,7 @@ export function TransactionDocumentsTab({ transactionId }: TransactionTabProps):
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-muted-foreground">
           Documents you’ve sent from your PropXchain Wallet to this deal. Nothing is shared until you
-          switch a party on.
+          choose who can see it.
         </p>
         <div className="flex gap-2">
           <Link
@@ -237,18 +224,7 @@ export function TransactionDocumentsTab({ transactionId }: TransactionTabProps):
         <CompletionNotice accessEndsAt={completion.accessEndsAt} expiredNow={completion.expiredNow} />
       )}
 
-      {notice && (
-        <p
-          role="alert"
-          className={
-            notice.kind === 'error'
-              ? 'rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800'
-              : 'rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800'
-          }
-        >
-          {notice.text}
-        </p>
-      )}
+      <WalletNotice notice={notice} />
 
       {picking && (
         <AddFromWalletPicker
@@ -285,15 +261,26 @@ export function TransactionDocumentsTab({ transactionId }: TransactionTabProps):
               principal={principal}
               yourSide={yours}
               otherSide={others}
+              mySide={mySide}
               lenderPlaceholder={lenderPlaceholder}
               grants={grants}
               busy={busy}
               history={buildDocHistory(history, item.doc.fileHash, labelFor, proofs)}
-              onToggle={(i, party) => void handleToggle(i, party)}
+              onToggle={visibility.toggleParty}
+              onChoosePreset={visibility.choosePreset}
               onRemove={(i) => void handleRemove(i)}
             />
           ))}
         </div>
+      )}
+
+      {visibility.pending && (
+        <ShareConfirmDialog
+          docTitle={visibility.pending.item.doc.label ?? slotDisplayLabel(visibility.pending.item.doc.slotId, principal)}
+          roles={visibility.pending.roles}
+          onConfirm={visibility.confirm}
+          onCancel={visibility.cancel}
+        />
       )}
 
       <OrphanGrantsList

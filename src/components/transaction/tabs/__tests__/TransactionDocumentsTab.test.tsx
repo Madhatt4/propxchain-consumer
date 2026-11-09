@@ -112,6 +112,11 @@ const activeGrant = {
 
 const props = { transactionId: 'tx1' };
 
+const chooser = (): HTMLElement => screen.getByRole('combobox', { name: /Who can see this/ });
+const choose = (value: string): void => {
+  fireEvent.change(chooser(), { target: { value } });
+};
+
 function renderTab(): void {
   render(
     <MemoryRouter>
@@ -137,6 +142,7 @@ describe('TransactionDocumentsTab — sent documents', () => {
     renderTab();
     expect(await screen.findByText('Halifax offer')).toBeInTheDocument();
     expect(screen.queryByText('Proof of Identity')).not.toBeInTheDocument(); // not sent → not listed
+    choose('custom');
     expect(screen.getByRole('switch', { name: /Conveyancer — Smith & Co/ })).toHaveAttribute('aria-checked', 'false');
     expect(screen.queryByRole('switch', { name: /Seller — Sam S\./ })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Other side/ }));
@@ -148,6 +154,9 @@ describe('TransactionDocumentsTab — sent documents', () => {
   it('should show a greyed lender row from the funding stage when no lender has joined', async () => {
     mockLoadBuyerPack.mockResolvedValue([{ item: 'mortgage', status: 'in_progress', detail: { funding_type: 'mortgage', lender_name: 'Nationwide' }, onLedger: false, pending: false }]);
     renderTab();
+    await screen.findByText('Halifax offer');
+    await waitFor(() => expect(mockLoadBuyerPack).toHaveBeenCalled());
+    choose('custom');
     expect(await screen.findByText(/Lender — Nationwide/)).toBeInTheDocument();
     expect(screen.getByText(/not on PropXchain/i)).toBeInTheDocument();
   });
@@ -155,8 +164,11 @@ describe('TransactionDocumentsTab — sent documents', () => {
   it('should share on toggle ON and show the history line', async () => {
     mockShareDocument.mockResolvedValue(activeGrant);
     renderTab();
-    const toggle = await screen.findByRole('switch', { name: /Conveyancer — Smith & Co/ });
+    await screen.findByText('Halifax offer');
+    choose('custom');
+    const toggle = screen.getByRole('switch', { name: /Conveyancer — Smith & Co/ });
     fireEvent.click(toggle);
+    fireEvent.click(screen.getByRole('button', { name: 'Share' }));
     await waitFor(() => expect(mockShareDocument).toHaveBeenCalledWith(doc, 'tx1', 'conv-p'));
     await waitFor(() => expect(toggle).toHaveAttribute('aria-checked', 'true'));
     expect(screen.getByText(/Shared with Conveyancer — Smith & Co 3 Aug/)).toBeInTheDocument();
@@ -167,7 +179,9 @@ describe('TransactionDocumentsTab — sent documents', () => {
     mockListGrantHistory.mockResolvedValue([activeGrant]);
     mockRevokeShare.mockResolvedValue({ auditLogged: true });
     renderTab();
-    const toggle = await screen.findByRole('switch', { name: /Conveyancer — Smith & Co/ });
+    await screen.findByText('Halifax offer');
+    choose('custom');
+    const toggle = screen.getByRole('switch', { name: /Conveyancer — Smith & Co/ });
     expect(toggle).toHaveAttribute('aria-checked', 'true');
     fireEvent.click(toggle);
     await waitFor(() => expect(mockRevokeShare).toHaveBeenCalledWith(activeGrant));

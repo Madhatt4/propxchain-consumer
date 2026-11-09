@@ -3,30 +3,36 @@
 
 /**
  * TransactionDocCard — one wallet document sent to a deal's Transaction Wallet:
- * label (or slot label) + sent date, a shared-count chip, share switches grouped
- * "Your side" (open) / "Other side" (collapsed, routed-via-conveyancer note),
+ * label (or slot label) + sent date, a shared-count chip, the "Who can see
+ * this" chooser (presets; under Custom, share switches grouped
+ * "Your side" (open) / "Other side" (collapsed, routed-via-conveyancer note)),
  * a greyed lender row when the lender isn't on PropXchain, the one-line history
  * (decision 17) and "Remove from deal".
  */
 import { useState } from 'react';
 import { ChevronDown, ChevronRight, FileText } from 'lucide-react';
-import type { ShareParty } from '@/services/shareParty.service';
+import type { DealSide, ShareParty } from '@/services/shareParty.service';
 import type { ShareGrant } from '@/services/documentShare.service';
 import type { SentItem } from '@/services/transactionWallet.service';
 import { slotDisplayLabel } from '@/utils/vaultSlotLabel';
 import { grantKey } from './grantKey';
+import { DocVisibilityChooser } from './DocVisibilityChooser';
+import { visibilityBusyKey } from './useDocVisibility';
+import type { VisibilityPreset } from './visibilityPresets';
 
 interface TransactionDocCardProps {
   item: SentItem;
   principal: string;
   yourSide: ShareParty[];
   otherSide: ShareParty[];
+  mySide: DealSide | null;
   /** Deal lender by name when no lender rep has joined (decision 14). */
   lenderPlaceholder?: string;
   grants: Map<string, ShareGrant>;
   busy: Set<string>;
   history: string;
   onToggle: (item: SentItem, party: ShareParty) => void;
+  onChoosePreset: (item: SentItem, preset: VisibilityPreset) => void;
   onRemove: (item: SentItem) => void;
 }
 
@@ -70,17 +76,23 @@ export function TransactionDocCard({
   principal,
   yourSide,
   otherSide,
+  mySide,
   lenderPlaceholder,
   grants,
   busy,
   history,
   onToggle,
+  onChoosePreset,
   onRemove,
 }: TransactionDocCardProps): JSX.Element {
   const [showOthers, setShowOthers] = useState(false);
   const { doc } = item;
   const all = [...yourSide, ...otherSide];
-  const sharedCount = all.filter((p) => grants.has(grantKey(doc.fileHash, p.principal))).length;
+  // Every active grant on this doc, not just roster members: someone who has
+  // left the deal but still holds a grant must show up under "Visible to".
+  const granted = [...grants.values()].filter((g) => g.docHash === doc.fileHash).map((g) => g.granteePrincipal);
+  const sharedCount = granted.length;
+  const isDocBusy = busy.has(visibilityBusyKey(doc.fileHash));
   const slot = slotDisplayLabel(doc.slotId, principal);
   const title = doc.label ?? slot;
 
@@ -91,7 +103,7 @@ export function TransactionDocCard({
         key={party.principal}
         label={party.label}
         isOn={grants.has(key)}
-        isBusy={busy.has(key)}
+        isBusy={isDocBusy || busy.has(key)}
         onClick={() => onToggle(item, party)}
       />
     );
@@ -127,44 +139,53 @@ export function TransactionDocCard({
       {all.length === 0 && !lenderPlaceholder ? (
         <p className="mt-3 text-xs text-muted-foreground">No other parties have joined this deal yet.</p>
       ) : (
-        <div className="mt-3 space-y-3">
-          {(yourSide.length > 0 || lenderPlaceholder) && (
-            <div>
-              <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Your side</p>
-              <ul className="space-y-1.5">
-                {yourSide.map(renderSwitch)}
-                {lenderPlaceholder && (
-                  <li className="flex items-center justify-between gap-2 opacity-60">
-                    <span className="truncate text-xs text-foreground">
-                      Lender — {lenderPlaceholder}
-                      <span className="text-muted-foreground"> · not on PropXchain — invite them or show your QR</span>
-                    </span>
-                    <span className="inline-flex h-5 w-9 shrink-0 rounded-full bg-muted-foreground/20" aria-hidden />
-                  </li>
+        <DocVisibilityChooser
+          docHash={doc.fileHash}
+          parties={all}
+          mySide={mySide}
+          grantedPrincipals={granted}
+          isBusy={isDocBusy}
+          onChoose={(preset) => onChoosePreset(item, preset)}
+        >
+          <div className="space-y-3">
+            {(yourSide.length > 0 || lenderPlaceholder) && (
+              <div>
+                <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Your side</p>
+                <ul className="space-y-1.5">
+                  {yourSide.map(renderSwitch)}
+                  {lenderPlaceholder && (
+                    <li className="flex items-center justify-between gap-2 opacity-60">
+                      <span className="truncate text-xs text-foreground">
+                        Lender — {lenderPlaceholder}
+                        <span className="text-muted-foreground"> · not on PropXchain — invite them or show your QR</span>
+                      </span>
+                      <span className="inline-flex h-5 w-9 shrink-0 rounded-full bg-muted-foreground/20" aria-hidden />
+                    </li>
+                  )}
+                </ul>
+              </div>
+            )}
+            {otherSide.length > 0 && (
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setShowOthers((v) => !v)}
+                  className="mb-1.5 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"
+                  aria-expanded={showOthers}
+                >
+                  {showOthers ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                  Other side ({otherSide.length})
+                </button>
+                {showOthers && (
+                  <>
+                    <p className="mb-1.5 text-[11px] text-muted-foreground">Normally goes via your conveyancer.</p>
+                    <ul className="space-y-1.5">{otherSide.map(renderSwitch)}</ul>
+                  </>
                 )}
-              </ul>
-            </div>
-          )}
-          {otherSide.length > 0 && (
-            <div>
-              <button
-                type="button"
-                onClick={() => setShowOthers((v) => !v)}
-                className="mb-1.5 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"
-                aria-expanded={showOthers}
-              >
-                {showOthers ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-                Other side ({otherSide.length})
-              </button>
-              {showOthers && (
-                <>
-                  <p className="mb-1.5 text-[11px] text-muted-foreground">Normally goes via your conveyancer.</p>
-                  <ul className="space-y-1.5">{otherSide.map(renderSwitch)}</ul>
-                </>
-              )}
-            </div>
-          )}
-        </div>
+              </div>
+            )}
+          </div>
+        </DocVisibilityChooser>
       )}
 
       <div className="mt-3 flex items-center justify-between gap-2 border-t border-dashed border-border pt-2">

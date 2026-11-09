@@ -5,7 +5,8 @@
  * TransactionWalletTab — the deal's "Transaction Wallet" tab. Hosts Documents
  * (PropXchain Wallet files sent to this deal) and — only when a VC verifier is
  * configured (wallet spec decision 7) — Credentials. Files and credentials are
- * different things sharing one home.
+ * different things sharing one home. Documents also lists what other parties
+ * have shared with you.
  */
 import { useState } from 'react';
 import { walletVcMode } from '@/services/walletVc.service';
@@ -14,6 +15,7 @@ import type { LucideIcon } from 'lucide-react';
 import type { TransactionTabProps } from './transactionTabs.config';
 import { WalletVcTab } from './WalletVcTab';
 import { TransactionDocumentsTab } from './TransactionDocumentsTab';
+import { SharedWithYouSection } from './SharedWithYouSection';
 
 type SubTab = 'documents' | 'credentials';
 
@@ -46,7 +48,14 @@ function SubTabButton({
 export function TransactionWalletTab(props: TransactionTabProps): JSX.Element {
   const [sub, setSub] = useState<SubTab>('documents');
   const hasCredentials = walletVcMode() !== 'unavailable';
-  if (!hasCredentials) return <TransactionDocumentsTab {...props} />;
+  // What others shared with me sits under what I share: one wallet, both directions.
+  const documents = (
+    <div className="space-y-4">
+      <TransactionDocumentsTab {...props} />
+      <SharedWithYouSection transactionId={props.transactionId} />
+    </div>
+  );
+  if (!hasCredentials) return documents;
   return (
     <div className="space-y-4">
       <div className="flex gap-1 border-b border-border">
@@ -63,7 +72,7 @@ export function TransactionWalletTab(props: TransactionTabProps): JSX.Element {
           label="Credentials"
         />
       </div>
-      {sub === 'documents' ? <TransactionDocumentsTab {...props} /> : <WalletVcTab {...props} />}
+      {sub === 'documents' ? documents : <WalletVcTab {...props} />}
     </div>
   );
 }
