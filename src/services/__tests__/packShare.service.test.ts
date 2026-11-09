@@ -114,6 +114,12 @@ vi.mock('../web2-document.service', () => ({
   },
 }));
 
+vi.mock('../salesPackDocument.service', () => ({
+  listSalesPackDocuments: vi.fn().mockResolvedValue([
+    { id: 'doc_9', kind: 'sales_pack_epc', label: 'EPC certificate', fileName: 'sales_pack_epc.pdf', uploadedAt: null, storageLocation: 'supabase://b/p', fileHash: 'h', contentType: 'application/pdf' },
+  ]),
+}));
+
 const PERSONAL_CANARIES = [
   'Priscilla Proprietor Canary',
   'Marjorie Canary',
@@ -150,6 +156,7 @@ describe('assemblePackSnapshot', () => {
   it('should include only sales-pack documents, names and kind only, never ID', async () => {
     const snap = await assemblePackSnapshot('tx-1');
     expect(snap.extraDocuments).toEqual([
+      { fileName: 'sales_pack_epc.pdf', kind: 'EPC certificate' },
       { fileName: 'floorplan.pdf', kind: 'Other' },
       { fileName: 'gas.pdf', kind: 'Gas safety certificate' },
     ]);
