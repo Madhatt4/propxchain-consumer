@@ -10,7 +10,7 @@
  * open to every user: the platform is free (2026-10-15), so there is no tier.
  */
 import type { ComponentType } from 'react';
-import { LayoutDashboard, MapPin, Link2, Wallet, Sparkles, ShieldCheck, Mail, MessageSquare, ClipboardCheck, FileSearch, FileCheck2 } from 'lucide-react';
+import { LayoutDashboard, MapPin, Link2, Wallet, Sparkles, ShieldCheck, Mail, MessageSquare, ClipboardCheck, FileSearch, FileCheck2, FolderOpen } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { ChainTab } from './ChainTab';
 import { PropertyTab } from './PropertyTab';
@@ -22,6 +22,7 @@ import { EnquiriesTab } from './EnquiriesTab';
 import { BuyerPackTab } from './BuyerPackTab';
 import { SearchesTab } from './SearchesTab';
 import { CertificatesTab } from './CertificatesTab';
+import { DealDocumentsTab } from './DealDocumentsTab';
 
 /** Data passed to every tab component. */
 export interface TransactionTabContext {
@@ -58,6 +59,9 @@ export const TRANSACTION_TABS: TransactionTabDef[] = [
   // Sales pack lives as Stage 0 in the flow, not a drawer section — see
   // SALES_PACK_TAB_ID in flow/StageTabs (amended decision on issue #115).
   { id: 'property', label: 'Property', icon: MapPin, kind: 'component', Component: PropertyTab },
+  // Every property document on the deal, for every party on it (Marc,
+  // 2026-11-09). Personal documents stay in the Transaction Wallet.
+  { id: 'documents', label: 'Documents on this deal', icon: FolderOpen, kind: 'component', Component: DealDocumentsTab },
   { id: 'chain', label: 'Chain', icon: Link2, kind: 'component', Component: ChainTab },
   { id: 'wallet', label: 'Transaction Wallet', icon: Wallet, kind: 'component', Component: TransactionWalletTab },
   // Buyer Pack (monorepo spec 2026-09-05): the buyer-side mirror of the Sales
