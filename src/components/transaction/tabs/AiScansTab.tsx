@@ -5,7 +5,8 @@
 /**
  * AI Scans tab — a free layer that runs the three AI scans and renders them
  * through the shared ScanResultCard. Title/HMLR reads the warmed server cache;
- * Survey scans a single manually-uploaded PDF.
+ * Survey scans a single manually-uploaded PDF. Survey and private search cards
+ * open on the viewer's latest saved scan; a scan run here replaces it.
  *
  * A search ordered through the platform is scanned on the server when it comes
  * back, and every party reads that one result (SharedSearchScans). What stays
@@ -20,10 +21,12 @@ import { ScanTriggerButton } from '@/components/transaction/scans/ScanTriggerBut
 import {
   useHmlrScan,
   useReturnedOneSearchResults,
+  useSavedScan,
   useSearchScan,
   useSharedSearchScans,
   useSurveyScan,
 } from '@/hooks/useScan';
+import { savedScanFilename } from '@/services/savedScans';
 import { fileToBase64 } from '@/services/scan.service';
 import { withoutSharedScan, type ReturnedOneSearchSearch } from '@/services/onesearchResults';
 import type { ScanRunResult } from '@/types/scan.types';
@@ -65,8 +68,24 @@ function returnedLabel(returned: ReturnedOneSearchSearch): string {
   return `Your OneSearch results are back (${codes}, ${when}).`;
 }
 
+/** "Showing your last scan (name). " when a saved scan is on screen, else "". */
+function savedLead(saved: ScanRunResult | null | undefined, transactionId: string): string {
+  if (!saved) return '';
+  const name = savedScanFilename(saved.result.source_ref, transactionId);
+  return `Showing your last scan${name ? ` (${name})` : ''}. `;
+}
+
+function searchDescription(returned: ReturnedOneSearchSearch | undefined, lead: string): string {
+  return returned
+    ? `${lead}${returnedLabel(returned)} Scan them, or upload a different search PDF. Only you will see the result.`
+    : `${lead}Upload a search PDF (LLC1 / CON29 / environmental) to scan it. Only you will see the result.`;
+}
+
 function SearchPanel({ transactionId, propertyRef }: FilePanelProps): JSX.Element {
   const scan = useSearchScan();
+  // A scan run in this session replaces the saved one: scan.data wins below.
+  const saved = useSavedScan('search', transactionId);
+  const shown = scan.data ?? saved.data ?? null;
   const { data: returnedSearches } = useReturnedOneSearchResults(transactionId);
   const { data: sharedScans, isLoading: isSharedLoading } = useSharedSearchScans(transactionId);
   const [label, setLabel] = useState<string | null>(null);
@@ -106,10 +125,7 @@ function SearchPanel({ transactionId, propertyRef }: FilePanelProps): JSX.Elemen
   };
 
   const description =
-    label ??
-    (returned
-      ? `${returnedLabel(returned)} Scan them, or upload a different search PDF. Only you will see the result.`
-      : 'Upload a search PDF (LLC1 / CON29 / environmental) to scan it. Only you will see the result.');
+    label ?? searchDescription(returned, savedLead(scan.data ? null : saved.data, transactionId));
 
   return (
     <ScanResultCard
@@ -131,15 +147,19 @@ function SearchPanel({ transactionId, propertyRef }: FilePanelProps): JSX.Elemen
           />
         </>
       }
-      isLoading={scan.isPending}
+      isLoading={scan.isPending || saved.isLoading}
       error={mutationError(scan.isError, scan.error, scan.data)}
-      run={scan.data ?? null}
+      run={shown}
     />
   );
 }
 
 function SurveyPanel({ transactionId, propertyRef }: FilePanelProps): JSX.Element {
   const scan = useSurveyScan();
+  // A survey uploaded on the Providers tab is scanned there and saved; this is
+  // how the buyer finds it. A scan run here replaces it.
+  const saved = useSavedScan('survey', transactionId);
+  const shown = scan.data ?? saved.data ?? null;
   const [filename, setFilename] = useState<string | null>(null);
 
   const onFile = async (file: File): Promise<void> => {
@@ -160,7 +180,7 @@ function SurveyPanel({ transactionId, propertyRef }: FilePanelProps): JSX.Elemen
       description={
         filename
           ? `Scanning ${filename}`
-          : 'Upload the RICS survey PDF (Level 1 / 2 / 3) to scan it.'
+          : `${savedLead(scan.data ? null : saved.data, transactionId)}Upload the RICS survey PDF (Level 1 / 2 / 3) to scan it.`
       }
       trigger={
         <ScanTriggerButton
@@ -169,9 +189,9 @@ function SurveyPanel({ transactionId, propertyRef }: FilePanelProps): JSX.Elemen
           onFile={(f) => void onFile(f)}
         />
       }
-      isLoading={scan.isPending}
+      isLoading={scan.isPending || saved.isLoading}
       error={mutationError(scan.isError, scan.error, scan.data)}
-      run={scan.data ?? null}
+      run={shown}
     />
   );
 }
