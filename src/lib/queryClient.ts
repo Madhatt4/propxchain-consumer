@@ -91,6 +91,8 @@ export const queryKeys = {
     all: ['scans'] as const,
     hmlr: (transactionId: string) => [...queryKeys.scans.all, 'hmlr', transactionId] as const,
     shared: (transactionId: string) => [...queryKeys.scans.all, 'shared', transactionId] as const,
+    saved: (kind: 'survey' | 'search', transactionId: string) =>
+      [...queryKeys.scans.all, 'saved', kind, transactionId] as const,
     search: (sourceRef: string) => [...queryKeys.scans.all, 'search', sourceRef] as const,
     survey: (sourceRef: string) => [...queryKeys.scans.all, 'survey', sourceRef] as const,
   },

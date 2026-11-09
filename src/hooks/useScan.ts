@@ -6,7 +6,8 @@
  * React Query hooks for the three AI scans. HMLR is a read (the scan is warmed
  * at pull time and cached server-side), so it's a query keyed on the
  * transaction. Search and survey are user-triggered against a manually-uploaded
- * PDF, so they're mutations.
+ * PDF, so they're mutations; their stored results are read back with
+ * useSavedScan so a reload does not lose them.
  */
 
 import { useMutation, useQuery, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
@@ -23,6 +24,7 @@ import {
   fetchReturnedOneSearchResults,
   type ReturnedOneSearchSearch,
 } from '../services/onesearchResults';
+import { fetchSavedScans, type SavedScanKind } from '../services/savedScans';
 import { fetchSharedSearchScans } from '../services/sharedSearchScans';
 import {
   normalizeHmlrToContract,
@@ -80,6 +82,23 @@ export function useSharedSearchScans(
     staleTime: 60 * 1000,
     refetchInterval: (query) =>
       query.state.data?.some((s) => s.status === 'pending') ? SHARED_SCAN_POLL_MS : false,
+  });
+}
+
+/**
+ * The caller's latest saved scan of one kind on this transaction, or null. Read
+ * on every mount (staleTime 0) because a survey uploaded from the Providers tab
+ * is scanned outside this hook, and the buyer is told to come here for it.
+ */
+export function useSavedScan(
+  kind: SavedScanKind,
+  transactionId: string,
+): UseQueryResult<ScanRunResult | null> {
+  return useQuery({
+    queryKey: queryKeys.scans.saved(kind, transactionId),
+    queryFn: async (): Promise<ScanRunResult | null> =>
+      (await fetchSavedScans(kind, transactionId))[0] ?? null,
+    staleTime: 0,
   });
 }
 
