@@ -28,7 +28,7 @@ interface DocVisibilityChooserProps {
   children: ReactNode;
 }
 
-const ORDER: VisibilityPreset[] = ['nobody', 'my_conveyancer', 'other_side', 'everyone', 'custom'];
+const ORDER: VisibilityPreset[] = ['nobody', 'my_conveyancer', 'other_side', 'estate_agent', 'everyone', 'custom'];
 
 function isAvailable(preset: VisibilityPreset, parties: ShareParty[], mySide: DealSide | null): boolean {
   if (preset === 'nobody' || preset === 'custom') return true;

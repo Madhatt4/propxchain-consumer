@@ -124,14 +124,11 @@ export function TransactionDocumentsTab({ transactionId }: TransactionTabProps):
     parties,
     mySide,
     grants,
-    onGranted: (grant) => {
-      setGrants((prev) => new Map(prev).set(grantKey(grant.docHash, grant.granteePrincipal), grant));
-      setHistory((prev) => [...prev, grant]);
-    },
-    onRevoked: (grant) => {
-      dropGrant(grantKey(grant.docHash, grant.granteePrincipal));
-      const revokedAt = new Date().toISOString();
-      setHistory((prev) => prev.map((g) => (g.id === grant.id ? { ...g, status: 'revoked', revokedAt } : g)));
+    setGrants,
+    setHistory,
+    onRoster: (roster) => {
+      setParties(roster.parties);
+      setMySide(roster.mySide);
     },
     onNotice: setNotice,
     setBusy: setKeyBusy,

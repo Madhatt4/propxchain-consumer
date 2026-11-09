@@ -10,18 +10,20 @@
 import type { DealSide, ShareParty } from '@/services/shareParty.service';
 import type { ShareGrant } from '@/services/documentShare.service';
 
-export type VisibilityPreset = 'nobody' | 'my_conveyancer' | 'other_side' | 'everyone' | 'custom';
+export type VisibilityPreset = 'nobody' | 'my_conveyancer' | 'other_side' | 'estate_agent' | 'everyone' | 'custom';
+export type ComputedPreset = Exclude<VisibilityPreset, 'custom'>;
 
 export const PRESET_LABELS: Record<VisibilityPreset, string> = {
   nobody: 'Nobody',
   my_conveyancer: 'My conveyancer',
   other_side: 'The other side',
+  estate_agent: 'Estate agent',
   everyone: 'Everyone on the deal',
   custom: 'Custom',
 };
 
 /** Presets whose membership is computed; 'custom' is whatever the switches say. */
-const COMPUTED: readonly Exclude<VisibilityPreset, 'custom'>[] = ['nobody', 'my_conveyancer', 'other_side', 'everyone'];
+const COMPUTED: readonly ComputedPreset[] = ['nobody', 'my_conveyancer', 'other_side', 'estate_agent', 'everyone'];
 
 const oppositeOf = (side: DealSide): DealSide => (side === 'buyer' ? 'seller' : 'buyer');
 
@@ -37,12 +39,14 @@ export function conveyancersFor(side: DealSide, parties: ShareParty[]): SharePar
  * (no side, so no "my conveyancer" or "other side"), which the UI disables.
  */
 export function presetTargets(
-  preset: Exclude<VisibilityPreset, 'custom'>,
+  preset: ComputedPreset,
   parties: ShareParty[],
   mySide: DealSide | null,
 ): ShareParty[] | null {
   if (preset === 'nobody') return [];
   if (preset === 'everyone') return parties;
+  // The agent is a party you can choose on its own (Marc's spec lists it).
+  if (preset === 'estate_agent') return parties.filter((p) => p.role === 'estate_agent');
   if (!mySide) return null;
   if (preset === 'my_conveyancer') return conveyancersFor(mySide, parties);
   const other = oppositeOf(mySide);
@@ -127,6 +131,37 @@ export function roleLabel(party: ShareParty | undefined): string {
 export function roleLabelsFor(principals: string[], parties: ShareParty[]): string[] {
   const byPrincipal = new Map(parties.map((p) => [p.principal, p]));
   return [...new Set(principals.map((p) => roleLabel(byPrincipal.get(p))))];
+}
+
+/** What the owner asked for, kept so the plan can be rebuilt from fresh data at apply time. */
+export type VisibilityIntent =
+  | { kind: 'preset'; preset: ComputedPreset }
+  | { kind: 'add'; principal: string }
+  | { kind: 'remove'; principal: string };
+
+/**
+ * The grant plan for an intent against a given grant set and roster. Pure, so
+ * the hook can run it twice: once to name roles in the dialog, and again on
+ * freshly read data when the owner confirms.
+ */
+export function computePlan(
+  intent: VisibilityIntent,
+  current: ShareGrant[],
+  parties: ShareParty[],
+  mySide: DealSide | null,
+): GrantPlan {
+  if (intent.kind === 'remove') {
+    return { toGrant: [], toRevoke: current.filter((g) => g.granteePrincipal === intent.principal) };
+  }
+  if (intent.kind === 'add') {
+    const party = parties.find((p) => p.principal === intent.principal);
+    const have = new Set(current.map((g) => g.granteePrincipal));
+    const toGrant = party ? withSideConveyancers([party], parties).filter((p) => !have.has(p.principal)) : [];
+    return { toGrant, toRevoke: [] };
+  }
+  const targets = presetTargets(intent.preset, parties, mySide);
+  // A preset that cannot apply any more grants nothing and revokes nothing.
+  return targets ? planChange(current, targets) : { toGrant: [], toRevoke: [] };
 }
 
 /** "A", "A and B", "A, B and C". */

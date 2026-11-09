@@ -4,6 +4,7 @@ import { describe, it, expect } from 'vitest';
 import type { ShareParty } from '@/services/shareParty.service';
 import type { ShareGrant } from '@/services/documentShare.service';
 import {
+  computePlan,
   derivePreset,
   planChange,
   presetTargets,
@@ -54,6 +55,11 @@ describe('presetTargets', () => {
     expect(principalsOf(presetTargets('other_side', parties, 'buyer'))).toEqual(['s', 'sc']);
   });
 
+  it('should grant only the estate agent for Estate agent, with or without a side', () => {
+    expect(principalsOf(presetTargets('estate_agent', parties, 'buyer'))).toEqual(['ea']);
+    expect(principalsOf(presetTargets('estate_agent', parties, null))).toEqual(['ea']);
+  });
+
   it('should grant every party on the deal for Everyone', () => {
     expect(principalsOf(presetTargets('everyone', parties, 'buyer'))).toEqual(['bc', 'ea', 's', 'sc']);
   });
@@ -85,7 +91,8 @@ describe('derivePreset', () => {
   });
 
   it('should read any other set as Custom', () => {
-    expect(derivePreset(['ea'], parties, 'buyer')).toBe('custom');
+    expect(derivePreset(['ea'], parties, 'buyer')).toBe('estate_agent');
+    expect(derivePreset(['bc', 'ea'], parties, 'buyer')).toBe('custom');
     expect(derivePreset(['departed'], parties, 'buyer')).toBe('custom');
   });
 });
@@ -119,5 +126,27 @@ describe('roleLabel', () => {
     expect(roleLabel(party('c', 'conveyancer', null))).toBe('Conveyancer');
     expect(roleLabel(undefined)).toBe('A former party');
     expect(roleLabelsFor(['s', 'sc', 'bc'], parties).join(' ')).not.toMatch(/Named Person/);
+  });
+});
+
+describe('computePlan', () => {
+  it('should add the side conveyancer with a party and skip principals already granted', () => {
+    const plan = computePlan({ kind: 'add', principal: 's' }, [grant('sc')], parties, 'buyer');
+    expect(plan.toGrant.map((p) => p.principal)).toEqual(['s']);
+    expect(plan.toRevoke).toEqual([]);
+  });
+
+  it('should grant nothing for a principal no longer on the roster', () => {
+    expect(computePlan({ kind: 'add', principal: 'gone' }, [], parties, 'buyer').toGrant).toEqual([]);
+  });
+
+  it('should revoke only the named principal for remove', () => {
+    const plan = computePlan({ kind: 'remove', principal: 's' }, [grant('s'), grant('sc')], parties, 'buyer');
+    expect(plan.toRevoke.map((g) => g.granteePrincipal)).toEqual(['s']);
+  });
+
+  it('should change nothing for a side preset once the user has no side', () => {
+    const plan = computePlan({ kind: 'preset', preset: 'other_side' }, [grant('bc')], parties, null);
+    expect(plan).toEqual({ toGrant: [], toRevoke: [] });
   });
 });

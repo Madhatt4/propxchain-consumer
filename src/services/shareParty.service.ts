@@ -39,7 +39,7 @@ export interface ShareRoster {
   parties: ShareParty[];
 }
 
-interface PartySideRow {
+export interface PartySideRow {
   icp_principal: string;
   party_role: string;
   firm_name: string | null;
@@ -59,6 +59,22 @@ export const ROLE_DISPLAY: Record<PartyRole, string> = {
 const KNOWN_ROLES: readonly PartyRole[] = ['buyer', 'seller', 'conveyancer', 'estate_agent', 'mortgage_broker', 'lender', 'other'];
 const asRole = (r: string): PartyRole => (KNOWN_ROLES as readonly string[]).includes(r) ? (r as PartyRole) : 'other';
 const asSide = (s: string | null): DealSide | null => (s === 'buyer' || s === 'seller' ? s : null);
+
+/**
+ * One row per principal. A principal the lookup puts on BOTH sides (e.g. a
+ * firm with accepted quotes for buyer and seller) gets side null: an unknown
+ * side is never auto-added to a side's share, so a conflict fails closed.
+ */
+export function indexSideRows(rows: PartySideRow[], into: Map<string, PartySideRow>): void {
+  for (const row of rows) {
+    const prev = into.get(row.icp_principal);
+    if (!prev) {
+      into.set(row.icp_principal, row);
+    } else if (asSide(prev.side) !== asSide(row.side)) {
+      into.set(row.icp_principal, { ...prev, side: null });
+    }
+  }
+}
 
 class SharePartyService {
   async loadRoster(transactionId: string): Promise<ShareRoster> {
@@ -80,7 +96,7 @@ class SharePartyService {
       if (error) {
         logger.warn('[shareParty] side lookup failed — using roster labels', error);
       } else {
-        for (const row of (data ?? []) as PartySideRow[]) offChain.set(row.icp_principal, row);
+        indexSideRows((data ?? []) as PartySideRow[], offChain);
       }
     }
 

@@ -115,6 +115,43 @@ describe('sharePartyService.listShareableParties', () => {
     expect(parties[0]).toMatchObject({ label: 'Conveyancer — Sol S.', role: 'conveyancer', side: null });
   });
 
+  it('should treat a principal the lookup puts on both sides as side-unknown', async () => {
+    mockRpc.mockResolvedValue({
+      data: [
+        { icp_principal: 'conv-p', party_role: 'conveyancer', firm_name: 'Smith & Co', side: 'seller' },
+        { icp_principal: 'conv-p', party_role: 'conveyancer', firm_name: 'Smith & Co', side: 'buyer' },
+      ],
+      error: null,
+    });
+
+    const parties = await sharePartyService.listShareableParties('tx1');
+
+    expect(parties.find((p) => p.principal === 'conv-p')).toMatchObject({ role: 'conveyancer', side: null });
+  });
+
+  it('should keep the side when duplicate rows agree', async () => {
+    mockRpc.mockResolvedValue({
+      data: [
+        { icp_principal: 'conv-p', party_role: 'conveyancer', firm_name: 'Smith & Co', side: 'seller' },
+        { icp_principal: 'conv-p', party_role: 'conveyancer', firm_name: 'Smith & Co', side: 'seller' },
+      ],
+      error: null,
+    });
+
+    const parties = await sharePartyService.listShareableParties('tx1');
+
+    expect(parties.find((p) => p.principal === 'conv-p')).toMatchObject({ side: 'seller' });
+  });
+
+  it('should leave unlabelled parties side-unknown when the lookup returns nothing', async () => {
+    mockRpc.mockResolvedValue({ data: [], error: null });
+
+    const parties = await sharePartyService.listShareableParties('tx1');
+
+    expect(parties.find((p) => p.principal === 'conv-p')).toMatchObject({ role: 'other', side: null });
+    expect(parties.find((p) => p.principal === 'rando-p')).toMatchObject({ role: 'other', side: null });
+  });
+
   it('should not call the RPC when no accessList (role=other) parties exist', async () => {
     mockGetChaseableStakeholders.mockResolvedValue(roster.slice(0, 2));
 

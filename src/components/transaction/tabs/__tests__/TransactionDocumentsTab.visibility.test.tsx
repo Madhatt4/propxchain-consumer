@@ -84,14 +84,8 @@ vi.mock('@/utils/logger', () => ({
 import { TransactionDocumentsTab } from '../TransactionDocumentsTab';
 
 const doc = {
-  id: 'row-1',
-  slotId: 'proofOfId' as const,
-  blockchainId: 42,
-  fileHash: 'a'.repeat(64),
-  fileSize: 1000,
-  mimeType: 'application/pdf',
-  uploadedAt: '2026-07-16T00:00:00Z',
-  objectPath: 'wallet/uid-1/proofOfId-aaaaaaaaaaaa.pdf',
+  id: 'row-1', slotId: 'proofOfId' as const, blockchainId: 42, fileHash: 'a'.repeat(64), fileSize: 1000,
+  mimeType: 'application/pdf', uploadedAt: '2026-07-16T00:00:00Z', objectPath: 'wallet/uid-1/proofOfId-aaaaaaaaaaaa.pdf',
   label: 'Passport',
 };
 const sentItem = { itemId: 'item-1', sentAt: '2026-11-09T09:00:00Z', doc };
@@ -102,16 +96,9 @@ const sellerConv = { principal: 'sc', label: 'Conveyancer — Jones LLP', role: 
 const agent = { principal: 'ea', label: 'Estate agent — Acme Homes', role: 'estate_agent' as const, side: 'seller' as const };
 
 const grantFor = (principal: string): Record<string, unknown> => ({
-  id: `g-${principal}`,
-  transactionId: 'tx1',
-  docHash: doc.fileHash,
-  slotId: 'proofOfId',
-  objectPath: 'shared/tx1/uid-1/proofOfId-aaaaaaaaaaaa.pdf',
-  granteePrincipal: principal,
-  status: 'active' as const,
-  createdAt: '2026-11-09T10:00:00Z',
-  revokedAt: null,
-  expiresAt: null,
+  id: `g-${principal}`, transactionId: 'tx1', docHash: doc.fileHash, slotId: 'proofOfId',
+  objectPath: 'shared/tx1/uid-1/proofOfId-aaaaaaaaaaaa.pdf', granteePrincipal: principal,
+  status: 'active' as const, createdAt: '2026-11-09T10:00:00Z', revokedAt: null, expiresAt: null,
 });
 
 const choose = (value: string): void => {
@@ -233,5 +220,75 @@ describe('TransactionDocumentsTab — who can see this', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Share' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(/on-chain consent record failed/);
     expect(mockShareDocument).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('TransactionDocumentsTab — who can see this fails closed', () => {
+  it('should revoke first, so a grant failure afterwards leaves no extra access', async () => {
+    mockListMyGrants.mockResolvedValue([grantFor('bc')]);
+    mockShareDocument.mockRejectedValue(new Error('The on-chain consent record failed'));
+    await renderTab();
+    choose('other_side');
+    fireEvent.click(screen.getByRole('button', { name: 'Share' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(/on-chain consent record failed/);
+    expect(revokedPrincipals()).toEqual(['bc']);
+    expect(mockRevokeShare.mock.invocationCallOrder[0]).toBeLessThan(mockShareDocument.mock.invocationCallOrder[0]);
+    expect(mockShareDocument).toHaveBeenCalledTimes(1);
+  });
+
+  it('should try every revoke and grant nothing when any revoke fails', async () => {
+    mockListMyGrants.mockResolvedValue([grantFor('bc'), grantFor('ea')]);
+    mockRevokeShare.mockImplementation(async (g: { granteePrincipal: string }) => {
+      if (g.granteePrincipal === 'bc') throw new Error('network');
+      return { auditLogged: true };
+    });
+    await renderTab();
+    choose('other_side');
+    fireEvent.click(screen.getByRole('button', { name: 'Share' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(/Could not stop sharing with 1 party, so nothing new was shared/);
+    expect(revokedPrincipals()).toEqual(['bc', 'ea']);
+    expect(mockShareDocument).not.toHaveBeenCalled();
+  });
+
+  it('should rebuild the plan from fresh data at confirm and grant only confirmed principals', async () => {
+    await renderTab();
+    choose('other_side');
+    expect(screen.getByRole('combobox', { name: /Who can see this/ })).toBeDisabled();
+    // Between dropdown and confirm: the seller got access elsewhere and a new seller-side conveyancer joined.
+    const lateConv = { principal: 'sc2', label: 'Conveyancer — Late LLP', role: 'conveyancer' as const, side: 'seller' as const };
+    mockListMyGrants.mockResolvedValue([grantFor('s')]);
+    mockLoadRoster.mockResolvedValue({ mySide: 'buyer', parties: [buyerConv, seller, sellerConv, lateConv, agent] });
+    fireEvent.click(screen.getByRole('button', { name: 'Share' }));
+    await waitFor(() => expect(grantees()).toEqual(['sc']));
+    await waitFor(() => expect(screen.getByRole('combobox', { name: /Who can see this/ })).not.toBeDisabled());
+    expect(mockShareDocument).not.toHaveBeenCalledWith(doc, 'tx1', 'sc2');
+    expect(mockShareDocument).not.toHaveBeenCalledWith(doc, 'tx1', 's');
+  });
+
+  it('should unlock the chooser when the dialog is cancelled', async () => {
+    await renderTab();
+    choose('everyone');
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.getByRole('combobox', { name: /Who can see this/ })).not.toBeDisabled();
+  });
+
+  it('should grant only the agent for Estate agent and revoke the seller with their conveyancer', async () => {
+    mockListMyGrants.mockResolvedValue([grantFor('s'), grantFor('sc')]);
+    await renderTab();
+    expect(screen.getByRole('combobox', { name: /Who can see this/ })).toHaveValue('other_side');
+    choose('estate_agent');
+    expect(screen.getByRole('dialog')).toHaveTextContent('Estate agent');
+    fireEvent.click(screen.getByRole('button', { name: 'Share' }));
+    await waitFor(() => expect(grantees()).toEqual(['ea']));
+    expect(revokedPrincipals()).toEqual(['s', 'sc']);
+  });
+
+  it('should keep the conveyancer when the new preset still includes them', async () => {
+    mockListMyGrants.mockResolvedValue([grantFor('s'), grantFor('sc')]);
+    await renderTab();
+    choose('everyone');
+    fireEvent.click(screen.getByRole('button', { name: 'Share' }));
+    await waitFor(() => expect(grantees()).toEqual(['bc', 'ea']));
+    expect(mockRevokeShare).not.toHaveBeenCalled();
   });
 });
