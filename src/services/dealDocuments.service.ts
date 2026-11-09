@@ -218,7 +218,9 @@ export async function fetchDealSurveyScans(transactionId: string): Promise<DealS
       const run = savedRowToRun('survey', { ...row, source_ref: `survey:${transactionId}:` });
       return run ? [{ run, personalFindingsCount: row.personal_findings_count ?? 0 }] : [];
     });
-  } catch {
+  } catch (err: unknown) {
+    // A shape change in the RPC must not break the page, but it must be visible.
+    logger.warn('[dealDocuments] deal_survey_scans could not be read', err instanceof Error ? err.message : 'unknown');
     return null;
   }
 }
