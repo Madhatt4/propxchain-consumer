@@ -47,7 +47,7 @@ const TransactionProgressTimeline: React.FC<TransactionProgressTimelineProps> = 
               : 'bg-gray-700 hover:bg-gray-600'
           }`}
         >
-          {isReadyToSign ? '✓ Sign Contract' : 'View Progress'}
+          {isReadyToSign ? 'Exchange status' : 'View Progress'}
         </button>
       </div>
 

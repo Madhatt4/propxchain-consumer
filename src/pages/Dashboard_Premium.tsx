@@ -1082,7 +1082,7 @@ const Dashboard_PremiumContent: React.FC = () => {
                       onClick={() => navigate(`/exchange/${selectedTransaction.id}`)}
                       className="w-full mt-3 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors text-base"
                     >
-                      Proceed to Exchange {'\u2192'}
+                      Exchange status {'\u2192'}
                     </button>
                   )}
                 </div>

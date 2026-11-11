@@ -332,7 +332,7 @@ const AdminTestingPanel: React.FC = () => {
       return;
     }
 
-    // Navigate to exchange signing page
+    // Navigate to the read-only exchange status page
     navigate(`/exchange/${mockTransaction.id}`);
   };
 
@@ -488,7 +488,7 @@ const AdminTestingPanel: React.FC = () => {
                       onClick={viewExchangePage}
                       className="w-full px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium"
                     >
-                      ✍️ Go to Exchange Signing Page
+                      Go to Exchange status page
                     </button>
 
                     <div className="border-t border-gray-300 dark:border-gray-600 pt-3 mt-3">

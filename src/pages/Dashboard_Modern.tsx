@@ -1226,7 +1226,7 @@ const DashboardModern: React.FC = () => {
                             size="sm"
                             className="bg-green-600 hover:bg-green-700 whitespace-nowrap"
                           >
-                            Sign Contract
+                            Exchange status
                           </Button>
                         )}
                         {nextMilestone.id !== 'milestone-2' && nextMilestone.id !== 'milestone-6' && (

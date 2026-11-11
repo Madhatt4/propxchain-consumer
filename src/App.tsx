@@ -72,7 +72,7 @@ const TransactionDashboardPage = lazy(() => import('./pages/TransactionDashboard
 // PropertyWizard removed - using simple CreateTransactionPage instead
 const CreateTransactionPage = lazy(() => import('./pages/CreateTransactionPage'));
 const StartTransactionPage = lazy(() => import('./pages/StartTransactionPage'));
-const ExchangeSigningPage = lazy(() => import('./pages/ExchangeSigningPage'));
+const ExchangeStatusPage = lazy(() => import('./pages/ExchangeStatusPage'));
 const BlockchainLedgerPage = lazy(() => import('./pages/BlockchainLedgerPage'));
 const DashboardSupportPage = lazy(() => import('./pages/DashboardSupportPage'));
 const TicketListPage = lazy(() => import('./pages/support/TicketListPage'));
@@ -333,7 +333,7 @@ function App() {
               <Route path="/join/:id" element={<ProtectedRoute><RequirePrincipal><RequireProfile><JoinTransactionPage /></RequireProfile></RequirePrincipal></ProtectedRoute>} />
               {/* The hand-over confirm page (agent CRM): the email tap signs the client in, the grant happens here. */}
               <Route path="/delegate/:id" element={<ProtectedRoute><RequirePrincipal><RequireProfile><DelegatePage /></RequireProfile></RequirePrincipal></ProtectedRoute>} />
-              <Route path="/exchange/:transactionId" element={<ProtectedRoute><RequirePrincipal><RequireProfile><ExchangeSigningPage /></RequireProfile></RequirePrincipal></ProtectedRoute>} />
+              <Route path="/exchange/:transactionId" element={<ProtectedRoute><RequirePrincipal><RequireProfile><ExchangeStatusPage /></RequireProfile></RequirePrincipal></ProtectedRoute>} />
               <Route path="/dashboard/blockchain-ledger" element={<ProtectedRoute><RequirePrincipal><RequireProfile><BlockchainLedgerPage /></RequireProfile></RequirePrincipal></ProtectedRoute>} />
               <Route path="/admin" element={<ProtectedRoute><RequirePrincipal><RequireProfile><AdminDashboard /></RequireProfile></RequirePrincipal></ProtectedRoute>} />
               <Route path="/admin/audit" element={<ProtectedRoute><RequirePrincipal><RequireProfile><AllTransactionsAuditPage /></RequireProfile></RequirePrincipal></ProtectedRoute>} />
