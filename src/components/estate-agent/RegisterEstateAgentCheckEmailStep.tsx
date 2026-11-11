@@ -3,6 +3,8 @@
 
 import React from 'react';
 
+import ResendConfirmation from '../auth/ResendConfirmation';
+
 interface RegisterEstateAgentCheckEmailStepProps {
   email: string;
   onBack: () => void;
@@ -27,6 +29,7 @@ const RegisterEstateAgentCheckEmailStep: React.FC<RegisterEstateAgentCheckEmailS
         device, open the invitation link from the seller&rsquo;s email there and sign in.
       </p>
     )}
+    <ResendConfirmation email={email} align="center" />
     <p className="mt-8 font-[DM_Sans] text-sm text-[#6B7280]">
       Wrong email?{' '}
       <button type="button" onClick={onBack} className="text-[#0D9488] hover:underline">

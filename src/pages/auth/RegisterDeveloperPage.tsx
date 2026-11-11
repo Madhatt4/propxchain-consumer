@@ -11,6 +11,7 @@ import {
   type CompaniesHouseCompany,
 } from '../../services/companies-house.service';
 import BlueprintBackground from '../../components/common/BlueprintBackground';
+import ResendConfirmation from '../../components/auth/ResendConfirmation';
 
 /**
  * RegisterDeveloperPage — Door 2 signup for property developers (Task 1a.9).
@@ -348,6 +349,7 @@ const RegisterDeveloperPage: React.FC = () => {
         activate your account, then sign in to finish setting up your
         developer organisation.
       </p>
+      <ResendConfirmation email={email} align="center" />
       <p className="mt-8 font-[DM_Sans] text-sm text-[#6B7280]">
         Wrong email?{' '}
         <button

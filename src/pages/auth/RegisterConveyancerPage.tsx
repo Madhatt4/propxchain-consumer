@@ -10,6 +10,7 @@ import {
   normalizeClcId,
   type ClcPractice,
 } from '../../services/clc.service';
+import ResendConfirmation from '../../components/auth/ResendConfirmation';
 
 /**
  * RegisterConveyancerPage — Solicitor/Conveyancer signup for the PropXchain
@@ -370,6 +371,7 @@ const RegisterConveyancerPage: React.FC = () => {
         We sent a verification link to <strong>{email}</strong>. Click it to
         activate your account, then sign in to finish your panel application.
       </p>
+      <ResendConfirmation email={email} align="center" />
       <p className="mt-8 font-[DM_Sans] text-sm text-[#6B7280]">
         Wrong email?{' '}
         <button

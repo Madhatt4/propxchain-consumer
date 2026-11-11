@@ -71,6 +71,9 @@ interface AuthState {
   userProfile: UserProfile | null;
   isLoading: boolean;
   error: string | null;
+  /** Supabase error code for `error`, when it has one. LoginForm reads
+   *  'email_not_confirmed' to offer the confirmation-email resend. */
+  errorCode: string | null;
   identityError: string | null;
   /**
    * Set to true on the sign-in immediately after a developer signup's
@@ -174,6 +177,7 @@ export const useAuthStore = create<AuthState>()(
       userProfile: null,
       isLoading: false,
       error: null,
+      errorCode: null,
       identityError: null,
 
       initialize: async () => {
@@ -308,7 +312,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       loginWithEmail: async (email: string, password: string) => {
-        set({ isLoading: true, error: null });
+        set({ isLoading: true, error: null, errorCode: null });
 
         try {
           const result = await supabaseAuthService.signIn(email, password);
@@ -316,6 +320,7 @@ export const useAuthStore = create<AuthState>()(
           if (result.error) {
             set({
               error: result.error.message || 'Sign in failed',
+              errorCode: result.error.code ?? null,
               isLoading: false,
             });
             return false;
@@ -658,7 +663,7 @@ export const useAuthStore = create<AuthState>()(
         }, 5 * 60 * 1000);
       },
 
-      clearError: () => set({ error: null }),
+      clearError: () => set({ error: null, errorCode: null }),
       clearIdentityError: () => set({ identityError: null }),
       setLoading: (loading: boolean) => set({ isLoading: loading }),
     }),
