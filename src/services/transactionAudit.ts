@@ -9,6 +9,7 @@ import { icpService } from './icp.service';
 import { supabase } from '../lib/supabase';
 import { logger } from '@/utils/logger';
 import { hiddenDocumentStatuses, toDocumentStatusRows, type DocumentStatusRow } from '@/lib/documentStatus';
+import { simulatedLrNote } from '@/lib/simulatedLrSubmission';
 
 // ============================================
 // TYPES
@@ -24,6 +25,8 @@ export interface AuditEvent {
   caller: string;
   details: string;
   metadata: string | null;
+  /** Set on the simulated pre-2026-11-11 Land Registry submissions; see simulatedLrSubmission.ts. */
+  note?: string | null;
 }
 
 export interface DocumentAuditEntry {
@@ -569,6 +572,7 @@ export async function fetchAuditReport(transactionId: string): Promise<AuditRepo
       caller: String(e.caller),
       details: describeEventDetails(String(e.eventType), sanitizeText(String(e.details))),
       metadata: e.metadata ? sanitizeText(String(e.metadata)) : null,
+      note: simulatedLrNote(String(e.eventType), String(e.details)),
     }));
   } else if (eventsResult.status === 'rejected') {
     errors['ledger_manager'] = String(eventsResult.reason);

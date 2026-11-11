@@ -17,6 +17,7 @@ import {
   type Phase,
 } from './phase';
 import { deriveChecklistState, type PhaseChecklistState } from './phaseChecklist';
+import { isSimulatedLrSubmission } from '@/lib/simulatedLrSubmission';
 
 /** Null when the transaction cannot be read (not a party, transient error). */
 export async function loadPhaseChecklistState(
@@ -35,11 +36,15 @@ export async function loadPhaseChecklistState(
   if (!tx) return null;
 
   const eventsRaw = eventsResult.status === 'fulfilled' ? eventsResult.value : [];
+  // A simulated pre-2026-11-11 submission must not tick "Registration
+  // application submitted": no application was made.
   const ledgerEvents = Array.isArray(eventsRaw)
-    ? eventsRaw.map((e) => ({
-        eventType: String(e.eventType ?? ''),
-        timestamp: Number(e.timestamp ?? 0),
-      }))
+    ? eventsRaw
+        .filter((e) => !isSimulatedLrSubmission(String(e.eventType ?? ''), String(e.details ?? '')))
+        .map((e) => ({
+          eventType: String(e.eventType ?? ''),
+          timestamp: Number(e.timestamp ?? 0),
+        }))
     : [];
   // Merge ledger events with locally-derived synthetic events. Ledger
   // is canonical; synthetic closes the window between a local stage

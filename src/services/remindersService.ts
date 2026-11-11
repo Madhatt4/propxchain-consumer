@@ -199,17 +199,32 @@ function ruleCompletionDelay(input: ReminderInput): Reminder | null {
   };
 }
 
+/**
+ * Deals completed from this instant get the transaction-monitor's emailed
+ * registration reminders (REMINDERS_FROM in Madhatt4/Propxchain#422).
+ */
+export const MONITOR_REGISTRATION_REMINDERS_FROM_MS = Date.UTC(2026, 10, 11);
+
+/** The monitor emails the buyer's conveyancer at week 1 and week 2, then escalates to PropXchain admin. */
+const MONITOR_REMINDER_DAYS = 21;
+
 function ruleLandRegistryDelay(input: ReminderInput): Reminder | null {
   const completed = firstEvent(input.events, 'blockchain_completed');
   if (!completed) return null;
   const days = daysBetween(completed.timestamp, input.now);
   if (days < 7) return null;
   if (hasEvent(input.events, 'lr_submission')) return null;
+  // For deals the monitor covers, weeks 1 and 2 would repeat its emailed
+  // reminder, so stay quiet until it has sent both. Older deals get no monitor
+  // reminder and keep this one from day 7.
+  const isMonitorCovered = completed.timestamp >= MONITOR_REGISTRATION_REMINDERS_FROM_MS;
+  if (isMonitorCovered && days < MONITOR_REMINDER_DAYS) return null;
   return {
     id: 'lr-submission-delay',
     urgency: 'high',
-    message: `Completion was ${days} days ago — Land Registry application not submitted.`,
-    suggestedAction: 'Submit the AP1 / TR1 to Land Registry before the OS1 priority window lapses.',
+    message: `Completion was ${days} days ago and no registration application has been recorded.`,
+    suggestedAction:
+      "The buyer's conveyancer submits the AP1 with the TR1 to HM Land Registry, then records it on the deal.",
     triggeredAt: completed.timestamp,
     source: 'blockchain_completed',
   };

@@ -16,7 +16,7 @@ interface RowProps {
   children?: ReactNode;
 }
 
-function Row({ label, value, children }: RowProps): ReactNode {
+export function Row({ label, value, children }: RowProps): ReactNode {
   return (
     <div className="py-3 border-t border-gray-200 dark:border-slate-700 first:border-t-0">
       <dt className="text-sm font-medium text-gray-800 dark:text-gray-200">{label}</dt>

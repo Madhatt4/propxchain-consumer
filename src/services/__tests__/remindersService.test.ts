@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 
 import {
   generateReminders,
+  MONITOR_REGISTRATION_REMINDERS_FROM_MS,
   type ReminderInput,
 } from '../remindersService';
 
@@ -153,6 +154,55 @@ describe('generateReminders — post-exchange rules', () => {
       }),
     );
     expect(rems.map((r) => r.id)).toContain('lr-submission-delay');
+  });
+
+  it('should stay quiet in weeks 1 and 2 for a deal the monitor emails about', () => {
+    // Arrange: completed on the monitor's cutoff, so it gets the week-1 and week-2 emails
+    const completedAt = MONITOR_REGISTRATION_REMINDERS_FROM_MS;
+    const events = [{ eventType: 'blockchain_completed', timestamp: completedAt }];
+
+    // Act
+    const week1 = generateReminders(input({ now: completedAt + 8 * DAY, events }));
+    const week2 = generateReminders(input({ now: completedAt + 20 * DAY, events }));
+    const week3 = generateReminders(input({ now: completedAt + 21 * DAY, events }));
+
+    // Assert
+    expect(week1.map((r) => r.id)).not.toContain('lr-submission-delay');
+    expect(week2.map((r) => r.id)).not.toContain('lr-submission-delay');
+    expect(week3.map((r) => r.id)).toContain('lr-submission-delay');
+  });
+
+  it('should keep the day-7 reminder for a deal completed before the monitor cutoff', () => {
+    // Arrange
+    const completedAt = MONITOR_REGISTRATION_REMINDERS_FROM_MS - DAY;
+    const events = [{ eventType: 'blockchain_completed', timestamp: completedAt }];
+
+    // Act
+    const rems = generateReminders(input({ now: completedAt + 8 * DAY, events }));
+
+    // Assert
+    expect(rems.map((r) => r.id)).toContain('lr-submission-delay');
+  });
+
+  it("should say the buyer's conveyancer submits and records the application", () => {
+    const rems = generateReminders(
+      input({ now: 8 * DAY, events: [{ eventType: 'blockchain_completed', timestamp: 0 }] }),
+    );
+    const r = rems.find((x) => x.id === 'lr-submission-delay');
+    expect(r?.suggestedAction).toMatch(/buyer's conveyancer submits .* then records it on the deal/);
+  });
+
+  it('should clear the registration reminder once the application is recorded', () => {
+    const rems = generateReminders(
+      input({
+        now: 30 * DAY,
+        events: [
+          { eventType: 'blockchain_completed', timestamp: 0 },
+          { eventType: 'lr_submission', timestamp: 9 * DAY },
+        ],
+      }),
+    );
+    expect(rems.map((r) => r.id)).not.toContain('lr-submission-delay');
   });
 
   it('fires SDLT deadline critical at 14+ days post-completion', () => {

@@ -167,6 +167,23 @@ describe('fetchAuditReport', () => {
     expect(Object.keys(report.errors)).toHaveLength(0);
   });
 
+  it('should flag the simulated pre-2026-11-11 Land Registry submission and leave a real one alone', async () => {
+    // Arrange
+    const ns = BigInt(Date.now()) * 1_000_000n;
+    mockGetEventsByTransaction.mockResolvedValue([
+      { eventId: 1n, transactionId: TX_ID, eventType: 'lr_submission', timestamp: ns, caller: 'abc-principal', details: 'Land Registry submission triggered', metadata: null },
+      { eventId: 2n, transactionId: TX_ID, eventType: 'lr_submission', timestamp: ns, caller: 'abc-principal', details: "Registration application submitted to HM Land Registry by the buyer's conveyancer on 2026-11-12, HMLR application reference TEST/123", metadata: null },
+    ]);
+
+    // Act
+    const report = await fetchAuditReport(TX_ID);
+
+    // Assert
+    const [simulated, real] = report.blockchainEventLog;
+    expect(simulated.note).toMatch(/^Simulated: written automatically at completion before 2026-11-11/);
+    expect(real.note).toBeNull();
+  });
+
   it('should return a partial report when one canister fails', async () => {
     mockGetEventsByTransaction.mockRejectedValue(new Error('Canister unavailable'));
 

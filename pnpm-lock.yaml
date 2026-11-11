@@ -55,8 +55,8 @@ importers:
         specifier: ^5.2.2
         version: 5.9.2(@standard-schema/spec@1.1.0)(react-hook-form@7.73.1(react@18.3.1))(zod@4.6.7)
       '@propxchain/core-client':
-        specifier: 0.22.0-canary.61
-        version: 0.22.0-canary.61(@dfinity/candid@3.4.3(@dfinity/principal@1.4.0))
+        specifier: 0.24.0-canary.63
+        version: 0.24.0-canary.63(@dfinity/candid@3.4.3(@dfinity/principal@1.4.0))
       '@radix-ui/react-alert-dialog':
         specifier: ^1.1.15
         version: 1.1.15(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -1073,8 +1073,8 @@ packages:
   '@polka/url@1.0.0-next.29':
     resolution: {integrity: sha512-wwQAWhWSuHaag8c4q/KN/vCoeOJYshAIvMQwD4GpSb3OiZklFfvAgmj0VCBBImRpuF/aFgIRzllXlVX93Jevww==}
 
-  '@propxchain/core-client@0.22.0-canary.61':
-    resolution: {integrity: sha512-myv4SbT0140uspDHK20nvXPsc+knjUahBnMahish/jjN2mcX9NEgM0OebmZXPbFf/BioHmpzHy9FJqVyVzipuA==}
+  '@propxchain/core-client@0.24.0-canary.63':
+    resolution: {integrity: sha512-3+98xdt7D77XFjNjK5M0zZFGnk7nWy5pKaY61R7KFJMvellw7PYQlDmNV+3RcHN8+AUlqD0mNqnePwZj13Ym0w==}
     engines: {node: '>=20'}
 
   '@protobufjs/aspromise@1.1.2':
@@ -4650,7 +4650,7 @@ snapshots:
 
   '@polka/url@1.0.0-next.29': {}
 
-  '@propxchain/core-client@0.22.0-canary.61(@dfinity/candid@3.4.3(@dfinity/principal@1.4.0))':
+  '@propxchain/core-client@0.24.0-canary.63(@dfinity/candid@3.4.3(@dfinity/principal@1.4.0))':
     dependencies:
       '@dfinity/agent': 1.4.0(@dfinity/candid@3.4.3(@dfinity/principal@1.4.0))(@dfinity/principal@1.4.0)
       '@dfinity/certificate-verification': 4.0.0(@icp-sdk/core@6.1.0)
