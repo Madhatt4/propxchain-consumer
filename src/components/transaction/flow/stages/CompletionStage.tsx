@@ -9,6 +9,7 @@ import { useCompletionActions } from './completion/useCompletionActions';
 import { useCompletionStatement } from './completion/useCompletionStatement';
 import { CompletionStatementLines, noStatementWarningOf, statementViewOf } from './completion/CompletionStatementLines';
 import { CompletionRows } from './completion/CompletionRows';
+import { ConveyancerRecordRows } from './completion/ConveyancerRecordRows';
 import { CompletionCertificate } from './completion/CompletionCertificate';
 import type { ReactNode } from 'react';
 import type { KeysRole } from '@/lib/completionRoles';
@@ -104,6 +105,7 @@ export function CompletionStage({
         onConfirmSide={actions.confirmSide}
         onConfirmKeys={actions.confirmKeys}
       />
+      <ConveyancerRecordRows transactionId={transactionId} />
       {completed && journeyRole === 'buyer' && (
         <p className="text-xs text-gray-400 dark:text-slate-500">
           Legal title transfers when HM Land Registry processes the AP1 registration.

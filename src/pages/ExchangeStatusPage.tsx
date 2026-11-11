@@ -13,6 +13,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { icpService } from '@/services/icp.service';
 import { logger } from '@/utils/logger';
+import { conveyancerRecordRows, useConveyancerRecords, type RecordRow } from '@/hooks/useConveyancerRecords';
 import {
   completionDateText,
   confirmationText,
@@ -73,7 +74,7 @@ function Section({ title, children }: { title: string; children: ReactNode }): R
   );
 }
 
-function ExchangeRecord({ status }: { status: ExchangeStatus }): ReactNode {
+function ExchangeRecord({ status, recordRows }: { status: ExchangeStatus; recordRows: RecordRow[] }): ReactNode {
   return (
     <Section title="Exchange record">
       <dl className="flex flex-col">
@@ -81,6 +82,7 @@ function ExchangeRecord({ status }: { status: ExchangeStatus }): ReactNode {
         <Row label="Agreed completion date" value={completionDateText(status)} />
         <Row label="Buyer's conveyancer: exchange confirmed" value={confirmationText(status.buyerConveyancerConfirmed)} />
         <Row label="Seller's conveyancer: exchange confirmed" value={confirmationText(status.sellerConveyancerConfirmed)} />
+        {recordRows.map((row) => <Row key={row.label} label={row.label} value={row.value} />)}
         <Row label="Deal stage" value={status.statusLabel} />
       </dl>
     </Section>
@@ -112,6 +114,7 @@ function HowExchangeWorks({ isExchanged }: { isExchanged: boolean }): ReactNode 
 export default function ExchangeStatusPage(): ReactNode {
   const { transactionId = '' } = useParams<{ transactionId: string }>();
   const state = useExchangeStatus(transactionId);
+  const recordRows = conveyancerRecordRows(useConveyancerRecords(transactionId));
   const dealHref = `/transaction/${encodeURIComponent(transactionId)}/flow`;
 
   return (
@@ -133,7 +136,7 @@ export default function ExchangeStatusPage(): ReactNode {
         {state.kind === 'ready' && (
           <>
             {state.status.propertyAddress && <p className={`mt-1 ${MUTED}`}>{state.status.propertyAddress}</p>}
-            <ExchangeRecord status={state.status} />
+            <ExchangeRecord status={state.status} recordRows={recordRows} />
             <HowExchangeWorks isExchanged={state.status.isExchanged} />
           </>
         )}

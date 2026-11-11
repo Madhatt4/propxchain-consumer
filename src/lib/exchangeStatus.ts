@@ -10,10 +10,8 @@
  * and when both are on chain the canister sets status #exchanged and stamps
  * exchangedAt / contractExchangeTimestamp with Time.now() (nanoseconds).
  * This module only reads that record; the client never writes exchange.
- *
- * TODO(card 6c8f1dca / deposit-sent): the monorepo is adding a "deposit sent"
- * record at exchange. The transaction record has no such field yet, so it is
- * not shown. Add a row here once core-client returns it.
+ * The buyer's conveyancer's "deposit sent" and registration-application
+ * records are separate canister reads: see lib/conveyancerRecords.ts.
  */
 import { isAtLeastStatus, toTransactionStatus, TRANSACTION_STATUS_LABEL, type TransactionStatus } from '@/types/transactionStatus';
 

@@ -64,6 +64,12 @@ import {
   type CompletionActor,
   type CompletionStatus,
 } from './completionStatus';
+import {
+  fromCandidDepositSent,
+  fromCandidRegistrationStatus,
+  type DepositSent,
+  type RegistrationStatus,
+} from '@/lib/conveyancerRecords';
 
 // Canister IDs come from core-client (platform) and canister_ids.json (frontend).
 
@@ -2025,6 +2031,30 @@ class ICPService {
       const result = await actor.getCompletionStatus(transactionId);
       return result.length === 1 ? fromCandidCompletionStatus(result[0]) : null;
     }, { cacheKey: callerKey('getCompletionStatus', transactionId) });
+  }
+
+  /**
+   * The buyer's conveyancer's "deposit sent" record (a record only; no money
+   * moves through PropXchain). Null when nothing is recorded or the caller is
+   * not a member. A failed call rejects.
+   */
+  async getDepositSent(transactionId: string): Promise<DepositSent | null> {
+    return wrapReadCall(async () => {
+      if (!this.transactionManagerActor) await this.initialize();
+      return fromCandidDepositSent(await this.txActor.getDepositSent(transactionId));
+    }, { cacheKey: callerKey('getDepositSent', transactionId) });
+  }
+
+  /**
+   * Where the registration application stands after completion, as the buyer's
+   * conveyancer recorded it. Null when the caller is not a member. A failed
+   * call rejects.
+   */
+  async getRegistrationStatus(transactionId: string): Promise<RegistrationStatus | null> {
+    return wrapReadCall(async () => {
+      if (!this.transactionManagerActor) await this.initialize();
+      return fromCandidRegistrationStatus(await this.txActor.getRegistrationStatus(transactionId));
+    }, { cacheKey: callerKey('getRegistrationStatus', transactionId) });
   }
 
   /**
