@@ -96,6 +96,11 @@ async function saveNewKey(encryptedKey: string, principalText: string): Promise<
   }
 }
 
+/** Where the sign-up confirmation link sends the user. Shared by signUp and its resend. */
+function signupRedirectUrl(): string {
+  return `${window.location.origin}/auth/callback`;
+}
+
 export const supabaseAuthService = {
   /** Register new user with email/password, generate ICP key pair */
   async signUp(email: string, password: string, metadata: {
@@ -108,7 +113,7 @@ export const supabaseAuthService = {
       password,
       options: {
         data: { ...metadata },
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: signupRedirectUrl(),
       },
     });
 
@@ -133,6 +138,19 @@ export const supabaseAuthService = {
     // ICP key pair will be generated on first login after verification.
     trackSignUp('email');
     return { user: data.user, identity: null, error: null };
+  },
+
+  /**
+   * Send the sign-up confirmation email again. Same redirect as signUp, so
+   * the link lands on /auth/callback exactly as the first one would have.
+   */
+  async resendSignupConfirmation(email: string): Promise<{ error: AuthError | null }> {
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+      options: { emailRedirectTo: signupRedirectUrl() },
+    });
+    return { error };
   },
 
   /** Begin an OAuth sign-in. Redirects the browser to the provider. */

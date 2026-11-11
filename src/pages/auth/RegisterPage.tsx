@@ -15,6 +15,7 @@ import {
 import AuthShell from '../../components/auth/AuthShell';
 import OAuthButtons from '../../components/auth/OAuthButtons';
 import RoleCards from '../../components/auth/RoleCards';
+import ResendConfirmation from '../../components/auth/ResendConfirmation';
 import { REGISTRATION_ROLE_LABEL } from '../../components/auth/roleCards.config';
 
 const registerSchema = z.object({
@@ -40,6 +41,7 @@ const RegisterPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const [showPassword, setShowPassword] = useState(false);
   const [isRegistered, setIsRegistered] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState('');
   const [regMethod, setRegMethod] = useState<RegMethod>('select');
   const [iiLoading, setIiLoading] = useState(false);
   const [iiRole, setIiRole] = useState<string>('seller');
@@ -90,6 +92,7 @@ const RegisterPage: React.FC = () => {
     clearError();
     const success = await registerWithEmail(data.email, data.password, data.name, data.role);
     if (success) {
+      setRegisteredEmail(data.email);
       setIsRegistered(true);
     }
   };
@@ -128,7 +131,7 @@ const RegisterPage: React.FC = () => {
   if (isRegistered) {
     return (
       <AuthShell topLink={{ label: 'Sign in', to: '/login' }}>
-        <CheckEmailView email={null} onBack={() => navigate('/login')} />
+        <CheckEmailView email={registeredEmail} onBack={() => navigate('/login')} />
       </AuthShell>
     );
   }
@@ -556,7 +559,7 @@ const IIRoleSelectionView: React.FC<IIRoleProps> = ({
 /*  Check Email (post email signup)                                   */
 /* ------------------------------------------------------------------ */
 
-const CheckEmailView: React.FC<{ email: string | null; onBack: () => void }> = ({ onBack }) => (
+const CheckEmailView: React.FC<{ email: string; onBack: () => void }> = ({ email, onBack }) => (
   <>
     <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#DAE5DC]">
       <Mail className="h-6 w-6 text-[#5F8A68]" />
@@ -567,6 +570,7 @@ const CheckEmailView: React.FC<{ email: string | null; onBack: () => void }> = (
     <p className="mt-3 max-w-md font-dm-sans text-base text-[#6B7280]">
       We&apos;ve sent a verification link. Click it to activate your account, then sign in to get started.
     </p>
+    <ResendConfirmation email={email} />
     <button
       type="button"
       onClick={onBack}

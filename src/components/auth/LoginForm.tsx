@@ -9,11 +9,15 @@ import { IS_REGISTRATION_OPEN, PRELAUNCH_CAPTURE_PATH } from '../../config/regis
 import { useAuthStore, useIdentityError } from '../../stores/authStore';
 import OAuthButtons from './OAuthButtons';
 import LoginEmailForm from './LoginEmailForm';
+import ResendConfirmation from './ResendConfirmation';
 
 /** Id of the step description, so a dialog frame can point aria-describedby at it. */
 export const LOGIN_FORM_LEDE_ID = 'login-form-lede';
 
 type AuthMethod = 'select' | 'email';
+
+/** Supabase's code for a password sign-in on an account whose email is not confirmed. */
+const EMAIL_NOT_CONFIRMED = 'email_not_confirmed';
 
 interface LoginFormProps {
   /** Fired once the user is authenticated. The frame decides where they go —
@@ -36,12 +40,17 @@ interface LoginFormProps {
 const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, warning }) => {
   const [authMethod, setAuthMethod] = useState<AuthMethod>('select');
   const [iiLoading, setIiLoading] = useState(false);
+  // The address last typed into the email form, so an unconfirmed sign-in can
+  // offer the resend without asking for it again. Kept in memory only.
+  const [submittedEmail, setSubmittedEmail] = useState('');
 
-  const { loginWithEmail, loginWithII, isLoading, error, clearError } = useAuthStore();
+  const { loginWithEmail, loginWithII, isLoading, error, errorCode, clearError } = useAuthStore();
   const identityError = useIdentityError();
+  const isUnconfirmed = errorCode === EMAIL_NOT_CONFIRMED && authMethod === 'email';
 
   const onEmailSubmit = async (email: string, password: string): Promise<void> => {
     clearError();
+    setSubmittedEmail(email);
     const success = await loginWithEmail(email, password);
     if (success) onSuccess();
   };
@@ -73,7 +82,13 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, warning }) => {
       <div className="mt-10">
         {warning && <Notice tone="warning">{warning}</Notice>}
         {identityError && <Notice tone="error">{identityError}</Notice>}
-        {error && <Notice tone="error">{error}</Notice>}
+        {error && !isUnconfirmed && <Notice tone="error">{error}</Notice>}
+        {isUnconfirmed && (
+          <Notice tone="warning">
+            You haven&apos;t confirmed your email yet. Open the link in the email we sent you, then sign in.
+            <ResendConfirmation email={submittedEmail} />
+          </Notice>
+        )}
 
         {authMethod === 'select' && (
           <MethodSelection
