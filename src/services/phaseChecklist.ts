@@ -149,14 +149,19 @@ const DEFINITIONS: Record<Phase, ChecklistItem[]> = {
       completedByEvents: ['blockchain_completed'],
     },
     {
+      // lr_submission is the buyer's conveyancer recording that they submitted
+      // the AP1 to HMLR (Madhatt4/Propxchain#422): the application, not the
+      // registration.
       id: 'land-registry',
-      label: 'Land Registry submission',
+      label: 'Registration application submitted',
       completedByEvents: ['lr_submission'],
     },
     {
+      // No event means "registered" yet, so this stays unticked until the
+      // new-title pull lands (card 20aa7377).
       id: 'land-registry-registered',
       label: 'Title registered',
-      completedByEvents: ['lr_submission'], // final state — no separate event today
+      completedByEvents: [],
     },
   ],
 };

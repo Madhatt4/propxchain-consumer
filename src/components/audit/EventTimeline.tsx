@@ -80,6 +80,9 @@ const MilestoneRow: React.FC<MilestoneRowProps> = ({ milestone, theme }) => {
               <p className={`text-sm ${theme.textPrimary}`}>
                 {event.details}
               </p>
+              {event.note && (
+                <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">{event.note}</p>
+              )}
               {event.metadata && (
                 <p className="text-xs font-geist-mono text-teal-600 dark:text-teal-400 mt-1 break-all">
                   {event.metadata}

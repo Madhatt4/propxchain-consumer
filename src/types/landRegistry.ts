@@ -62,9 +62,15 @@ export interface LandRegistryIntegration {
   registerChangedSinceSearch: boolean | null;
   advisoryEntries: string[];
 
-  // Application Submission
+  // Application Submission. PropXchain never lodges with HMLR: the buyer's
+  // conveyancer submits the AP1 and records it (Madhatt4/Propxchain#422).
   submittedToLRAt: bigint | null;
+  /** HMLR's application reference as the buyer's conveyancer recorded it. */
   applicationReference: string | null;
+  /**
+   * Always null since 2026-11-11: the canister no longer invents an
+   * "LR-CONF-<id>" number, and the upgrade cleared the old ones. Never show it.
+   */
   landRegistryConfirmationNumber: string | null;
   submissionResponseCode: number | null;
   preValidationErrors: string[];

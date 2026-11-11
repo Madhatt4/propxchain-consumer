@@ -72,4 +72,24 @@ describe('deriveChecklistState', () => {
     const sellerSol = state.items.find((i) => i.id === 'seller-solicitor');
     expect(sellerSol?.completed).toBe(true);
   });
+
+  it('should tick the registration application, not title registered, on lr_submission', () => {
+    // Arrange
+    const events = [
+      { eventType: 'blockchain_completed', timestamp: 1 },
+      { eventType: 'lr_submission', timestamp: 2 },
+    ];
+
+    // Act
+    const state = deriveChecklistState('completed', events);
+
+    // Assert
+    const application = state.items.find((i) => i.id === 'land-registry');
+    const registered = state.items.find((i) => i.id === 'land-registry-registered');
+    expect(application?.label).toBe('Registration application submitted');
+    expect(application?.completed).toBe(true);
+    expect(application?.completedAt).toBe(2);
+    expect(registered?.label).toBe('Title registered');
+    expect(registered?.completed).toBe(false);
+  });
 });

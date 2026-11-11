@@ -59,6 +59,7 @@ const EventSection: React.FC<{ events: AuditEvent[] }> = ({ events }) => {
             <div key={e.eventId} style={{ marginLeft: '12px', marginBottom: '4px' }}>
               <span style={{ fontSize: '11px', color: '#666' }}>{formatTs(e.timestamp)}</span>
               <span style={{ fontSize: '12px', marginLeft: '8px' }}>{e.details}</span>
+              {e.note && <div style={{ fontSize: '11px', color: '#92400e', marginLeft: '8px' }}>{e.note}</div>}
             </div>
           ))}
         </div>

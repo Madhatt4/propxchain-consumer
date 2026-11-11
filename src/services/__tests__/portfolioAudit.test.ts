@@ -73,20 +73,17 @@ describe('aggregatePortfolioAudit', () => {
     const events = [
       event({ eventId: 1, eventType: 'transaction_created' }),
       event({ eventId: 2, eventType: 'joined_buyer_already_taken' }),
-      event({ eventId: 3, eventType: 'lr_submission_failed' }),
+      event({ eventId: 3, eventType: 'lr_submission' }),
     ];
 
     // Act
     const result = aggregatePortfolioAudit(events, '2026-06-13T00:00:00.000Z');
 
     // Assert
-    expect(result.totalAnomalies).toBe(2);
-    expect(result.anomalies.map(a => a.eventType)).toEqual(
-      expect.arrayContaining(['joined_buyer_already_taken', 'lr_submission_failed'])
-    );
-    [...ANOMALY_EVENT_TYPES].forEach(type => {
-      expect(typeof type).toBe('string');
-    });
+    expect(result.totalAnomalies).toBe(1);
+    expect(result.anomalies.map(a => a.eventType)).toEqual(['joined_buyer_already_taken']);
+    // lr_submission_failed is no longer written (Madhatt4/Propxchain#422).
+    expect(ANOMALY_EVENT_TYPES.has('lr_submission_failed')).toBe(false);
   });
 
   it('should compute the earliest and latest timestamps in ms', () => {

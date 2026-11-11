@@ -93,4 +93,18 @@ describe('EventTimeline', () => {
 
     expect(screen.getByText('0xdeadbeef')).toBeInTheDocument();
   });
+
+  it('should show the simulated-submission note under a flagged Land Registry event', () => {
+    // Arrange
+    const events: AuditEvent[] = [
+      makeEvent({ eventId: 1, eventType: 'lr_submission', details: 'Land Registry submission triggered', note: 'Simulated: test note' }),
+    ];
+
+    // Act
+    render(<EventTimeline events={events} />);
+    fireEvent.click(screen.getByText('Land Registry').closest('button')!);
+
+    // Assert
+    expect(screen.getByText('Simulated: test note')).toBeInTheDocument();
+  });
 });

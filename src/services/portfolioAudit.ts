@@ -26,7 +26,6 @@ import { sanitizeText } from './transactionAudit';
 // portfolio scale we surface them explicitly as integrity signals.
 export const ANOMALY_EVENT_TYPES: ReadonlySet<string> = new Set([
   'joined_buyer_already_taken', // rejected self-assign — buyer slot already filled
-  'lr_submission_failed',       // Land Registry submission rejected
 ]);
 
 const LEDGER_MANAGER_CANISTER_ID = CANISTER_IDS.ledger_manager;

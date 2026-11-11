@@ -18,6 +18,8 @@ import { useEffect, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
 import { AlertTriangle, ChevronDown } from 'lucide-react';
 
+import { isSimulatedLrSubmission } from '@/lib/simulatedLrSubmission';
+
 import { icpService } from '../../services/icp.service';
 import {
   generateReminders,
@@ -106,12 +108,16 @@ export function RemindersMenu({
         }
 
         const eventsRaw = eventsResult.status === 'fulfilled' ? eventsResult.value : [];
+        // A simulated pre-2026-11-11 submission is not an application, so
+        // it must not clear the registration reminder.
         const events = Array.isArray(eventsRaw)
-          ? eventsRaw.map((e) => ({
-              eventType: String(e.eventType ?? ''),
-              // Ledger timestamps can be big (nanoseconds). Normalise to ms.
-              timestamp: normaliseTimestamp(Number(e.timestamp ?? 0)),
-            }))
+          ? eventsRaw
+              .filter((e) => !isSimulatedLrSubmission(String(e.eventType ?? ''), String(e.details ?? '')))
+              .map((e) => ({
+                eventType: String(e.eventType ?? ''),
+                // Ledger timestamps can be big (nanoseconds). Normalise to ms.
+                timestamp: normaliseTimestamp(Number(e.timestamp ?? 0)),
+              }))
           : [];
 
         const result = generateReminders({
