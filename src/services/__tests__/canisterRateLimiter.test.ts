@@ -405,15 +405,17 @@ describe('CanisterRateLimiter Integration Tests', () => {
     it('should run every write in a burst larger than the write allowance', async () => {
       const mockFn = vi.fn(async () => 'saved');
 
-      // Burst of 3, then one token per ~6 s, with five calls in flight at once
-      const outcomes = Array.from({ length: 8 }, () =>
+      // Burst of 3, then one token per ~6 s. Seven writes leave four waiting on
+      // shared ticks; the last gets its token at ~24 s, well inside the 30 s cap
+      // (eight would land at ~29.94 s, right on the boundary).
+      const outcomes = Array.from({ length: 7 }, () =>
         rateLimiter.call(mockFn, { operationType: 'write' })
       );
 
       const results = await settle(Promise.allSettled(outcomes));
 
       expect(results.filter(r => r.status === 'rejected')).toHaveLength(0);
-      expect(mockFn).toHaveBeenCalledTimes(8);
+      expect(mockFn).toHaveBeenCalledTimes(7);
     });
 
     it('should provide clear error when no token frees up within the wait limit', async () => {
