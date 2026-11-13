@@ -11,6 +11,7 @@ import {
   RateLimitEvent,
   type RateLimitEventData,
 } from '../../../services/canisterRateLimiter';
+import { CategoryRateLimiter } from '../../../utils/rateLimiter';
 import { RateLimitToast } from '../RateLimitToast';
 
 const toastMock = vi.fn();
@@ -81,6 +82,24 @@ describe('RateLimitToast', () => {
     emit(event(RateLimitEvent.FAILURE, 5_000, 'IC0503: Canister trapped'));
 
     expect(toastMock).not.toHaveBeenCalled();
+  });
+
+  it('should show the popup when a real limiter call gives up waiting', async () => {
+    vi.useFakeTimers();
+    try {
+      vi.spyOn(CategoryRateLimiter.prototype, 'acquire').mockReturnValue(false);
+      const outcome = getCanisterRateLimiter().call(async () => 'never', {
+        operationType: 'write',
+      });
+      outcome.catch(() => undefined);
+
+      await vi.runAllTimersAsync();
+
+      await expect(outcome).rejects.toThrow(RATE_LIMIT_FAILURE_MESSAGE);
+      expect(toastMock).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('should stop listening when unmounted', () => {

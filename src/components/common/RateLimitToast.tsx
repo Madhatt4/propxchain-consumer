@@ -34,7 +34,7 @@ export const RateLimitToast: React.FC = () => {
       toast({
         variant: 'destructive',
         title: 'Still busy',
-        description: 'Some details took too long to load. Please try again in a moment.',
+        description: 'That took too long to go through. Please try again in a moment.',
       });
     };
 
