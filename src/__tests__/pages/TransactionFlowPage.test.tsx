@@ -150,6 +150,17 @@ describe('TransactionFlowPage', () => {
     expect(screen.getAllByText('1').length).toBeGreaterThan(0);
   });
 
+  it('should not render the stall line, conveyancer lines or welcome banner on the overview', async () => {
+    renderWithRouter();
+    // Let any async stall fetch settle before asserting absence.
+    await screen.findAllByText('List Property');
+    expect(screen.queryByTestId('stall-line')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('stage-line')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('conveyancers-line')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Welcome to your property/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Dismiss onboarding banner' })).not.toBeInTheDocument();
+  });
+
   it("should ask the chain-verified writer for the viewer's own party row once for the routed transaction", () => {
     mockEnsureMyRoleFromChain.mockClear();
     renderWithRouter();
