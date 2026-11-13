@@ -10,6 +10,7 @@ import {
   RateLimitEvent,
   type RateLimitEventData
 } from '../canisterRateLimiter';
+import { CategoryRateLimiter } from '../../utils/rateLimiter';
 import { RequestPriority } from '../../utils/requestQueue';
 
 // Helper to wait for a specific time (on the fake clock — see beforeEach)
@@ -385,25 +386,52 @@ describe('CanisterRateLimiter Integration Tests', () => {
   });
 
   describe('User-Friendly Error Messages', () => {
-    it('should provide clear error when rate limit is exceeded', async () => {
+    it('should run every read when concurrent callers wait for the same refill tick', async () => {
       const mockFn = vi.fn(async () => 'success');
 
-      // 10 reads drain the burst; reads 11 and 12 both wait for the next
-      // token. Only one token refills in that wait, so read 12 must fail.
-      const outcomes = Array.from({ length: 12 }, () =>
+      // 10 reads drain the burst; reads 11-20 wait. Several wake on the same
+      // tick and only one wins each token — the losers must keep waiting,
+      // not throw (the dashboard "Request rate limit exceeded" bug).
+      const outcomes = Array.from({ length: 20 }, () =>
         rateLimiter.call(mockFn, { operationType: 'read' })
       );
 
       const results = await settle(Promise.allSettled(outcomes));
 
-      const rejected = results.filter(
-        (r): r is PromiseRejectedResult => r.status === 'rejected'
+      expect(results.filter(r => r.status === 'rejected')).toHaveLength(0);
+      expect(mockFn).toHaveBeenCalledTimes(20);
+    });
+
+    it('should run every write in a burst larger than the write allowance', async () => {
+      const mockFn = vi.fn(async () => 'saved');
+
+      // Burst of 3, then one token per ~6 s, with five calls in flight at once
+      const outcomes = Array.from({ length: 8 }, () =>
+        rateLimiter.call(mockFn, { operationType: 'write' })
       );
-      expect(rejected).toHaveLength(1);
-      expect((rejected[0].reason as Error).message).toBe(
-        'Request rate limit exceeded. Please wait before retrying.'
-      );
-      expect(mockFn).toHaveBeenCalledTimes(11);
+
+      const results = await settle(Promise.allSettled(outcomes));
+
+      expect(results.filter(r => r.status === 'rejected')).toHaveLength(0);
+      expect(mockFn).toHaveBeenCalledTimes(8);
+    });
+
+    it('should provide clear error when no token frees up within the wait limit', async () => {
+      const mockFn = vi.fn(async () => 'success');
+      const acquireSpy = vi
+        .spyOn(CategoryRateLimiter.prototype, 'acquire')
+        .mockReturnValue(false);
+
+      try {
+        const outcome = rateLimiter.call(mockFn, { operationType: 'read' });
+
+        await expect(settle(outcome)).rejects.toThrow(
+          'Request rate limit exceeded. Please wait before retrying.'
+        );
+        expect(mockFn).not.toHaveBeenCalled();
+      } finally {
+        acquireSpy.mockRestore();
+      }
     });
 
     it('should report wait details when a call is rate limited', async () => {

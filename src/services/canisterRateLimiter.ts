@@ -14,6 +14,13 @@ import { RequestQueue, RequestPriority } from '../utils/requestQueue';
 import { retryWithBackoff, RetryConfig, isRateLimitError } from '../utils/retryWithBackoff';
 
 /**
+ * Longest a call waits for a rate-limit token before failing. Writes refill
+ * one token every ~6 s and five calls run at once, so a full queue of writes
+ * clears in about 30 s; beyond that something is genuinely wrong.
+ */
+const MAX_TOKEN_WAIT_MS = 30_000;
+
+/**
  * Operation type for categorizing canister calls
  */
 export type OperationType = 'read' | 'write';
@@ -229,32 +236,7 @@ export class CanisterRateLimiter {
     // Create the wrapped call with all protections
     const wrappedCall = async (): Promise<T> => {
       try {
-        // Check rate limit
-        if (!this.rateLimiter.acquire(operationType)) {
-          this.stats.rateLimitedCalls++;
-          const status = this.rateLimiter.getStatus(operationType);
-
-          this.emitEvent({
-            event: RateLimitEvent.RATE_LIMITED,
-            operationType,
-            timestamp: Date.now(),
-            details: {
-              availableTokens: status?.availableTokens,
-              timeUntilNextToken: status?.timeUntilNextToken
-            }
-          }, enableLogging);
-
-          // Wait for token to become available
-          const waitTime = status?.timeUntilNextToken || 1000;
-          await this.sleep(waitTime);
-
-          // Try to acquire again after waiting
-          if (!this.rateLimiter.acquire(operationType)) {
-            throw new Error(
-              'Request rate limit exceeded. Please wait before retrying.'
-            );
-          }
-        }
+        await this.acquireToken(operationType, enableLogging);
 
         // Execute with retry logic
         const result = await retryWithBackoff(fn, {
@@ -360,6 +342,45 @@ export class CanisterRateLimiter {
     }
 
     return queuedPromise;
+  }
+
+  /**
+   * Wait until a token is free, or give up after MAX_TOKEN_WAIT_MS.
+   *
+   * Keeps waiting rather than trying once: concurrent callers that sleep for
+   * the same refill tick all wake together, only one wins the token, and a
+   * single retry threw "rate limit exceeded" at every other one — the error
+   * a dashboard step change showed (several writes plus a reload at once).
+   * @private
+   */
+  private async acquireToken(
+    operationType: OperationType,
+    enableLogging: boolean
+  ): Promise<void> {
+    if (this.rateLimiter.acquire(operationType)) return;
+
+    this.stats.rateLimitedCalls++;
+    const status = this.rateLimiter.getStatus(operationType);
+    this.emitEvent({
+      event: RateLimitEvent.RATE_LIMITED,
+      operationType,
+      timestamp: Date.now(),
+      details: {
+        availableTokens: status?.availableTokens,
+        timeUntilNextToken: status?.timeUntilNextToken
+      }
+    }, enableLogging);
+
+    const deadline = Date.now() + MAX_TOKEN_WAIT_MS;
+    let waitTime = status?.timeUntilNextToken || 1000;
+    for (;;) {
+      await this.sleep(Math.min(waitTime, Math.max(deadline - Date.now(), 0)));
+      if (this.rateLimiter.acquire(operationType)) return;
+      if (Date.now() >= deadline) {
+        throw new Error('Request rate limit exceeded. Please wait before retrying.');
+      }
+      waitTime = this.rateLimiter.getStatus(operationType)?.timeUntilNextToken || 1000;
+    }
   }
 
   /**
