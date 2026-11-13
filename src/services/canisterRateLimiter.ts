@@ -20,6 +20,10 @@ import { retryWithBackoff, RetryConfig, isRateLimitError } from '../utils/retryW
  */
 const MAX_TOKEN_WAIT_MS = 30_000;
 
+/** The error a call throws when it gives up waiting for a token. */
+export const RATE_LIMIT_FAILURE_MESSAGE =
+  'Request rate limit exceeded. Please wait before retrying.';
+
 /**
  * Operation type for categorizing canister calls
  */
@@ -377,7 +381,7 @@ export class CanisterRateLimiter {
       await this.sleep(Math.min(waitTime, Math.max(deadline - Date.now(), 0)));
       if (this.rateLimiter.acquire(operationType)) return;
       if (Date.now() >= deadline) {
-        throw new Error('Request rate limit exceeded. Please wait before retrying.');
+        throw new Error(RATE_LIMIT_FAILURE_MESSAGE);
       }
       waitTime = this.rateLimiter.getStatus(operationType)?.timeUntilNextToken || 1000;
     }
@@ -506,6 +510,17 @@ export class CanisterRateLimiter {
   private sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
+}
+
+/**
+ * True only when a call actually failed because it ran out of waiting time.
+ * An empty token bucket is not a failure: calls queue and go through.
+ */
+export function isRateLimitFailure(event: RateLimitEventData): boolean {
+  return (
+    event.event === RateLimitEvent.FAILURE &&
+    event.details?.error === RATE_LIMIT_FAILURE_MESSAGE
+  );
 }
 
 /**
