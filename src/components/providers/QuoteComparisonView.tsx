@@ -17,11 +17,11 @@ interface StatusConfig {
 
 const STATUS_CONFIG: Record<QuoteStatus, StatusConfig> = {
   requested: {
-    label: 'Awaiting Quote',
+    label: 'Awaiting Estimate',
     classes: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
   },
   quoted: {
-    label: 'Quote Received',
+    label: 'Estimate Received',
     classes: 'bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-300',
   },
   accepted: {
@@ -190,10 +190,10 @@ export function QuoteComparisonView({ quotes, onAccepted }: QuoteComparisonViewP
     return (
       <div className="flex flex-col gap-6">
         <h2 className="text-2xl font-semibold text-[#1A1A1A] dark:text-[#F1F5F9]" style={{ fontFamily: 'Fraunces, serif' }}>
-          Your Quotes
+          Your Estimates
         </h2>
         <p className="text-center text-[#6B7280] dark:text-[#94A3B8] py-12">
-          No quotes requested yet.
+          No estimates requested yet.
         </p>
       </div>
     );
@@ -202,7 +202,7 @@ export function QuoteComparisonView({ quotes, onAccepted }: QuoteComparisonViewP
   return (
     <div className="flex flex-col gap-6">
       <h2 className="text-2xl font-semibold text-[#1A1A1A] dark:text-[#F1F5F9]" style={{ fontFamily: 'Fraunces, serif' }}>
-        Your Quotes
+        Your Estimates
       </h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {localQuotes.map((quote) => (

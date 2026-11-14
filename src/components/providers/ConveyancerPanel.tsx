@@ -50,11 +50,11 @@ function ConveyancerCallout(): React.ReactElement {
         </div>
         <div>
           <h4 className="font-dm-sans text-sm font-semibold text-gray-900 dark:text-gray-100">
-            Select up to 3 conveyancers to request quotes from
+            Select up to 3 conveyancers to request estimates from
           </h4>
           <p className="mt-1 text-xs leading-relaxed text-gray-600 dark:text-gray-400">
             Each conveyancer will receive your transaction details and respond
-            with a tailored quote. Compare fees, timescales, and ratings before
+            with a tailored estimate. Compare fees, timescales, and ratings before
             you decide — no commitment required.
           </p>
         </div>

@@ -54,7 +54,7 @@ export function rowToProvider(row: ConveyancerPanelRow, distanceMiles?: number):
     tagline: locationParts.length > 0 ? locationParts.join(', ') : 'UK Conveyancer',
     tier: 1,
     price: 0,
-    turnaround: 'Quote',
+    turnaround: 'Estimate',
     rating: row.rating ?? 0,
     reviews: row.review_count ?? 0,
     features: deriveFeatures(row.services),

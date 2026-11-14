@@ -27,7 +27,7 @@ export function QuoteRequestBar({
         disabled={isSubmitting}
         className="flex items-center gap-2 rounded-lg bg-[#0D9488] px-5 py-2 font-dm-sans text-sm font-medium text-white transition-colors hover:bg-[#0F766E] disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {isSubmitting ? 'Sending…' : 'Request Quotes →'}
+        {isSubmitting ? 'Sending…' : 'Request Estimates →'}
       </button>
     </div>
   );

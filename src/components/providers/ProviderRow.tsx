@@ -98,7 +98,7 @@ export function ProviderRow({
       </div>
 
       {/* Price + turnaround. Conveyancers quote per-job, so price === 0 is
-          the "no quote yet" state — render that as plain text rather than
+          the "no estimate yet" state — render that as plain text rather than
           a misleading "£0.00". */}
       <div className="hidden min-w-[110px] text-right md:block">
         {provider.price !== undefined && provider.price > 0 ? (
@@ -110,7 +110,7 @@ export function ProviderRow({
           </>
         ) : (
           <div className="font-dm-sans text-xs text-gray-500 dark:text-gray-400">
-            Quote on request
+            Estimate on request
           </div>
         )}
         {provider.turnaround && (
