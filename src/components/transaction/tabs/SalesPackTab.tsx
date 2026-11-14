@@ -83,8 +83,7 @@ export function SalesPackTab({
           )}
         </div>
         <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-          The upfront information a buyer&apos;s side will ask for, gathered
-          before they have to ask.{readOnly ? '' : ' Each item completes from its stage above.'}
+          The upfront information a buyer&apos;s side will ask for.{readOnly ? '' : ' Each item completes from its stage above.'}
         </p>
         {readOnly && (
           <p role="note" className="mt-2 text-sm font-medium text-gray-700 dark:text-gray-300">

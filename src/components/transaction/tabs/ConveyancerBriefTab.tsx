@@ -218,8 +218,7 @@ export function ConveyancerBriefTab({ transactionId }: TransactionTabProps): JSX
         <CardContent className="space-y-3">
           {error && <ErrorBanner message={error} />}
           <p className="text-sm text-muted-foreground">
-            Compose a work-arising email from your completed scans, for your instructed conveyancer to review.
-            Nothing sends until you say so.
+            Draft an email to your conveyancer from your scans. Nothing sends until you say so.
           </p>
           <Button onClick={() => void handleCompose()} disabled={isComposing}>
             {isComposing ? 'Composing…' : 'Compose brief'}
@@ -237,9 +236,6 @@ export function ConveyancerBriefTab({ transactionId }: TransactionTabProps): JSX
     <Card>
       <BriefHeader />
       <CardContent className="space-y-4">
-        <p className="text-xs text-muted-foreground">
-          This draft is render-only for now — editing before sending is coming in a later update.
-        </p>
         {error && <ErrorBanner message={error} />}
 
         <div>

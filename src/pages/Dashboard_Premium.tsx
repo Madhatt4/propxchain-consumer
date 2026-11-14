@@ -671,7 +671,7 @@ const Dashboard_PremiumContent: React.FC = () => {
         topBar={{
           title: isListView ? 'My transactions' : (selectedTransaction?.propertyAddress || 'Transaction'),
           subtitle: isListView
-            ? `Welcome back, ${displayName}`
+            ? undefined
             : [
                 selectedTransaction && getUserRole(selectedTransaction),
                 selectedTransaction && `Ref #${selectedTransaction.id.slice(0, 12)}`,

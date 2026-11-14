@@ -138,10 +138,7 @@ export function PackShareCard({ transactionId }: { transactionId: string }): JSX
         <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Share this pack</p>
       </div>
       <p className="mt-0.5 text-xs text-gray-600 dark:text-gray-400">
-        A read-only link for buyers and conveyancers before they join: searches,
-        title summary, EPC, material information and your TA6/TA10 answers with
-        all personal details removed. Your identity documents are never included.
-        Revoke it any time and the link dies.
+        A read-only link for buyers and conveyancers. Personal details and ID documents are never included. Revoke it any time.
       </p>
 
       {checked && link && (

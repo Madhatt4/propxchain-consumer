@@ -99,7 +99,7 @@ export function ScanResultCard(props: ScanResultCardProps): JSX.Element {
           <ScanBody result={resolved} />
         ) : (
           <StateBox icon={<FileQuestion className="h-6 w-6 text-muted-foreground" />}>
-            Nothing scanned yet. Use the button above to run this scan — it's free.
+            Nothing scanned yet. Use the button above to run this scan.
           </StateBox>
         )}
       </CardContent>
