@@ -35,10 +35,6 @@ export function LenderPrompt({ onLenderCaptured, onDismiss }: LenderPromptProps)
       <h4 className="font-dm-sans text-sm font-semibold text-gray-900 dark:text-gray-100">
         Getting a mortgage? Tell us your lender to see firms approved by them
       </h4>
-      <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
-        Lenders only allow firms on their panel to act for them — choosing one
-        avoids separate representation costs and delays.
-      </p>
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <select
           aria-label="Your mortgage lender"

@@ -75,7 +75,7 @@ export function ContractExchangeStage({ stage, journeyRole = 'seller' }: StagePr
               is accurate. Local signing intent never reaches this branch; it
               shows the honest 'waiting' state instead. */}
           <p className="text-sm text-emerald-600 dark:text-emerald-400 mt-1">
-            Both parties have signed. Exchange recorded on the blockchain.
+            Both parties signed. Recorded on the blockchain.
           </p>
           {completionDate && (
             <p className="text-xs text-emerald-500 dark:text-emerald-500 mt-2 font-mono">
@@ -197,18 +197,9 @@ export function ContractExchangeStage({ stage, journeyRole = 'seller' }: StagePr
         </div>
       )}
 
-      {completionDate && !hasSigned && (
-        <p className="text-xs text-gray-500 dark:text-slate-400">
-          Completion date: {new Date(completionDate).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-        </p>
-      )}
-
       {/* Step 3: Sign */}
       {completionDate && !hasSigned && (
         <div className="flex flex-col gap-2">
-          <p className="text-xs text-gray-500 dark:text-slate-400">
-            Signing with a qualified electronic signature through tmSign is planned and not yet available.
-          </p>
           <div className="flex gap-2">
             {/* tmSign integration pending — button is disabled until the
                 TMGroup QES redirect URL is wired through the backend. Before
@@ -232,8 +223,7 @@ export function ContractExchangeStage({ stage, journeyRole = 'seller' }: StagePr
         <div className="flex items-center gap-3 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 px-4 py-3">
           <div className="animate-pulse h-2 w-2 rounded-full bg-amber-500 shrink-0" />
           <p className="text-sm text-amber-700 dark:text-amber-300">
-            You've signed. We'll notify you the moment the {otherRole.toLowerCase()} signs.
-            There's nothing more for you to do right now.
+            You've signed. We'll tell you when the {otherRole.toLowerCase()} signs.
           </p>
         </div>
       )}

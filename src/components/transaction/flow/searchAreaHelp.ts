@@ -24,6 +24,7 @@ export const SEARCH_AREA_METHOD: readonly string[] = [
   'If there is no boundary we can match, we use the exact address point of the property and draw a small square around it.',
   `If neither matches, we draw a square (${DEFAULT_SIDE_METRES} m across) centred on the postcode. On a long street that may not line up with your plot.`,
   'If the reports look wrong for the address, tell your conveyancer before you rely on them.',
+  'In coal mining areas a coal mining search may be needed; the Premium (Full Risk View) pack includes one.',
 ];
 
 /**

@@ -121,9 +121,6 @@ function BuyerSideStagePlaceholder({ stageNumber }: { stageNumber: number }): Re
           Buyer side
         </span>
       </div>
-      <p className="mt-1.5 font-[DM_Sans] text-xs text-gray-500 dark:text-gray-400">
-        The buyer arranges their mortgage / funding on their side. Nothing for you to do here.
-      </p>
     </div>
   );
 }

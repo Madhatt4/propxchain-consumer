@@ -102,7 +102,7 @@ describe('MortgageFundingStage', () => {
     r(<MortgageFundingStage stage={makeStage('active')} transactionId="tx_1" />);
     await waitFor(() => expect(screen.getByRole('combobox')).toHaveValue('Santander'));
     expect(screen.getByTestId('send-to-slot')).toHaveTextContent('decisionInPrinciple,mortgageOffer');
-    expect(screen.getByText(/completes once the document is sent/)).toBeInTheDocument();
+    expect(screen.queryByText(/completes once the document is sent/)).not.toBeInTheDocument();
   });
 
   it('a cash buyer sends proof of funds instead', async () => {

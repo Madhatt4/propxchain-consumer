@@ -23,28 +23,10 @@ export function PropertyMatchedStage({ stage, onComplete, transactionId }: Stage
     onComplete?.(stage.id);
   }
 
-  if (stage.status === 'completed') {
-    return (
-      <div className="flex flex-col gap-3">
-        <div className="flex items-start gap-3 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 px-4 py-3">
-          <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
-          <p className="text-sm text-emerald-700 dark:text-emerald-300">
-            Property matched. Transaction initiated.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  if (stage.status === 'completed') return null;
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-start gap-3 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 px-4 py-3">
-        <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
-        <p className="text-sm text-emerald-700 dark:text-emerald-300">
-          Offer accepted. You've been matched with this property.
-        </p>
-      </div>
-
       {/* Price confirmation */}
       <div>
         <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-slate-400 mb-2">
@@ -100,11 +82,6 @@ export function PropertyMatchedStage({ stage, onComplete, transactionId }: Stage
           Confirm & Continue
         </button>
       )}
-
-      <p className="text-xs text-gray-400 dark:text-slate-500">
-        Confirm the agreed price and, if you have one, send your decision in principle from your wallet. Click
-        "Confirm &amp; Continue" when you're ready to move on.
-      </p>
     </div>
   );
 }

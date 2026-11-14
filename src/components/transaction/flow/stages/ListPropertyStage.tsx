@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, type ReactNode } from 'react';
-import { Check, Pencil, Link2, Loader2 } from 'lucide-react';
+import { Check, Link2, Loader2 } from 'lucide-react';
 import type { StageConfig } from '../../../../types/stage.types';
 import type { PropertyListing, ProvenanceMap, ProvenanceFieldKey, FieldProvenance, Tenure } from '../../../../types/listing.types';
 import { scrapeListing, isValidListingUrl } from '../../../../services/listing.service';
@@ -536,13 +536,6 @@ export function ListPropertyStage({ stage, onComplete, transactionId, onListingI
 
   return (
     <div className="flex flex-col gap-4">
-      {isEditing && (
-        <div className="flex items-center gap-2 rounded-lg border border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-900/20 px-3 py-2 text-sm text-teal-700 dark:text-teal-300">
-          <Pencil className="h-4 w-4 shrink-0" />
-          <span>You're editing this stage. Update the values and click Save changes, or Cancel to discard.</span>
-        </div>
-      )}
-
       <div>
         <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-slate-400 mb-2 flex items-center gap-1.5">
           <Link2 className="h-3.5 w-3.5" />
@@ -568,9 +561,6 @@ export function ListPropertyStage({ stage, onComplete, transactionId, onListingI
         {importError && (
           <p className="text-sm text-rose-600 dark:text-rose-400 mt-2">{importError}</p>
         )}
-        <p className="text-xs text-gray-500 dark:text-slate-500 mt-2">
-          No URL? Just fill in the details below.
-        </p>
       </div>
 
       {baseListing?.images && baseListing.images.length > 0 && (

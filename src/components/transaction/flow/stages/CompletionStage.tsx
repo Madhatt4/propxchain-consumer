@@ -33,8 +33,7 @@ interface StageProps {
   sellerConveyancer?: string | null;
 }
 
-const INTRO =
-  "On completion day the buyer's conveyancer sends the money and the seller's conveyancer confirms it has arrived. PropXchain records each confirmation; it never moves money.";
+const INTRO = 'PropXchain records each confirmation. It never moves money.';
 
 function StatusMessage({ failed }: { failed: boolean }): ReactNode {
   return (
@@ -106,11 +105,6 @@ export function CompletionStage({
         onConfirmKeys={actions.confirmKeys}
       />
       <ConveyancerRecordRows transactionId={transactionId} />
-      {completed && journeyRole === 'buyer' && (
-        <p className="text-xs text-gray-400 dark:text-slate-500">
-          Legal title transfers when HM Land Registry processes the AP1 registration.
-        </p>
-      )}
     </div>
   );
 }

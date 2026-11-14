@@ -91,16 +91,9 @@ export function SurveyReportUpload({
             Already had a survey done?
           </h3>
           <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
-            Add your survey report to this transaction — whoever carried it out. We
-            record a fingerprint of the file on the blockchain, so it becomes part of
-            your transaction&rsquo;s audit trail and any later change to it is
-            detectable.
-          </p>
-          <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-            Your conveyancer and the other parties on this transaction will be able to
-            open it. The file itself is stored securely off-chain and can be deleted on
-            request. We record that you supplied it — we can&rsquo;t confirm who wrote
-            it, so it isn&rsquo;t shown to anyone as a verified survey.
+            Add a survey you already have. We record it on the audit trail. Your
+            conveyancer and the other parties on the deal can open it. We can&rsquo;t
+            verify who wrote it, so it isn&rsquo;t shown as a verified survey.
           </p>
 
           {uploaded ? (

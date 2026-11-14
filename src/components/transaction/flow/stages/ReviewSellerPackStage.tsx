@@ -1,5 +1,5 @@
 import { type ReactNode, useState, useCallback } from 'react';
-import { Check, FileText, MessageSquare, AlertTriangle, AlertCircle, Clock } from 'lucide-react';
+import { Check, FileText, MessageSquare, AlertCircle, Clock } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { StageConfig } from '../../../../types/stage.types';
 
@@ -83,12 +83,7 @@ export function ReviewSellerPackStage({ stage, onComplete }: StageProps): ReactN
 
   if (stage.status === 'watching') {
     return (
-      <div className="flex items-start gap-3 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 px-4 py-3">
-        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
-        <p className="text-sm text-amber-700 dark:text-amber-300">
-          Waiting for seller to complete property searches and forms.
-        </p>
-      </div>
+      <p className="text-sm text-gray-500 dark:text-slate-400">Waiting on the seller.</p>
     );
   }
 

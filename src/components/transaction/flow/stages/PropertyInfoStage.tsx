@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertTriangle, FileText, Check, Upload, PenLine, Pencil } from 'lucide-react';
+import { AlertTriangle, FileText, Check, Upload, PenLine } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { icpService } from '@/services/icp.service';
 import { web2DocumentService } from '@/services/web2-document.service';
@@ -12,14 +12,11 @@ import { calculateTA6Completion } from '../../../../types/ta6.types';
 import { calculateTA10Completion } from '../../../../types/ta10.types';
 import { calculateTA7Completion } from '../../../../types/ta7.types';
 import type { Tenure } from '../../../../types/listing.types';
-import ExplainerCard from '../../../explainer/ExplainerCard';
 import ExplainerModal from '../../../explainer/ExplainerModal';
 import { CheckMyAnswers } from '../../../propertyInfo/CheckMyAnswers';
 import { RemoveFormUpload } from '../../../propertyInfo/RemoveFormUpload';
 import { loadPaperworkFindings } from '@/services/documentFindings.service';
-import PropertyInfoExplainerContent, {
-  showsLeaseholdForm,
-} from '../../../propertyInfo/PropertyInfoExplainerContent';
+import PropertyInfoExplainerContent from '../../../propertyInfo/PropertyInfoExplainerContent';
 
 interface StageProps {
   stage: StageConfig;
@@ -291,7 +288,6 @@ export function PropertyInfoStage({ stage, onComplete, transactionId, postcode, 
     onCancelEdit?.();
   }
 
-  const explainerHeadline = `${showsLeaseholdForm(tenure) ? 3 : 2} standard forms · your answers are legally binding`;
 
   return (
     <div className="flex flex-col gap-3">
@@ -305,24 +301,8 @@ export function PropertyInfoStage({ stage, onComplete, transactionId, postcode, 
           >
             <PropertyInfoExplainerContent tenure={tenure} />
           </ExplainerModal>
-          <ExplainerCard label="What these forms are &amp; why" headline={explainerHeadline}>
-            <PropertyInfoExplainerContent tenure={tenure} />
-          </ExplainerCard>
         </>
       )}
-
-      {isEditing && (
-        <div className="flex items-center gap-2 rounded-lg border border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-900/20 px-3 py-2 text-sm text-teal-700 dark:text-teal-300">
-          <Pencil className="h-4 w-4 shrink-0" />
-          <span>You're editing this stage. Re-open any form to revise it, then click Save changes — or Cancel to discard.</span>
-        </div>
-      )}
-
-      <p className="text-sm text-gray-600 dark:text-slate-300">
-        {isEditing
-          ? 'Click "Edit" on any form below to update previously-saved answers, or upload a new PDF.'
-          : 'Complete each property information form online, or upload a pre-completed PDF.'}
-      </p>
 
       {FORMS.map((form) => {
         const completion = completions[form.id];

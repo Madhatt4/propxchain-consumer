@@ -273,8 +273,7 @@ export function PropertyDetailsForm({ value, onChange, onSave, onCancel, saveLab
             inputMode="numeric"
           />
           <p className="mt-1 text-xs text-gray-500 dark:text-slate-500">
-            A free, unique ID for your property — like a barcode for the address.
-            Optional, and you don&rsquo;t need it to continue.{' '}
+            Optional.{' '}
             {/* Deliberately NOT given a 44px target: this is a link inside a
                 sentence, which WCAG 2.5.5 / 2.5.8 exempt, and forcing a
                 minimum height here would break the paragraph. It does get a
@@ -306,7 +305,6 @@ export function PropertyDetailsForm({ value, onChange, onSave, onCancel, saveLab
                 </p>
                 <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
                   We&rsquo;ll look up the EPC rating and property ID (UPRN) for your address.
-                  Free, and you can edit anything we find.
                 </p>
               </div>
               <button
@@ -345,12 +343,8 @@ export function PropertyDetailsForm({ value, onChange, onSave, onCancel, saveLab
             Check who owns YOUR property — £7
           </p>
           <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
-            Hit the Title button and we fetch your Official Copy from HM
-            Land Registry — it names the registered owner. We store the
-            canonical JSON off-chain and register the SHA-256 hash on the
-            IC, so that proof is anchored and tamper-proof. If you've
-            already pulled this title number you can view it again for
-            free.
+            We fetch your Official Copy from HM Land Registry (it names the registered owner). £7.
+            Viewing a title you've already pulled is free.
           </p>
           <div className="mt-3">
             <HMLRTitlePullButton
@@ -367,9 +361,6 @@ export function PropertyDetailsForm({ value, onChange, onSave, onCancel, saveLab
       <div className="mt-2">
         <p className="text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-slate-400">
           Material information
-        </p>
-        <p className="mt-0.5 text-xs text-gray-500 dark:text-slate-500">
-          The facts a listing must disclose — shown to buyers up front.
         </p>
       </div>
 

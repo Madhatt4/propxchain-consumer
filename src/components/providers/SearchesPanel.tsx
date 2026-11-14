@@ -22,7 +22,6 @@ import type { LocalAuthorityInfo } from '../../services/postcodeService';
 import { analyzeLocationForSearches, getAreaCapabilities } from '../../utils/searchRegionMapping';
 import { buildExplainerModel } from '../searches/explainer/searchExplainerModel';
 import SearchesExplainerContent from '../searches/explainer/SearchesExplainerContent';
-import ExplainerCard from '../explainer/ExplainerCard';
 import ExplainerModal from '../explainer/ExplainerModal';
 import { buildCacheKey, fetchNarration } from '@/services/searchesExplainer.service';
 import { resolvePropertyBoundary } from '../../services/inspireBoundary.service';
@@ -280,17 +279,6 @@ function buildProviderSelection(
   };
 }
 
-// Capability tags map to provider-specific SearchItem IDs. Add to either side
-// as we extend area detection or product coverage.
-const CAPABILITY_TO_ITEM_IDS: Record<string, string[]> = {
-  'coal-mining': ['onesearch-coal-con29m', 'groundsure-con29m-coal'],
-  brine: ['groundsure-cheshire-salt'],
-  'tin-mining': ['groundsure-metalliferous-mining'],
-  'stone-mining': ['groundsure-stone-mining'],
-};
-
-
-
 // The save/load/clear pending-state helpers live in searchCheckoutResume.ts
 // now, not here — PaymentSuccessPage.tsx (a different route, mounted after
 // the Stripe redirect) needs to read the same stash to know which
@@ -325,14 +313,8 @@ function SharedSearchPoolCallout(): React.ReactElement {
           </svg>
         </div>
         <div>
-          <h4 className="font-dm-sans text-sm font-semibold text-gray-900 dark:text-gray-100">
-            Shared Search Pool
-          </h4>
-          <p className="mt-1 text-xs leading-relaxed text-gray-600 dark:text-gray-400">
-            Either party can order searches. Whoever orders first, the other side sees
-            &ldquo;completed by [party]&rdquo;. Results are shared with both conveyancers.
-            Enable <span className="font-medium text-[#5F8A68] dark:text-[#9CB8A4]">Turbo Mode</span> on
-            the transaction to allow seller-first searches and speed up your chain.
+          <p className="text-xs leading-relaxed text-gray-600 dark:text-gray-400">
+            Either party can order; the other side will see who did.
           </p>
         </div>
       </div>
@@ -619,11 +601,6 @@ export function SearchesPanel({
   const areaCapabilities = useMemo(
     () => (localAuthority ? getAreaCapabilities(localAuthority) : []),
     [localAuthority],
-  );
-
-  const areaRequiredItemIds = useMemo(
-    () => areaCapabilities.flatMap((c) => CAPABILITY_TO_ITEM_IDS[c] ?? []),
-    [areaCapabilities],
   );
 
   const explainerModel = useMemo(
@@ -1513,20 +1490,6 @@ export function SearchesPanel({
               narration={narration ?? undefined}
             />
           </ExplainerModal>
-          <ExplainerCard
-            label="What these searches are &amp; why"
-            headline={`${explainerModel.required.length} typically ordered here${
-              explainerModel.notNeeded.length > 0
-                ? ` · ${explainerModel.notNeeded.length} not usually needed`
-                : ''
-            }`}
-          >
-            <SearchesExplainerContent
-              model={explainerModel}
-              localAuthorityName={laName}
-              narration={narration ?? undefined}
-            />
-          </ExplainerCard>
         </>
       )}
 
@@ -1544,7 +1507,6 @@ export function SearchesPanel({
           <OneSearchPackageBuilder
             postcode={formattedPostcode}
             localAuthority={laName}
-            areaRequiredIds={areaRequiredItemIds}
             onOrder={handleOneSearchOrder}
             isOrdering={isOrdering === 'onesearch'}
             errorMessage={oneSearchError}
