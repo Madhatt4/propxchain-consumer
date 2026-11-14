@@ -44,6 +44,8 @@ export interface ProviderPanelProps {
   subtitle: string;
   stageNumber: number;
   badge?: string;
+  /** Hide the title / subtitle / description block and the price-guarantee line, so the stage content sits directly under the parent stage header. */
+  hideHeader?: boolean;
   description: string;
   providers: Provider[];
   isLoading?: boolean;

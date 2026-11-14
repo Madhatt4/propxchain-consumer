@@ -36,6 +36,7 @@ export function ProviderPanel({
   // already shows the stage number, so the panel no longer renders it.
   badge,
   description,
+  hideHeader = false,
   providers,
   isLoading,
   error,
@@ -60,41 +61,45 @@ export function ProviderPanel({
 
   return (
     <div className="flex flex-col gap-5">
-      {/* Header — the parent StageCard already shows "Stage N · <stage title>",
-          so the big stage-number circle here is a duplicate. We keep the
-          panel's own title (it adds info: e.g. StageCard reads "Conveyancer
-          Review", panel reads "Conveyancer / Solicitor") at lighter weight
-          alongside the badge.
-          stageNumber kept in props for backwards compat; intentionally unused. */}
-      <div>
-        <div className="flex items-center gap-2.5 flex-wrap">
-          <h2 className="font-fraunces text-lg font-semibold text-gray-900 dark:text-gray-100">
-            {title}
-          </h2>
-          {badge && (
-            <span className="rounded-full bg-teal-500/10 px-2.5 py-0.5 font-dm-sans text-xs font-medium text-teal-600 dark:bg-teal-400/10 dark:text-teal-400">
-              {badge}
-            </span>
-          )}
+      {!hideHeader && (
+        <>
+        {/* Header — the parent StageCard already shows "Stage N · <stage title>",
+            so the big stage-number circle here is a duplicate. We keep the
+            panel's own title (it adds info: e.g. StageCard reads "Conveyancer
+            Review", panel reads "Conveyancer / Solicitor") at lighter weight
+            alongside the badge.
+            stageNumber kept in props for backwards compat; intentionally unused. */}
+        <div>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h2 className="font-fraunces text-lg font-semibold text-gray-900 dark:text-gray-100">
+              {title}
+            </h2>
+            {badge && (
+              <span className="rounded-full bg-teal-500/10 px-2.5 py-0.5 font-dm-sans text-xs font-medium text-teal-600 dark:bg-teal-400/10 dark:text-teal-400">
+                {badge}
+              </span>
+            )}
+          </div>
+          <p className="mt-1 font-dm-sans text-sm text-gray-500 dark:text-gray-400">
+            {subtitle}
+          </p>
+          <p className="mt-2 font-dm-sans text-sm leading-relaxed text-gray-600 dark:text-gray-400">
+            {description}
+          </p>
         </div>
-        <p className="mt-1 font-dm-sans text-sm text-gray-500 dark:text-gray-400">
-          {subtitle}
-        </p>
-        <p className="mt-2 font-dm-sans text-sm leading-relaxed text-gray-600 dark:text-gray-400">
-          {description}
-        </p>
-      </div>
 
-      {/* Price guarantee */}
-      <p className="flex items-center gap-1.5 font-dm-sans text-xs text-gray-500 dark:text-gray-400">
-        <svg className="h-3.5 w-3.5 text-teal-500 dark:text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-        </svg>
-        Same price as going direct{' '}
-        <span className="font-geist-mono text-[10px] text-gray-400">
-          — no platform markup on provider fees
-        </span>
-      </p>
+        {/* Price guarantee */}
+        <p className="flex items-center gap-1.5 font-dm-sans text-xs text-gray-500 dark:text-gray-400">
+          <svg className="h-3.5 w-3.5 text-teal-500 dark:text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          </svg>
+          Same price as going direct{' '}
+          <span className="font-geist-mono text-[10px] text-gray-400">
+            — no platform markup on provider fees
+          </span>
+        </p>
+        </>
+      )}
 
       {/* Optional callout banner */}
       {callout}
