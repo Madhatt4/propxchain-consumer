@@ -171,7 +171,7 @@ interface StageComponentProps {
   /** UPRN — passed on survey referrals for exact property matching. */
   uprn?: string;
   /** Property Searches reports how its search area resolved, for the stage help. */
-  onSearchAreaResolved?: (area: SearchAreaInfo) => void;
+  onSearchAreaResolved?: (area: SearchAreaInfo | null) => void;
   /** Listing tenure — passed through to PropertyInfoStage so freehold sales
    *  don't get offered the TA7 (Leasehold) form. */
   tenure?: Tenure | null;

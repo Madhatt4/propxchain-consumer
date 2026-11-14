@@ -76,7 +76,7 @@ interface SearchesPanelProps {
   uprn?: string;
   orderedBy: 'buyer' | 'seller';
   /** Reports how the search area resolved, so the stage help can say so. */
-  onAreaResolved?: (area: SearchAreaInfo) => void;
+  onAreaResolved?: (area: SearchAreaInfo | null) => void;
   onOrderComplete?: () => void;
   /**
    * Push the order's gross total into the transaction flow's running total
@@ -542,12 +542,17 @@ export function SearchesPanel({
    * and that call stays authoritative.
    */
   useEffect(() => {
+    // Clear first so a changed property or a failed resolve never leaves the
+    // previous property's area in the stage help.
+    onAreaResolved?.(null);
     if (!postcode) return undefined;
     let cancelled = false;
-    void resolvePropertyBoundary({ uprn, postcode }).then((resolved) => {
-      if (cancelled || !resolved) return;
-      onAreaResolved?.({ source: resolved.source, halfSizeMetres: resolved.halfSizeMetres });
-    });
+    resolvePropertyBoundary({ uprn, postcode })
+      .then((resolved) => (resolved ? { source: resolved.source, halfSizeMetres: resolved.halfSizeMetres } : null))
+      .catch(() => null)
+      .then((area) => {
+        if (!cancelled) onAreaResolved?.(area);
+      });
     return () => {
       cancelled = true;
     };

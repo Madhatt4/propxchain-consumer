@@ -5,6 +5,7 @@ import { render, screen } from '@testing-library/react';
 
 import { StageHelpPanel } from '../StageHelpPanel';
 import { searchAreaFallbackLine } from '../searchAreaHelp';
+import { DEFAULT_HALF_SIZE_METRES } from '../../../../services/propertyBoundary.service';
 
 const noop = (): void => undefined;
 
@@ -50,5 +51,27 @@ describe('Property Searches help: search area', () => {
   it('does not add the section to other stages', () => {
     render(<StageHelpPanel stageId="seller-3" searchArea={{ source: 'postcode-centroid', halfSizeMetres: 35 }} onClose={noop} />);
     expect(screen.queryByTestId('search-area-help')).toBeNull();
+  });
+
+  it('uses the same square size in the general text and the property line', () => {
+    const side = `${DEFAULT_HALF_SIZE_METRES * 2} m`;
+    render(
+      <StageHelpPanel
+        stageId="seller-2"
+        searchArea={{ source: 'postcode-centroid', halfSizeMetres: DEFAULT_HALF_SIZE_METRES }}
+        onClose={noop}
+      />,
+    );
+    expect(screen.getByTestId('search-area-help')).toHaveTextContent(`${side} across`);
+    expect(screen.getByTestId('search-area-fallback')).toHaveTextContent(`${side} square`);
+  });
+
+  it('drops the property line when the area is cleared', () => {
+    const { rerender } = render(
+      <StageHelpPanel stageId="seller-2" searchArea={{ source: 'postcode-centroid', halfSizeMetres: 35 }} onClose={noop} />,
+    );
+    expect(screen.getByTestId('search-area-fallback')).toBeInTheDocument();
+    rerender(<StageHelpPanel stageId="seller-2" searchArea={null} onClose={noop} />);
+    expect(screen.queryByTestId('search-area-fallback')).toBeNull();
   });
 });
