@@ -50,7 +50,7 @@ describe('WelcomeCards', () => {
     expect(onClose).toHaveBeenCalledWith(false);
   });
 
-  it('should close with dontShowAgain true when the user ticks Don't show this again', () => {
+  it('should close with dontShowAgain true when the user ticks the opt-out box', () => {
     const onClose = vi.fn();
     render(<WelcomeCards isOpen onClose={onClose} />);
     fireEvent.click(screen.getByLabelText("Don't show this again"));
