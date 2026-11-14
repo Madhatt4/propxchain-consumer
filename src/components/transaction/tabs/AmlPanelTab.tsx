@@ -53,7 +53,7 @@ const AML_REPORT_SLOT = VAULT_SLOTS.find((s) => s.id === 'amlSourceOfFunds');
 function Disclaimer({ providerLabel }: { providerLabel: string }): JSX.Element {
   return (
     <p className="text-[11px] leading-relaxed text-muted-foreground">
-      Checks are carried out by {providerLabel}, not PropXchain, which deletes its own copy once the check is placed.
+      Checks are carried out by {providerLabel}, not PropXchain. We don&apos;t assess or approve anyone&apos;s identity, and we delete our copy once the check is placed.
       The completed report is kept in your Transaction Wallet so you can share it with any conveyancer.
     </p>
   );
