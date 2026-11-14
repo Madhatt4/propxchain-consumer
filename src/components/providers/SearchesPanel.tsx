@@ -4,7 +4,6 @@ import OneSearchPackageBuilder from './OneSearchPackageBuilder';
 import OneSearchProductListCard from './OneSearchProductListCard';
 import GroundsureBundlePicker from './GroundsureBundlePicker';
 import CollapsibleProviderCard from './CollapsibleProviderCard';
-import SearchAreaNote from './SearchAreaNote';
 import {
   tmGroupProvider,
   onesearchProvider,
@@ -27,7 +26,7 @@ import ExplainerCard from '../explainer/ExplainerCard';
 import ExplainerModal from '../explainer/ExplainerModal';
 import { buildCacheKey, fetchNarration } from '@/services/searchesExplainer.service';
 import { resolvePropertyBoundary } from '../../services/inspireBoundary.service';
-import type { BoundarySource } from '../../services/propertyBoundary.service';
+import type { SearchAreaInfo } from '../transaction/flow/searchAreaHelp';
 import {
   hasUsableStructuredAddress,
   pafAddressFromParts,
@@ -76,6 +75,8 @@ interface SearchesPanelProps {
    */
   uprn?: string;
   orderedBy: 'buyer' | 'seller';
+  /** Reports how the search area resolved, so the stage help can say so. */
+  onAreaResolved?: (area: SearchAreaInfo | null) => void;
   onOrderComplete?: () => void;
   /**
    * Push the order's gross total into the transaction flow's running total
@@ -488,6 +489,7 @@ export function SearchesPanel({
   addressParts,
   uprn,
   orderedBy,
+  onAreaResolved,
   onOrderComplete,
   onProviderSelected,
   onEdit,
@@ -533,25 +535,29 @@ export function SearchesPanel({
     };
   }, [transactionId, orderedBy]);
   /**
-   * How the search area resolves for this property, for display only. Shown
-   * before the customer pays, because a fallback box is exactly the case where
-   * the reports may not cover their plot. The order handlers resolve again at
-   * order time and that call stays authoritative.
+   * How the search area resolves for this property, for display only. It is
+   * handed up to the stage help (the "?" beside the stage title) before the
+   * customer pays, because a fallback box is exactly the case where the reports
+   * may not cover their plot. The order handlers resolve again at order time
+   * and that call stays authoritative.
    */
-  const [areaSource, setAreaSource] = useState<BoundarySource | null>(null);
-  const [areaHalfSize, setAreaHalfSize] = useState<number | null>(null);
-
   useEffect(() => {
+    // Clear first so a changed property or a failed resolve never leaves the
+    // previous property's area in the stage help.
+    onAreaResolved?.(null);
     if (!postcode) return undefined;
     let cancelled = false;
-    void resolvePropertyBoundary({ uprn, postcode }).then((resolved) => {
-      if (cancelled || !resolved) return;
-      setAreaSource(resolved.source);
-      setAreaHalfSize(resolved.halfSizeMetres);
-    });
+    resolvePropertyBoundary({ uprn, postcode })
+      .then((resolved) => (resolved ? { source: resolved.source, halfSizeMetres: resolved.halfSizeMetres } : null))
+      .catch(() => null)
+      .then((area) => {
+        if (!cancelled) onAreaResolved?.(area);
+      });
     return () => {
       cancelled = true;
     };
+    // onAreaResolved is a state setter wrapper; re-resolving on its identity would refetch.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [postcode, uprn]);
 
   /** Abandon a Groundsure order, telling the person why. Always unsticks the button. */
@@ -1527,8 +1533,6 @@ export function SearchesPanel({
       {/* No provider is badged or highlighted over another: the panel guides
           which searches the area needs, and the customer (often led by their
           conveyancer or estate agent) picks the provider. */}
-      <SearchAreaNote source={areaSource} halfSizeMetres={areaHalfSize} />
-
       <CollapsibleProviderCard
         logo={onesearchProvider.logo}
         name={onesearchProvider.name}

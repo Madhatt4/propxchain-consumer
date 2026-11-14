@@ -17,6 +17,7 @@ import { OtherPartyProgressCard } from '../components/transaction/flow/OtherPart
 import { CostFooterMobile } from '../components/transaction/flow/CostFooterMobile';
 import { PropertyListingCard } from '../components/transaction/flow/PropertyListingCard';
 import { StageHelpPanel } from '../components/transaction/flow/StageHelpPanel';
+import type { SearchAreaInfo } from '../components/transaction/flow/searchAreaHelp';
 import { ListPropertyStage } from '../components/transaction/flow/stages/ListPropertyStage';
 import { PropertyInfoStage } from '../components/transaction/flow/stages/PropertyInfoStage';
 import { PropertyMatchedStage } from '../components/transaction/flow/stages/PropertyMatchedStage';
@@ -169,6 +170,8 @@ interface StageComponentProps {
   propertyValue?: number;
   /** UPRN — passed on survey referrals for exact property matching. */
   uprn?: string;
+  /** Property Searches reports how its search area resolved, for the stage help. */
+  onSearchAreaResolved?: (area: SearchAreaInfo | null) => void;
   /** Listing tenure — passed through to PropertyInfoStage so freehold sales
    *  don't get offered the TA7 (Leasehold) form. */
   tenure?: Tenure | null;
@@ -296,6 +299,7 @@ function renderStageContent(stageId: string, props: StageComponentProps): ReactE
           addressParts={props.addressParts}
           uprn={props.uprn}
           orderedBy="seller"
+          onAreaResolved={props.onSearchAreaResolved}
           onOrderComplete={onPanelDone}
           onProviderSelected={(provider) => props.onSelectProvider?.(stageId, provider)}
           onEdit={() => props.onClearProvider?.(stageId)}
@@ -453,6 +457,7 @@ export default function TransactionFlowPage(): ReactElement {
   const stageRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const [propertyListing, setPropertyListing] = useState<RightmovePropertyListing | null>(null);
   const [helpStageId, setHelpStageId] = useState<string | null>(null);
+  const [searchArea, setSearchArea] = useState<SearchAreaInfo | null>(null);
   // Progress dashboards (phase bar, checklist, searches tracking) collapse by
   // default so an anxious seller meets the next action first, not 4 panels.
   // When user clicks Edit on a provider stage, we gate entry into edit mode
@@ -853,6 +858,7 @@ export default function TransactionFlowPage(): ReactElement {
                             : undefined,
                           propertyValue: propertyListing?.price,
                           uprn: uprn ?? propertyListing?.uprn,
+                          onSearchAreaResolved: setSearchArea,
                           tenure: propertyListing?.tenure ?? null,
                           isEditing: editingStageIds.includes(activeStage.id),
                           onCancelEdit: (sid) => setStageEditing(sid, false),
@@ -898,7 +904,7 @@ export default function TransactionFlowPage(): ReactElement {
 
             {/* Help panel (shown when ? is clicked) */}
             {helpStageId && (
-              <StageHelpPanel stageId={helpStageId} onClose={() => setHelpStageId(null)} />
+              <StageHelpPanel stageId={helpStageId} searchArea={searchArea} onClose={() => setHelpStageId(null)} />
             )}
 
             {/* Property listing card */}
