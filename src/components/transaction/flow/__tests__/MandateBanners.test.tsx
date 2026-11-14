@@ -33,13 +33,13 @@ describe('MandateBanners', () => {
     mockForget.mockReset();
   });
 
-  it('tells an agent whom they act for and that it is recorded', () => {
+  it('tells an agent whom they act for and that legal items go to them', () => {
     mockMandate.mockReturnValue({ actingFor: ['seller'], grantedByMe: null, agencyName: null, isLoading: false });
     renderBanners();
     const banner = screen.getByTestId('acting-for-banner');
     expect(banner).toHaveAttribute('data-side', 'seller');
-    expect(banner).toHaveTextContent('Acting for the seller on this deal.');
-    expect(banner).toHaveTextContent('recorded in their name');
+    expect(banner).toHaveTextContent('Acting for the seller.');
+    expect(banner).toHaveTextContent('Anything legally binding goes to them to confirm.');
     expect(screen.getByRole('link', { name: 'Back to your pipeline' })).toHaveAttribute('href', '/pro/estate-agent/pipeline');
   });
 
@@ -48,14 +48,14 @@ describe('MandateBanners', () => {
     expect(sidesPhrase(['buyer'])).toBe('the buyer');
     mockMandate.mockReturnValue({ actingFor: ['seller', 'buyer'], grantedByMe: null, agencyName: null, isLoading: false });
     renderBanners();
-    expect(screen.getByTestId('acting-for-banner')).toHaveTextContent('Acting for the seller and the buyer on this deal.');
+    expect(screen.getByTestId('acting-for-banner')).toHaveTextContent('Acting for the seller and the buyer.');
   });
 
   it('tells a client who can act for them, with the withdrawal one click away and the record cache cleared after it', async () => {
     mockMandate.mockReturnValue({ actingFor: [], grantedByMe: { id: 'd1', transactionId: 'tx_1', role: 'seller', state: 'active' }, agencyName: 'Smith & Co', isLoading: false });
     mockRevoke.mockResolvedValue({ state: 'revoked', ledgerPending: false });
     renderBanners();
-    expect(screen.getByTestId('client-mandate-banner')).toHaveTextContent('Smith & Co can act for you on this deal.');
+    expect(screen.getByTestId('client-mandate-banner')).toHaveTextContent('Smith & Co can act for you here.');
     fireEvent.click(screen.getByRole('button', { name: 'Withdraw this' }));
     await waitFor(() => expect(mockRevoke).toHaveBeenCalledWith('d1'));
     await waitFor(() => expect(mockForget).toHaveBeenCalledWith('tx_1'));

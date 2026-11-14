@@ -74,7 +74,7 @@ export function BuyerPackTab({ transactionId }: TransactionTabProps): JSX.Elemen
         </div>
         <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
           {isBuyer
-            ? 'What the seller’s side will ask before they commit: who you are, how you are paying, whether you are in a chain, and where the survey is. Each tick is hashed onto the audit trail.'
+            ? 'What the seller’s side will ask before they commit.'
             : 'The buyer’s readiness, as declared and evidenced by them. Documents behind these ticks are shared only through the Transaction Wallet switches.'}
         </p>
         <div

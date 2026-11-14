@@ -192,8 +192,7 @@ export function TransactionDocumentsTab({ transactionId }: TransactionTabProps):
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-muted-foreground">
-          Documents you’ve sent from your PropXchain Wallet to this deal. Nothing is shared until you
-          choose who can see it.
+          Nothing is shared until you choose who can see it.
         </p>
         <div className="flex gap-2">
           <Link

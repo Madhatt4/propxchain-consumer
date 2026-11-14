@@ -47,8 +47,7 @@ export function MandateBanners({ transactionId, myRole, className = '' }: Mandat
         <p className={TEXT}>
           <UserCheck size={18} aria-hidden className="mt-0.5 shrink-0" />
           <span>
-            <strong>Acting for {sidesPhrase(mandate.actingFor)} on this deal.</strong> Everything you do here is recorded in their name.
-            Anything with legal weight still goes to them to confirm.
+            <strong>Acting for {sidesPhrase(mandate.actingFor)}.</strong> Anything legally binding goes to them to confirm.
           </span>
         </p>
         <Link to="/pro/estate-agent/pipeline" className={ACTION}>
@@ -64,8 +63,7 @@ export function MandateBanners({ transactionId, myRole, className = '' }: Mandat
         <p className={TEXT}>
           <ShieldCheck size={18} aria-hidden className="mt-0.5 shrink-0" />
           <span>
-            <strong>{mandate.agencyName ?? 'Your estate agent'} can act for you on this deal.</strong> Anything with legal weight still comes
-            to you to confirm, and everything they do is on the audit trail.
+            <strong>{mandate.agencyName ?? 'Your estate agent'} can act for you here.</strong> Anything legally binding still comes to you to confirm.
           </span>
         </p>
         <button type="button" disabled={withdraw.isPending} onClick={() => withdraw.mutate()} className={ACTION}>

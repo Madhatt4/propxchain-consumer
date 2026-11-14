@@ -53,11 +53,8 @@ const AML_REPORT_SLOT = VAULT_SLOTS.find((s) => s.id === 'amlSourceOfFunds');
 function Disclaimer({ providerLabel }: { providerLabel: string }): JSX.Element {
   return (
     <p className="text-[11px] leading-relaxed text-muted-foreground">
-      Checks are carried out by {providerLabel}, not by PropXchain. PropXchain passes your details to {providerLabel}{' '}
-      and deletes its own copy once the check is placed with {providerLabel}. PropXchain does not assess or approve
-      anyone&apos;s identity
-      — the result is for your conveyancer to rely on, and {providerLabel}&apos;s completed report is kept in your
-      Transaction Wallet so you can share it with any conveyancer.
+      Checks are carried out by {providerLabel}, not PropXchain. We don&apos;t assess or approve anyone&apos;s identity, and we delete our copy once the check is placed.
+      The completed report is kept in your Transaction Wallet so you can share it with any conveyancer.
     </p>
   );
 }
@@ -212,10 +209,6 @@ export function AmlPanelTab({ transactionId }: TransactionTabProps): JSX.Element
       <div className="space-y-3 rounded-xl border border-dashed border-border p-5">
         <p className="flex items-center gap-2 text-sm font-semibold text-foreground">
           <ShieldCheck className="h-4 w-4 text-teal-600" /> ID &amp; AML checks are coming soon
-        </p>
-        <p className="text-xs text-muted-foreground">
-          Each buyer and seller will be able to complete one identity and anti-money-laundering check here and share
-          the report with any conveyancer from the Transaction Wallet — verify once, share where needed.
         </p>
         <Disclaimer providerLabel={providerName(null)} />
       </div>

@@ -70,8 +70,7 @@ function InviteForm({ onSend, isSending, sendError, className }: {
     <section data-testid="add-estate-agent" aria-labelledby="add-estate-agent-title" className={`${PANEL} ${className}`}>
       <h2 id="add-estate-agent-title" className="font-[Fraunces] text-lg font-semibold text-[#1A1A1A] dark:text-white">Add your estate agent</h2>
       <p className="mt-1 font-[DM_Sans] text-sm text-[#6B7280] dark:text-gray-400">
-        We email them a link. The sale appears in their agent dashboard, and they can help with forms, documents and searches for you.
-        Anything with legal weight still comes to you, it is all on the audit trail, and you can withdraw it at any time.
+        We email them a link. They can help with forms, documents and searches. You approve anything legally binding and can withdraw them any time.
       </p>
       <form onSubmit={onSubmit} className="mt-3 grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
         <label className={LABEL}>

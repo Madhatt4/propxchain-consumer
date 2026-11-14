@@ -201,8 +201,7 @@ export function AiScansTab({ transactionId, uprn, postcode }: TransactionTabProp
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        AI reads your documents and explains them in plain English, with a separate list for your
-        conveyancer. It's free.
+        AI explains your documents in plain English. Free.
       </p>
       <HmlrPanel transactionId={transactionId} />
       <SharedSearchScans transactionId={transactionId} />

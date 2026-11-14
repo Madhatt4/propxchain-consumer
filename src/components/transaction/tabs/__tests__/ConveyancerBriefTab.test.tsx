@@ -25,8 +25,8 @@ import type { ConveyancerBriefDraft } from '@/services/conveyancerBrief.service'
 
 const DRAFT: ConveyancerBriefDraft = {
   briefId: 'brief-1',
-  subject: '14 Example Road — work arising',
-  bodyMd: '## Tasks\n\nRegistered charge 1 of 1 — redemption.',
+  subject: '14 Example Road â€” work arising',
+  bodyMd: '## Tasks\n\nRegistered charge 1 of 1 â€” redemption.',
   itemCount: 1,
   notAvailable: ['Survey scan not yet available'],
   status: 'draft',
@@ -106,7 +106,7 @@ describe('ConveyancerBriefTab', () => {
     renderTab();
 
     fireEvent.click(await screen.findByRole('button', { name: /send to conveyancer/i }));
-    // Sending must not happen just from the first click — a confirm dialog gates it.
+    // Sending must not happen just from the first click â€” a confirm dialog gates it.
     expect(mockSend).not.toHaveBeenCalled();
     expect(await screen.findByRole('dialog')).toBeInTheDocument();
 
@@ -147,7 +147,7 @@ describe('ConveyancerBriefTab', () => {
     fireEvent.click(await screen.findByRole('button', { name: /yes, send/i }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/draft is unchanged/i);
-    // The draft itself is still rendered — nothing was lost.
+    // The draft itself is still rendered â€” nothing was lost.
     expect(screen.getByText(DRAFT.subject)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /send to conveyancer/i })).not.toBeDisabled();
   });
@@ -199,7 +199,7 @@ describe('ConveyancerBriefTab', () => {
 
   it('should keep the draft on screen when the post-409 resync itself fails', async () => {
     // First call is the initial load, second is the resync triggered by the
-    // 409 below — that second call is the one that must not wipe the draft.
+    // 409 below â€” that second call is the one that must not wipe the draft.
     mockGet.mockResolvedValueOnce(DRAFT).mockRejectedValueOnce(new Error('temporarily unavailable'));
     mockSend.mockRejectedValue(new ConveyancerBriefError(409, 'already_sending'));
     renderTab();
@@ -207,7 +207,7 @@ describe('ConveyancerBriefTab', () => {
     fireEvent.click(await screen.findByRole('button', { name: /send to conveyancer/i }));
     fireEvent.click(await screen.findByRole('button', { name: /yes, send/i }));
 
-    // The draft must still be rendered — a transient resync failure is not a
+    // The draft must still be rendered â€” a transient resync failure is not a
     // reason to drop back to the empty state.
     expect(await screen.findByText(DRAFT.subject)).toBeInTheDocument();
     expect(await screen.findByRole('alert')).toHaveTextContent(/already in progress/i);
@@ -223,12 +223,27 @@ describe('ConveyancerBriefTab', () => {
     fireEvent.click(await screen.findByRole('button', { name: /compose brief/i }));
     expect(await screen.findByRole('alert')).toHaveTextContent(/composed a brief recently/i);
 
-    // Switching to a different transaction re-runs the initial load — the
+    // Switching to a different transaction re-runs the initial load â€” the
     // stale banner from tx-1 must not linger next to tx-2's fresh draft.
     mockGet.mockResolvedValueOnce(DRAFT);
     rerender(<ConveyancerBriefTab transactionId="tx-2" />);
 
     expect(await screen.findByText(DRAFT.subject)).toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('should show the short compose intro', async () => {
+    mockGet.mockResolvedValue(null);
+    renderTab();
+
+    expect(await screen.findByText(/Draft an email to your conveyancer from your scans/)).toBeInTheDocument();
+  });
+
+  it('should not show the render-only note on a draft', async () => {
+    mockGet.mockResolvedValue(DRAFT);
+    renderTab();
+
+    expect(await screen.findByText(DRAFT.subject)).toBeInTheDocument();
+    expect(screen.queryByText(/render-only/)).not.toBeInTheDocument();
   });
 });

@@ -234,9 +234,8 @@ describe('AmlPanelTab', () => {
     renderTab();
     await screen.findByTestId('aml-card-me');
     expect(screen.getByTestId('aml-provider-badge')).toHaveTextContent('Checks by Verify 365');
-    expect(screen.getByText(/carried out by Verify 365, not by PropXchain/i)).toBeInTheDocument();
-    // The same deletion promise appears in the disclaimer and on the card, in one phrasing.
-    expect(screen.getAllByText(/deletes its own copy once the check is placed with Verify 365/i)).toHaveLength(2);
+    expect(screen.getByText(/carried out by Verify 365, not PropXchain\. We don't assess or approve anyone's identity, and we delete our copy once the check is placed/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/deletes its own copy once the check is placed with Verify 365/i)).toHaveLength(1);
     const card = screen.getByTestId('aml-card-me');
     expect(within(card).getByRole('button', { name: /start standard check with verify 365/i })).toBeInTheDocument();
     expect(within(card).getByText(/these details go to Verify 365/i)).toBeInTheDocument();

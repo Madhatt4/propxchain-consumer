@@ -74,6 +74,12 @@ describe('DashboardPage document progress', () => {
     getDocumentStatus.mockResolvedValue([]);
   });
 
+  it('should not show a welcome-back subtitle under the page title', async () => {
+    renderDashboard();
+    await waitFor(() => expect(getMyTransactions).toHaveBeenCalled());
+    expect(screen.queryByText(/Welcome back/)).not.toBeInTheDocument();
+  });
+
   it('should keep the last status for a deal when a later status read fails', async () => {
     // Arrange
     getDocumentStatus.mockResolvedValue(titleHidden);

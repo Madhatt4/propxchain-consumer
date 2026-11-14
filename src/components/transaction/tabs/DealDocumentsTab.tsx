@@ -177,8 +177,7 @@ export function DealDocumentsTab({ transactionId }: TransactionTabProps): JSX.El
       <header>
         <h2 className="text-lg font-semibold text-foreground">Documents on this deal</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Property documents everyone on the deal can see: the buyer, the seller, both conveyancers and
-          the estate agent. Personal documents stay in each person&apos;s Transaction Wallet.
+          Property documents everyone on the deal can see. Personal documents stay in each person&apos;s Transaction Wallet.
         </p>
       </header>
 
