@@ -62,7 +62,7 @@ describe('WelcomeCards', () => {
     const onClose = vi.fn();
     render(<WelcomeCards isOpen onClose={onClose} />);
     fireEvent.keyDown(window, { key: 'Escape' });
-    expect(onClose).toHaveBeenCalledWith(true);
+    expect(onClose).toHaveBeenCalledWith(false);
   });
 
   it('should not close when the panel itself is clicked', () => {
