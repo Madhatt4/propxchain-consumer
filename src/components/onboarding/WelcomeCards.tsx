@@ -22,7 +22,9 @@ const TOUCH_TARGET = 'min-h-[44px] min-w-[44px]';
 
 const WelcomeCards: React.FC<WelcomeCardsProps> = ({ isOpen, onClose }) => {
   const [index, setIndex] = useState(0);
-  const [remindMe, setRemindMe] = useState(false);
+  // Marc 2026-11-14: conventional "Don't show this again", unticked by default, so the tour
+  // keeps appearing until the user opts out.
+  const [dontShowAgain, setDontShowAgain] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
 
@@ -30,8 +32,8 @@ const WelcomeCards: React.FC<WelcomeCardsProps> = ({ isOpen, onClose }) => {
   const isLast = index === WELCOME_CARDS.length - 1;
 
   const close = useCallback(() => {
-    onClose(!remindMe);
-  }, [onClose, remindMe]);
+    onClose(dontShowAgain);
+  }, [onClose, dontShowAgain]);
 
   // Escape closes. Without this the modal is a trap for keyboard users.
   useEffect(() => {
@@ -148,11 +150,11 @@ const WelcomeCards: React.FC<WelcomeCardsProps> = ({ isOpen, onClose }) => {
         <label className="flex items-center gap-2 mt-4 text-sm text-[var(--text-secondary)] cursor-pointer">
           <input
             type="checkbox"
-            checked={remindMe}
-            onChange={(e) => setRemindMe(e.target.checked)}
+            checked={dontShowAgain}
+            onChange={(e) => setDontShowAgain(e.target.checked)}
             className="w-4 h-4 cursor-pointer"
           />
-          Show this again next time
+          Don't show this again
         </label>
       </div>
     </div>

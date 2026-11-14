@@ -43,19 +43,19 @@ describe('WelcomeCards', () => {
     expect(screen.getByRole('button', { name: 'Get started' })).toBeInTheDocument();
   });
 
-  it('should close with dontShowAgain true by default', () => {
+  it('should close with dontShowAgain false by default so the tour shows again', () => {
     const onClose = vi.fn();
     render(<WelcomeCards isOpen onClose={onClose} />);
-    fireEvent.click(screen.getByTestId('welcome-cards-backdrop'));
-    expect(onClose).toHaveBeenCalledWith(true);
-  });
-
-  it('should close with dontShowAgain false when the user asks to be reminded', () => {
-    const onClose = vi.fn();
-    render(<WelcomeCards isOpen onClose={onClose} />);
-    fireEvent.click(screen.getByLabelText('Show this again next time'));
     fireEvent.click(screen.getByTestId('welcome-cards-backdrop'));
     expect(onClose).toHaveBeenCalledWith(false);
+  });
+
+  it('should close with dontShowAgain true when the user ticks Don't show this again', () => {
+    const onClose = vi.fn();
+    render(<WelcomeCards isOpen onClose={onClose} />);
+    fireEvent.click(screen.getByLabelText("Don't show this again"));
+    fireEvent.click(screen.getByTestId('welcome-cards-backdrop'));
+    expect(onClose).toHaveBeenCalledWith(true);
   });
 
   it('should close on Escape so keyboard users are not trapped', () => {
