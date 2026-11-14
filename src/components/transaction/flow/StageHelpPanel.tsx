@@ -1,16 +1,27 @@
 import { HelpCircle, X } from 'lucide-react';
 import { STAGE_HELP } from './stageHelpContent';
+import {
+  SEARCH_AREA_HEADING,
+  SEARCH_AREA_METHOD,
+  SEARCH_AREA_STAGE_ID,
+  searchAreaFallbackLine,
+  type SearchAreaInfo,
+} from './searchAreaHelp';
 
 interface StageHelpPanelProps {
   stageId: string | null;
+  /** How the search area resolved for this property; only used by Property Searches. */
+  searchArea?: SearchAreaInfo | null;
   onClose: () => void;
 }
 
-export function StageHelpPanel({ stageId, onClose }: StageHelpPanelProps): React.ReactElement | null {
+export function StageHelpPanel({ stageId, searchArea = null, onClose }: StageHelpPanelProps): React.ReactElement | null {
   if (!stageId) return null;
 
   const content = STAGE_HELP[stageId];
   if (!content) return null;
+  const showSearchArea = stageId === SEARCH_AREA_STAGE_ID;
+  const fallbackLine = showSearchArea ? searchAreaFallbackLine(searchArea) : null;
 
   return (
     <div
@@ -70,6 +81,30 @@ export function StageHelpPanel({ stageId, onClose }: StageHelpPanelProps): React
           ))}
         </ul>
       </div>
+
+      {showSearchArea && (
+        <div className="mt-3" data-testid="search-area-help">
+          <h4
+            className="text-xs font-medium uppercase tracking-wide mb-2"
+            style={{ color: 'var(--text)', fontFamily: 'DM Sans, sans-serif' }}
+          >
+            {SEARCH_AREA_HEADING}
+          </h4>
+          <div
+            className="space-y-2 text-sm leading-relaxed"
+            style={{ color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif' }}
+          >
+            {SEARCH_AREA_METHOD.map((line) => (
+              <p key={line}>{line}</p>
+            ))}
+            {fallbackLine && (
+              <p data-testid="search-area-fallback" className="font-medium" style={{ color: 'var(--text)' }}>
+                {fallbackLine}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
