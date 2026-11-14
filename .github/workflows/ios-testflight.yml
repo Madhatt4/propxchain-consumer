@@ -81,6 +81,35 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
+      # PropXchain Pro (the trade workspaces) lives in the private monorepo's
+      # packages/pro and is built in through the /pro slot, the same way
+      # deploy-frontend.yml does it. Without it the app shows the Pro stub
+      # (Marc 2026-11-14: "make propxchain pro part of the TestFlight build").
+      - name: Check the PropXchain Pro token is set
+        env:
+          PRO_REPO_TOKEN: ${{ secrets.PRO_REPO_TOKEN }}
+        run: |
+          if [ -z "$PRO_REPO_TOKEN" ]; then
+            echo "::error::PRO_REPO_TOKEN is not set. Add a fine-grained token with read access to Madhatt4/Propxchain contents as a repository secret."
+            exit 1
+          fi
+
+      - name: Check out PropXchain Pro
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          repository: Madhatt4/Propxchain
+          ref: main
+          token: ${{ secrets.PRO_REPO_TOKEN }}
+          path: .pro-checkout
+          sparse-checkout: packages/pro
+          persist-credentials: false
+
+      - name: Mount PropXchain Pro into the slot
+        run: |
+          cp -r .pro-checkout/packages/pro/src src/pro-private
+          rm -rf .pro-checkout
+          test -f src/pro-private/index.tsx
+
       - name: Build the web bundle for the app
         env:
           NODE_OPTIONS: --max-old-space-size=4096
