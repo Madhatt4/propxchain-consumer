@@ -17,7 +17,6 @@ import { OtherPartyProgressCard } from '../components/transaction/flow/OtherPart
 import { CostFooterMobile } from '../components/transaction/flow/CostFooterMobile';
 import { PropertyListingCard } from '../components/transaction/flow/PropertyListingCard';
 import { StageHelpPanel } from '../components/transaction/flow/StageHelpPanel';
-import { OnboardingBanner } from '../components/transaction/flow/OnboardingBanner';
 import { ListPropertyStage } from '../components/transaction/flow/stages/ListPropertyStage';
 import { PropertyInfoStage } from '../components/transaction/flow/stages/PropertyInfoStage';
 import { PropertyMatchedStage } from '../components/transaction/flow/stages/PropertyMatchedStage';
@@ -33,9 +32,7 @@ import { SurveyReferralStatusCard } from '../components/providers/SurveyReferral
 import { BuyerInviteCard } from '../components/transaction/flow/BuyerInviteCard';
 import BotPanelCard from '../components/transaction/BotPanelCard';
 import NextStepCard from '../components/common/NextStepCard';
-import { StallLine } from '../components/transaction/flow/StallLine';
-import { ConveyancersLine } from '../components/transaction/flow/ConveyancersLine';
-import { conveyancerMatterPath, hasRealBuyer, NO_CONVEYANCERS, type DealConveyancers } from '@/lib/dealConveyancers';
+import { conveyancerMatterPath, NO_CONVEYANCERS, type DealConveyancers } from '@/lib/dealConveyancers';
 import { OfferExpiryLine } from '../components/transaction/flow/OfferExpiryLine';
 import { SearchAgeLine } from '../components/transaction/flow/SearchAgeLine';
 import { MandateBanners } from '../components/transaction/flow/MandateBanners';
@@ -81,7 +78,6 @@ import { fireConfetti } from '../utils/confetti';
 import { syncListingFromChain } from '../utils/rightmoveStorage';
 import { resolvePropertyPostcode } from '../utils/propertyFields';
 import type { RightmovePropertyListing } from '../types/rightmove.types';
-import { isCompletedStatus } from '../types/transactionStatus';
 import type { Tenure } from '../types/listing.types';
 import type { StructuredAddress } from '../services/pafAddress';
 import type { StageConfig, JourneyRole } from '../types/stage.types';
@@ -758,19 +754,6 @@ export default function TransactionFlowPage(): ReactElement {
           </div>
         )}
 
-        {/* Stall attribution: who the deal is waiting on and for how long, with
-            the stage against its benchmark, shown whichever of the next-step or
-            AI cards is on screen. */}
-        {/* A completed deal waits on nobody; hidden at once, before the chain mirror catches up. */}
-        {id && !isCompletedStatus(transaction?.status) && (
-          <StallLine transactionId={id} refreshKey={invalidationKey} className="mb-4" />
-        )}
-        <ConveyancersLine
-          conveyancers={transaction?.conveyancers ?? NO_CONVEYANCERS}
-          dealSide={dealSide}
-          hasBuyer={hasRealBuyer(transaction?.buyer, transaction?.seller)}
-          className="mb-4"
-        />
         {id && <SearchAgeLine transactionId={id} refreshKey={invalidationKey} className="mb-4" />}
         {/* Mortgage offer expiry: every party sees it once the buyer's offer is within a month of running out. */}
         {id && <OfferExpiryLine transactionId={id} refreshKey={invalidationKey} className="mb-4" />}
@@ -781,11 +764,6 @@ export default function TransactionFlowPage(): ReactElement {
         {id && (
           <AddEstateAgentPanel transactionId={id} dealSide={dealSide} className="mb-4" />
         )}
-
-        {/* Onboarding banner */}
-        <div className="mb-4">
-          <OnboardingBanner role={userRole} totalStages={visibleStages.length} />
-        </div>
 
         {/* Horizontal stage tabs — selecting one renders its detail card in
             the main column below. The seller journey gets a selectable
