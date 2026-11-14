@@ -246,11 +246,6 @@ export function MortgageFundingStage({ stage, onComplete, transactionId, isEditi
 
   return (
     <div className="flex flex-col gap-4">
-      {isEditing && (
-        <div className="rounded-lg border border-teal-200 bg-teal-50 px-3 py-2 text-xs text-teal-700 dark:border-teal-800 dark:bg-teal-900/20 dark:text-teal-300">
-          Editing your funding details. Save changes to update them.
-        </div>
-      )}
       {error && (
         <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-300">
           {error}
@@ -283,10 +278,8 @@ export function MortgageFundingStage({ stage, onComplete, transactionId, isEditi
         </div>
       )}
 
-      {item && fundingType && (
-        <p className="text-xs text-gray-500 dark:text-slate-400">
-          {item.status === 'ready' ? `Pack shows: ${describeItem(item)}` : 'The stage completes once the document is sent from your wallet.'}
-        </p>
+      {item && fundingType && item.status === 'ready' && (
+        <p className="text-xs text-gray-500 dark:text-slate-400">{`Pack shows: ${describeItem(item)}`}</p>
       )}
 
       {fundingType && (

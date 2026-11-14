@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactElement } from 'react';
-import { ClipboardCheck, PhoneCall, Receipt, FileText } from 'lucide-react';
+import { ClipboardCheck } from 'lucide-react';
 import {
   getSurveyReferralForTransaction,
   type SurveyReferralRecord,
@@ -11,21 +11,6 @@ interface Props {
    *  selected some other way, or the fetch failed). */
   fallback: ReactElement;
 }
-
-const STEPS = [
-  {
-    icon: PhoneCall,
-    text: 'Optimus will contact you to recommend the right survey level and give you a personal quote',
-  },
-  {
-    icon: Receipt,
-    text: 'Happy with the quote? Pay their invoice and they’ll book a local RICS surveyor',
-  },
-  {
-    icon: FileText,
-    text: 'Your survey report is sent straight to you when it’s ready',
-  },
-] as const;
 
 /**
  * Replaces the generic "Stage completed" box on the buyer survey stage when a
@@ -71,14 +56,9 @@ export function SurveyReferralStatusCard({ transactionId, fallback }: Props): Re
         </div>
       </div>
 
-      <ol className="mt-4 space-y-2.5">
-        {STEPS.map(({ icon: Icon, text }, i) => (
-          <li key={i} className="flex items-start gap-2.5">
-            <Icon className="mt-0.5 h-4 w-4 shrink-0 text-teal-600 dark:text-teal-400" />
-            <span className="text-sm text-gray-700 dark:text-gray-300">{text}</span>
-          </li>
-        ))}
-      </ol>
+      <p className="mt-4 text-sm text-gray-700 dark:text-gray-300">
+        Optimus will contact you with a quote. Your report comes straight to you.
+      </p>
 
       <p className="mt-4 border-t border-teal-200 dark:border-teal-800 pt-3 text-xs text-gray-500 dark:text-gray-400">
         Waiting to hear back? Call Optimus on{' '}

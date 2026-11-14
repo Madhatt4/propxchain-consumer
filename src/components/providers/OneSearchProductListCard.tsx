@@ -174,15 +174,13 @@ export default function OneSearchProductListCard({
         <div className="border-t border-gray-100 px-4 py-3 dark:border-gray-700/50">
           {requestSent ? (
             <div className="rounded-lg border border-teal-200 bg-teal-50 px-3 py-2.5 text-xs text-teal-700 dark:border-teal-800/40 dark:bg-teal-900/10 dark:text-teal-400">
-              Request sent. OneSearch will confirm exact pricing within 24 hours and your
-              conveyancer will be in touch to arrange it.
+              Request sent. Your conveyancer will be in touch to arrange it.
             </div>
           ) : (
             <>
               <div className="rounded-lg border border-teal-200 bg-teal-50 px-3 py-2 text-xs text-teal-700 dark:border-teal-800/40 dark:bg-teal-900/10 dark:text-teal-400">
-                Most of these don&rsquo;t have a confirmed online price yet. Tick what you
-                need and request it — OneSearch will confirm exact pricing within 24
-                hours rather than you having to ask your conveyancer to chase it.
+                No online price yet. Tick what you need and OneSearch will confirm pricing
+                within 24 hours.
               </div>
 
               <ul className="mt-3 max-h-80 space-y-1 overflow-y-auto">

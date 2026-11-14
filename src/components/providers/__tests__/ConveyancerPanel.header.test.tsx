@@ -63,7 +63,7 @@ describe('Conveyancer stage header', () => {
     );
     expect(await screen.findByText('Firm One')).toBeInTheDocument();
     expect(screen.getByText(/request estimates from/)).toBeInTheDocument();
-    expect(screen.getByText(/tailored estimate/)).toBeInTheDocument();
+    expect(screen.getByText(/No commitment/)).toBeInTheDocument();
     expect(screen.getByText('Estimate on request')).toBeInTheDocument();
     expect(container.textContent ?? '').not.toMatch(/quote/i);
   });

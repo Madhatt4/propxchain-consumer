@@ -4,8 +4,6 @@ import { onesearchPacks, vatPenceOn, type SearchItem } from '../../services/sear
 interface OneSearchPackageBuilderProps {
   postcode: string;
   localAuthority: string;
-  /** Area capabilities flagged from the postcode/LA (e.g. coal). Used for a nudge. */
-  areaRequiredIds?: string[];
   onOrder: (searches: SearchItem[], totalPence: number) => void;
   isOrdering: boolean;
   /** Why the last order attempt failed. Shown above the button so it isn't missed. */
@@ -19,7 +17,6 @@ function pounds(amount: number): string {
 export default function OneSearchPackageBuilder({
   postcode,
   localAuthority,
-  areaRequiredIds = [],
   onOrder,
   isOrdering,
   errorMessage = null,
@@ -41,7 +38,6 @@ export default function OneSearchPackageBuilder({
   // it verbatim. Never add VAT to it again; the split below comes off `netPence`.
   const vatPence = vatPenceOn(selected.netPence);
   const totalPence = selected.rrpPence;
-  const areaNeedsCoal = areaRequiredIds.some((id) => id.toLowerCase().includes('coal'));
 
   function handleOrder(): void {
     onOrder(selected.items, totalPence);
@@ -146,14 +142,6 @@ export default function OneSearchPackageBuilder({
           );
         })}
       </div>
-
-      {/* Coal-area nudge — Premium's RVR already includes coal */}
-      {areaNeedsCoal && selected.id !== 'premium' && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs text-amber-700 dark:border-amber-800/40 dark:bg-amber-900/10 dark:text-amber-400">
-          ⚠ This area may need a coal mining search. Premium (Full Risk View) includes it, or
-          add one separately via Groundsure.
-        </div>
-      )}
 
       {/* Price summary — every figure VAT-inclusive, VAT disclosed inside the
           total rather than as a line that appears to add to it. `rrpPence` is

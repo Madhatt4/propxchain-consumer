@@ -254,7 +254,7 @@ export default function SearchPackageBuilder({
                   />
                   {isUnchecked && (
                     <p className="ml-7 text-xs text-amber-600 dark:text-amber-400">
-                      This search is recommended for your area. You can proceed without it, but your solicitor may require it later.
+                      Recommended for your area; your solicitor may require it.
                     </p>
                   )}
                 </div>
