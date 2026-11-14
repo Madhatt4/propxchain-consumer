@@ -106,6 +106,7 @@ export function SurveyPanel({
         subtitle="Commission an independent RICS-accredited survey"
         stageNumber={4}
         badge="Buyer Only"
+        hideHeader
         description="A property survey gives you an independent assessment of the property's condition. Book one through PropXchain, or upload the report from a survey you already have."
         providers={providers}
         isLoading={isLoading}

@@ -15,7 +15,7 @@ vi.mock('../../../hooks/useConveyancerSearch', () => ({
 
 const FIRM: Provider = {
   id: 'f1', name: 'Firm One', logo: 'F1', tagline: 'x', tier: 1, price: 0,
-  turnaround: 'Quote', rating: 4, reviews: 5,
+  turnaround: 'Estimate', rating: 4, reviews: 5,
   features: ['a', 'b', 'c', 'd'], regulated: 'CLC #1',
 };
 
@@ -50,6 +50,22 @@ describe('Conveyancer stage header', () => {
     expect(screen.queryByText('Local Panel')).not.toBeInTheDocument();
     expect(screen.queryByText(/Pick your own conveyancer/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Same price as going direct/)).not.toBeInTheDocument();
+  });
+
+  it('should say estimate, never quote, in the visible copy', async () => {
+    const { container } = render(
+      <ProviderDataSourceProvider value={new FakeSource()}>
+        <ConveyancerPanel
+          postcode="" transactionId="tx-1" transactionType="sale"
+          partyName="Test" partyEmail="t@t.com" propertyAddress="1 Test St"
+        />
+      </ProviderDataSourceProvider>,
+    );
+    expect(await screen.findByText('Firm One')).toBeInTheDocument();
+    expect(screen.getByText(/request estimates from/)).toBeInTheDocument();
+    expect(screen.getByText(/tailored estimate/)).toBeInTheDocument();
+    expect(screen.getByText('Estimate on request')).toBeInTheDocument();
+    expect(container.textContent ?? '').not.toMatch(/quote/i);
   });
 
   it('should keep the header on other provider stages by default', () => {

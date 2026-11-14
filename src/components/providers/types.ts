@@ -31,9 +31,9 @@ export interface Provider {
   isPexaEnabled?: boolean;
 }
 
-/** "Quote on request" when no partner has quoted — the UI never shows £0.00 or an estimate. */
+/** "Estimate on request" when no partner has priced it — the UI never shows £0.00. */
 export function formatProviderPrice(provider: Pick<Provider, 'price'>, priceLabel?: string): string {
-  if (provider.price === undefined || provider.price <= 0) return 'Quote on request';
+  if (provider.price === undefined || provider.price <= 0) return 'Estimate on request';
   return priceLabel ? `£${provider.price.toFixed(2)} ${priceLabel}` : `£${provider.price.toFixed(2)}`;
 }
 
