@@ -234,6 +234,7 @@ export function ConveyancerPanel({
         stageNumber={5}
         layout="rows"
         badge="Local Panel"
+        hideHeader
         description="You can pick your own conveyancer, or use a panel of local conveyancers we can contact for an estimate."
         providers={finalProviders}
         isLoading={isLoading}
