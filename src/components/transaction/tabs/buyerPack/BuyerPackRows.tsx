@@ -15,6 +15,8 @@ import { SurveyDeclaration } from './SurveyDeclaration';
 
 /** The buyer flow's Property Survey stage (utils/stageConfig getBuyerStages). */
 export const SURVEY_STAGE_ID = 'buyer-3';
+/** The buyer flow's Conveyancer Enquiries stage, where the buyer requests and accepts estimates. */
+export const CONVEYANCER_STAGE_ID = 'buyer-5';
 
 interface BuyerPackRowsProps {
   items: BuyerPackItem[];
@@ -34,6 +36,10 @@ function rowAction(item: BuyerPackItem, props: BuyerPackRowsProps): ReactNode {
   if (item.item === 'survey' && item.status !== 'ready' && props.onGoToStage) {
     const go = props.onGoToStage;
     return <button type="button" className={PACK_ACTION_CLASS} onClick={() => go(SURVEY_STAGE_ID)}>Choose a survey{ARROW}</button>;
+  }
+  if (item.item === 'conveyancer' && item.status !== 'ready' && props.onGoToStage) {
+    const go = props.onGoToStage;
+    return <button type="button" className={PACK_ACTION_CLASS} onClick={() => go(CONVEYANCER_STAGE_ID)}>Request estimates{ARROW}</button>;
   }
   return null;
 }

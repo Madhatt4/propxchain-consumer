@@ -2,7 +2,7 @@
 // Copyright (C) 2026 PropXchain Ltd
 
 /**
- * Labels and one-line descriptions for the five Buyer Pack items. The server
+ * Labels and one-line descriptions for the six Buyer Pack items. The server
  * sends enums; every word a person reads comes from here.
  */
 import type { BuyerPackItem, BuyerPackItemId, BuyerPackStatus, ChainPosition } from '@/services/buyerPack.service';
@@ -15,10 +15,11 @@ export const ITEM_LABELS: Record<BuyerPackItemId, string> = {
   proof_of_funds: 'Proof of funds',
   id_aml: 'ID and anti-money-laundering check',
   survey: 'Survey',
+  conveyancer: 'Conveyancer chosen',
 };
 
 /** Front-end order of the rows; the server returns its own. */
-export const ITEM_ORDER: readonly string[] = ['chain', 'mortgage', 'proof_of_funds', 'id_aml', 'survey'];
+export const ITEM_ORDER: readonly string[] = ['chain', 'mortgage', 'proof_of_funds', 'id_aml', 'survey', 'conveyancer'];
 
 /** Title for any id the server sends, including ones this build does not know yet. */
 export function itemLabel(id: string): string {
@@ -70,6 +71,13 @@ function describeMortgage(i: BuyerPackItem): string {
   return 'Not declared';
 }
 
+function describeConveyancer(i: BuyerPackItem): string {
+  if (i.status === 'ready') return i.detail.firm_name ? `Chosen: ${i.detail.firm_name}` : 'Chosen';
+  if (i.detail.estimate_state === 'received') return 'Estimates received, none accepted yet';
+  if (i.detail.estimate_state === 'requested') return 'Estimates requested';
+  return 'Not chosen yet';
+}
+
 /** The sentence the other side reads under each tick. */
 export function describeItem(i: BuyerPackItem): string {
   switch (i.item) {
@@ -78,6 +86,7 @@ export function describeItem(i: BuyerPackItem): string {
     case 'mortgage': return describeMortgage(i);
     case 'chain': return i.detail.chain_position ? `${CHAIN_COPY[i.detail.chain_position]} (buyer’s declaration)` : 'Not declared';
     case 'survey': return i.detail.survey_state === 'received' ? 'Report received' : i.detail.survey_state === 'booked' ? 'Booked' : 'Not booked';
+    case 'conveyancer': return describeConveyancer(i);
     // An id a newer server adds before this build knows it: say its state, never crash.
     default: return statusLabel(i.status);
   }

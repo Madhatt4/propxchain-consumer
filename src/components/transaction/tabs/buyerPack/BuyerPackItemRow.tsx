@@ -57,6 +57,7 @@ export function BuyerPackItemRow({
   const title = itemLabel(item.item);
   const help = showHelp ? BUYER_PACK_HELP[item.item] : undefined;
   const panelId = `buyer-pack-help-${item.item}`;
+  // The conveyancer item is deliberately not on the audit trail, so no ledger line.
   const ledgerTone = item.onLedger ? 'text-teal-700 dark:text-teal-300' : 'text-amber-700 dark:text-amber-300';
   return (
     <li className="grid grid-cols-[28px_1fr_auto] items-start gap-2.5 py-2.5" data-testid={`pack-item-${item.item}`}>
@@ -68,7 +69,7 @@ export function BuyerPackItemRow({
         <span className="sr-only">{isDone ? ', done' : ', not done'}</span>
         {help && <PackHelpButton title={title} isOpen={isHelpOpen} panelId={panelId} onToggle={() => setHelpOpen((o) => !o)} />}
         <p className="text-xs text-gray-500 dark:text-gray-400">{describeItem(item)}</p>
-        {isDone && (
+        {isDone && item.item !== 'conveyancer' && (
           <p className={cn('mt-0.5 text-xs', ledgerTone)}>
             {item.onLedger ? 'On the audit trail' : 'Not yet on the audit trail'}
           </p>

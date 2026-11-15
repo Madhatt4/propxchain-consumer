@@ -33,7 +33,7 @@ const ITEMS = [
 const onGoToStage = vi.fn();
 const props = { transactionId: 'tx_1', onGoToStage };
 const renderTab = () => render(<MemoryRouter><BuyerPackTab {...props} /></MemoryRouter>);
-const TITLES = ['Chain position', 'Mortgage or cash', 'Proof of funds', 'ID and anti-money-laundering check', 'Survey'];
+const TITLES = ['Chain position', 'Mortgage or cash', 'Proof of funds', 'ID and anti-money-laundering check', 'Survey', 'Conveyancer chosen'];
 const asBuyer = (items: readonly unknown[] = ITEMS) => {
   mockParty.mockResolvedValue({ role: 'buyer', side: 'buyer' });
   mockSync.mockResolvedValue([...items]);
@@ -110,19 +110,19 @@ describe('BuyerPackTab', () => {
     renderTab();
     await waitFor(() => expect(screen.getByText('2 of 5 ready')).toBeInTheDocument());
     const rows = within(screen.getByRole('list', { name: 'Buyer pack steps' })).getAllByRole('listitem');
-    TITLES.forEach((t, i) => expect(rows[i]).toHaveTextContent(t));
+    TITLES.slice(0, 5).forEach((t, i) => expect(rows[i]).toHaveTextContent(t));
     expect(rows[1]).toHaveTextContent('2'); // mortgage still to do: number shown
     expect(rows[0]).not.toHaveTextContent(/^1/); // chain ready: tick replaces the number
     expect(rows[3]).not.toHaveTextContent(/^4/); // id_aml ready
   });
 
   it('should send an unknown item id to the end and render it with fallback text', async () => {
-    asBuyer([{ item: 'conveyancer', status: 'not_started', detail: {}, onLedger: false, pending: false }, ...ITEMS]);
+    asBuyer([{ item: 'x_new', status: 'not_started', detail: {}, onLedger: false, pending: false }, ...ITEMS]);
     renderTab();
     await waitFor(() => expect(screen.getByText('2 of 6 ready')).toBeInTheDocument());
     const rows = within(screen.getByRole('list', { name: 'Buyer pack steps' })).getAllByRole('listitem');
     expect(rows).toHaveLength(6);
-    expect(rows[5]).toHaveTextContent('conveyancer');
+    expect(rows[5]).toHaveTextContent('x new');
     expect(rows[5]).toHaveTextContent('Not started');
     expect(within(rows[5]).queryByRole('button', { name: /What is/ })).not.toBeInTheDocument();
   });
@@ -139,10 +139,11 @@ describe('BuyerPackTab', () => {
     expect(await screen.findByText('Pack complete')).toBeInTheDocument();
   });
 
-  it.each(Object.entries(BUYER_PACK_HELP))('should open the four labelled help lines for %s with the signed-off text', async (id, help) => {
+  // The conveyancer help is exercised in BuyerPackConveyancer.test.tsx (this fixture is the five-item payload).
+  it.each(Object.entries(BUYER_PACK_HELP).filter(([id]) => id !== 'conveyancer'))('should open the four labelled help lines for %s with the signed-off text', async (id, help) => {
     asBuyer();
     renderTab();
-    const title = TITLES[['chain', 'mortgage', 'proof_of_funds', 'id_aml', 'survey'].indexOf(id)];
+    const title = TITLES[['chain', 'mortgage', 'proof_of_funds', 'id_aml', 'survey', 'conveyancer'].indexOf(id)];
     const btn = await screen.findByRole('button', { name: `What is ${title}?` });
     expect(screen.queryByText(help.what)).not.toBeInTheDocument();
     fireEvent.click(btn);
@@ -166,7 +167,7 @@ describe('BuyerPackTab', () => {
     mockLoad.mockResolvedValue([...ITEMS].reverse());
     renderTab();
     await waitFor(() => expect(screen.getByText('2 of 5 ready')).toBeInTheDocument());
-    TITLES.forEach((t) => expect(screen.getByText(t)).toBeInTheDocument());
+    TITLES.slice(0, 5).forEach((t) => expect(screen.getByText(t)).toBeInTheDocument());
     expect(screen.getByText('No chain (buyer’s declaration)')).toBeInTheDocument();
     expect(screen.getByText('Verified')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /What is/ })).not.toBeInTheDocument();

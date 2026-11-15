@@ -40,4 +40,10 @@ export const BUYER_PACK_HELP: Record<string, PackRowHelp> = {
     cost: 'Depends on the survey level and the property. Shown before you book.',
     who: "You. A lender's valuation is not a survey.",
   },
+  conveyancer: {
+    what: 'The solicitor or licensed conveyancer who handles the legal side of your purchase. Sellers ask early because nothing legal can start until you have one.',
+    where: 'Request estimates from up to three firms in the conveyancer step of this deal, then accept the one you choose.',
+    cost: 'Each firm sets its own fee, shown in its estimate.',
+    who: 'You.',
+  },
 };
