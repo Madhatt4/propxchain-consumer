@@ -238,6 +238,25 @@ describe('computePackReadiness searches row', () => {
   });
 });
 
+describe('computePackReadiness title row', () => {
+  const title = (over: Partial<PackReadinessInputs>): PackItem | undefined =>
+    computePackReadiness(inputs(over)).items.find((i) => i.id === 'titlePulled');
+
+  it('should carry the title number the pull needs', () => {
+    expect(title({ titleNumber: 'GR506405' })).toMatchObject({ done: false, status: 'Not pulled yet', titleNumber: 'GR506405' });
+  });
+
+  it('should say why it cannot be pulled when there is no title number', () => {
+    const item = title({});
+    expect(item?.status).toBe('Not pulled yet. Add your title number first');
+    expect(item?.titleNumber).toBeUndefined();
+  });
+
+  it('should read pulled once a register exists', () => {
+    expect(title({ titlePulled: true, titleNumber: 'GR506405' })).toMatchObject({ done: true, status: 'Pulled from HM Land Registry' });
+  });
+});
+
 describe('materialInfoMissing', () => {
   it('should return nothing for a complete freehold listing', () => {
     expect(materialInfoMissing(listing())).toEqual([]);

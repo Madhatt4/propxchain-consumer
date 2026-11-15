@@ -40,10 +40,26 @@ function withItem(id: PackItem['id'], patch: Partial<PackItem>): PackReadiness {
   return pack(FREEHOLD_ITEMS.map((i) => (i.id === id ? { ...i, ...patch } : i)));
 }
 
+const refreshReadiness = vi.fn();
 vi.mock('@/hooks/usePackReadiness', () => ({
   usePackReadiness: vi.fn(() => ({ readiness, isLoading: false })),
+  useRefreshPackReadiness: () => refreshReadiness,
 }));
 import { usePackReadiness } from '@/hooks/usePackReadiness';
+
+// The shared £7 pull (also Stage 1's): stubbed so no test reaches Stripe. The
+// stub exposes the props the row passes and lets a test report a success.
+const pullProps = vi.fn();
+vi.mock('../../HMLRTitlePullButton', () => ({
+  default: (props: { titleNumber: string; transactionId: string; variant?: string; onSuccess?: () => void }) => {
+    pullProps(props);
+    return (
+      <button type="button" onClick={() => props.onSuccess?.()}>
+        Get it for £7 ({props.titleNumber})
+      </button>
+    );
+  },
+}));
 
 vi.mock('@/services/materialInfoSave', () => ({ saveMaterialInfoPatch: vi.fn() }));
 
@@ -82,6 +98,7 @@ function rows(): HTMLElement[] {
 }
 
 beforeEach(() => {
+  vi.clearAllMocks();
   useReadiness(readiness);
 });
 
@@ -173,7 +190,7 @@ describe('SalesPackTab help', () => {
 
 describe('SalesPackTab row actions', () => {
   it.each([
-    ['Get it for £7', 'seller-1'],
+    ['Add title number in Stage 1', 'seller-1'],
     ['Start form', 'seller-3'],
   ])('should send "%s" to %s', (label, stageId) => {
     const go = vi.fn();
@@ -189,7 +206,7 @@ describe('SalesPackTab row actions', () => {
 
   it('should render no stage actions when the flow page gives no way to navigate', () => {
     renderTab();
-    expect(screen.queryByRole('button', { name: /Get it for £7|Start form|Choose searches/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Get it for £7|Add title number|Start form|Choose searches/ })).toBeNull();
   });
 
   it('should send a missing address, postcode or price to Stage 1 instead of an inline form', () => {
@@ -200,6 +217,55 @@ describe('SalesPackTab row actions', () => {
     expect(screen.queryByRole('button', { name: 'Save' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: /Fix in Stage 1/ }));
     expect(go).toHaveBeenCalledWith('seller-1');
+  });
+});
+
+describe('SalesPackTab title register row', () => {
+  it('should start the shared £7 pull from the row with the deal and its title number', () => {
+    useReadiness(withItem('titlePulled', { titleNumber: 'GR506405' }));
+    renderTab(vi.fn());
+    const button = within(rows()[2]).getByRole('button', { name: /Get it for £7/ });
+    expect(pullProps).toHaveBeenLastCalledWith(
+      expect.objectContaining({ titleNumber: 'GR506405', transactionId: 'tx-1', variant: 'compact' }),
+    );
+    expect(within(rows()[2]).queryByRole('button', { name: /Add title number/ })).toBeNull();
+    expect(button).toBeInTheDocument();
+  });
+
+  it('should explain and fall back to Stage 1 when the deal has no title number', () => {
+    useReadiness(withItem('titlePulled', { status: 'Not pulled yet. Add your title number first' }));
+    const go = vi.fn();
+    renderTab(go);
+    expect(rows()[2]).toHaveTextContent('Add your title number first');
+    expect(pullProps).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: /Add title number in Stage 1/ }));
+    expect(go).toHaveBeenCalledWith('seller-1');
+  });
+
+  it('should refresh readiness after a successful pull and keep the button mounted once ticked', () => {
+    useReadiness(withItem('titlePulled', { titleNumber: 'GR506405' }));
+    const client = new QueryClient();
+    const tab = (): JSX.Element => (
+      <QueryClientProvider client={client}>
+        <MemoryRouter>
+          <SalesPackTab transactionId="tx-1" onGoToStage={vi.fn()} />
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+    const { rerender } = render(tab());
+    fireEvent.click(screen.getByRole('button', { name: /Get it for £7/ }));
+    expect(refreshReadiness).toHaveBeenCalledTimes(1);
+    // The refreshed readiness now ticks the row; the register modal lives in the button.
+    useReadiness(withItem('titlePulled', { titleNumber: 'GR506405', done: true, status: 'Pulled from HM Land Registry' }));
+    rerender(tab());
+    expect(rows()[2]).toHaveTextContent('Title register, done');
+    expect(within(rows()[2]).getByRole('button', { name: /Get it for £7/ })).toBeInTheDocument();
+  });
+
+  it('should offer no pull once the title is already pulled', () => {
+    useReadiness(withItem('titlePulled', { titleNumber: 'GR506405', done: true, status: 'Pulled from HM Land Registry' }));
+    renderTab(vi.fn());
+    expect(screen.queryByRole('button', { name: /Get it for £7/ })).toBeNull();
   });
 });
 
@@ -232,6 +298,34 @@ describe('SalesPackTab for the buyer', () => {
     expect(screen.queryByRole('combobox')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'What is Proof of identity?' }));
     expect(screen.getByText('Who usually does it')).toBeInTheDocument();
+  });
+
+  it('should show no status lines and no actions, only ticks, titles and help', () => {
+    useReadiness(withItem('titlePulled', { titleNumber: 'GR506405' }));
+    renderTab(vi.fn(), true);
+    for (const status of ['Not pulled yet', 'Not started', 'Not ordered', 'Not shared yet', 'Rating C, found on the national register']) {
+      expect(screen.queryByText(status)).toBeNull();
+    }
+    expect(screen.queryByRole('button', { name: /Get it for £7|Add title number/ })).toBeNull();
+    expect(pullProps).not.toHaveBeenCalled();
+    expect(rows()[0]).toHaveTextContent('About your property, done');
+    expect(rows()[2]).toHaveTextContent(/^3Title register/);
+    fireEvent.click(screen.getByRole('button', { name: 'What is Title register?' }));
+    expect(screen.getByText('Who usually does it')).toBeInTheDocument();
+  });
+
+  it('should hide the amber missing line from the buyer', () => {
+    useReadiness(withItem('materialInfo', MISSING_BAND));
+    renderTab(vi.fn(), true);
+    expect(screen.queryByText('Missing: council tax band')).toBeNull();
+  });
+
+  it('should still show the seller every status line', () => {
+    useReadiness(withItem('materialInfo', MISSING_BAND));
+    renderTab(vi.fn());
+    for (const status of ['Missing: council tax band', 'Not pulled yet', 'Not started', 'Not ordered', 'Not shared yet']) {
+      expect(screen.getAllByText(status).length).toBeGreaterThan(0);
+    }
   });
 
   it('should keep the full lead text for the seller', () => {

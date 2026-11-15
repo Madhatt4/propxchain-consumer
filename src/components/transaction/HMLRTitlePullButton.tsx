@@ -42,7 +42,7 @@
  *     side unconsumed-session detection is a Tier 2 cleanup item.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { icpService } from '@/services/icp.service';
 import {
   hmlrTitleService,
@@ -55,6 +55,12 @@ import stripePaymentService, {
 import HMLRRegisterView from '@/components/documents/HMLRRegisterView';
 import { logger } from '@/utils/logger';
 import { supabase } from '@/lib/supabase';
+import {
+  clearPendingState,
+  loadPendingState,
+  savePendingState,
+  type PendingTitlePull as PendingState,
+} from '@/services/hmlrPullPending';
 
 // ============================================
 // PROPS
@@ -67,6 +73,11 @@ export interface HMLRTitlePullButtonProps {
   onSuccess?: (result: HmlrTitlePullResult) => void;
   /** Override the £7 default for tests; not surfaced in production UI */
   feeGbp?: number;
+  /**
+   * 'compact' renders the idle button as a text link ("Get it for £7") for a
+   * Sales pack row. Flow, payment and modals are identical to 'default'.
+   */
+  variant?: 'default' | 'compact';
 }
 
 // ============================================
@@ -75,13 +86,13 @@ export interface HMLRTitlePullButtonProps {
 
 const PULL_FEE_GBP_DEFAULT = 7;
 const STRIPE_TIER = 'hmlr-pull';
-const HMLR_PENDING_KEY = 'propxchain.hmlr.pull.pending';
 const RETURN_QUERY_PARAM = 'hmlr_stripe_session_id';
-// Pending state older than this is treated as abandoned and cleared so
-// the user can start a fresh checkout without "you have a pending pull"
-// blocking them indefinitely. 24h covers timezone-shifted returns +
-// users who pay late in the evening and resume the next morning.
-const PENDING_STATE_TTL_MS = 24 * 60 * 60 * 1000;
+
+const DEFAULT_BUTTON_CLASS =
+  'inline-flex items-center justify-center rounded-md bg-gray-900 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-400';
+// Matches the Sales pack row actions (PackRow ACTION).
+const COMPACT_BUTTON_CLASS =
+  'whitespace-nowrap text-[13px] font-semibold text-teal-700 hover:underline disabled:cursor-not-allowed disabled:text-gray-400 disabled:no-underline dark:text-teal-300';
 
 /**
  * Phrases the HMLR proxy surfaces when a title isn't registered. Keep
@@ -113,14 +124,6 @@ type FlowStatus =
 /** Terminal failure statuses a resolved pull can land on. */
 type PullFailureStatus = 'unregistered' | 'cannot-deliver' | 'queued' | 'error';
 
-interface PendingState {
-  titleNumber: string;
-  transactionId: string;
-  startedAt: string;
-  /** Stripe Checkout Session id, populated once we know it. */
-  sessionId?: string;
-}
-
 // ============================================
 // HELPERS
 // ============================================
@@ -145,35 +148,6 @@ function classifyPullFailure(err: unknown): PullFailureStatus {
     if (looksUnregistered(err.message)) return 'unregistered';
   }
   return 'error';
-}
-
-function savePendingState(state: PendingState): void {
-  localStorage.setItem(HMLR_PENDING_KEY, JSON.stringify(state));
-}
-
-function loadPendingState(): PendingState | null {
-  const raw = localStorage.getItem(HMLR_PENDING_KEY);
-  if (!raw) return null;
-  try {
-    const parsed = JSON.parse(raw) as PendingState;
-    // Drop stale state — see PENDING_STATE_TTL_MS above
-    const startedAtMs = Date.parse(parsed.startedAt);
-    if (
-      Number.isNaN(startedAtMs) ||
-      Date.now() - startedAtMs > PENDING_STATE_TTL_MS
-    ) {
-      localStorage.removeItem(HMLR_PENDING_KEY);
-      return null;
-    }
-    return parsed;
-  } catch {
-    localStorage.removeItem(HMLR_PENDING_KEY);
-    return null;
-  }
-}
-
-function clearPendingState(): void {
-  localStorage.removeItem(HMLR_PENDING_KEY);
 }
 
 function readStripeSessionIdFromUrl(): string | null {
@@ -242,7 +216,8 @@ export default function HMLRTitlePullButton({
   transactionId,
   onSuccess,
   feeGbp = PULL_FEE_GBP_DEFAULT,
-}: HMLRTitlePullButtonProps) {
+  variant = 'default',
+}: HMLRTitlePullButtonProps): JSX.Element {
   const [status, setStatus] = useState<FlowStatus>('idle');
   const [result, setResult] = useState<HmlrTitlePullResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>('');
@@ -255,6 +230,10 @@ export default function HMLRTitlePullButton({
   // title) pair in localStorage. Drives the "View existing Title" path
   // so users who already paid don't get re-charged on revisit.
   const [hasExistingPull, setHasExistingPull] = useState<boolean>(false);
+  // Synchronous guard: the resume-pending branch awaits verifySession before
+  // any status change disables the button, so a fast double click could
+  // otherwise run two checkouts or two resumes.
+  const isClickInFlight = useRef(false);
 
   const trimmedTitleNumber = titleNumber.trim().toUpperCase();
   const titleNumberLooksValid = /^[A-Z]{1,3}\d{1,6}$/.test(trimmedTitleNumber);
@@ -396,7 +375,7 @@ export default function HMLRTitlePullButton({
   }, [transactionId, resumeAfterStripe]);
 
   // Main click handler
-  const handleClick = useCallback(async () => {
+  const runClick = useCallback(async () => {
     if (!titleNumberLooksValid) {
       setStatus('error');
       setErrorMessage(
@@ -517,6 +496,16 @@ export default function HMLRTitlePullButton({
     hasPendingPull,
   ]);
 
+  const handleClick = useCallback(async () => {
+    if (isClickInFlight.current) return;
+    isClickInFlight.current = true;
+    try {
+      await runClick();
+    } finally {
+      isClickInFlight.current = false;
+    }
+  }, [runClick]);
+
   const reset = useCallback(() => {
     setStatus('idle');
     setErrorMessage('');
@@ -549,7 +538,7 @@ export default function HMLRTitlePullButton({
       default:
         if (hasPendingPull) return 'Resume pending title pull';
         if (hasExistingPull) return 'View existing Title';
-        return `Get Title Report — £${feeGbp}`;
+        return variant === 'compact' ? `Get it for £${feeGbp}` : `Get Title Report — £${feeGbp}`;
     }
   })();
 
@@ -559,7 +548,7 @@ export default function HMLRTitlePullButton({
         type="button"
         onClick={handleClick}
         disabled={busy || !titleNumberLooksValid}
-        className="inline-flex items-center justify-center rounded-md bg-gray-900 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-400"
+        className={variant === 'compact' ? COMPACT_BUTTON_CLASS : DEFAULT_BUTTON_CLASS}
       >
         {buttonLabel}
       </button>

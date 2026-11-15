@@ -48,6 +48,7 @@ import { useMoveNarratorNotifications } from '../hooks/useMoveNarratorNotificati
 import RestorePill from '../components/common/RestorePill';
 import { ConfirmEditDialog } from '../components/common/ConfirmEditDialog';
 import { icpService } from '../services/icp.service';
+import { hasPendingTitlePull } from '../services/hmlrPullPending';
 import { partyRoleService } from '../services/partyRole.service';
 import { declareBuyerPack } from '../services/buyerPack.service';
 import { logger } from '../utils/logger';
@@ -576,14 +577,22 @@ export default function TransactionFlowPage(): ReactElement {
     setDetailOpen(true);
   }, [activeJourney]);
 
+  // Back from paying for a title pull with Stage 1 already done: only the
+  // Sales pack row's button is mounted to resume it, so open the pack. Read
+  // once — the pending entry clears when the pull lands.
+  const [isResumingPackPull] = useState(() => hasPendingTitlePull(id));
+
   const resolvedStageId = useMemo(() => {
     if (activeStageId === SALES_PACK_TAB_ID) return activeStageId;
     if (activeStageId === BUYER_SIDE_TAB_ID && activeJourney === 'seller') return activeStageId;
     if (activeStageId && visibleStages.some((s) => s.id === activeStageId)) return activeStageId;
+    if (isResumingPackPull && stages.some((s) => s.id === 'seller-1' && s.status === 'completed')) {
+      return SALES_PACK_TAB_ID;
+    }
     return (
       visibleStages.find((s) => s.status === 'active')?.id ?? visibleStages[0]?.id ?? null
     );
-  }, [activeStageId, visibleStages, activeJourney]);
+  }, [activeStageId, visibleStages, activeJourney, isResumingPackPull, stages]);
 
   // Stage 0 badge — "6 of 9" while assembling, "Complete" when done. A
   // placeholder keeps the tab present pre-load so the stage row never shifts.

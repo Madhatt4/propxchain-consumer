@@ -5,6 +5,10 @@
  * One numbered Sales pack row: number (or tick once real deal data says it is
  * done), title, "?" help, a status line, and at most one action. Layout and
  * labels follow the mock-up Marc signed off on 2026-11-15.
+ *
+ * The buyer (readOnly) sees only the marker, title and help: the status lines
+ * are the seller's to-do guidance, not facts for the other side (Marc,
+ * 2026-11-15).
  */
 import { useId, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -13,11 +17,12 @@ import { cn } from '@/lib/utils';
 import { SALES_PACK_HELP } from './salesPackHelp';
 import { PackHelpButton, PackHelpPanel } from './PackRowHelp';
 import { MaterialInfoInlineForm } from './MaterialInfoInlineForm';
+import { TitlePullAction } from './TitlePullAction';
 import type { PackItem, PackItemId } from '@/services/salesPackReadiness';
 import type { MaterialInfoGap } from '@/services/materialInfo';
 
 /** Flow stages each row's work lives in (useTransactionFlow / dealAccess). */
-const LIST_PROPERTY_STAGE_ID = 'seller-1'; // listing form + HMLR title pull
+const LIST_PROPERTY_STAGE_ID = 'seller-1'; // listing form (address, price, title number)
 const SEARCHES_STAGE_ID = 'seller-2';
 const FORMS_STAGE_ID = 'seller-3'; // TA6, TA10, TA7
 
@@ -28,7 +33,6 @@ const ACTION =
   'shrink-0 whitespace-nowrap text-[13px] font-semibold text-teal-700 hover:underline dark:text-teal-300';
 
 const STAGE_ACTION: Partial<Record<PackItemId, { label: string; stageId: string }>> = {
-  titlePulled: { label: 'Get it for £7', stageId: LIST_PROPERTY_STAGE_ID },
   ta6: { label: 'Start form', stageId: FORMS_STAGE_ID },
   ta10: { label: 'Start form', stageId: FORMS_STAGE_ID },
   ta7: { label: 'Start form', stageId: FORMS_STAGE_ID },
@@ -102,9 +106,14 @@ function RowMarker({ done, number, isNext }: RowMarkerProps): JSX.Element {
 
 export function PackRow({ item, number, isNext, transactionId, readOnly, onGoToStage }: PackRowProps): JSX.Element {
   const [isHelpOpen, setHelpOpen] = useState(false);
+  // Set once a pull from this row succeeds: the refreshed readiness ticks the
+  // row, but the button must stay mounted so its register modal stays open.
+  const [hasPulledHere, setPulledHere] = useState(false);
   const panelId = useId();
   const showInlineForm = !readOnly && !item.done && item.id === 'materialInfo' && !needsStage1(item);
   const isMissingLine = item.id === 'materialInfo' && !item.done;
+  const isTitleRow = item.id === 'titlePulled';
+  const showTitlePull = !readOnly && isTitleRow && (!item.done || hasPulledHere);
 
   return (
     <li className="grid grid-cols-[28px_1fr_auto] items-start gap-2.5 py-2.5">
@@ -115,7 +124,7 @@ export function PackRow({ item, number, isNext, transactionId, readOnly, onGoToS
         </span>
         <span className="sr-only">{item.done ? ', done' : ', not done'}</span>
         <PackHelpButton title={item.label} isOpen={isHelpOpen} panelId={panelId} onToggle={() => setHelpOpen((o) => !o)} />
-        {item.status && (
+        {!readOnly && item.status && (
           <p className={cn('text-xs', isMissingLine ? 'text-amber-700 dark:text-amber-400' : 'text-gray-500 dark:text-gray-400')}>
             {item.status}
           </p>
@@ -124,7 +133,16 @@ export function PackRow({ item, number, isNext, transactionId, readOnly, onGoToS
         {isHelpOpen && <PackHelpPanel id={panelId} help={SALES_PACK_HELP[item.id]} />}
       </div>
       <div>
-        {!item.done && !readOnly && !showInlineForm && (
+        {showTitlePull && (
+          <TitlePullAction
+            transactionId={transactionId}
+            titleNumber={item.titleNumber}
+            actionClassName={ACTION}
+            onGoToStage={onGoToStage}
+            onPulled={() => setPulledHere(true)}
+          />
+        )}
+        {!isTitleRow && !item.done && !readOnly && !showInlineForm && (
           <RowAction item={item} transactionId={transactionId} onGoToStage={onGoToStage} />
         )}
       </div>
