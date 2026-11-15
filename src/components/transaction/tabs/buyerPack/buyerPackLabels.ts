@@ -10,21 +10,29 @@ import type { VaultSlotId } from '@/types/vault.types';
 import { formatOfferDate } from '@/services/offerExpiry';
 
 export const ITEM_LABELS: Record<BuyerPackItemId, string> = {
-  id_aml: 'ID and AML verified',
-  proof_of_funds: 'Proof of funds',
-  mortgage: 'Mortgage position',
   chain: 'Chain position',
+  mortgage: 'Mortgage or cash',
+  proof_of_funds: 'Proof of funds',
+  id_aml: 'ID and anti-money-laundering check',
   survey: 'Survey',
 };
 
-/** What the buyer has to do. Shown only in the buyer's own view. */
-export const ITEM_HELP: Record<BuyerPackItemId, string> = {
-  id_aml: 'Run through the ID & AML tab. Only the result reaches this pack, never the documents.',
-  proof_of_funds: 'Send a source-of-funds document from your PropXchain Wallet to this deal.',
-  mortgage: 'Say whether you are a cash buyer or need a mortgage, and send the decision in principle or the offer from your wallet.',
-  chain: 'Say whether this purchase depends on selling another property.',
-  survey: 'Booked through the platform, then tick when the report arrives.',
-};
+/** Front-end order of the rows; the server returns its own. */
+export const ITEM_ORDER: readonly string[] = ['chain', 'mortgage', 'proof_of_funds', 'id_aml', 'survey'];
+
+/** Title for any id the server sends, including ones this build does not know yet. */
+export function itemLabel(id: string): string {
+  return (ITEM_LABELS as Record<string, string | undefined>)[id] ?? id.replace(/_/g, ' ');
+}
+
+/** Known ids in the signed-off order, unknown ones after them in server order. */
+export function sortPackItems(items: readonly BuyerPackItem[]): BuyerPackItem[] {
+  const rank = (id: string): number => {
+    const i = ITEM_ORDER.indexOf(id);
+    return i === -1 ? ITEM_ORDER.length : i;
+  };
+  return [...items].sort((a, b) => rank(a.item) - rank(b.item));
+}
 
 /** Slots whose sent document makes the mortgage item ready (spec item states). */
 export const MORTGAGE_SLOTS: readonly VaultSlotId[] = ['decisionInPrinciple', 'mortgageOffer'];
@@ -70,5 +78,7 @@ export function describeItem(i: BuyerPackItem): string {
     case 'mortgage': return describeMortgage(i);
     case 'chain': return i.detail.chain_position ? `${CHAIN_COPY[i.detail.chain_position]} (buyer’s declaration)` : 'Not declared';
     case 'survey': return i.detail.survey_state === 'received' ? 'Report received' : i.detail.survey_state === 'booked' ? 'Booked' : 'Not booked';
+    // An id a newer server adds before this build knows it: say its state, never crash.
+    default: return statusLabel(i.status);
   }
 }

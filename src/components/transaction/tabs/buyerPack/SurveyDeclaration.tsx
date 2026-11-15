@@ -28,9 +28,6 @@ export function SurveyDeclaration({ transactionId, detail, onUpdated }: Props): 
 
   return (
     <div className="space-y-1 text-sm">
-      {detail.survey_state === 'none' && (
-        <p className="text-xs text-muted-foreground">Book a survey from the Property Survey stage and it will show here as booked.</p>
-      )}
       <label className="flex items-center gap-1.5">
         <input type="checkbox" checked={received} disabled={saving} onChange={(e) => void toggle(e.target.checked)} />
         I have received the survey report

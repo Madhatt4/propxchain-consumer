@@ -40,6 +40,8 @@ export interface TransactionTabProps extends TransactionTabContext {
    * the viewer's party role read it; the shell frames the rest.
    */
   readOnly?: boolean;
+  /** Jump to a flow stage; wired by the flow page, absent elsewhere. */
+  onGoToStage?: (stageId: string) => void;
 }
 
 export interface TransactionTabDef {

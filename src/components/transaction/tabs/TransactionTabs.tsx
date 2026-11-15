@@ -46,6 +46,8 @@ interface TransactionTabsProps {
   overviewTop?: React.ReactNode;
   /** Standing cards, visible whichever section is active. */
   sidebar?: React.ReactNode;
+  /** Select a flow stage; sections that link to one switch back to the overview first. */
+  onGoToStage?: (stageId: string) => void;
 }
 
 function useIsDesktop(): boolean {
@@ -68,6 +70,7 @@ export function TransactionTabs({
   overview,
   overviewTop,
   sidebar,
+  onGoToStage,
 }: TransactionTabsProps): JSX.Element {
   const [searchParams, setSearchParams] = useSearchParams();
   const isDesktop = useIsDesktop();
@@ -119,6 +122,7 @@ export function TransactionTabs({
                     <active.Component
                       {...context}
                       readOnly={readOnly}
+                      onGoToStage={onGoToStage && ((stageId: string): void => { select('overview'); onGoToStage(stageId); })}
                     />
                   );
                   return readOnly && !SELF_GATED_SECTIONS.has(active.id)

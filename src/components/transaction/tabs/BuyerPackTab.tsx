@@ -8,17 +8,12 @@
  * ticks are shared only through the Transaction Wallet switches.
  */
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { ClipboardCheck } from 'lucide-react';
 import { type BuyerPackItem, loadBuyerPack, syncBuyerPack } from '@/services/buyerPack.service';
 import { myPartyOn, type MyParty } from '@/services/enquiries.service';
 import type { TransactionTabProps } from './transactionTabs.config';
-import { BuyerPackItemRow } from './buyerPack/BuyerPackItemRow';
-import { PROOF_OF_FUNDS_SLOTS } from './buyerPack/buyerPackLabels';
-import { ChainDeclaration } from './buyerPack/ChainDeclaration';
-import { MortgageDeclaration } from './buyerPack/MortgageDeclaration';
-import { SendToSlot } from './buyerPack/SendToSlot';
-import { SurveyDeclaration } from './buyerPack/SurveyDeclaration';
+import { BuyerPackRows } from './buyerPack/BuyerPackRows';
+import { sortPackItems } from './buyerPack/buyerPackLabels';
 
 type View =
   | { kind: 'loading' }
@@ -26,7 +21,7 @@ type View =
   | { kind: 'error'; message: string }
   | { kind: 'ready'; party: MyParty; items: BuyerPackItem[] };
 
-export function BuyerPackTab({ transactionId }: TransactionTabProps): JSX.Element {
+export function BuyerPackTab({ transactionId, onGoToStage }: TransactionTabProps): JSX.Element {
   const [view, setView] = useState<View>({ kind: 'loading' });
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -37,7 +32,7 @@ export function BuyerPackTab({ transactionId }: TransactionTabProps): JSX.Elemen
       if (!party) { setView({ kind: 'not_party' }); return; }
       // The buyer's open settles anything pending on the trail; others just read.
       const items = party.role === 'buyer' ? await syncBuyerPack(transactionId) : await loadBuyerPack(transactionId);
-      if (isLive()) setView({ kind: 'ready', party, items });
+      if (isLive()) setView({ kind: 'ready', party, items: sortPackItems(items) });
     } catch (e) {
       if (isLive()) setView({ kind: 'error', message: e instanceof Error ? e.message : 'Could not load the buyer pack' });
     }
@@ -49,7 +44,7 @@ export function BuyerPackTab({ transactionId }: TransactionTabProps): JSX.Elemen
     return () => { live = false; };
   }, [load]);
 
-  const update = (items: BuyerPackItem[]): void => setView((v) => (v.kind === 'ready' ? { ...v, items } : v));
+  const update = (items: BuyerPackItem[]): void => setView((v) => (v.kind === 'ready' ? { ...v, items: sortPackItems(items) } : v));
   // A failed sync leaves the pack stale, so say so rather than pretend.
   const resync = (): void => {
     setNotice(null);
@@ -74,7 +69,7 @@ export function BuyerPackTab({ transactionId }: TransactionTabProps): JSX.Elemen
         </div>
         <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
           {isBuyer
-            ? 'What the seller’s side will ask before they commit.'
+            ? 'What the seller’s side will ask before they commit to you. Work down the list. Each step takes you to the right place.'
             : 'The buyer’s readiness, as declared and evidenced by them. Documents behind these ticks are shared only through the Transaction Wallet switches.'}
         </p>
         <div
@@ -88,27 +83,14 @@ export function BuyerPackTab({ transactionId }: TransactionTabProps): JSX.Elemen
           <div className="h-full rounded-full bg-teal-500 transition-[width]" style={{ width: `${items.length ? (ready / items.length) * 100 : 0}%` }} />
         </div>
         {notice && <p role="alert" className="mt-3 text-sm text-destructive">{notice}</p>}
-        <ul className="mt-4 divide-y divide-gray-100 dark:divide-slate-700/40">
-          {items.map((item) => (
-            <BuyerPackItemRow key={item.item} item={item} showHelp={isBuyer}>
-              {isBuyer && item.item === 'id_aml' && item.status !== 'ready' && (
-                <Link to={{ search: '?tab=aml' }} className="text-sm text-teal-700 underline dark:text-teal-300">Open ID & AML</Link>
-              )}
-              {isBuyer && item.item === 'proof_of_funds' && item.status !== 'ready' && (
-                <SendToSlot transactionId={transactionId} slots={PROOF_OF_FUNDS_SLOTS} onSent={resync} />
-              )}
-              {isBuyer && item.item === 'mortgage' && (
-                <MortgageDeclaration transactionId={transactionId} detail={item.detail} onUpdated={update} />
-              )}
-              {isBuyer && item.item === 'chain' && (
-                <ChainDeclaration transactionId={transactionId} detail={item.detail} onUpdated={update} />
-              )}
-              {isBuyer && item.item === 'survey' && (
-                <SurveyDeclaration transactionId={transactionId} detail={item.detail} onUpdated={update} />
-              )}
-            </BuyerPackItemRow>
-          ))}
-        </ul>
+        <BuyerPackRows
+          items={items}
+          transactionId={transactionId}
+          isBuyer={isBuyer}
+          onUpdated={update}
+          onResync={resync}
+          onGoToStage={onGoToStage}
+        />
         {items.length === 0 && (
           <p className="mt-3 text-sm text-muted-foreground">Nothing to show yet.</p>
         )}
