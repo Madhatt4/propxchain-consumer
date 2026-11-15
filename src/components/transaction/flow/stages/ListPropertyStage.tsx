@@ -19,6 +19,7 @@ import { getPropertyIntelligence } from '../../../../services/propertyIntelligen
 import { useAutoPropertyScan } from '../../../../hooks/useAutoPropertyScan';
 import { PropertyDetailsForm, type PropertyDetailsValue } from './PropertyDetailsForm';
 import { useToast } from '@/hooks/use-toast';
+import { listingChainFailedToast } from './listingChainToast';
 
 /**
  * Compute which blank list-property fields can be filled from a free EPC record.
@@ -463,16 +464,7 @@ export function ListPropertyStage({ stage, onComplete, transactionId, onListingI
     storeTitleNumber(transactionId, details.titleNumber.trim());
     onListingImported?.(merged);
 
-    if (!chainResult.ok) {
-      toast({
-        title: 'Saved on this device — blockchain sync failed',
-        description:
-          'Your property details are saved locally but could not be written on-chain, '
-          + 'so they may not reach the buyer until you save again.'
-          + (chainResult.error ? ` (${chainResult.error})` : ''),
-        variant: 'destructive',
-      });
-    }
+    if (!chainResult.ok) toast(listingChainFailedToast(chainResult.error));
 
     if (isEditing && prevDetails) {
       const changes = diffDetails(prevDetails, details);

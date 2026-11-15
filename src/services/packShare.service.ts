@@ -75,7 +75,10 @@ export async function assemblePackSnapshot(transactionId: string): Promise<PackS
 
   const listing = inputs.listing;
   const anchorNote = 'Record held on the Internet Computer';
-  const items: PackSnapshotItem[] = readiness.items.map((item) => {
+  // Only id, label and done go public: the seller-facing status line and
+  // missing-field list are guidance for the seller, not pack content.
+  const items: PackSnapshotItem[] = readiness.items.map(({ id, label, done }) => {
+    const item = { id, label, done };
     switch (item.id) {
       case 'titlePulled':
         return item.done

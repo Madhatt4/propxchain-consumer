@@ -3,35 +3,49 @@
 // SPDX-License-Identifier: Proprietary
 
 /**
- * The Sales pack tab renders the readiness meter from the shared hook and is
- * registered in the tab registry as a free (starter) tab — decisions in
- * Madhatt4/Propxchain#115.
+ * The Sales pack tab renders the guided, numbered list Marc signed off on
+ * 2026-11-15 from the shared readiness hook, and is not a drawer section:
+ * it lives as Stage 0 in the flow (decisions in Madhatt4/Propxchain#115).
  */
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { SalesPackTab } from '../SalesPackTab';
 import { TRANSACTION_TABS } from '../transactionTabs.config';
-import type { PackReadiness } from '@/services/salesPackReadiness';
+import type { PackItem, PackReadiness } from '@/services/salesPackReadiness';
 
-const readiness: PackReadiness = {
-  items: [
-    { id: 'materialInfo', label: 'Material information complete', done: true },
-    { id: 'epc', label: 'EPC rating on the listing', done: true },
-    { id: 'titlePulled', label: 'Title register pulled (HMLR)', done: false },
-    { id: 'ta6', label: 'TA6 property information form', done: false },
-    { id: 'idShared', label: 'Proof of ID shared from your wallet (never inside the pack)', done: false },
-  ],
-  done: 2,
-  total: 5,
-  warnings: [],
-};
+function pack(items: PackItem[]): PackReadiness {
+  return { items, done: items.filter((i) => i.done).length, total: items.length, warnings: [] };
+}
+
+const FREEHOLD_ITEMS: PackItem[] = [
+  { id: 'materialInfo', label: 'About your property', done: true, missing: [] },
+  { id: 'epc', label: 'Energy Performance Certificate (EPC)', done: true, status: 'Rating C, found on the national register' },
+  { id: 'titlePulled', label: 'Title register', done: false, status: 'Not pulled yet' },
+  { id: 'ta6', label: 'Property information form (TA6)', done: false, status: 'Not started' },
+  { id: 'ta10', label: 'Fittings and contents form (TA10)', done: false, status: 'Not started' },
+  { id: 'searches', label: 'Property searches', done: false, status: 'Not ordered', searchesState: 'notOrdered' },
+  { id: 'idShared', label: 'Proof of identity', done: false, status: 'Not shared yet' },
+];
+
+const TA7: PackItem = { id: 'ta7', label: 'Leasehold information form (TA7)', done: false, status: 'Not started' };
+
+const readiness = pack(FREEHOLD_ITEMS);
+
+const MISSING_BAND: Partial<PackItem> = { done: false, missing: ['councilTaxBand'], status: 'Missing: council tax band' };
+
+function withItem(id: PackItem['id'], patch: Partial<PackItem>): PackReadiness {
+  return pack(FREEHOLD_ITEMS.map((i) => (i.id === id ? { ...i, ...patch } : i)));
+}
 
 vi.mock('@/hooks/usePackReadiness', () => ({
   usePackReadiness: vi.fn(() => ({ readiness, isLoading: false })),
 }));
 import { usePackReadiness } from '@/hooks/usePackReadiness';
+
+vi.mock('@/services/materialInfoSave', () => ({ saveMaterialInfoPatch: vi.fn() }));
 
 vi.mock('@/services/web2-document.service', () => ({
   web2DocumentService: {
@@ -47,74 +61,182 @@ vi.mock('@/services/salesPackDocument.service', () => ({
   fetchSalesPackFile: vi.fn(),
 }));
 
-function renderTab(onGoToStage?: (stageId: string) => void, readOnly?: boolean): void {
-  render(
-    <MemoryRouter>
-      <SalesPackTab
-        transactionId="tx-1"
-        onGoToStage={onGoToStage}
-        readOnly={readOnly}
-      />
-    </MemoryRouter>,
-  );
+function useReadiness(r: PackReadiness): void {
+  vi.mocked(usePackReadiness).mockReturnValue({ readiness: r, isLoading: false });
 }
 
-describe('SalesPackTab row actions', () => {
-  it('should send an unfinished material-info row to Stage 1', () => {
-    const go = vi.fn();
-    const done = { ...readiness, items: readiness.items.map((i) => (i.id === 'materialInfo' ? { ...i, done: false } : i)) };
-    vi.mocked(usePackReadiness).mockReturnValueOnce({ readiness: done, isLoading: false });
-    renderTab(go);
-    fireEvent.click(screen.getByRole('button', { name: 'Complete in Stage 1' }));
-    expect(go).toHaveBeenCalledWith('seller-1');
+function renderTab(onGoToStage?: (stageId: string) => void, readOnly?: boolean): QueryClient {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  render(
+    <QueryClientProvider client={client}>
+      <MemoryRouter>
+        <SalesPackTab transactionId="tx-1" onGoToStage={onGoToStage} readOnly={readOnly} />
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
+  return client;
+}
+
+function rows(): HTMLElement[] {
+  return within(screen.getByRole('list', { name: 'Sales pack steps' })).getAllByRole('listitem');
+}
+
+beforeEach(() => {
+  useReadiness(readiness);
+});
+
+describe('SalesPackTab order and numbering', () => {
+  it('should number not-done rows by position and tick done rows', () => {
+    renderTab();
+    const list = rows();
+    expect(list).toHaveLength(7);
+    expect(list[0]).toHaveTextContent('About your property, done');
+    expect(list[2]).toHaveTextContent(/^3Title register/);
+    expect(list[5]).toHaveTextContent(/^6Property searches/);
+    expect(list[6]).toHaveTextContent(/^7Proof of identity/);
   });
 
-  it('should not offer a Stage 1 link when material info is already complete', () => {
+  it('should re-flow the numbers when TA7 is shown', () => {
+    useReadiness(pack([...FREEHOLD_ITEMS.slice(0, 5), TA7, ...FREEHOLD_ITEMS.slice(5)]));
+    renderTab();
+    const list = rows();
+    expect(list).toHaveLength(8);
+    expect(list[5]).toHaveTextContent(/^6Leasehold information form \(TA7\)/);
+    expect(list[6]).toHaveTextContent(/^7Property searches/);
+    expect(list[7]).toHaveTextContent(/^8Proof of identity/);
+  });
+
+  it('should show the done count against the visible rows', () => {
+    renderTab();
+    expect(screen.getByText('2 of 7')).toBeInTheDocument();
+    const bar = screen.getByRole('progressbar', { name: 'Sales pack readiness' });
+    expect(bar).toHaveAttribute('aria-valuenow', '2');
+    expect(bar).toHaveAttribute('aria-valuemax', '7');
+  });
+});
+
+describe('SalesPackTab next line', () => {
+  it('should name the first row that is not done', () => {
+    renderTab();
+    expect(screen.getByText('Next: Title register')).toBeInTheDocument();
+  });
+
+  it('should say the pack is complete when every row is done', () => {
+    useReadiness(pack(FREEHOLD_ITEMS.map((i) => ({ ...i, done: true }))));
+    renderTab();
+    expect(screen.getByText('Pack complete')).toBeInTheDocument();
+  });
+});
+
+describe('SalesPackTab searches row', () => {
+  it.each([
+    ['Not ordered', 'notOrdered', false],
+    ['Ordered, waiting for results', 'ordered', false],
+    ['Results back', 'back', true],
+  ] as const)('should show "%s"', (status, searchesState, done) => {
+    useReadiness(withItem('searches', { status, searchesState, done }));
     renderTab(vi.fn());
-    expect(screen.queryByRole('button', { name: 'Complete in Stage 1' })).toBeNull();
+    expect(rows()[5]).toHaveTextContent(status);
+  });
+
+  it('should offer "Choose searches" before anything is ordered', () => {
+    const go = vi.fn();
+    renderTab(go);
+    fireEvent.click(screen.getByRole('button', { name: /Choose searches/ }));
+    expect(go).toHaveBeenCalledWith('seller-2');
+  });
+
+  it('should offer no action while results are awaited', () => {
+    useReadiness(withItem('searches', { status: 'Ordered, waiting for results', searchesState: 'ordered' }));
+    renderTab(vi.fn());
+    expect(screen.queryByRole('button', { name: /Choose searches/ })).toBeNull();
+  });
+});
+
+describe('SalesPackTab help', () => {
+  it('should toggle the four-line help panel from the ? button', () => {
+    renderTab();
+    const q = screen.getByRole('button', { name: 'What is Title register?' });
+    expect(q).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(q);
+    expect(q).toHaveAttribute('aria-expanded', 'true');
+    const panel = document.getElementById(q.getAttribute('aria-controls') ?? '') as HTMLElement;
+    for (const label of ['What it is', 'Where you get it', 'Cost', 'Who usually does it']) {
+      expect(within(panel).getByText(label)).toBeInTheDocument();
+    }
+    expect(panel).toHaveTextContent('£7, the HM Land Registry fee.');
+    fireEvent.click(q);
+    expect(q).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByText('Who usually does it')).toBeNull();
+  });
+});
+
+describe('SalesPackTab row actions', () => {
+  it.each([
+    ['Get it for £7', 'seller-1'],
+    ['Start form', 'seller-3'],
+  ])('should send "%s" to %s', (label, stageId) => {
+    const go = vi.fn();
+    renderTab(go);
+    fireEvent.click(screen.getAllByRole('button', { name: new RegExp(label) })[0]);
+    expect(go).toHaveBeenCalledWith(stageId);
   });
 
   it('should point an unshared proof of ID at the wallet, not at the pack uploader', () => {
     renderTab();
-    expect(screen.getByRole('link', { name: 'Share from wallet' })).toHaveAttribute('href', '/transaction/tx-1/flow?tab=wallet');
+    expect(screen.getByRole('link', { name: /Share from wallet/ })).toHaveAttribute('href', '/transaction/tx-1/flow?tab=wallet');
+  });
+
+  it('should render no stage actions when the flow page gives no way to navigate', () => {
+    renderTab();
+    expect(screen.queryByRole('button', { name: /Get it for £7|Start form|Choose searches/ })).toBeNull();
+  });
+
+  it('should send a missing address, postcode or price to Stage 1 instead of an inline form', () => {
+    useReadiness(withItem('materialInfo', { done: false, missing: ['price'], status: 'Missing: asking price' }));
+    const go = vi.fn();
+    renderTab(go);
+    expect(screen.getByText('Missing: asking price')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Save' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /Fix in Stage 1/ }));
+    expect(go).toHaveBeenCalledWith('seller-1');
   });
 });
 
-describe('SalesPackTab', () => {
-  it('should show the done fraction from the readiness hook', () => {
-    renderTab();
-    expect(screen.getByText('2 of 5')).toBeInTheDocument();
-  });
-
-  it('should render one row per readiness item with its completion state', () => {
-    renderTab();
-    expect(screen.getByText('Material information complete')).toBeInTheDocument();
-    expect(screen.getByText('Title register pulled (HMLR)')).toBeInTheDocument();
-    const bar = screen.getByRole('progressbar', { name: 'Sales pack readiness' });
-    expect(bar).toHaveAttribute('aria-valuenow', '2');
-    expect(bar).toHaveAttribute('aria-valuemax', '5');
-  });
-
-  it('should offer the extra-documents slot', () => {
-    renderTab();
-    expect(screen.getByRole('button', { name: 'Add a document' })).toBeInTheDocument();
+describe('SalesPackTab about-your-property inline form', () => {
+  it('should show only the missing fields', () => {
+    useReadiness(withItem('materialInfo', MISSING_BAND));
+    renderTab(vi.fn());
+    expect(screen.getByText('Missing: council tax band')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Tenure')).toBeNull();
+    expect(screen.queryByLabelText('Property type')).toBeNull();
+    const bands = Array.from(screen.getByLabelText('Council tax band').querySelectorAll('option')).map((o) => o.textContent);
+    expect(bands).toEqual(['Choose', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']);
   });
 });
 
 // The buyer sees the pack, but only the seller's side acts on it
 // (lib/dealAccess `salesPack`).
 describe('SalesPackTab for the buyer', () => {
-  it('should show the items and progress but no way to change them', () => {
-    const open = { ...readiness, items: readiness.items.map((i) => ({ ...i, done: false })) };
-    vi.mocked(usePackReadiness).mockReturnValueOnce({ readiness: open, isLoading: false });
+  it('should show the rows, progress and help but no way to change them', () => {
+    useReadiness(withItem('materialInfo', MISSING_BAND));
     renderTab(vi.fn(), true);
-    expect(screen.getByText('Material information complete')).toBeInTheDocument();
+    expect(screen.getByText('About your property')).toBeInTheDocument();
     expect(screen.getByRole('progressbar', { name: 'Sales pack readiness' })).toBeInTheDocument();
     expect(screen.getByRole('note')).toHaveTextContent('View only');
-    expect(screen.queryByRole('button', { name: 'Complete in Stage 1' })).toBeNull();
-    expect(screen.queryByRole('link', { name: 'Share from wallet' })).toBeNull();
+    expect(screen.queryByText(/Work down the list/)).toBeNull();
+    expect(screen.queryByRole('button', { name: /Get it for £7|Start form|Choose searches|Fix in Stage 1/ })).toBeNull();
+    expect(screen.queryByRole('link', { name: /Share from wallet/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Save' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Add a document' })).toBeNull();
     expect(screen.queryByRole('combobox')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'What is Proof of identity?' }));
+    expect(screen.getByText('Who usually does it')).toBeInTheDocument();
+  });
+
+  it('should keep the full lead text for the seller', () => {
+    renderTab(vi.fn());
+    expect(screen.getByText(/Work down the list\. Each step takes you to the right place\./)).toBeInTheDocument();
   });
 });
 

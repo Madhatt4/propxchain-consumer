@@ -11,6 +11,8 @@ const validBase: PropertyDetailsValue = {
   titleNumber: 'BD123456',
   price: 425000,
   tenure: 'freehold',
+  propertyType: 'Detached',
+  councilTaxBand: 'D',
 };
 
 function renderForm(uprn: string) {

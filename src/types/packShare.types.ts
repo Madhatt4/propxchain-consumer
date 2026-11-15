@@ -24,8 +24,11 @@ export interface PackItemVerification {
   note?: string;
 }
 
+/** Snapshots published before 2026-11-15 split searches into two rows. */
+type LegacyPackItemId = 'searchesOrdered' | 'searchesBack';
+
 export interface PackSnapshotItem {
-  id: PackItemId;
+  id: PackItemId | LegacyPackItemId;
   label: string;
   done: boolean;
   verification?: PackItemVerification;
