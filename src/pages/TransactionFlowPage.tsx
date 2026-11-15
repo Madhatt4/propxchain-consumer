@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2025 PropXchain Ltd
 
-import { useRef, useState, useEffect, useMemo } from 'react';
+import { useCallback, useRef, useState, useEffect, useMemo } from 'react';
 import type { ReactElement, ReactNode } from 'react';
 import { useAuthStore } from '../stores/authStore';
 // Note: React.ReactElement used in BuyerSideStagePlaceholder return type below
@@ -42,7 +42,8 @@ import { TOPBAR_ACTION_SLOT_ID } from '../components/navigation/AppTopBar';
 import { flashNextStepTarget } from '../utils/nextStepHighlight';
 import MoveNarratorBanner from '../components/transaction/MoveNarratorBanner';
 import { SalesPackTab } from '../components/transaction/tabs/SalesPackTab';
-import { usePackReadiness } from '../hooks/usePackReadiness';
+import { usePackReadiness, useRefreshPackReadiness } from '../hooks/usePackReadiness';
+import { useTitlePullResumeRedirect } from '../hooks/useTitlePullResumeRedirect';
 import MoveNarratorPreviewButton from '../components/transaction/MoveNarratorPreviewButton';
 import { useMoveNarratorNotifications } from '../hooks/useMoveNarratorNotifications';
 import RestorePill from '../components/common/RestorePill';
@@ -585,9 +586,21 @@ export default function TransactionFlowPage(): ReactElement {
     );
   }, [activeStageId, visibleStages, activeJourney]);
 
+  // Back from paying for a title pull with Stage 1 done: open the pack once.
+  const openSalesPack = useCallback(() => setActiveStageId(SALES_PACK_TAB_ID), []);
+  useTitlePullResumeRedirect({
+    transactionId: id,
+    isSellerWithStage1Done:
+      activeJourney === 'seller' && stages.some((s) => s.id === 'seller-1' && s.status === 'completed'),
+    hasChosenStage: activeStageId !== null,
+    openSalesPack,
+  });
+
   // Stage 0 badge — "6 of 9" while assembling, "Complete" when done. A
   // placeholder keeps the tab present pre-load so the stage row never shifts.
   const { readiness: packReadiness } = usePackReadiness(id);
+  // Stage 1 saves the title number the pack's £7 pull needs: re-read the pack.
+  const refreshPackReadiness = useRefreshPackReadiness(id ?? '');
   const salesPackSummary = packReadiness
     ? packReadiness.done === packReadiness.total
       ? 'Complete'
@@ -833,7 +846,10 @@ export default function TransactionFlowPage(): ReactElement {
                           toServiceProvider,
                           inviteCode: inviteCode || undefined,
                           transactionId: id,
-                          onListingImported: setPropertyListing,
+                          onListingImported: (listing: RightmovePropertyListing): void => {
+                            setPropertyListing(listing);
+                            refreshPackReadiness();
+                          },
                           otherPartyStages,
                           // Stamp provider orders with the current user's real
                           // identity — previously these were empty strings so

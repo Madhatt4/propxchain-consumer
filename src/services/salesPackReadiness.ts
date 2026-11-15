@@ -51,6 +51,8 @@ export interface PackItem {
   missing?: MaterialInfoGap[];
   /** searches only: where the order stands. Behaviour branches on this; `status` is display text. */
   searchesState?: SearchesState;
+  /** titlePulled only: the deal's title number, which the £7 pull needs. */
+  titleNumber?: string;
 }
 
 /** Where a deal's searches stand: nothing paid for, paid and awaited, or results returned. */
@@ -67,6 +69,8 @@ export interface PackReadiness {
 export interface PackReadinessInputs {
   listing: PropertyListing | null;
   titlePulled: boolean;
+  /** As Stage 1 saved it; absent until the seller adds one. */
+  titleNumber?: string;
   searchesOrdered: boolean;
   searchesBack: boolean;
   ta6: boolean;
@@ -115,6 +119,17 @@ function epcItem(listing: PropertyListing | null): PackItem {
   };
 }
 
+function titleStatus(isPulled: boolean, titleNumber: string | undefined): string {
+  if (isPulled) return 'Pulled from HM Land Registry';
+  if (titleNumber) return 'Not pulled yet';
+  return 'Not pulled yet. Add your title number first';
+}
+
+function titleItem(isPulled: boolean, titleNumber: string | undefined): PackItem {
+  const status = titleStatus(isPulled, titleNumber);
+  return { id: 'titlePulled', label: 'Title register', done: isPulled, status, ...(titleNumber ? { titleNumber } : {}) };
+}
+
 const SEARCHES_STATUS: Record<SearchesState, string> = {
   notOrdered: 'Not ordered',
   ordered: 'Ordered, waiting for results',
@@ -143,12 +158,7 @@ export function computePackReadiness(inputs: PackReadinessInputs): PackReadiness
   const items: PackItem[] = [
     materialInfoItem(inputs.listing),
     epcItem(inputs.listing),
-    {
-      id: 'titlePulled',
-      label: 'Title register',
-      done: inputs.titlePulled,
-      status: inputs.titlePulled ? 'Pulled from HM Land Registry' : 'Not pulled yet',
-    },
+    titleItem(inputs.titlePulled, inputs.titleNumber),
     formItem('ta6', 'Property information form (TA6)', inputs.ta6),
     formItem('ta10', 'Fittings and contents form (TA10)', inputs.ta10),
     ...(includesTa7(tenure)
@@ -188,13 +198,12 @@ async function swallow<T>(work: Promise<T>, fallback: T): Promise<T> {
 }
 
 /** True when a completed HMLR pull exists for this transaction or its title. */
-async function checkTitlePulled(transactionId: string): Promise<boolean> {
+async function checkTitlePulled(transactionId: string, titleNumber: string | undefined): Promise<boolean> {
   const register = await swallow(
     hmlrTitleService.getStoredRegisterForTransaction(transactionId),
     null,
   );
   if (register) return true;
-  const titleNumber = getTitleNumber(transactionId);
   if (!titleNumber) return false;
   const row = await swallow(hmlrTitleService.findPullByTitleNumber(titleNumber), null);
   return row != null;
@@ -254,9 +263,10 @@ export async function loadPackReadinessInputs(
     : null;
   const listing = facts?.listing ?? null;
   const registerDiscrepancies = facts?.discrepancies ?? [];
+  const titleNumber = getTitleNumber(transactionId)?.trim() || undefined;
   const [titlePulled, searchesOrdered, searchesBack, ta6, ta10, ta7, idShared] =
     await Promise.all([
-      checkTitlePulled(transactionId),
+      checkTitlePulled(transactionId, titleNumber),
       checkSearchesOrdered(transactionId),
       swallow(
         fetchReturnedOneSearchResults(transactionId).then((r) => r.length > 0),
@@ -267,7 +277,7 @@ export async function loadPackReadinessInputs(
       swallow(icpService.getTA7(transactionId).then((f) => f != null), false),
       checkIdShared(transactionId),
     ]);
-  return { listing, titlePulled, searchesOrdered, searchesBack, ta6, ta10, ta7, idShared, registerDiscrepancies };
+  return { listing, titlePulled, titleNumber, searchesOrdered, searchesBack, ta6, ta10, ta7, idShared, registerDiscrepancies };
 }
 
 export async function loadPackReadiness(transactionId: string): Promise<PackReadiness> {
