@@ -40,7 +40,7 @@ beforeEach(() => {
 describe('saveMaterialInfoPatch', () => {
   it('should merge the answers into the stored listing and persist it', async () => {
     const result = await saveMaterialInfoPatch('tx-1', { councilTaxBand: 'D' });
-    expect(result).toEqual({ saved: true, chainOk: true, error: undefined });
+    expect(result).toEqual({ isSaved: true, isChainOk: true, error: undefined });
     const [txId, merged] = storeRightmoveData.mock.calls[0] as [string, PropertyListing];
     expect(txId).toBe('tx-1');
     expect(merged).toMatchObject({ address: base.address, price: 400000, councilTaxBand: 'D' });
@@ -57,12 +57,12 @@ describe('saveMaterialInfoPatch', () => {
 
   it('should report a chain failure while keeping the local save', async () => {
     storeRightmoveData.mockResolvedValueOnce({ ok: false, error: 'offline' });
-    expect(await saveMaterialInfoPatch('tx-1', { councilTaxBand: 'D' })).toEqual({ saved: true, chainOk: false, error: 'offline' });
+    expect(await saveMaterialInfoPatch('tx-1', { councilTaxBand: 'D' })).toEqual({ isSaved: true, isChainOk: false, error: 'offline' });
   });
 
   it('should not save when there is no stored listing to merge into', async () => {
     getRightmoveData.mockReturnValueOnce(null);
-    expect(await saveMaterialInfoPatch('tx-1', { councilTaxBand: 'D' })).toEqual({ saved: false, chainOk: false });
+    expect(await saveMaterialInfoPatch('tx-1', { councilTaxBand: 'D' })).toEqual({ isSaved: false, isChainOk: false });
     expect(storeRightmoveData).not.toHaveBeenCalled();
   });
 });

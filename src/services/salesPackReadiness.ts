@@ -49,7 +49,12 @@ export interface PackItem {
   status?: string;
   /** materialInfo only: the fields still missing, in display order. */
   missing?: MaterialInfoGap[];
+  /** searches only: where the order stands. Behaviour branches on this; `status` is display text. */
+  searchesState?: SearchesState;
 }
+
+/** Where a deal's searches stand: nothing paid for, paid and awaited, or results returned. */
+export type SearchesState = 'notOrdered' | 'ordered' | 'back';
 
 export interface PackReadiness {
   items: PackItem[];
@@ -106,18 +111,26 @@ function epcItem(listing: PropertyListing | null): PackItem {
     id: 'epc',
     label: 'Energy Performance Certificate (EPC)',
     done: rating.length > 0,
-    status: rating ? `Rating ${rating}` : 'Not found yet',
+    status: rating ? `Rating ${rating}, found on the national register` : 'Not found yet',
   };
 }
 
-/** Status of the searches row before anything is ordered (the only state
- *  with a "Choose searches" action). */
-export const SEARCHES_NOT_ORDERED = 'Not ordered';
+const SEARCHES_STATUS: Record<SearchesState, string> = {
+  notOrdered: 'Not ordered',
+  ordered: 'Ordered, waiting for results',
+  back: 'Results back',
+};
 
 /** One row for searches: done only once results are back. */
-function searchesItem(ordered: boolean, back: boolean): PackItem {
-  const status = back ? 'Results back' : ordered ? 'Ordered, waiting for results' : SEARCHES_NOT_ORDERED;
-  return { id: 'searches', label: 'Property searches', done: back, status };
+function searchesItem(isOrdered: boolean, isBack: boolean): PackItem {
+  const searchesState: SearchesState = isBack ? 'back' : isOrdered ? 'ordered' : 'notOrdered';
+  return {
+    id: 'searches',
+    label: 'Property searches',
+    done: isBack,
+    status: SEARCHES_STATUS[searchesState],
+    searchesState,
+  };
 }
 
 function formItem(id: 'ta6' | 'ta10' | 'ta7', label: string, done: boolean, notDoneStatus = 'Not started'): PackItem {

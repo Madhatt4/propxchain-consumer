@@ -8,10 +8,10 @@
  * changed field so the audit trail matches a Stage 1 edit. No new on-chain
  * fields: every key here already exists on the listing.
  */
-import type { PropertyListing, ProvenanceMap, Tenure } from '@/types/listing.types';
 import { getRightmoveData, storeRightmoveData } from '@/utils/rightmoveStorage';
 import { logger } from '@/utils/logger';
 import { icpService } from './icp.service';
+import type { PropertyListing, ProvenanceMap, Tenure } from '@/types/listing.types';
 
 export interface MaterialInfoPatch {
   tenure?: Tenure;
@@ -24,9 +24,9 @@ export interface MaterialInfoPatch {
 
 export interface MaterialInfoSaveResult {
   /** False when there was no stored listing to merge into. */
-  saved: boolean;
+  isSaved: boolean;
   /** False when the save reached this device but not the chain. */
-  chainOk: boolean;
+  isChainOk: boolean;
   error?: string;
 }
 
@@ -58,7 +58,7 @@ export async function saveMaterialInfoPatch(
   patch: MaterialInfoPatch,
 ): Promise<MaterialInfoSaveResult> {
   const base = getRightmoveData(transactionId);
-  if (!base) return { saved: false, chainOk: false };
+  if (!base) return { isSaved: false, isChainOk: false };
   const keys = changedKeys(base, patch);
   const provenance: ProvenanceMap = { ...base.provenance };
   for (const k of keys) provenance[k] = 'user';
@@ -66,5 +66,5 @@ export async function saveMaterialInfoPatch(
   const merged: PropertyListing = { ...base, ...defined, provenance };
   const chain = await storeRightmoveData(transactionId, merged);
   logEdits(transactionId, base, patch, keys);
-  return { saved: true, chainOk: chain.ok, error: chain.error };
+  return { isSaved: true, isChainOk: chain.ok, error: chain.error };
 }

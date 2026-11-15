@@ -6,15 +6,15 @@
  * done), title, "?" help, a status line, and at most one action. Layout and
  * labels follow the mock-up Marc signed off on 2026-11-15.
  */
-import { useId, useState, type ReactNode } from 'react';
+import { useId, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { SEARCHES_NOT_ORDERED, type PackItem, type PackItemId } from '@/services/salesPackReadiness';
-import type { MaterialInfoGap } from '@/services/materialInfo';
 import { SALES_PACK_HELP } from './salesPackHelp';
 import { PackHelpButton, PackHelpPanel } from './PackRowHelp';
 import { MaterialInfoInlineForm } from './MaterialInfoInlineForm';
+import type { PackItem, PackItemId } from '@/services/salesPackReadiness';
+import type { MaterialInfoGap } from '@/services/materialInfo';
 
 /** Flow stages each row's work lives in (useTransactionFlow / dealAccess). */
 const LIST_PROPERTY_STAGE_ID = 'seller-1'; // listing form + HMLR title pull
@@ -48,7 +48,9 @@ function needsStage1(item: PackItem): boolean {
   return item.id === 'materialInfo' && (item.missing ?? []).some((f) => STAGE1_ONLY.includes(f));
 }
 
-function RowAction({ item, transactionId, onGoToStage }: Omit<PackRowProps, 'number' | 'isNext' | 'readOnly'>): ReactNode {
+type RowActionProps = Omit<PackRowProps, 'number' | 'isNext' | 'readOnly'>;
+
+function RowAction({ item, transactionId, onGoToStage }: RowActionProps): JSX.Element | null {
   const arrow = <span aria-hidden="true"> &rsaquo;</span>;
   if (item.id === 'idShared') {
     return (
@@ -66,7 +68,7 @@ function RowAction({ item, transactionId, onGoToStage }: Omit<PackRowProps, 'num
     );
   }
   // Ordered searches are waiting on the provider: nothing for the seller to do.
-  if (item.id === 'searches' && item.status !== SEARCHES_NOT_ORDERED) return null;
+  if (item.id === 'searches' && item.searchesState !== 'notOrdered') return null;
   const action = STAGE_ACTION[item.id];
   if (!action) return null;
   return (
@@ -76,7 +78,13 @@ function RowAction({ item, transactionId, onGoToStage }: Omit<PackRowProps, 'num
   );
 }
 
-function RowMarker({ done, number, isNext }: { done: boolean; number: number; isNext: boolean }): ReactNode {
+interface RowMarkerProps {
+  done: boolean;
+  number: number;
+  isNext: boolean;
+}
+
+function RowMarker({ done, number, isNext }: RowMarkerProps): JSX.Element {
   return (
     <span
       aria-hidden="true"
@@ -92,7 +100,7 @@ function RowMarker({ done, number, isNext }: { done: boolean; number: number; is
   );
 }
 
-export function PackRow({ item, number, isNext, transactionId, readOnly, onGoToStage }: PackRowProps): ReactNode {
+export function PackRow({ item, number, isNext, transactionId, readOnly, onGoToStage }: PackRowProps): JSX.Element {
   const [isHelpOpen, setHelpOpen] = useState(false);
   const panelId = useId();
   const showInlineForm = !readOnly && !item.done && item.id === 'materialInfo' && !needsStage1(item);

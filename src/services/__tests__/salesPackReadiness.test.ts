@@ -13,6 +13,7 @@ import { describe, it, expect } from 'vitest';
 import {
   computePackReadiness,
   isMaterialInfoComplete,
+  type PackItem,
   type PackReadinessInputs,
 } from '../salesPackReadiness';
 import { materialInfoMissing } from '../materialInfo';
@@ -169,6 +170,14 @@ describe('computePackReadiness', () => {
     expect(r.done).toBe(r.total);
   });
 
+  it('should say the rating was found on the national register when the listing has a band', () => {
+    const r = computePackReadiness(inputs());
+    expect(r.items.find((i) => i.id === 'epc')).toMatchObject({
+      done: true,
+      status: 'Rating C, found on the national register',
+    });
+  });
+
   it('should mark epc not done when the listing has no band', () => {
     const r = computePackReadiness(inputs({ listing: listing({ epcRating: null }) }));
     expect(r.items.find((i) => i.id === 'epc')?.done).toBe(false);
@@ -212,20 +221,20 @@ describe('computePackReadiness order', () => {
 });
 
 describe('computePackReadiness searches row', () => {
-  function searches(ordered: boolean, back: boolean): { done: boolean; status?: string } | undefined {
-    return computePackReadiness(inputs({ searchesOrdered: ordered, searchesBack: back })).items.find((i) => i.id === 'searches');
+  function searches(isOrdered: boolean, isBack: boolean): PackItem | undefined {
+    return computePackReadiness(inputs({ searchesOrdered: isOrdered, searchesBack: isBack })).items.find((i) => i.id === 'searches');
   }
 
   it('should say "Not ordered" and be not done before anything is ordered', () => {
-    expect(searches(false, false)).toMatchObject({ done: false, status: 'Not ordered' });
+    expect(searches(false, false)).toMatchObject({ done: false, status: 'Not ordered', searchesState: 'notOrdered' });
   });
 
   it('should say it is waiting and stay not done once ordered', () => {
-    expect(searches(true, false)).toMatchObject({ done: false, status: 'Ordered, waiting for results' });
+    expect(searches(true, false)).toMatchObject({ done: false, status: 'Ordered, waiting for results', searchesState: 'ordered' });
   });
 
   it('should be done only when results are back', () => {
-    expect(searches(true, true)).toMatchObject({ done: true, status: 'Results back' });
+    expect(searches(true, true)).toMatchObject({ done: true, status: 'Results back', searchesState: 'back' });
   });
 });
 

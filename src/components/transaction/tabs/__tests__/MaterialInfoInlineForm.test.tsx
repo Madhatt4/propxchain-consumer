@@ -14,7 +14,7 @@ import { MaterialInfoInlineForm } from '../MaterialInfoInlineForm';
 import type { MaterialInfoGap } from '@/services/materialInfo';
 
 vi.mock('@/services/materialInfoSave', () => ({
-  saveMaterialInfoPatch: vi.fn().mockResolvedValue({ saved: true, chainOk: true }),
+  saveMaterialInfoPatch: vi.fn().mockResolvedValue({ isSaved: true, isChainOk: true }),
 }));
 import { saveMaterialInfoPatch } from '@/services/materialInfoSave';
 
@@ -57,7 +57,7 @@ describe('MaterialInfoInlineForm', () => {
   });
 
   it('should warn when the save reached this device but not the chain', async () => {
-    vi.mocked(saveMaterialInfoPatch).mockResolvedValueOnce({ saved: true, chainOk: false, error: 'offline' });
+    vi.mocked(saveMaterialInfoPatch).mockResolvedValueOnce({ isSaved: true, isChainOk: false, error: 'offline' });
     renderForm(['councilTaxBand']);
     fireEvent.change(screen.getByLabelText('Council tax band'), { target: { value: 'B' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
@@ -68,7 +68,7 @@ describe('MaterialInfoInlineForm', () => {
   });
 
   it('should tell the seller nothing was saved when there is no listing to merge into', async () => {
-    vi.mocked(saveMaterialInfoPatch).mockResolvedValueOnce({ saved: false, chainOk: false });
+    vi.mocked(saveMaterialInfoPatch).mockResolvedValueOnce({ isSaved: false, isChainOk: false });
     renderForm(['councilTaxBand']);
     fireEvent.change(screen.getByLabelText('Council tax band'), { target: { value: 'B' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));

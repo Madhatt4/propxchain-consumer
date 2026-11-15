@@ -1,11 +1,12 @@
 import { cloneElement, isValidElement, useId, useState, type ReactElement, type ReactNode, type ChangeEvent } from 'react';
+import { materialInfoMissing } from '@/services/materialInfo';
 import type { Tenure } from '../../../../types/listing.types';
 import { cn } from '../../../../lib/utils';
 import HMLRTitlePullButton from '../../HMLRTitlePullButton';
 import TitleNumberFinder from '../../TitleNumberFinder';
 import { usePrefillReview, PrefilledChip, PREFILLED_INPUT_CLASS } from './usePrefillReview';
-import { COUNCIL_TAX_BANDS, PROPERTY_TYPES } from './listingOptions';
-import { materialInfoMissing, type MaterialInfoGap, type MaterialInfoListingFields } from '@/services/materialInfo';
+import { COUNCIL_TAX_BANDS, PROPERTY_TYPES, TENURE_OPTIONS } from './listingOptions';
+import type { MaterialInfoGap, MaterialInfoListingFields } from '@/services/materialInfo';
 
 /**
  * Editable shape used by the form. Mirrors the structured-address fields on
@@ -400,9 +401,7 @@ export function PropertyDetailsForm({ value, onChange, onSave, onCancel, saveLab
             onChange={(e) => update('tenure', e.target.value as Tenure)}
           >
             <option value="unknown">— Select tenure —</option>
-            <option value="freehold">Freehold</option>
-            <option value="leasehold">Leasehold</option>
-            <option value="shareOfFreehold">Share of freehold</option>
+            {TENURE_OPTIONS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
           </select>
         </Field>
       </div>

@@ -7,14 +7,16 @@
  * leasehold), saves through Stage 1's path, then re-runs readiness so the
  * tick comes from the saved listing, never from this form.
  */
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
-import type { Tenure } from '@/types/listing.types';
-import type { MaterialInfoGap } from '@/services/materialInfo';
-import { saveMaterialInfoPatch, type MaterialInfoPatch } from '@/services/materialInfoSave';
-import { COUNCIL_TAX_BANDS, PROPERTY_TYPES } from '../flow/stages/listingOptions';
+import { materialInfoMissing } from '@/services/materialInfo';
+import { saveMaterialInfoPatch } from '@/services/materialInfoSave';
+import { COUNCIL_TAX_BANDS, PROPERTY_TYPES, TENURE_OPTIONS } from '../flow/stages/listingOptions';
 import { listingChainFailedToast } from '../flow/stages/listingChainToast';
+import type { Tenure } from '@/types/listing.types';
+import type { MaterialInfoGap, MaterialInfoListingFields } from '@/services/materialInfo';
+import type { MaterialInfoPatch } from '@/services/materialInfoSave';
 
 type InlineField = Exclude<MaterialInfoGap, 'address' | 'postcode' | 'price'>;
 type Draft = Partial<Record<InlineField, string>>;
@@ -31,11 +33,22 @@ const LABEL: Record<InlineField, string> = {
   serviceChargePerYear: 'Service charge (£ a year)',
 };
 
-const TENURES: Array<{ value: Exclude<Tenure, 'unknown'>; label: string }> = [
-  { value: 'freehold', label: 'Freehold' },
-  { value: 'leasehold', label: 'Leasehold' },
-  { value: 'shareOfFreehold', label: 'Share of freehold' },
-];
+/**
+ * A listing with every disclosure field filled, leasehold so the lease trio
+ * is checked too. Validity overlays one draft value on it and asks
+ * materialInfoMissing, so the form and the pack share ONE rule.
+ */
+const COMPLETE_LISTING: MaterialInfoListingFields = {
+  address: 'complete',
+  postcode: 'complete',
+  price: 1,
+  tenure: 'leasehold',
+  propertyType: 'complete',
+  councilTaxBand: 'complete',
+  leaseYearsRemaining: 1,
+  groundRentPerYear: 0,
+  serviceChargePerYear: 0,
+};
 
 /** No stored listing to merge into, or the save threw: nothing was written. */
 const SAVE_FAILED_TOAST = {
@@ -45,14 +58,6 @@ const SAVE_FAILED_TOAST = {
 };
 
 const CONTROL = 'rounded-md border border-gray-300 bg-white px-2 py-1 text-sm dark:border-slate-600 dark:bg-slate-800';
-
-function isValid(field: InlineField, raw: string | undefined): boolean {
-  const v = (raw ?? '').trim();
-  if (!v) return false;
-  if (!LEASE_FIELDS.includes(field)) return true;
-  const n = Number(v);
-  return field === 'leaseYearsRemaining' ? n > 0 : Number.isFinite(n) && n >= 0;
-}
 
 function toPatch(fields: InlineField[], draft: Draft): MaterialInfoPatch {
   const patch: MaterialInfoPatch = {};
@@ -65,14 +70,27 @@ function toPatch(fields: InlineField[], draft: Draft): MaterialInfoPatch {
   return patch;
 }
 
+/** Blank is never valid; otherwise the value is valid when the shared rule no longer reports the field. */
+function isValid(field: InlineField, raw: string | undefined): boolean {
+  if ((raw ?? '').trim() === '') return false;
+  const candidate: MaterialInfoListingFields = { ...COMPLETE_LISTING, ...toPatch([field], { [field]: raw }) };
+  return !materialInfoMissing(candidate).includes(field);
+}
+
 function options(field: InlineField): Array<{ value: string; label: string }> | null {
   if (field === 'councilTaxBand') return COUNCIL_TAX_BANDS.map((b) => ({ value: b, label: b }));
   if (field === 'propertyType') return PROPERTY_TYPES.map((t) => ({ value: t, label: t }));
-  if (field === 'tenure') return TENURES;
+  if (field === 'tenure') return TENURE_OPTIONS;
   return null;
 }
 
-function InlineInput({ field, value, onChange }: { field: InlineField; value: string; onChange: (v: string) => void }): ReactNode {
+interface InlineInputProps {
+  field: InlineField;
+  value: string;
+  onChange: (v: string) => void;
+}
+
+function InlineInput({ field, value, onChange }: InlineInputProps): JSX.Element {
   const opts = options(field);
   return (
     <label className="flex items-center gap-1.5">
@@ -89,11 +107,16 @@ function InlineInput({ field, value, onChange }: { field: InlineField; value: st
   );
 }
 
-export function MaterialInfoInlineForm({ transactionId, missing }: { transactionId: string; missing: MaterialInfoGap[] }): ReactNode {
+export interface MaterialInfoInlineFormProps {
+  transactionId: string;
+  missing: MaterialInfoGap[];
+}
+
+export function MaterialInfoInlineForm({ transactionId, missing }: MaterialInfoInlineFormProps): JSX.Element | null {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [draft, setDraft] = useState<Draft>({});
-  const [saving, setSaving] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const fields = useMemo(() => {
     const wanted = new Set<MaterialInfoGap>(missing);
@@ -101,22 +124,22 @@ export function MaterialInfoInlineForm({ transactionId, missing }: { transaction
     return ORDER.filter((f) => wanted.has(f));
   }, [missing, draft.tenure]);
 
-  const canSave = fields.length > 0 && fields.every((f) => isValid(f, draft[f])) && !saving;
+  const canSave = fields.length > 0 && fields.every((f) => isValid(f, draft[f])) && !isSaving;
 
   const handleSave = async (): Promise<void> => {
-    setSaving(true);
+    setIsSaving(true);
     try {
       const result = await saveMaterialInfoPatch(transactionId, toPatch(fields, draft));
-      if (!result.saved) {
+      if (!result.isSaved) {
         toast(SAVE_FAILED_TOAST);
         return;
       }
-      if (!result.chainOk) toast(listingChainFailedToast(result.error));
+      if (!result.isChainOk) toast(listingChainFailedToast(result.error));
       await queryClient.invalidateQueries({ queryKey: ['salesPack', 'readiness', transactionId] });
     } catch {
       toast(SAVE_FAILED_TOAST);
     } finally {
-      setSaving(false);
+      setIsSaving(false);
     }
   };
 
@@ -132,7 +155,7 @@ export function MaterialInfoInlineForm({ transactionId, missing }: { transaction
         disabled={!canSave}
         className="rounded-md bg-teal-600 px-3 py-1 text-sm font-semibold text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {saving ? 'Saving…' : 'Save'}
+        {isSaving ? 'Saving…' : 'Save'}
       </button>
       <span className="text-xs text-gray-500 dark:text-gray-400">Everything else is already filled in from step 1 of your listing.</span>
     </div>

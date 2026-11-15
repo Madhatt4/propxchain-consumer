@@ -22,11 +22,11 @@ function pack(items: PackItem[]): PackReadiness {
 
 const FREEHOLD_ITEMS: PackItem[] = [
   { id: 'materialInfo', label: 'About your property', done: true, missing: [] },
-  { id: 'epc', label: 'Energy Performance Certificate (EPC)', done: true, status: 'Rating C' },
+  { id: 'epc', label: 'Energy Performance Certificate (EPC)', done: true, status: 'Rating C, found on the national register' },
   { id: 'titlePulled', label: 'Title register', done: false, status: 'Not pulled yet' },
   { id: 'ta6', label: 'Property information form (TA6)', done: false, status: 'Not started' },
   { id: 'ta10', label: 'Fittings and contents form (TA10)', done: false, status: 'Not started' },
-  { id: 'searches', label: 'Property searches', done: false, status: 'Not ordered' },
+  { id: 'searches', label: 'Property searches', done: false, status: 'Not ordered', searchesState: 'notOrdered' },
   { id: 'idShared', label: 'Proof of identity', done: false, status: 'Not shared yet' },
 ];
 
@@ -130,11 +130,11 @@ describe('SalesPackTab next line', () => {
 
 describe('SalesPackTab searches row', () => {
   it.each([
-    ['Not ordered', false],
-    ['Ordered, waiting for results', false],
-    ['Results back', true],
-  ])('should show "%s"', (status, done) => {
-    useReadiness(withItem('searches', { status, done }));
+    ['Not ordered', 'notOrdered', false],
+    ['Ordered, waiting for results', 'ordered', false],
+    ['Results back', 'back', true],
+  ] as const)('should show "%s"', (status, searchesState, done) => {
+    useReadiness(withItem('searches', { status, searchesState, done }));
     renderTab(vi.fn());
     expect(rows()[5]).toHaveTextContent(status);
   });
@@ -147,7 +147,7 @@ describe('SalesPackTab searches row', () => {
   });
 
   it('should offer no action while results are awaited', () => {
-    useReadiness(withItem('searches', { status: 'Ordered, waiting for results' }));
+    useReadiness(withItem('searches', { status: 'Ordered, waiting for results', searchesState: 'ordered' }));
     renderTab(vi.fn());
     expect(screen.queryByRole('button', { name: /Choose searches/ })).toBeNull();
   });

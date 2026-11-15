@@ -13,11 +13,11 @@
  */
 import { AlertTriangle, Package } from 'lucide-react';
 import { usePackReadiness } from '@/hooks/usePackReadiness';
-import type { PackReadiness } from '@/services/salesPackReadiness';
 import { ExtraDocumentsSlot } from './SalesPackDocuments';
 import { PackShareCard } from './PackShareCard';
 import { PackRow } from './PackRow';
 import { viewOnlyNote } from '../ViewOnlyFrame';
+import type { PackReadiness } from '@/services/salesPackReadiness';
 import type { TransactionTabProps } from './transactionTabs.config';
 
 interface SalesPackTabExtraProps {
@@ -30,7 +30,11 @@ interface SalesPackTabExtraProps {
   readOnly?: boolean;
 }
 
-function RegisterWarnings({ warnings }: { warnings: string[] }): JSX.Element | null {
+interface RegisterWarningsProps {
+  warnings: string[];
+}
+
+function RegisterWarnings({ warnings }: RegisterWarningsProps): JSX.Element | null {
   if (warnings.length === 0) return null;
   return (
     <div
@@ -50,14 +54,16 @@ function RegisterWarnings({ warnings }: { warnings: string[] }): JSX.Element | n
   );
 }
 
+interface PackListProps {
+  readiness: PackReadiness;
+  transactionId: string;
+  readOnly: boolean;
+  onGoToStage?: (stageId: string) => void;
+}
+
 /** Numbered rows; numbers re-flow because they come from position, and the
  *  readiness service already drops TA7 when tenure rules leasehold out. */
-function PackList({
-  readiness,
-  transactionId,
-  readOnly,
-  onGoToStage,
-}: { readiness: PackReadiness; transactionId: string; readOnly: boolean; onGoToStage?: (stageId: string) => void }): JSX.Element {
+function PackList({ readiness, transactionId, readOnly, onGoToStage }: PackListProps): JSX.Element {
   const next = readiness.items.find((i) => !i.done);
   return (
     <>

@@ -2,20 +2,22 @@
 // Copyright (C) 2026 PropXchain Ltd
 
 /** The "?" button and the inline help panel it opens for one Sales pack row. */
-import type { ReactNode } from 'react';
-import { HELP_FIELDS, type PackRowHelp as PackRowHelpText } from './salesPackHelp';
+import { HELP_FIELDS } from './salesPackHelp';
+import type { PackRowHelp as PackRowHelpText } from './salesPackHelp';
 
-export function PackHelpButton({
-  title,
-  isOpen,
-  panelId,
-  onToggle,
-}: {
+interface PackHelpButtonProps {
   title: string;
   isOpen: boolean;
   panelId: string;
   onToggle: () => void;
-}): ReactNode {
+}
+
+interface PackHelpPanelProps {
+  id: string;
+  help: PackRowHelpText;
+}
+
+export function PackHelpButton({ title, isOpen, panelId, onToggle }: PackHelpButtonProps): JSX.Element {
   return (
     <button
       type="button"
@@ -30,7 +32,7 @@ export function PackHelpButton({
   );
 }
 
-export function PackHelpPanel({ id, help }: { id: string; help: PackRowHelpText }): ReactNode {
+export function PackHelpPanel({ id, help }: PackHelpPanelProps): JSX.Element {
   return (
     <dl
       id={id}
