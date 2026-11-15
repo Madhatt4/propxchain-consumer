@@ -262,6 +262,17 @@ describe('SalesPackTab title register row', () => {
     expect(within(rows()[2]).getByRole('button', { name: /Get it for £7/ })).toBeInTheDocument();
   });
 
+  it('should keep the pull mounted on a ticked row while a paid pull is pending on this device', () => {
+    localStorage.setItem('propxchain.hmlr.pull.pending', JSON.stringify({
+      titleNumber: 'GR506405', transactionId: 'tx-1', startedAt: new Date().toISOString(), sessionId: 'cs_test_1',
+    }));
+    useReadiness(withItem('titlePulled', { done: true, status: 'Pulled from HM Land Registry' }));
+    renderTab(vi.fn());
+    expect(within(rows()[2]).getByRole('button', { name: /Get it for £7 \(GR506405\)/ })).toBeInTheDocument();
+    expect(pullProps).toHaveBeenLastCalledWith(expect.objectContaining({ titleNumber: 'GR506405', transactionId: 'tx-1' }));
+    localStorage.clear();
+  });
+
   it('should offer no pull once the title is already pulled', () => {
     useReadiness(withItem('titlePulled', { titleNumber: 'GR506405', done: true, status: 'Pulled from HM Land Registry' }));
     renderTab(vi.fn());

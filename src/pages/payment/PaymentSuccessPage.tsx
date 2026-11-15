@@ -16,6 +16,7 @@ import { stripePaymentService } from '@/services/stripePayment.service';
 import { useAuthStore } from '@/stores/authStore';
 import { loadSearchPendingState } from '@/services/searchCheckoutResume';
 import { loadChainUnlockPendingState } from '@/services/chainUnlockCheckoutResume';
+import { HMLR_PENDING_KEY } from '@/services/hmlrPullPending';
 import { logger } from '@/utils/logger';
 
 export default function PaymentSuccessPage(): React.ReactElement {
@@ -68,7 +69,7 @@ export default function PaymentSuccessPage(): React.ReactElement {
       // the ?hmlr_stripe_session_id query param. Other tiers fall through
       // to the existing transaction-creation logic below.
       if (verification.tier === 'hmlr-pull') {
-        const pendingRaw = localStorage.getItem('propxchain.hmlr.pull.pending');
+        const pendingRaw = localStorage.getItem(HMLR_PENDING_KEY);
         if (!pendingRaw) {
           // No client-side pending state (e.g. user paid on phone, opened
           // dashboard on laptop). Route to dashboard; user re-clicks the

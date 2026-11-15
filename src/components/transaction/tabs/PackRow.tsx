@@ -14,23 +14,22 @@ import { useId, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { hasPendingTitlePull } from '@/services/hmlrPullPending';
 import { SALES_PACK_HELP } from './salesPackHelp';
 import { PackHelpButton, PackHelpPanel } from './PackRowHelp';
 import { MaterialInfoInlineForm } from './MaterialInfoInlineForm';
 import { TitlePullAction } from './TitlePullAction';
+import {
+  FORMS_STAGE_ID,
+  LIST_PROPERTY_STAGE_ID,
+  PACK_ACTION_CLASS as ACTION,
+  SEARCHES_STAGE_ID,
+} from './salesPackStages';
 import type { PackItem, PackItemId } from '@/services/salesPackReadiness';
 import type { MaterialInfoGap } from '@/services/materialInfo';
 
-/** Flow stages each row's work lives in (useTransactionFlow / dealAccess). */
-const LIST_PROPERTY_STAGE_ID = 'seller-1'; // listing form (address, price, title number)
-const SEARCHES_STAGE_ID = 'seller-2';
-const FORMS_STAGE_ID = 'seller-3'; // TA6, TA10, TA7
-
 /** Gaps the inline form cannot fill: they live in Stage 1's address block. */
 const STAGE1_ONLY: MaterialInfoGap[] = ['address', 'postcode', 'price'];
-
-const ACTION =
-  'shrink-0 whitespace-nowrap text-[13px] font-semibold text-teal-700 hover:underline dark:text-teal-300';
 
 const STAGE_ACTION: Partial<Record<PackItemId, { label: string; stageId: string }>> = {
   ta6: { label: 'Start form', stageId: FORMS_STAGE_ID },
@@ -113,7 +112,11 @@ export function PackRow({ item, number, isNext, transactionId, readOnly, onGoToS
   const showInlineForm = !readOnly && !item.done && item.id === 'materialInfo' && !needsStage1(item);
   const isMissingLine = item.id === 'materialInfo' && !item.done;
   const isTitleRow = item.id === 'titlePulled';
-  const showTitlePull = !readOnly && isTitleRow && (!item.done || hasPulledHere);
+  // A pull paid for on this device but not yet delivered must resume (and
+  // refund on failure) even when the row already reads done from an older
+  // pull of the same title.
+  const shouldShowTitlePull =
+    !readOnly && isTitleRow && (!item.done || hasPulledHere || hasPendingTitlePull(transactionId));
 
   return (
     <li className="grid grid-cols-[28px_1fr_auto] items-start gap-2.5 py-2.5">
@@ -133,11 +136,10 @@ export function PackRow({ item, number, isNext, transactionId, readOnly, onGoToS
         {isHelpOpen && <PackHelpPanel id={panelId} help={SALES_PACK_HELP[item.id]} />}
       </div>
       <div>
-        {showTitlePull && (
+        {shouldShowTitlePull && (
           <TitlePullAction
             transactionId={transactionId}
             titleNumber={item.titleNumber}
-            actionClassName={ACTION}
             onGoToStage={onGoToStage}
             onPulled={() => setPulledHere(true)}
           />

@@ -119,12 +119,14 @@ function epcItem(listing: PropertyListing | null): PackItem {
   };
 }
 
+function titleStatus(isPulled: boolean, titleNumber: string | undefined): string {
+  if (isPulled) return 'Pulled from HM Land Registry';
+  if (titleNumber) return 'Not pulled yet';
+  return 'Not pulled yet. Add your title number first';
+}
+
 function titleItem(isPulled: boolean, titleNumber: string | undefined): PackItem {
-  const status = isPulled
-    ? 'Pulled from HM Land Registry'
-    : titleNumber
-      ? 'Not pulled yet'
-      : 'Not pulled yet. Add your title number first';
+  const status = titleStatus(isPulled, titleNumber);
   return { id: 'titlePulled', label: 'Title register', done: isPulled, status, ...(titleNumber ? { titleNumber } : {}) };
 }
 
@@ -196,13 +198,12 @@ async function swallow<T>(work: Promise<T>, fallback: T): Promise<T> {
 }
 
 /** True when a completed HMLR pull exists for this transaction or its title. */
-async function checkTitlePulled(transactionId: string): Promise<boolean> {
+async function checkTitlePulled(transactionId: string, titleNumber: string | undefined): Promise<boolean> {
   const register = await swallow(
     hmlrTitleService.getStoredRegisterForTransaction(transactionId),
     null,
   );
   if (register) return true;
-  const titleNumber = getTitleNumber(transactionId);
   if (!titleNumber) return false;
   const row = await swallow(hmlrTitleService.findPullByTitleNumber(titleNumber), null);
   return row != null;
@@ -262,9 +263,10 @@ export async function loadPackReadinessInputs(
     : null;
   const listing = facts?.listing ?? null;
   const registerDiscrepancies = facts?.discrepancies ?? [];
+  const titleNumber = getTitleNumber(transactionId)?.trim() || undefined;
   const [titlePulled, searchesOrdered, searchesBack, ta6, ta10, ta7, idShared] =
     await Promise.all([
-      checkTitlePulled(transactionId),
+      checkTitlePulled(transactionId, titleNumber),
       checkSearchesOrdered(transactionId),
       swallow(
         fetchReturnedOneSearchResults(transactionId).then((r) => r.length > 0),
@@ -275,7 +277,6 @@ export async function loadPackReadinessInputs(
       swallow(icpService.getTA7(transactionId).then((f) => f != null), false),
       checkIdShared(transactionId),
     ]);
-  const titleNumber = getTitleNumber(transactionId)?.trim() || undefined;
   return { listing, titlePulled, titleNumber, searchesOrdered, searchesBack, ta6, ta10, ta7, idShared, registerDiscrepancies };
 }
 

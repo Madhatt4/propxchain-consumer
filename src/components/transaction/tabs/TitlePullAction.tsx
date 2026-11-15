@@ -8,15 +8,15 @@
  * click. Without a title number there is nothing to pull, so the row sends
  * the seller to Stage 1 to add one.
  */
+import { useCallback } from 'react';
 import { useRefreshPackReadiness } from '@/hooks/usePackReadiness';
+import { getPendingTitlePull } from '@/services/hmlrPullPending';
 import HMLRTitlePullButton from '../HMLRTitlePullButton';
-
-const LIST_PROPERTY_STAGE_ID = 'seller-1';
+import { LIST_PROPERTY_STAGE_ID, PACK_ACTION_CLASS } from './salesPackStages';
 
 interface TitlePullActionProps {
   transactionId: string;
   titleNumber?: string;
-  actionClassName: string;
   onGoToStage?: (stageId: string) => void;
   /** Lets the row keep this mounted after the pull ticks it, so the register modal stays open. */
   onPulled: () => void;
@@ -25,15 +25,21 @@ interface TitlePullActionProps {
 export function TitlePullAction({
   transactionId,
   titleNumber,
-  actionClassName,
   onGoToStage,
   onPulled,
 }: TitlePullActionProps): JSX.Element | null {
   const refreshReadiness = useRefreshPackReadiness(transactionId);
-  if (!titleNumber) {
+  const handlePulled = useCallback(() => {
+    onPulled();
+    refreshReadiness();
+  }, [onPulled, refreshReadiness]);
+  // A paid pull waiting on this device carries the title it was bought for.
+  const pullTitle = titleNumber ?? getPendingTitlePull(transactionId)?.titleNumber;
+
+  if (!pullTitle) {
     if (!onGoToStage) return null;
     return (
-      <button type="button" className={actionClassName} onClick={() => onGoToStage(LIST_PROPERTY_STAGE_ID)}>
+      <button type="button" className={PACK_ACTION_CLASS} onClick={() => onGoToStage(LIST_PROPERTY_STAGE_ID)}>
         Add title number in Stage 1<span aria-hidden="true"> &rsaquo;</span>
       </button>
     );
@@ -41,12 +47,9 @@ export function TitlePullAction({
   return (
     <HMLRTitlePullButton
       variant="compact"
-      titleNumber={titleNumber}
+      titleNumber={pullTitle}
       transactionId={transactionId}
-      onSuccess={() => {
-        onPulled();
-        refreshReadiness();
-      }}
+      onSuccess={handlePulled}
     />
   );
 }

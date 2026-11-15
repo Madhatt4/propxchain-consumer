@@ -56,10 +56,16 @@ import HMLRRegisterView from '@/components/documents/HMLRRegisterView';
 import { logger } from '@/utils/logger';
 import { supabase } from '@/lib/supabase';
 import {
+  claimResume,
   clearPendingState,
+  getPendingTitlePull,
+  hasPendingTitlePull,
+  isResumeInFlight,
   loadPendingState,
+  onResumeReleased,
+  releaseResume,
   savePendingState,
-  type PendingTitlePull as PendingState,
+  type PendingTitlePull,
 } from '@/services/hmlrPullPending';
 
 // ============================================
@@ -124,6 +130,9 @@ type FlowStatus =
 /** Terminal failure statuses a resolved pull can land on. */
 type PullFailureStatus = 'unregistered' | 'cannot-deliver' | 'queued' | 'error';
 
+/** busy = another button (or tab) holds the deal's resume claim. */
+type ResumeOutcome = 'resumed' | 'not-paid' | 'busy';
+
 // ============================================
 // HELPERS
 // ============================================
@@ -159,6 +168,22 @@ function stripReturnParamFromUrl(): void {
   const url = new URL(window.location.href);
   url.searchParams.delete(RETURN_QUERY_PARAM);
   window.history.replaceState({}, '', url.toString());
+}
+
+/** Whether the Checkout Session is paid for a title pull; unverifiable reads as not paid. */
+async function isSessionPaid(sessionId: string): Promise<boolean> {
+  try {
+    const verification: VerifySessionResult = await stripePaymentService.verifySession(sessionId);
+    return verification.verified && verification.tier === STRIPE_TIER;
+  } catch (err) {
+    // Session not yet paid, expired, or unverifiable. Leave pending state in
+    // place — user may be mid-payment elsewhere — and let the TTL clean up.
+    logger.info('Pending HMLR session not yet paid', {
+      sessionId,
+      err: err instanceof Error ? err.message : String(err),
+    });
+    return false;
+  }
 }
 
 /**
@@ -234,16 +259,24 @@ export default function HMLRTitlePullButton({
   // any status change disables the button, so a fast double click could
   // otherwise run two checkouts or two resumes.
   const isClickInFlight = useRef(false);
+  // Another button or tab is resuming this deal's paid pull; wait for it.
+  const [isWaitingOnResume, setWaitingOnResume] = useState<boolean>(false);
+  // Held in a ref so a caller's inline onSuccess does not re-create the
+  // resume callbacks and re-run the mount-time resume effect every render.
+  const onSuccessRef = useRef(onSuccess);
+  useEffect(() => {
+    onSuccessRef.current = onSuccess;
+  }, [onSuccess]);
 
   const trimmedTitleNumber = titleNumber.trim().toUpperCase();
   const titleNumberLooksValid = /^[A-Z]{1,3}\d{1,6}$/.test(trimmedTitleNumber);
 
   /**
-   * Resume after Stripe return. Detected by the query param on mount.
-   * Reads pending state from localStorage and triggers the HMLR pull.
+   * Verify the paid session and pull. Only ever called by resumeAfterStripe,
+   * which holds the deal's resume claim for the whole of it.
    */
-  const resumeAfterStripe = useCallback(
-    async (stripeSessionId: string, pending: PendingState) => {
+  const pullPaidSession = useCallback(
+    async (stripeSessionId: string, pending: PendingTitlePull): Promise<void> => {
       setStatus('returning-from-stripe');
       stripReturnParamFromUrl();
 
@@ -262,7 +295,7 @@ export default function HMLRTitlePullButton({
         setResult(pullResult);
         setStatus('success');
         setHasExistingPull(true); // mark cached so re-clicks view, not re-pay
-        onSuccess?.(pullResult);
+        onSuccessRef.current?.(pullResult);
       } catch (err) {
         clearPendingState();
         setHasPendingPull(false);
@@ -281,8 +314,50 @@ export default function HMLRTitlePullButton({
         setNeedsRefund(!refunded);
       }
     },
-    [onSuccess],
+    [],
   );
+
+  /**
+   * Resume after Stripe return. The claim is taken synchronously, before any
+   * verifySession, and released only after the pull and any refund settle,
+   * so a second mounted button can never verify, pull or refund the same
+   * session. `shouldCheckPaid` first confirms the session is paid (the
+   * orphan and manual-resume paths); the URL-return path skips it.
+   */
+  const resumeAfterStripe = useCallback(
+    async (stripeSessionId: string, pending: PendingTitlePull, shouldCheckPaid: boolean): Promise<ResumeOutcome> => {
+      if (!claimResume(pending.transactionId)) {
+        setHasPendingPull(true);
+        setWaitingOnResume(true);
+        return 'busy';
+      }
+      try {
+        if (shouldCheckPaid && !(await isSessionPaid(stripeSessionId))) return 'not-paid';
+        await pullPaidSession(stripeSessionId, pending);
+        return 'resumed';
+      } finally {
+        releaseResume(pending.transactionId);
+      }
+    },
+    [pullPaidSession],
+  );
+
+  // When another button's resume for this deal settles, pick up its outcome:
+  // no longer pending, and (on success) a pull to view rather than re-buy.
+  useEffect(() => {
+    return onResumeReleased(transactionId, () => {
+      setWaitingOnResume(isResumeInFlight(transactionId));
+      setHasPendingPull(hasPendingTitlePull(transactionId));
+      if (hmlrTitleService.hasCompletedPull(transactionId, trimmedTitleNumber)) {
+        setHasExistingPull(true);
+        return;
+      }
+      void hmlrTitleService
+        .findPullByTitleNumber(trimmedTitleNumber)
+        .then((row) => { if (row) setHasExistingPull(true); })
+        .catch(() => undefined);
+    });
+  }, [transactionId, trimmedTitleNumber]);
 
   // Detect post-Stripe return on mount.
   //
@@ -341,36 +416,15 @@ export default function HMLRTitlePullButton({
         stripReturnParamFromUrl();
         return;
       }
-      void resumeAfterStripe(stripeSessionId, pending);
+      void resumeAfterStripe(stripeSessionId, pending, false);
       return;
     }
 
-    // No URL param. Check for orphaned-but-paid pending state.
+    // No URL param. Check for orphaned-but-paid pending state; if it is
+    // paid, resume (resumeAfterStripe verifies under the claim).
     if (pending && pending.transactionId === transactionId) {
       setHasPendingPull(true);
-      if (pending.sessionId) {
-        void (async () => {
-          try {
-            const verification: VerifySessionResult =
-              await stripePaymentService.verifySession(pending.sessionId!);
-            if (verification.verified && verification.tier === STRIPE_TIER) {
-              logger.info('Orphaned paid HMLR session detected — auto-resuming', {
-                sessionId: pending.sessionId,
-                transactionId,
-              });
-              await resumeAfterStripe(pending.sessionId!, pending);
-            }
-          } catch (err) {
-            // Session not yet paid, expired, or unverifiable. Leave pending
-            // state in place — user may be mid-payment elsewhere — and let
-            // the staleness TTL clean up if abandoned.
-            logger.info('Pending HMLR session not yet paid', {
-              sessionId: pending.sessionId,
-              err: err instanceof Error ? err.message : String(err),
-            });
-          }
-        })();
-      }
+      if (pending.sessionId) void resumeAfterStripe(pending.sessionId, pending, true);
     }
   }, [transactionId, resumeAfterStripe]);
 
@@ -428,19 +482,17 @@ export default function HMLRTitlePullButton({
     // Avoids double-charging if the user paid in another tab and came
     // back. Cleared TTL ensures stale states don't block legitimate
     // re-pulls forever.
-    const existingPending = loadPendingState();
-    if (existingPending && existingPending.transactionId === transactionId) {
+    const existingPending = getPendingTitlePull(transactionId);
+    if (existingPending) {
+      // A mount-time resume (here or in another tab) already holds the
+      // claim: never clear its record or open a second checkout.
+      if (isResumeInFlight(transactionId)) {
+        setWaitingOnResume(true);
+        return;
+      }
       if (existingPending.sessionId) {
-        try {
-          const verification: VerifySessionResult =
-            await stripePaymentService.verifySession(existingPending.sessionId);
-          if (verification.verified && verification.tier === STRIPE_TIER) {
-            await resumeAfterStripe(existingPending.sessionId, existingPending);
-            return;
-          }
-        } catch {
-          // Not paid / expired — fall through to clear + restart
-        }
+        const outcome = await resumeAfterStripe(existingPending.sessionId, existingPending, true);
+        if (outcome !== 'not-paid') return;
       }
       // Pending state exists but unrecoverable. Clear and start fresh.
       clearPendingState();
@@ -465,12 +517,15 @@ export default function HMLRTitlePullButton({
           tier: STRIPE_TIER,
           amount: feeGbp,
         });
-      savePendingState({
+      const isSaved = savePendingState({
         titleNumber: trimmedTitleNumber,
         transactionId,
         startedAt: new Date().toISOString(),
         sessionId,
       });
+      // Without the pending record the return cannot resume the pull, so
+      // never send the user to pay (pre-extraction this threw here too).
+      if (!isSaved) throw new Error('this browser would not save the pull, so it could not continue after payment');
       setHasPendingPull(true);
       window.location.href = url;
       // Control does not return after the redirect.
@@ -482,12 +537,12 @@ export default function HMLRTitlePullButton({
       setStatus('error');
     }
   }, [
+    resumeAfterStripe,
     titleNumberLooksValid,
     trimmedTitleNumber,
     titleNumber,
     transactionId,
     feeGbp,
-    onSuccess,
     // State the handler now branches on. Without these in the deps the
     // useCallback closure captures the initial `false` and the "View
     // existing Title" path never fires when the async mount effect
@@ -523,6 +578,7 @@ export default function HMLRTitlePullButton({
   // ============================================
 
   const busy =
+    isWaitingOnResume ||
     status === 'redirecting-to-stripe' ||
     status === 'returning-from-stripe' ||
     status === 'pulling';
@@ -536,6 +592,7 @@ export default function HMLRTitlePullButton({
       case 'pulling':
         return 'Pulling title from HM Land Registry…';
       default:
+        if (isWaitingOnResume) return 'Confirming payment…';
         if (hasPendingPull) return 'Resume pending title pull';
         if (hasExistingPull) return 'View existing Title';
         return variant === 'compact' ? `Get it for £${feeGbp}` : `Get Title Report — £${feeGbp}`;
