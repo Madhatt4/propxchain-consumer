@@ -81,6 +81,13 @@ describe('BuyerPackTab conveyancer item', () => {
     expect(screen.queryByRole('button', { name: /Request estimates/ })).not.toBeInTheDocument();
   });
 
+  it('should not claim the pack is complete when it has no items', async () => {
+    asBuyer([]);
+    renderTab();
+    expect(await screen.findByText('Nothing to show yet.')).toBeInTheDocument();
+    expect(screen.queryByText('Pack complete')).not.toBeInTheDocument();
+  });
+
   it('should hide the action once the conveyancer is chosen', async () => {
     asBuyer([...FIVE, conv('ready', { estimate_state: 'accepted', firm_name: 'Smith & Co' })]);
     renderTab();

@@ -68,9 +68,11 @@ export function BuyerPackRows(props: BuyerPackRowsProps): JSX.Element {
   const next = items.find((i) => i.status !== 'ready');
   return (
     <>
-      <p className="mt-1.5 text-[13px] text-teal-800 dark:text-teal-300">
-        {next ? `Next: ${itemLabel(next.item)}` : 'Pack complete'}
-      </p>
+      {items.length > 0 && (
+        <p className="mt-1.5 text-[13px] text-teal-800 dark:text-teal-300">
+          {next ? `Next: ${itemLabel(next.item)}` : 'Pack complete'}
+        </p>
+      )}
       <ol aria-label="Buyer pack steps" className="mt-3 divide-y divide-gray-100 dark:divide-slate-700/40">
         {items.map((item, index) => (
           <BuyerPackItemRow
