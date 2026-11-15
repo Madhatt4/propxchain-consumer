@@ -73,6 +73,14 @@ describe('BuyerPackTab conveyancer item', () => {
     [h.what, h.where, h.cost, h.who].forEach((t) => expect(screen.getByText(t)).toBeInTheDocument());
   });
 
+  it.each(['requested', 'received'] as const)('should offer View estimates once estimates are %s', async (state) => {
+    asBuyer([...FIVE, conv('in_progress', { estimate_state: state })]);
+    renderTab();
+    fireEvent.click(await screen.findByRole('button', { name: /View estimates/ }));
+    expect(onGoToStage).toHaveBeenCalledWith('buyer-5');
+    expect(screen.queryByRole('button', { name: /Request estimates/ })).not.toBeInTheDocument();
+  });
+
   it('should hide the action once the conveyancer is chosen', async () => {
     asBuyer([...FIVE, conv('ready', { estimate_state: 'accepted', firm_name: 'Smith & Co' })]);
     renderTab();

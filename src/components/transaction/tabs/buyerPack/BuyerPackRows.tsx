@@ -39,7 +39,10 @@ function rowAction(item: BuyerPackItem, props: BuyerPackRowsProps): ReactNode {
   }
   if (item.item === 'conveyancer' && item.status !== 'ready' && props.onGoToStage) {
     const go = props.onGoToStage;
-    return <button type="button" className={PACK_ACTION_CLASS} onClick={() => go(CONVEYANCER_STAGE_ID)}>Request estimates{ARROW}</button>;
+    // Once estimates are out, the next step is choosing one, not asking again.
+    const hasEstimates = item.detail.estimate_state === 'requested' || item.detail.estimate_state === 'received';
+    const label = hasEstimates ? 'View estimates' : 'Request estimates';
+    return <button type="button" className={PACK_ACTION_CLASS} onClick={() => go(CONVEYANCER_STAGE_ID)}>{label}{ARROW}</button>;
   }
   return null;
 }
