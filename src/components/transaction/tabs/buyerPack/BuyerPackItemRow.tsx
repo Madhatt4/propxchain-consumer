@@ -1,43 +1,83 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 PropXchain Ltd
-import type { ReactNode } from 'react';
-import { CheckCircle2, Circle, Loader2 } from 'lucide-react';
-import type { BuyerPackItem } from '@/services/buyerPack.service';
-import { ITEM_HELP, ITEM_LABELS, describeItem, statusLabel } from './buyerPackLabels';
 
-interface Props {
+/**
+ * One numbered Buyer pack row, the same shape as the Sales pack's: number (a
+ * tick once ready), title, "?" help, the one-line result, the row's controls.
+ * The seller's side sees tick, title and result only: that line is the
+ * buyer's declaration they need. Help, actions and controls are the buyer's.
+ */
+import { useState, type ReactNode } from 'react';
+import { Check } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import type { BuyerPackItem } from '@/services/buyerPack.service';
+import { PackHelpButton, PackHelpPanel } from '../PackRowHelp';
+import { BUYER_PACK_HELP } from './buyerPackHelp';
+import { describeItem, itemLabel } from './buyerPackLabels';
+
+interface BuyerPackItemRowProps {
   item: BuyerPackItem;
-  /** The buyer's own view shows what to do; the other side only sees the result. */
+  number: number;
+  isNext: boolean;
+  /** Only the buyer gets the "?" help; the other side reads the result. */
   showHelp: boolean;
+  /** The row's one action (a link or button), top right. */
+  action?: ReactNode;
+  /** Inline declaration controls under the result line. */
   children?: ReactNode;
 }
 
-export function BuyerPackItemRow({ item, showHelp, children }: Props): JSX.Element {
-  const Icon = item.status === 'ready' ? CheckCircle2 : item.status === 'in_progress' ? Loader2 : Circle;
-  const iconClass = item.status === 'ready'
-    ? 'text-teal-600 dark:text-teal-400'
-    : item.status === 'in_progress'
-      ? 'text-amber-500'
-      : 'text-gray-300 dark:text-slate-600';
+interface MarkerProps {
+  isDone: boolean;
+  number: number;
+  isNext: boolean;
+}
+
+function Marker({ isDone, number, isNext }: MarkerProps): JSX.Element {
   return (
-    <li className="py-3" data-testid={`pack-item-${item.item}`}>
-      <div className="flex items-start gap-3">
-        <Icon className={`mt-0.5 h-5 w-5 shrink-0 ${iconClass}${item.status === 'in_progress' ? ' animate-spin' : ''}`} aria-hidden="true" />
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <p className="text-sm font-medium">{ITEM_LABELS[item.item]}</p>
-            <span className="text-xs text-muted-foreground">{statusLabel(item.status)}</span>
-          </div>
-          <p className="text-sm text-muted-foreground">{describeItem(item)}</p>
-          {showHelp && <p className="mt-0.5 text-xs text-muted-foreground">{ITEM_HELP[item.item]}</p>}
-          {item.status === 'ready' && (
-            <p className={`mt-0.5 text-xs ${item.onLedger ? 'text-teal-700 dark:text-teal-300' : 'text-amber-700 dark:text-amber-300'}`}>
-              {item.onLedger ? 'On the audit trail' : 'Not yet on the audit trail'}
-            </p>
-          )}
-          {children && <div className="mt-2">{children}</div>}
-        </div>
+    <span
+      aria-hidden="true"
+      className={cn(
+        'mt-px flex h-[22px] w-[22px] items-center justify-center rounded-full border-[1.5px] text-xs',
+        isDone && 'border-teal-600 bg-teal-600 text-white',
+        !isDone && isNext && 'border-teal-600 font-bold text-teal-700 dark:text-teal-300',
+        !isDone && !isNext && 'border-gray-300 text-gray-500 dark:border-slate-600 dark:text-slate-400',
+      )}
+    >
+      {isDone ? <Check className="h-3.5 w-3.5" /> : number}
+    </span>
+  );
+}
+
+export function BuyerPackItemRow({
+  item, number, isNext, showHelp, action, children,
+}: BuyerPackItemRowProps): JSX.Element {
+  const [isHelpOpen, setHelpOpen] = useState(false);
+  const isDone = item.status === 'ready';
+  const title = itemLabel(item.item);
+  const help = showHelp ? BUYER_PACK_HELP[item.item] : undefined;
+  const panelId = `buyer-pack-help-${item.item}`;
+  // The conveyancer item is deliberately not on the audit trail, so no ledger line.
+  const ledgerTone = item.onLedger ? 'text-teal-700 dark:text-teal-300' : 'text-amber-700 dark:text-amber-300';
+  return (
+    <li className="grid grid-cols-[28px_1fr_auto] items-start gap-2.5 py-2.5" data-testid={`pack-item-${item.item}`}>
+      <Marker isDone={isDone} number={number} isNext={isNext} />
+      <div className="min-w-0">
+        <span className={cn('text-sm', isDone ? 'font-medium text-gray-500 dark:text-gray-400' : 'font-semibold text-gray-900 dark:text-gray-100')}>
+          {title}
+        </span>
+        <span className="sr-only">{isDone ? ', done' : ', not done'}</span>
+        {help && <PackHelpButton title={title} isOpen={isHelpOpen} panelId={panelId} onToggle={() => setHelpOpen((o) => !o)} />}
+        <p className="text-xs text-gray-500 dark:text-gray-400">{describeItem(item)}</p>
+        {isDone && item.item !== 'conveyancer' && (
+          <p className={cn('mt-0.5 text-xs', ledgerTone)}>
+            {item.onLedger ? 'On the audit trail' : 'Not yet on the audit trail'}
+          </p>
+        )}
+        {help && isHelpOpen && <PackHelpPanel id={panelId} help={help} />}
+        {children && <div className="mt-2">{children}</div>}
       </div>
+      <div>{action}</div>
     </li>
   );
 }

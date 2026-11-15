@@ -2,7 +2,7 @@
 // Copyright (C) 2026 PropXchain Ltd
 import { describe, it, expect } from 'vitest';
 import type { BuyerPackItem } from '@/services/buyerPack.service';
-import { describeItem, statusLabel } from '../buyerPackLabels';
+import { describeItem, itemLabel, sortPackItems, statusLabel } from '../buyerPackLabels';
 
 const item = (over: Partial<BuyerPackItem> & Pick<BuyerPackItem, 'item'>): BuyerPackItem =>
   ({ status: 'not_started', detail: {}, onLedger: false, pending: false, ...over });
@@ -38,5 +38,27 @@ describe('buyerPackLabels', () => {
     expect(describeItem(item({ item: 'survey', status: 'in_progress', detail: { survey_state: 'booked' } }))).toBe('Booked');
     expect(describeItem(item({ item: 'survey', status: 'ready', detail: { survey_state: 'received' } }))).toBe('Report received');
     expect(describeItem(item({ item: 'proof_of_funds', status: 'ready' }))).toBe('Funds evidenced');
+  });
+
+  it('should sort known ids into the signed-off order and unknown ids last', () => {
+    const ids = ['conveyancer', 'survey', 'x_new', 'id_aml', 'chain', 'proof_of_funds', 'mortgage'];
+    const sorted = sortPackItems(ids.map((id) => item({ item: id as BuyerPackItem['item'] })));
+    expect(sorted.map((i) => i.item)).toEqual(['chain', 'mortgage', 'proof_of_funds', 'id_aml', 'survey', 'conveyancer', 'x_new']);
+  });
+
+  it('should describe the conveyancer item from its estimate state and firm name', () => {
+    const c = (status: BuyerPackItem['status'], detail: BuyerPackItem['detail']): string => describeItem(item({ item: 'conveyancer', status, detail }));
+    expect(c('ready', { estimate_state: 'accepted', firm_name: 'Smith & Co' })).toBe('Chosen: Smith & Co');
+    expect(c('ready', { estimate_state: 'accepted' })).toBe('Chosen');
+    expect(c('in_progress', { estimate_state: 'received' })).toBe('Estimates received, none accepted yet');
+    expect(c('in_progress', { estimate_state: 'requested' })).toBe('Estimates requested');
+    expect(c('not_started', { estimate_state: 'none' })).toBe('Not chosen yet');
+    expect(c('not_started', {})).toBe('Not chosen yet');
+  });
+
+  it('should fall back to a readable title and the status for an unknown id', () => {
+    const unknown = item({ item: 'x_new' as BuyerPackItem['item'], status: 'in_progress' });
+    expect(itemLabel('x_new')).toBe('x new');
+    expect(describeItem(unknown)).toBe('In progress');
   });
 });

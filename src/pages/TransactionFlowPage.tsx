@@ -723,6 +723,7 @@ export default function TransactionFlowPage(): ReactElement {
 
         <TransactionTabs
           dealSide={dealSide}
+          onGoToStage={selectStage}
           context={{
             transactionId: id ?? '',
             uprn,

@@ -10,7 +10,7 @@
  */
 import { supabase } from '../lib/supabase';
 
-export const BUYER_PACK_ITEMS = ['id_aml', 'proof_of_funds', 'mortgage', 'chain', 'survey'] as const;
+export const BUYER_PACK_ITEMS = ['id_aml', 'proof_of_funds', 'mortgage', 'chain', 'survey', 'conveyancer'] as const;
 export type BuyerPackItemId = (typeof BUYER_PACK_ITEMS)[number];
 export type BuyerPackStatus = 'not_started' | 'in_progress' | 'ready';
 export type FundingType = 'cash' | 'mortgage';
@@ -26,6 +26,9 @@ export interface BuyerPackDetail {
   chain_position?: ChainPosition;
   linked_transaction_id?: string;
   survey_state?: 'none' | 'booked' | 'received';
+  estimate_state?: 'none' | 'requested' | 'received' | 'accepted';
+  /** A firm's trading name, never a person. Only present once chosen. */
+  firm_name?: string;
   aml_state?: 'none' | 'pending' | 'in_progress' | 'complete' | 'failed';
 }
 
