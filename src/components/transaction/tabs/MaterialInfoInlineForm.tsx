@@ -37,6 +37,13 @@ const TENURES: Array<{ value: Exclude<Tenure, 'unknown'>; label: string }> = [
   { value: 'shareOfFreehold', label: 'Share of freehold' },
 ];
 
+/** No stored listing to merge into, or the save threw: nothing was written. */
+const SAVE_FAILED_TOAST = {
+  title: 'Not saved',
+  description: 'We could not save these details. Please try again, or fill them in on step 1 of your listing.',
+  variant: 'destructive' as const,
+};
+
 const CONTROL = 'rounded-md border border-gray-300 bg-white px-2 py-1 text-sm dark:border-slate-600 dark:bg-slate-800';
 
 function isValid(field: InlineField, raw: string | undefined): boolean {
@@ -100,8 +107,14 @@ export function MaterialInfoInlineForm({ transactionId, missing }: { transaction
     setSaving(true);
     try {
       const result = await saveMaterialInfoPatch(transactionId, toPatch(fields, draft));
-      if (result.saved && !result.chainOk) toast(listingChainFailedToast(result.error));
+      if (!result.saved) {
+        toast(SAVE_FAILED_TOAST);
+        return;
+      }
+      if (!result.chainOk) toast(listingChainFailedToast(result.error));
       await queryClient.invalidateQueries({ queryKey: ['salesPack', 'readiness', transactionId] });
+    } catch {
+      toast(SAVE_FAILED_TOAST);
     } finally {
       setSaving(false);
     }

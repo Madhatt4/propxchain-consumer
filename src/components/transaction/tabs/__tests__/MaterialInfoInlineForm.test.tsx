@@ -67,6 +67,26 @@ describe('MaterialInfoInlineForm', () => {
     })));
   });
 
+  it('should tell the seller nothing was saved when there is no listing to merge into', async () => {
+    vi.mocked(saveMaterialInfoPatch).mockResolvedValueOnce({ saved: false, chainOk: false });
+    renderForm(['councilTaxBand']);
+    fireEvent.change(screen.getByLabelText('Council tax band'), { target: { value: 'B' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(toastSpy).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Not saved',
+      variant: 'destructive',
+    })));
+  });
+
+  it('should tell the seller nothing was saved when the save throws', async () => {
+    vi.mocked(saveMaterialInfoPatch).mockRejectedValueOnce(new Error('boom'));
+    renderForm(['councilTaxBand']);
+    fireEvent.change(screen.getByLabelText('Council tax band'), { target: { value: 'B' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(toastSpy).toHaveBeenCalledWith(expect.objectContaining({ title: 'Not saved' })));
+    expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
+  });
+
   it('should ask for the lease trio once the seller picks leasehold', async () => {
     renderForm(['tenure']);
     expect(screen.queryByLabelText('Years left on the lease')).toBeNull();
