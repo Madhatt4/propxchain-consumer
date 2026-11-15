@@ -4,6 +4,8 @@ import { cn } from '../../../../lib/utils';
 import HMLRTitlePullButton from '../../HMLRTitlePullButton';
 import TitleNumberFinder from '../../TitleNumberFinder';
 import { usePrefillReview, PrefilledChip, PREFILLED_INPUT_CLASS } from './usePrefillReview';
+import { COUNCIL_TAX_BANDS, PROPERTY_TYPES } from './listingOptions';
+import { materialInfoMissing, type MaterialInfoGap, type MaterialInfoListingFields } from '@/services/materialInfo';
 
 /**
  * Editable shape used by the form. Mirrors the structured-address fields on
@@ -65,16 +67,42 @@ interface Props {
   onAcceptAddressSuggestion?: () => void;
 }
 
-const PROPERTY_TYPES = [
-  'Detached', 'Semi-detached', 'Terraced', 'End-of-terrace', 'Flat',
-  'Maisonette', 'Bungalow', 'Cottage', 'Other',
-];
-
 const EPC_RATINGS = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
-const COUNCIL_TAX_BANDS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 
 const POSTCODE_RE = /^[A-Z]{1,2}\d{1,2}[A-Z]?\s*\d[A-Z]{2}$/i;
 const UPRN_RE = /^\d{1,12}$/;
+
+/** Stage 1's names for the material-info gaps. Address and postcode are
+ *  checked field by field above, so the shared rule's versions are skipped. */
+const MATERIAL_ERROR_LABEL: Partial<Record<MaterialInfoGap, string>> = {
+  price: 'Price',
+  tenure: 'Tenure',
+  propertyType: 'Property type',
+  councilTaxBand: 'Council tax band',
+  leaseYearsRemaining: 'Lease years remaining',
+  groundRentPerYear: 'Ground rent (£/yr)',
+  serviceChargePerYear: 'Service charge (£/yr)',
+};
+
+function numberOrUndefined(n: number | '' | undefined): number | undefined {
+  return typeof n === 'number' ? n : undefined;
+}
+
+/** Project the form onto the listing fields the Sales pack rule reads, so
+ *  Stage 1 and the pack can never disagree on what "complete" means. */
+function toMaterialInfoSource(v: PropertyDetailsValue): MaterialInfoListingFields {
+  return {
+    address: v.addressLine1,
+    postcode: v.postcode,
+    price: typeof v.price === 'number' ? v.price : 0,
+    tenure: v.tenure,
+    propertyType: v.propertyType ?? '',
+    councilTaxBand: v.councilTaxBand ?? null,
+    leaseYearsRemaining: numberOrUndefined(v.leaseYearsRemaining),
+    groundRentPerYear: numberOrUndefined(v.groundRentPerYear),
+    serviceChargePerYear: numberOrUndefined(v.serviceChargePerYear),
+  };
+}
 
 function validate(v: PropertyDetailsValue): string[] {
   const errors: string[] = [];
@@ -87,18 +115,9 @@ function validate(v: PropertyDetailsValue): string[] {
   if (v.uprn && v.uprn.trim() && !UPRN_RE.test(v.uprn.trim())) {
     errors.push('UPRN (must be 1–12 digits)');
   }
-  if (typeof v.price !== 'number' || v.price <= 0) errors.push('Price');
-  if (v.tenure === 'unknown') errors.push('Tenure');
-  if (v.tenure === 'leasehold') {
-    if (typeof v.leaseYearsRemaining !== 'number' || v.leaseYearsRemaining <= 0) {
-      errors.push('Lease years remaining');
-    }
-    if (typeof v.groundRentPerYear !== 'number' || v.groundRentPerYear < 0) {
-      errors.push('Ground rent (£/yr)');
-    }
-    if (typeof v.serviceChargePerYear !== 'number' || v.serviceChargePerYear < 0) {
-      errors.push('Service charge (£/yr)');
-    }
+  for (const field of materialInfoMissing(toMaterialInfoSource(v))) {
+    const label = MATERIAL_ERROR_LABEL[field];
+    if (label) errors.push(label);
   }
   return errors;
 }
@@ -426,7 +445,7 @@ export function PropertyDetailsForm({ value, onChange, onSave, onCancel, saveLab
       )}
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <Field label="Property type" pending={review.isPending('propertyType')}>
+        <Field label="Property type" required pending={review.isPending('propertyType')}>
           <select
             className={inputClass}
             value={value.propertyType ?? ''}
@@ -480,7 +499,7 @@ export function PropertyDetailsForm({ value, onChange, onSave, onCancel, saveLab
             ))}
           </select>
         </Field>
-        <Field label="Council tax band" pending={review.isPending('councilTaxBand')}>
+        <Field label="Council tax band" required pending={review.isPending('councilTaxBand')}>
           <select
             className={inputClass}
             value={value.councilTaxBand ?? ''}

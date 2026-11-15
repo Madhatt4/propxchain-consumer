@@ -28,22 +28,27 @@ import { documentShareService } from './documentShare.service';
 import { icpService } from './icp.service';
 import { enrichAndStoreListing } from './listingEnrichment';
 import { enrichListingFromRegisters, type FactDiscrepancy } from './listingFactsFromRegister';
+import { MATERIAL_INFO_FIELD_LABEL, materialInfoMissing, type MaterialInfoGap } from './materialInfo';
 
 export type PackItemId =
   | 'materialInfo'
   | 'epc'
   | 'titlePulled'
-  | 'searchesOrdered'
-  | 'searchesBack'
   | 'ta6'
   | 'ta10'
   | 'ta7'
+  | 'searches'
   | 'idShared';
 
 export interface PackItem {
   id: PackItemId;
+  /** The row title the seller sees, e.g. "Title register". */
   label: string;
   done: boolean;
+  /** One short line under the title, e.g. "Not ordered". */
+  status?: string;
+  /** materialInfo only: the fields still missing, in display order. */
+  missing?: MaterialInfoGap[];
 }
 
 export interface PackReadiness {
@@ -72,24 +77,10 @@ const ID_SLOT_IDS = ['amlSourceOfFunds', 'proofOfId'];
 /**
  * The listing's disclosure set is complete: price, a committed tenure,
  * property type and council tax band — plus the cost trio when leasehold.
- * EPC is deliberately excluded: it is its own meter item.
+ * Built on materialInfoMissing so the pack and Stage 1 share one rule.
  */
 export function isMaterialInfoComplete(listing: PropertyListing | null): boolean {
-  if (!listing) return false;
-  const hasCore =
-    listing.address.trim().length > 0 &&
-    listing.postcode.trim().length > 0 &&
-    listing.price > 0 &&
-    listing.tenure !== 'unknown' &&
-    listing.propertyType.trim().length > 0 &&
-    (listing.councilTaxBand ?? '').trim().length > 0;
-  if (!hasCore) return false;
-  if (listing.tenure !== 'leasehold') return true;
-  return (
-    (listing.leaseYearsRemaining ?? 0) > 0 &&
-    listing.groundRentPerYear != null &&
-    listing.serviceChargePerYear != null
-  );
+  return materialInfoMissing(listing).length === 0;
 }
 
 /** Mirrors the forms stage: TA7 hidden only when tenure rules leasehold out. */
@@ -97,19 +88,66 @@ function includesTa7(tenure: Tenure | null | undefined): boolean {
   return tenure !== 'freehold' && tenure !== 'shareOfFreehold';
 }
 
+function materialInfoItem(listing: PropertyListing | null): PackItem {
+  const missing = materialInfoMissing(listing);
+  const done = missing.length === 0;
+  return {
+    id: 'materialInfo',
+    label: 'About your property',
+    done,
+    status: done ? undefined : `Missing: ${missing.map((f) => MATERIAL_INFO_FIELD_LABEL[f]).join(', ')}`,
+    missing,
+  };
+}
+
+function epcItem(listing: PropertyListing | null): PackItem {
+  const rating = (listing?.epcRating ?? '').trim();
+  return {
+    id: 'epc',
+    label: 'Energy Performance Certificate (EPC)',
+    done: rating.length > 0,
+    status: rating ? `Rating ${rating}` : 'Not found yet',
+  };
+}
+
+/** Status of the searches row before anything is ordered (the only state
+ *  with a "Choose searches" action). */
+export const SEARCHES_NOT_ORDERED = 'Not ordered';
+
+/** One row for searches: done only once results are back. */
+function searchesItem(ordered: boolean, back: boolean): PackItem {
+  const status = back ? 'Results back' : ordered ? 'Ordered, waiting for results' : SEARCHES_NOT_ORDERED;
+  return { id: 'searches', label: 'Property searches', done: back, status };
+}
+
+function formItem(id: 'ta6' | 'ta10' | 'ta7', label: string, done: boolean, notDoneStatus = 'Not started'): PackItem {
+  return { id, label, done, status: done ? 'Completed' : notDoneStatus };
+}
+
+/** Rows in the signed-off order (Marc, 2026-11-15 mock-up). */
 export function computePackReadiness(inputs: PackReadinessInputs): PackReadiness {
+  const tenure = inputs.listing?.tenure;
   const items: PackItem[] = [
-    { id: 'materialInfo', label: 'Material information complete', done: isMaterialInfoComplete(inputs.listing) },
-    { id: 'epc', label: 'EPC rating on the listing', done: (inputs.listing?.epcRating ?? '').trim().length > 0 },
-    { id: 'titlePulled', label: 'Title register pulled (HMLR)', done: inputs.titlePulled },
-    { id: 'searchesOrdered', label: 'Property searches ordered', done: inputs.searchesOrdered },
-    { id: 'searchesBack', label: 'Search results back', done: inputs.searchesBack },
-    { id: 'ta6', label: 'TA6 property information form', done: inputs.ta6 },
-    { id: 'ta10', label: 'TA10 fittings and contents form', done: inputs.ta10 },
-    ...(includesTa7(inputs.listing?.tenure)
-      ? [{ id: 'ta7' as const, label: 'TA7 leasehold information form', done: inputs.ta7 }]
+    materialInfoItem(inputs.listing),
+    epcItem(inputs.listing),
+    {
+      id: 'titlePulled',
+      label: 'Title register',
+      done: inputs.titlePulled,
+      status: inputs.titlePulled ? 'Pulled from HM Land Registry' : 'Not pulled yet',
+    },
+    formItem('ta6', 'Property information form (TA6)', inputs.ta6),
+    formItem('ta10', 'Fittings and contents form (TA10)', inputs.ta10),
+    ...(includesTa7(tenure)
+      ? [formItem('ta7', 'Leasehold information form (TA7)', inputs.ta7, tenure === 'leasehold' ? 'Not started' : 'Only if leasehold')]
       : []),
-    { id: 'idShared', label: 'Proof of ID shared from your wallet (never inside the pack)', done: inputs.idShared },
+    searchesItem(inputs.searchesOrdered, inputs.searchesBack),
+    {
+      id: 'idShared',
+      label: 'Proof of identity',
+      done: inputs.idShared,
+      status: inputs.idShared ? 'Shared from your wallet' : 'Not shared yet',
+    },
   ];
   return {
     items,

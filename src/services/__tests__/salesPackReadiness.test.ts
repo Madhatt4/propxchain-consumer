@@ -5,8 +5,8 @@
 /**
  * The sales-pack readiness meter is a simple fraction of binary items
  * (decision: Madhatt4/Propxchain#115) — no weighting, TA7 counted only for
- * transactions that aren't freehold / share-of-freehold, searches split into
- * "ordered" and "back".
+ * transactions that aren't freehold / share-of-freehold, and one searches row
+ * that is done only when results are back (Marc's 2026-11-15 sign-off).
  */
 import { describe, it, expect } from 'vitest';
 
@@ -15,6 +15,7 @@ import {
   isMaterialInfoComplete,
   type PackReadinessInputs,
 } from '../salesPackReadiness';
+import { materialInfoMissing } from '../materialInfo';
 import type { PropertyListing } from '@/types/listing.types';
 
 function listing(overrides: Partial<PropertyListing> = {}): PropertyListing {
@@ -110,13 +111,13 @@ describe('isMaterialInfoComplete', () => {
 });
 
 describe('computePackReadiness', () => {
-  it('should count 8 items for a freehold transaction (no TA7)', () => {
+  it('should count 7 items for a freehold transaction (no TA7)', () => {
     const r = computePackReadiness(inputs());
-    expect(r.total).toBe(8);
+    expect(r.total).toBe(7);
     expect(r.items.map((i) => i.id)).not.toContain('ta7');
   });
 
-  it('should count 9 items for a leasehold transaction', () => {
+  it('should count 8 items for a leasehold transaction', () => {
     const r = computePackReadiness(
       inputs({
         listing: listing({
@@ -127,7 +128,7 @@ describe('computePackReadiness', () => {
         }),
       }),
     );
-    expect(r.total).toBe(9);
+    expect(r.total).toBe(8);
     expect(r.items.map((i) => i.id)).toContain('ta7');
   });
 
@@ -164,7 +165,7 @@ describe('computePackReadiness', () => {
         idShared: true,
       }),
     );
-    expect(r.done).toBe(8);
+    expect(r.done).toBe(7);
     expect(r.done).toBe(r.total);
   });
 
@@ -173,15 +174,109 @@ describe('computePackReadiness', () => {
     expect(r.items.find((i) => i.id === 'epc')?.done).toBe(false);
   });
 
-  it('should treat searches ordered and searches back as separate items', () => {
-    const r = computePackReadiness(inputs({ searchesOrdered: true, searchesBack: false }));
-    expect(r.items.find((i) => i.id === 'searchesOrdered')?.done).toBe(true);
-    expect(r.items.find((i) => i.id === 'searchesBack')?.done).toBe(false);
-  });
-
   it('should give every item a human label', () => {
     for (const item of computePackReadiness(inputs({ listing: null })).items) {
       expect(item.label.length).toBeGreaterThan(3);
     }
+  });
+});
+
+describe('computePackReadiness order', () => {
+  it('should list the rows in the signed-off order without TA7 for freehold', () => {
+    expect(computePackReadiness(inputs()).items.map((i) => i.id)).toEqual([
+      'materialInfo', 'epc', 'titlePulled', 'ta6', 'ta10', 'searches', 'idShared',
+    ]);
+  });
+
+  it('should put TA7 after TA10 and before searches when the home could be leasehold', () => {
+    const r = computePackReadiness(inputs({ listing: listing({ tenure: 'unknown' }) }));
+    expect(r.items.map((i) => i.id)).toEqual([
+      'materialInfo', 'epc', 'titlePulled', 'ta6', 'ta10', 'ta7', 'searches', 'idShared',
+    ]);
+    expect(r.items.find((i) => i.id === 'ta7')?.status).toBe('Only if leasehold');
+  });
+
+  it('should use the signed-off row titles', () => {
+    const labels = computePackReadiness(inputs({ listing: listing({ tenure: 'leasehold' }) })).items.map((i) => i.label);
+    expect(labels).toEqual([
+      'About your property',
+      'Energy Performance Certificate (EPC)',
+      'Title register',
+      'Property information form (TA6)',
+      'Fittings and contents form (TA10)',
+      'Leasehold information form (TA7)',
+      'Property searches',
+      'Proof of identity',
+    ]);
+  });
+});
+
+describe('computePackReadiness searches row', () => {
+  function searches(ordered: boolean, back: boolean): { done: boolean; status?: string } | undefined {
+    return computePackReadiness(inputs({ searchesOrdered: ordered, searchesBack: back })).items.find((i) => i.id === 'searches');
+  }
+
+  it('should say "Not ordered" and be not done before anything is ordered', () => {
+    expect(searches(false, false)).toMatchObject({ done: false, status: 'Not ordered' });
+  });
+
+  it('should say it is waiting and stay not done once ordered', () => {
+    expect(searches(true, false)).toMatchObject({ done: false, status: 'Ordered, waiting for results' });
+  });
+
+  it('should be done only when results are back', () => {
+    expect(searches(true, true)).toMatchObject({ done: true, status: 'Results back' });
+  });
+});
+
+describe('materialInfoMissing', () => {
+  it('should return nothing for a complete freehold listing', () => {
+    expect(materialInfoMissing(listing())).toEqual([]);
+  });
+
+  it('should return every core field when there is no listing', () => {
+    expect(materialInfoMissing(null)).toEqual(['address', 'postcode', 'price', 'tenure', 'propertyType', 'councilTaxBand']);
+  });
+
+  it.each([
+    ['address', { address: '  ' }],
+    ['postcode', { postcode: '' }],
+    ['price', { price: 0 }],
+    ['tenure', { tenure: 'unknown' as const }],
+    ['propertyType', { propertyType: '' }],
+    ['councilTaxBand', { councilTaxBand: null }],
+  ])('should report %s when it is missing', (field, overrides) => {
+    expect(materialInfoMissing(listing(overrides as Partial<PropertyListing>))).toEqual([field]);
+  });
+
+  it('should report the whole lease trio for a leasehold listing without lease details', () => {
+    expect(materialInfoMissing(listing({ tenure: 'leasehold' }))).toEqual([
+      'leaseYearsRemaining', 'groundRentPerYear', 'serviceChargePerYear',
+    ]);
+  });
+
+  it('should report each lease field on its own', () => {
+    const lease = { tenure: 'leasehold' as const, leaseYearsRemaining: 90, groundRentPerYear: 0, serviceChargePerYear: 900 };
+    expect(materialInfoMissing(listing({ ...lease, leaseYearsRemaining: 0 }))).toEqual(['leaseYearsRemaining']);
+    expect(materialInfoMissing(listing({ ...lease, groundRentPerYear: undefined }))).toEqual(['groundRentPerYear']);
+    expect(materialInfoMissing(listing({ ...lease, serviceChargePerYear: -1 }))).toEqual(['serviceChargePerYear']);
+  });
+
+  it('should not ask for lease details on a freehold listing', () => {
+    expect(materialInfoMissing(listing({ tenure: 'freehold', leaseYearsRemaining: undefined }))).toEqual([]);
+  });
+});
+
+describe('computePackReadiness material info row', () => {
+  it('should name the missing fields in plain words', () => {
+    const item = computePackReadiness(inputs({ listing: listing({ councilTaxBand: null, tenure: 'unknown' }) })).items[0];
+    expect(item).toMatchObject({ id: 'materialInfo', done: false, status: 'Missing: tenure, council tax band' });
+    expect(item.missing).toEqual(['tenure', 'councilTaxBand']);
+  });
+
+  it('should carry no missing line once complete', () => {
+    const item = computePackReadiness(inputs()).items[0];
+    expect(item.done).toBe(true);
+    expect(item.status).toBeUndefined();
   });
 });

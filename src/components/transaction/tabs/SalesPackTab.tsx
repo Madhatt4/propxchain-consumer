@@ -11,20 +11,14 @@
  * whose files are stored with the deal and hashed on-chain. The buyer's side
  * reads the same list, filtered by document_storage's access matrix.
  */
-import { Link } from 'react-router-dom';
-import { AlertTriangle, CheckCircle2, Circle, Package } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { AlertTriangle, Package } from 'lucide-react';
 import { usePackReadiness } from '@/hooks/usePackReadiness';
+import type { PackReadiness } from '@/services/salesPackReadiness';
 import { ExtraDocumentsSlot } from './SalesPackDocuments';
 import { PackShareCard } from './PackShareCard';
+import { PackRow } from './PackRow';
 import { viewOnlyNote } from '../ViewOnlyFrame';
 import type { TransactionTabProps } from './transactionTabs.config';
-
-/** Stage where the seller confirms tenure and council tax band. */
-const LIST_PROPERTY_STAGE_ID = 'seller-1';
-
-const ROW_ACTION =
-  'ml-auto shrink-0 text-xs font-semibold text-teal-700 hover:underline dark:text-teal-300';
 
 interface SalesPackTabExtraProps {
   /** Jump to a flow stage — wired by the flow page; absent elsewhere. */
@@ -36,31 +30,56 @@ interface SalesPackTabExtraProps {
   readOnly?: boolean;
 }
 
-/**
- * Where an unfinished item is completed. Material info lives on the Stage 1
- * form (tenure and council tax band have no free source); proof of ID is
- * shared from the Transaction Wallet and is never part of the pack itself.
- */
-function RowAction({
-  itemId,
+function RegisterWarnings({ warnings }: { warnings: string[] }): JSX.Element | null {
+  if (warnings.length === 0) return null;
+  return (
+    <div
+      role="alert"
+      className="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200"
+    >
+      <p className="flex items-center gap-2 font-semibold">
+        <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden="true" />
+        The title register disagrees with the listing
+      </p>
+      <ul className="mt-1.5 list-inside list-disc space-y-1">
+        {warnings.map((w, i) => (
+          <li key={i}>{w}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/** Numbered rows; numbers re-flow because they come from position, and the
+ *  readiness service already drops TA7 when tenure rules leasehold out. */
+function PackList({
+  readiness,
   transactionId,
+  readOnly,
   onGoToStage,
-}: { itemId: string; transactionId: string; onGoToStage?: (stageId: string) => void }): JSX.Element | null {
-  if (itemId === 'materialInfo' && onGoToStage) {
-    return (
-      <button type="button" className={ROW_ACTION} onClick={() => onGoToStage(LIST_PROPERTY_STAGE_ID)}>
-        Complete in Stage 1
-      </button>
-    );
-  }
-  if (itemId === 'idShared') {
-    return (
-      <Link to={`/transaction/${transactionId}/flow?tab=wallet`} className={ROW_ACTION}>
-        Share from wallet
-      </Link>
-    );
-  }
-  return null;
+}: { readiness: PackReadiness; transactionId: string; readOnly: boolean; onGoToStage?: (stageId: string) => void }): JSX.Element {
+  const next = readiness.items.find((i) => !i.done);
+  return (
+    <>
+      <p className="mt-1.5 text-[13px] text-teal-800 dark:text-teal-300">
+        {next ? `Next: ${next.label}` : 'Pack complete'}
+      </p>
+      <RegisterWarnings warnings={readiness.warnings} />
+      <ol aria-label="Sales pack steps" className="mt-3 divide-y divide-gray-100 dark:divide-slate-700/40">
+        {readiness.items.map((item, index) => (
+          <PackRow
+            key={item.id}
+            item={item}
+            number={index + 1}
+            isNext={item === next}
+            transactionId={transactionId}
+            readOnly={readOnly}
+            onGoToStage={onGoToStage}
+          />
+        ))}
+      </ol>
+    </>
+  );
 }
 
 export function SalesPackTab({
@@ -83,7 +102,8 @@ export function SalesPackTab({
           )}
         </div>
         <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-          The upfront information a buyer&apos;s side will ask for.{readOnly ? '' : ' Each item completes from its stage above.'}
+          What a buyer&apos;s conveyancer will ask for, ready before they ask.
+          {readOnly ? '' : ' Work down the list. Each step takes you to the right place.'}
         </p>
         {readOnly && (
           <p role="note" className="mt-2 text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -98,7 +118,7 @@ export function SalesPackTab({
             aria-valuemax={readiness.total}
             aria-valuenow={readiness.done}
             aria-label="Sales pack readiness"
-            className="mt-4 h-2 overflow-hidden rounded-full bg-gray-100 dark:bg-white/[0.06]"
+            className="mt-4 h-1.5 overflow-hidden rounded-full bg-gray-100 dark:bg-white/[0.06]"
           >
             <div
               className="h-full rounded-full bg-teal-500 transition-[width]"
@@ -111,49 +131,8 @@ export function SalesPackTab({
           <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">Checking your pack…</p>
         )}
 
-        {readiness && readiness.warnings.length > 0 && (
-          <div
-            role="alert"
-            className="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200"
-          >
-            <p className="flex items-center gap-2 font-semibold">
-              <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden="true" />
-              The title register disagrees with the listing
-            </p>
-            <ul className="mt-1.5 list-inside list-disc space-y-1">
-              {readiness.warnings.map((w, i) => (
-                <li key={i}>{w}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-
         {readiness && (
-          <ul className="mt-4 divide-y divide-gray-100 dark:divide-slate-700/40">
-            {readiness.items.map((item) => (
-              <li key={item.id} className="flex items-center gap-3 py-2.5">
-                {item.done ? (
-                  <CheckCircle2 className="h-5 w-5 shrink-0 text-teal-600 dark:text-teal-400" aria-hidden="true" />
-                ) : (
-                  <Circle className="h-5 w-5 shrink-0 text-gray-300 dark:text-slate-600" aria-hidden="true" />
-                )}
-                <span
-                  className={cn(
-                    'text-sm',
-                    item.done
-                      ? 'text-gray-900 dark:text-gray-100'
-                      : 'text-gray-600 dark:text-gray-400',
-                  )}
-                >
-                  {item.label}
-                </span>
-                <span className="sr-only">{item.done ? 'done' : 'not done'}</span>
-                {!item.done && !readOnly && (
-                  <RowAction itemId={item.id} transactionId={transactionId} onGoToStage={onGoToStage} />
-                )}
-              </li>
-            ))}
-          </ul>
+          <PackList readiness={readiness} transactionId={transactionId} readOnly={readOnly} onGoToStage={onGoToStage} />
         )}
       </div>
 
