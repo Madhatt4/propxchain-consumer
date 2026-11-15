@@ -3,9 +3,8 @@
 
 /**
  * The "?" help behind each Sales pack row. Wording is verbatim from the
- * mock-up Marc signed off on 2026-11-15 ("no changes, build as drafted"):
- * C:\Users\Admin\Desktop\sales-pack-mockup-2026-11-15.html. Change it there
- * first, with Marc, not here.
+ * sales-pack mock-up signed off on 2026-11-15 ("no changes, build as drafted").
+ * Wording changes go through product sign-off first, not straight in here.
  */
 import type { PackItemId } from '@/services/salesPackReadiness';
 

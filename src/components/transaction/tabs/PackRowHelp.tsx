@@ -21,7 +21,7 @@ export function PackHelpButton({
       type="button"
       aria-label={`What is ${title}?`}
       aria-expanded={isOpen}
-      aria-controls={panelId}
+      aria-controls={isOpen ? panelId : undefined}
       onClick={onToggle}
       className="ml-1.5 inline-flex h-[18px] w-[18px] items-center justify-center rounded-full border border-gray-400 bg-white align-[1px] text-[11px] text-gray-500 hover:border-teal-600 hover:text-teal-700 dark:border-slate-500 dark:bg-transparent dark:text-slate-400"
     >
