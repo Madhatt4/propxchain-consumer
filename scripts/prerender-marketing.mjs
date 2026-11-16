@@ -260,7 +260,7 @@ export const pages = [
     <li><strong>Free to use</strong> — no platform fee, no monthly fees, no listing fees. You only pay for the third-party items you order, like searches and the £7 title pull.</li>
     <li><strong>Save £2,000+ vs traditional</strong> — a typical UK sale costs £1,500–£2,500 in agent and conveyancing admin fees. PropXchain cuts the admin middleman.</li>
     <li><strong>Weeks, not months</strong> — UK conveyancing averages 20–24 weeks. PropXchain sellers complete in weeks because everyone sees the same live transaction.</li>
-    <li><strong>You stay in control</strong> — order your own searches, invite your own buyer, pick your own CLC-verified conveyancer from the panel.</li>
+    <li><strong>You stay in control</strong> — order your own searches, invite your own buyer, pick your own conveyancer from the panel, every firm regulated by the CLC or the SRA.</li>
     <li><strong>Blockchain-backed audit trail</strong> — every milestone timestamped on the Internet Computer.</li>
   </ul>
 </section>
@@ -272,7 +272,7 @@ export const pages = [
     <li><strong>Complete the TA6 and TA10</strong> forms with Oscar's guidance. Save progress, come back anytime.</li>
     <li><strong>Invite your buyer</strong> — or let us match you. The buyer uses PropXchain free.</li>
     <li><strong>Order searches directly</strong> — local authority, drainage, environmental. Priced when you order.</li>
-    <li><strong>Appoint a conveyancer</strong> from the CLC-verified panel — quoted to you directly.</li>
+    <li><strong>Appoint a conveyancer</strong> from the panel, every firm regulated by the CLC or the SRA — quoted to you directly.</li>
     <li><strong>Exchange and complete</strong> through your conveyancers. PropXchain records the exchange and never holds your money.</li>
   </ol>
 </section>
@@ -292,18 +292,18 @@ export const pages = [
   },
   {
     route: 'find-a-conveyancer',
-    title: 'Find a Conveyancer Online — CLC Verified | PropXchain',
-    description: 'Find an online conveyancer for your UK purchase or sale. CLC-verified firms quote you directly on your actual transaction.',
+    title: 'Find a Regulated Conveyancer Online | PropXchain',
+    description: 'Find an online conveyancer for your UK purchase or sale. Firms regulated by the CLC or the SRA quote you directly on your actual transaction.',
     main: `<main id="seo-fallback" role="main" aria-label="Find a conveyancer with PropXchain — summary">
 <p class="muted">Loading PropXchain…</p>
 <h1>Find a conveyancer — quoted on your actual transaction</h1>
-<p>Every conveyancer on PropXchain's panel is CLC-verified, quotes you directly per transaction, and uses the same shared live transaction view so you always know where things stand.</p>
+<p>Every conveyancer on PropXchain's panel is regulated by the CLC or the SRA, quotes you directly per transaction, and uses the same shared live transaction view so you always know where things stand.</p>
 
 <section aria-labelledby="why">
   <h2 id="why">Why use a PropXchain conveyancer</h2>
   <ul>
     <li><strong>A quote on the real work</strong> — conveyancers quote your actual transaction, not a one-size-fits-all rate padded for unknown risk. No hourly billing, no surprise invoices.</li>
-    <li><strong>CLC-verified only</strong> — every firm is checked against the Council for Licensed Conveyancers register before joining the panel.</li>
+    <li><strong>Regulated firms only</strong> — every firm is regulated by the Council for Licensed Conveyancers (CLC) or the Solicitors Regulation Authority (SRA), checked against that regulator's register before joining the panel.</li>
     <li><strong>Online-first</strong> — everything runs inside PropXchain. No courier dance, no faxed redemption statements, no missed calls.</li>
     <li><strong>Shared live view</strong> — your conveyancer sees the same transaction you see. You both see what the other side's conveyancer sees. No chasing.</li>
     <li><strong>Blockchain audit trail</strong> — every action is timestamped on the Internet Computer. If anything is ever disputed, the record is cryptographically verifiable.</li>
@@ -332,7 +332,7 @@ export const pages = [
 <section aria-labelledby="faq">
   <h2 id="faq">Find a conveyancer FAQ</h2>
   <h3>Is an online conveyancer as good as a high-street one?</h3>
-  <p>Yes — the legal work is identical, and CLC verification is the same regulator that licenses high-street firms. Online firms are often faster because they don't duplicate work that the platform already handles.</p>
+  <p>Yes — the legal work is identical, and every firm on the panel is regulated by the CLC or the SRA, the same regulators that oversee high-street firms. Online firms are often faster because they don't duplicate work that the platform already handles.</p>
   <h3>Can I use my own conveyancer instead of the panel?</h3>
   <p>You can invite your existing solicitor to the transaction. They'll see the same shared view. Panel quotes apply only if you choose from the panel.</p>
   <h3>What does the conveyancer's quote cover?</h3>
@@ -434,7 +434,7 @@ export const pages = [
   {
     route: 'faq',
     title: 'PropXchain FAQ — Pricing, Conveyancers & Security',
-    description: 'Common PropXchain questions: free to use, what is paid per item, search costs, CLC-verified conveyancers, e-signing and AML checks.',
+    description: 'Common PropXchain questions: free to use, what is paid per item, search costs, CLC- or SRA-regulated conveyancers, e-signing and AML checks.',
     jsonLd: buildFaqJsonLd(),
     main: faqMain,
   },
@@ -532,7 +532,7 @@ export const pages = [
     main: `<main id="seo-fallback" role="main" aria-label="Join the PropXchain conveyancer panel — summary">
 <p class="muted">Loading PropXchain…</p>
 <h1>Join the PropXchain conveyancer panel</h1>
-<p>Conveyancers on the CLC-verified panel join free and quote each job per transaction, from a brief that arrives with the HM Land Registry title pulled, searches returned and any enquiries surfaced by AI document review.</p>
+<p>Conveyancers on the panel join free and quote each job per transaction, from a brief that arrives with the HM Land Registry title pulled, searches returned and any enquiries surfaced by AI document review.</p>
 
 <section aria-labelledby="apply">
   <h2 id="apply">How to apply</h2>

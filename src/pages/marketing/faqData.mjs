@@ -20,7 +20,7 @@
  *    "no mark-up"), ID & AML checks, the £7 title pull, the £25 chain check.
  *  - Conveyancers quote directly per transaction — never a fixed £ fee.
  *  - PropXchain is a coordination platform, NOT a conveyancer/ABS.
- *    Reserved legal acts are performed by CLC-verified conveyancers.
+ *    Reserved legal acts are performed by CLC- or SRA-regulated conveyancers.
  *
  * The Pricing answers marked "canonical" are reused verbatim from
  * src/pages/PricingPage.tsx — keep them in sync if either changes.
@@ -37,7 +37,7 @@ export const FAQ_GROUPS = [
       },
       {
         q: 'Who is PropXchain for?',
-        a: 'Anyone selling or buying residential property in England and Wales, plus the conveyancers and small housebuilders who work with them. Sellers run the transaction, buyers follow along free, and CLC-verified conveyancers handle the legal work. Properties in Scotland and Northern Ireland are not supported yet, as they use different land registration systems.',
+        a: 'Anyone selling or buying residential property in England and Wales, plus the conveyancers and small housebuilders who work with them. Sellers run the transaction, buyers follow along free, and conveyancers regulated by the CLC or the SRA handle the legal work. Properties in Scotland and Northern Ireland are not supported yet, as they use different land registration systems.',
       },
       {
         q: 'Is PropXchain the same as Propchain?',
@@ -88,7 +88,7 @@ export const FAQ_GROUPS = [
     items: [
       {
         q: 'Is PropXchain a conveyancer or a law firm?',
-        a: 'No. PropXchain is a coordination platform — it organises the transaction, the documents and the people. The reserved legal activities (exchange of contracts, transfer of title, completion) are always performed by a CLC-verified conveyancer, either chosen from the panel or invited by you.',
+        a: 'No. PropXchain is a coordination platform — it organises the transaction, the documents and the people. The reserved legal activities (exchange of contracts, transfer of title, completion) are always performed by a conveyancer regulated by the CLC or the SRA, either chosen from the panel or invited by you.',
       },
       {
         // Canonical — verbatim from PricingPage.tsx

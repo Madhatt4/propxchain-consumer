@@ -210,7 +210,7 @@ export function ConveyancerQuotesStage({
             />
             <p className="text-xs text-teal-600 dark:text-teal-400 mt-1">
               We&rsquo;ve emailed the firm an activation link. They&rsquo;ll appear on this
-              transaction with their CLC-registered details once they join.
+              transaction with their regulator-registered details once they join.
             </p>
           </div>
         </div>

@@ -39,7 +39,7 @@ const reasons: Reason[] = [
   },
   {
     lead: 'You stay in control',
-    body: 'Order your own searches, invite your own buyer, pick your own CLC-verified conveyancer from the panel.',
+    body: 'Order your own searches, invite your own buyer, pick your own conveyancer from the panel, every firm regulated by the CLC or the SRA.',
   },
   {
     lead: 'Blockchain-backed audit trail',
@@ -52,7 +52,7 @@ const steps: string[] = [
   'Complete the TA6 and TA10 forms with guidance. Save progress and come back anytime.',
   'Invite your buyer — or let us match you. The buyer uses PropXchain free.',
   'Order searches directly — local authority, drainage, environmental. Priced when you order.',
-  'Appoint a conveyancer from the CLC-verified panel — quoted to you directly.',
+  'Appoint a conveyancer from the panel, every firm regulated by the CLC or the SRA — quoted to you directly.',
   'Exchange and complete through your conveyancers. PropXchain records the exchange and never holds your money.',
 ];
 
