@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { ProviderPanel } from './ProviderPanel';
 import { QuoteRequestBar } from './QuoteRequestBar';
 import { ConveyancerSearch } from './ConveyancerSearch';
+import { showsSraFirm } from '../../services/regulator';
+import { SraAttribution } from './SraAttribution';
 import { useProviderData } from '../../hooks/useProviderData';
 import { useProviderPanel } from '../../hooks/useProviderPanel';
 import { conveyancerQuoteService } from '../../services/conveyancerQuote.service';
@@ -266,6 +268,7 @@ export function ConveyancerPanel({
             )}
             {compatibilityFallbackActive && <SearchCompatibilityFallbackBanner />}
             <ConveyancerCallout />
+            {showsSraFirm(finalProviders) && <SraAttribution />}
           </div>
         }
         priceLabel="+ disbursements"

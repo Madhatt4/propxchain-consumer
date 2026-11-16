@@ -23,10 +23,20 @@ export interface JoinPreview {
   firmName: string | null;
   firmCity: string | null;
   firmPostcode: string | null;
-  clcId: string;
+  /** The firm's CLC number; null for an SRA firm. Kept for servers that predate `registration`. */
+  clcId: string | null;
+  regulator?: 'CLC' | 'SRA' | null;
+  /** "SRA 654648" / "CLC 1234567": the firm's regulator and number, as the server labels it. */
+  registration?: string | null;
   propertyAddress: string | null;
   transactionType: string | null;
   expiresAt: string;
+}
+
+/** "SRA 654648" / "CLC 1234567". Older servers sent only clcId, which was always a CLC number. */
+export function registrationOf(firm: { clcId?: string | null; registration?: string | null }): string | null {
+  if (firm.registration) return firm.registration;
+  return firm.clcId ? `CLC ${firm.clcId}` : null;
 }
 
 /** The question PendingJoinBanners asks before redeeming a saved code: "Join Acme Law on 1 High Street?" */
@@ -42,7 +52,8 @@ export interface RedeemResult {
   success: boolean;
   transactionId?: string;
   firmName?: string;
-  clcId?: string;
+  clcId?: string | null;
+  registration?: string | null;
   error?: string;
   detail?: string;
 }
