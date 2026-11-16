@@ -12,11 +12,16 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '../../lib/supabase';
 import { logger } from '@/utils/logger';
+import { registrationText, type Regulator } from '../../services/regulator';
 
 interface PendingConveyancer {
   id: string;
   practice_name: string;
-  clc_id: string;
+  /** Null for an SRA firm. Show a firm's number through registrationText(), never this directly. */
+  clc_id: string | null;
+  /** Not returned by admin_list_pending_conveyancers today (sign-up is CLC only); read when it is. */
+  regulator?: Regulator | null;
+  sra_number?: string | null;
   email: string | null;
   postcode: string | null;
   business_type: string | null;
@@ -36,6 +41,11 @@ interface PendingConveyancer {
   /** Server-derived: signup email domain matches the registered practice domain. */
   email_domain_matches_register: boolean;
   created_at: string;
+}
+
+/** "CLC 1234567" / "SRA 654648" for the confirm dialogs, never "CLC null". */
+function registrationOfRow(row: PendingConveyancer): string {
+  return registrationText(row) ?? 'no registration number';
 }
 
 const formatDate = (iso: string | null): string => {
@@ -76,7 +86,7 @@ export const ConveyancersPanel: React.FC = () => {
     // the table. Anything the applicant asserted about themselves is excluded.
     const warnings: string[] = [];
     if (!row.clc_verified) {
-      warnings.push(`• CLC ${row.clc_id} is NOT in our register snapshot.`);
+      warnings.push(`• ${registrationOfRow(row)} is NOT in our register snapshot.`);
     }
     if (!row.email_domain_matches_register) {
       warnings.push(
@@ -87,7 +97,7 @@ export const ConveyancersPanel: React.FC = () => {
       warnings.push('• Applicant claimed CLC-verified at signup, but the register does not agree.');
     }
 
-    const preamble = `Approve ${row.practice_name} (CLC ${row.clc_id})?\n\nThis flips them onto the active panel and they can start receiving transactions.`;
+    const preamble = `Approve ${row.practice_name} (${registrationOfRow(row)})?\n\nThis flips them onto the active panel and they can start receiving transactions.`;
     const message = warnings.length
       ? `${preamble}\n\nCheck these first:\n${warnings.join('\n')}\n\nConfirm against the live CLC register before approving.`
       : preamble;
@@ -105,7 +115,7 @@ export const ConveyancersPanel: React.FC = () => {
   };
 
   const handleReject = async (row: PendingConveyancer): Promise<void> => {
-    if (!window.confirm(`Reject ${row.practice_name} (CLC ${row.clc_id})?\n\nThis deletes the panel application. The auth user remains — delete via Users tab if also needed.`)) return;
+    if (!window.confirm(`Reject ${row.practice_name} (${registrationOfRow(row)})?\n\nThis deletes the panel application. The auth user remains — delete via Users tab if also needed.`)) return;
     setBusyId(row.id);
     const { error: rpcError } = await supabase
       .rpc('admin_reject_conveyancer', { p_panel_id: row.id });
@@ -169,7 +179,7 @@ export const ConveyancersPanel: React.FC = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Practice</TableHead>
-                  <TableHead>CLC ID</TableHead>
+                  <TableHead>Registration</TableHead>
                   <TableHead>CLC register</TableHead>
                   <TableHead>Email domain</TableHead>
                   <TableHead>Signup email</TableHead>
@@ -184,7 +194,7 @@ export const ConveyancersPanel: React.FC = () => {
                       <div className="font-medium">{row.practice_name}</div>
                       {row.postcode && <div className="text-xs text-muted-foreground">{row.postcode}</div>}
                     </TableCell>
-                    <TableCell className="font-mono text-sm">{row.clc_id}</TableCell>
+                    <TableCell className="font-mono text-sm">{registrationText(row) ?? '—'}</TableCell>
                     <TableCell>
                       {row.clc_verified ? (
                         <div>

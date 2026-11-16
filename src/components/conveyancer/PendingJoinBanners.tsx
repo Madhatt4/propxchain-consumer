@@ -17,12 +17,13 @@
 
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { conveyancerJoinService, joinOfferText, type JoinPreview } from '@/services/conveyancerJoin.service';
+import { conveyancerJoinService, joinOfferText, registrationOf, SRA_JOIN_NOT_YET_SUPPORTED, type JoinPreview } from '@/services/conveyancerJoin.service';
 import { useAuthStore } from '@/stores/authStore';
 
 interface JoinedFirm {
   firmName?: string;
-  clcId?: string;
+  /** "SRA 654648" / "CLC 1234567". */
+  registration?: string;
 }
 interface JoinFailure {
   reason: string;
@@ -43,6 +44,7 @@ export const PendingJoinBanners: React.FC<{ onJoined?: () => void }> = ({ onJoin
   const [joinFailure, setJoinFailure] = useState<JoinFailure | null>(null);
   const [offer, setOffer] = useState<PendingOffer | null>(null);
   const [isJoining, setIsJoining] = useState(false);
+  const [notYet, setNotYet] = useState<string | null>(null);
 
   // Arrival from JoinConveyancerPage's success screen: show the first-run
   // banner, then strip the params so a refresh doesn't repeat it.
@@ -50,7 +52,8 @@ export const PendingJoinBanners: React.FC<{ onJoined?: () => void }> = ({ onJoin
     if (searchParams.get('joined') === null) return;
     setJoinedFirm({
       firmName: searchParams.get('firm') ?? undefined,
-      clcId: searchParams.get('clc') ?? undefined,
+      // `reg` is the labelled registration; `clc` is the bare CLC number older Pro builds sent.
+      registration: registrationOf({ registration: searchParams.get('reg'), clcId: searchParams.get('clc') }) ?? undefined,
     });
     setSearchParams({}, { replace: true });
     // Params only exist on arrival.
@@ -88,9 +91,14 @@ export const PendingJoinBanners: React.FC<{ onJoined?: () => void }> = ({ onJoin
     if (redeem.success) {
       conveyancerJoinService.clearPendingJoinCode();
       setOffer(null);
-      setJoinedFirm({ firmName: redeem.firmName, clcId: redeem.clcId });
+      setJoinedFirm({ firmName: redeem.firmName, registration: registrationOf(redeem) ?? undefined });
       setJoinFailure(null);
       onJoined?.();
+    } else if (redeem.error === SRA_JOIN_NOT_YET_SUPPORTED) {
+      // Not a failure: the code stays saved and valid; joining opens up later.
+      setOffer(null);
+      setJoinFailure(null);
+      setNotYet(redeem.detail ?? 'Joining deals as an SRA-regulated firm is coming shortly. PropXchain will be in touch.');
     } else if (redeem.error && DEAD_CODE_ERRORS.has(redeem.error)) {
       conveyancerJoinService.clearPendingJoinCode();
       setOffer(null);
@@ -129,6 +137,11 @@ export const PendingJoinBanners: React.FC<{ onJoined?: () => void }> = ({ onJoin
           </div>
         </div>
       )}
+      {notYet && (
+        <div role="status" className="mb-6 rounded-lg border border-teal-300 dark:border-teal-700 bg-teal-50 dark:bg-teal-900/20 px-4 py-3">
+          <p className="text-sm text-teal-800 dark:text-teal-300">{notYet}</p>
+        </div>
+      )}
       {joinFailure && (
         <div
           role="alert"
@@ -151,10 +164,10 @@ export const PendingJoinBanners: React.FC<{ onJoined?: () => void }> = ({ onJoin
         <div className="mb-6 rounded-lg border border-teal-300 dark:border-teal-700 bg-teal-50 dark:bg-teal-900/20 px-4 py-3">
           <p className="text-sm font-medium text-teal-800 dark:text-teal-300">
             You&rsquo;re on the transaction{joinedFirm.firmName ? ` as ${joinedFirm.firmName}` : ''}
-            {joinedFirm.clcId ? ` (CLC ${joinedFirm.clcId})` : ''}.
+            {joinedFirm.registration ? ` (${joinedFirm.registration})` : ''}.
           </p>
           <p className="mt-1 text-xs text-teal-700 dark:text-teal-400">
-            Your firm details were pre-filled from the CLC register. Please check them and
+            Your firm details were pre-filled from your regulator&rsquo;s register. Please check them and
             email <a className="underline" href="mailto:support@propxchain.com">support@propxchain.com</a> if
             anything needs correcting.
           </p>

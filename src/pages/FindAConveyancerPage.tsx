@@ -29,8 +29,8 @@ const reasons: Reason[] = [
     body: 'Conveyancers quote your actual transaction, not a one-size-fits-all rate padded for unknown risk. No hourly billing, no surprise invoices.',
   },
   {
-    lead: 'CLC-verified only',
-    body: 'Every firm is checked against the Council for Licensed Conveyancers register before joining the panel.',
+    lead: 'Regulated firms only',
+    body: 'Every firm is regulated by the Council for Licensed Conveyancers (CLC) or the Solicitors Regulation Authority (SRA), checked against that regulator’s register before joining the panel.',
   },
   {
     lead: 'Online-first',
@@ -63,7 +63,7 @@ const faqs: Faq[] = [
   {
     question: 'Is an online conveyancer as good as a high-street one?',
     answer:
-      'Yes — the legal work is identical, and CLC verification is the same regulator that licenses high-street firms. Online firms are often faster because they do not duplicate work the platform already handles.',
+      'Yes — the legal work is identical, and every firm on the panel is regulated by the CLC or the SRA, the same regulators that oversee high-street firms. Online firms are often faster because they do not duplicate work the platform already handles.',
   },
   {
     question: 'Can I use my own conveyancer instead of the panel?',
@@ -86,7 +86,7 @@ const FindAConveyancerPage: React.FC = () => {
           Find a conveyancer — quoted on your actual transaction.
         </h1>
         <p className="mt-6 max-w-xl font-[DM_Sans] text-lg leading-relaxed text-[#6B7280] dark:text-[#94A3B8]">
-          Every conveyancer on the panel is CLC-verified, quotes you directly
+          Every conveyancer on the panel is regulated by the CLC or the SRA, quotes you directly
           with no PropXchain markup, and works from the same live transaction
           view you do.
         </p>

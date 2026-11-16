@@ -11,6 +11,8 @@ export interface Provider {
   reviews: number;
   features: [string, string, string, string];
   regulated: string;
+  /** Conveyancer firms only: which regulator the firm answers to. Absent for other providers. */
+  regulator?: 'CLC' | 'SRA';
   location?: string;
   postcode?: string;
   slaLoad?: number;

@@ -2,7 +2,7 @@
 // Copyright (C) 2025 PropXchain Ltd
 
 /**
- * "Bring your own conveyancer" — search the full CLC register by firm name,
+ * "Bring your own conveyancer" — search the whole panel (CLC and SRA firms) by firm name,
  * city, or postcode. Surfaces firms outside the curated top 5 for users with
  * an existing relationship or recommendation.
  */
@@ -11,6 +11,8 @@ import { useState } from 'react';
 import { ProviderRow } from './ProviderRow';
 import { useConveyancerSearch } from '../../hooks/useConveyancerSearch';
 import { decorateProviders } from '../../services/lenderPanel.service';
+import { showsSraFirm } from '../../services/regulator';
+import { SraAttribution } from './SraAttribution';
 
 interface ConveyancerSearchProps {
   selectedIds: string[];
@@ -53,7 +55,7 @@ export function ConveyancerSearch({
             Don't see your conveyancer?
           </h4>
           <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-            Search the full CLC register by firm name, city, or postcode.
+            Search every CLC and SRA regulated firm on our panel by name, city, or postcode.
           </p>
         </div>
         <svg
@@ -85,7 +87,7 @@ export function ConveyancerSearch({
 
           {!hasQuery && (
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              Type at least 2 characters to search 200+ CLC-regulated firms.
+              Type at least 2 characters to search the panel.
             </p>
           )}
 
@@ -117,6 +119,8 @@ export function ConveyancerSearch({
               })}
             </div>
           )}
+
+          {showsSraFirm(filtered) && <SraAttribution />}
         </div>
       )}
     </div>

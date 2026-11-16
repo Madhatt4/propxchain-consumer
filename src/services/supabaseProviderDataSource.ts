@@ -4,6 +4,7 @@
 import { supabase } from '../lib/supabase';
 import { postcodeService, calculateDistanceMiles } from './postcodeService';
 import { currentUserIsTestAccount, keepFirmsFor } from './testFirm';
+import { regulatedLabel, type Regulator } from './regulator';
 import type { Provider } from '../components/providers/types';
 import type { ProviderDataSource, ProviderDataSourceOptions } from './providerDataSource';
 
@@ -11,7 +12,11 @@ import type { ProviderDataSource, ProviderDataSourceOptions } from './providerDa
 export interface ConveyancerPanelRow {
   id: string;
   practice_name: string;
-  clc_id: string;
+  /** Null for an SRA firm. Read the firm's number through ./regulator, never this directly. */
+  clc_id: string | null;
+  /** 'CLC' or 'SRA'. Optional so a row read before the column existed still maps (as CLC). */
+  regulator?: Regulator | null;
+  sra_number?: string | null;
   postcode: string | null;
   city: string | null;
   county: string | null;
@@ -31,13 +36,13 @@ export interface ConveyancerPanelRow {
   is_test?: boolean | null;
 }
 
-function deriveFeatures(services: string | null): [string, string, string, string] {
+function deriveFeatures(services: string | null, isSra: boolean): [string, string, string, string] {
   const raw = services?.toLowerCase() ?? '';
   const hasProbate = raw.includes('probate');
   const hasWills = raw.includes('will writing');
   const hasLpa = raw.includes('lasting powers');
   return [
-    'CLC Licensed',
+    isSra ? 'SRA Regulated' : 'CLC Licensed',
     hasProbate ? 'Probate Services' : 'Conveyancing Specialist',
     hasWills ? 'Will Writing' : 'Residential Property',
     hasLpa ? 'Lasting Powers of Attorney' : 'Commissioner of Oaths',
@@ -47,6 +52,7 @@ function deriveFeatures(services: string | null): [string, string, string, strin
 export function rowToProvider(row: ConveyancerPanelRow, distanceMiles?: number): Provider {
   const logoChars = (row.practice_name ?? '??').slice(0, 2).toUpperCase();
   const locationParts = [row.city, row.county].filter(Boolean);
+  const isSra = row.regulator === 'SRA';
   return {
     id: row.id,
     name: row.practice_name,
@@ -57,8 +63,9 @@ export function rowToProvider(row: ConveyancerPanelRow, distanceMiles?: number):
     turnaround: 'Estimate',
     rating: row.rating ?? 0,
     reviews: row.review_count ?? 0,
-    features: deriveFeatures(row.services),
-    regulated: `CLC #${row.clc_id}`,
+    features: deriveFeatures(row.services, isSra),
+    regulated: regulatedLabel(row),
+    regulator: isSra ? 'SRA' : 'CLC',
     location: locationParts.join(', ') || undefined,
     postcode: row.postcode ?? undefined,
     distanceMiles: (distanceMiles !== undefined && !isNaN(distanceMiles)) ? Math.round(distanceMiles * 10) / 10 : undefined,
