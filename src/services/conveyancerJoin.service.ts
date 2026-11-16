@@ -16,6 +16,7 @@ import { supabase } from '../lib/supabase';
 import { buildPrincipalProof } from './principalProof';
 import type { PrincipalProof } from './principalProof';
 import { logger } from '@/utils/logger';
+import type { Regulator } from './regulator';
 
 export const PENDING_JOIN_CODE_KEY = 'propxchain_pending_conveyancer_join_code';
 
@@ -23,9 +24,9 @@ export interface JoinPreview {
   firmName: string | null;
   firmCity: string | null;
   firmPostcode: string | null;
-  /** The firm's CLC number; null for an SRA firm. Kept for servers that predate `registration`. */
-  clcId: string | null;
-  regulator?: 'CLC' | 'SRA' | null;
+  /** The firm's CLC number; empty for an SRA firm. Kept for clients that predate `registration`. */
+  clcId: string;
+  regulator?: Regulator | null;
   /** "SRA 654648" / "CLC 1234567": the firm's regulator and number, as the server labels it. */
   registration?: string | null;
   propertyAddress: string | null;
@@ -33,8 +34,14 @@ export interface JoinPreview {
   expiresAt: string;
 }
 
+/** The two ways a server or link can name a firm's registration. */
+export interface RegistrationSource {
+  clcId?: string | null;
+  registration?: string | null;
+}
+
 /** "SRA 654648" / "CLC 1234567". Older servers sent only clcId, which was always a CLC number. */
-export function registrationOf(firm: { clcId?: string | null; registration?: string | null }): string | null {
+export function registrationOf(firm: RegistrationSource): string | null {
   if (firm.registration) return firm.registration;
   return firm.clcId ? `CLC ${firm.clcId}` : null;
 }
@@ -46,13 +53,20 @@ export function joinOfferText(preview: Pick<JoinPreview, 'firmName' | 'propertyA
   return `Join ${firm} on ${property}?`;
 }
 
+/**
+ * redeem-conveyancer-join refuses an SRA firm until the chain can record its
+ * regulator (the canister writes every firm as CLC today). The code stays
+ * valid, so this is a notice to show, never a dead link.
+ */
+export const SRA_JOIN_NOT_YET_SUPPORTED = 'sra_join_not_yet_supported';
+
 export type JoinPreviewError = 'invalid_code' | 'already_redeemed' | 'expired' | 'network';
 
 export interface RedeemResult {
   success: boolean;
   transactionId?: string;
   firmName?: string;
-  clcId?: string | null;
+  clcId?: string;
   registration?: string | null;
   error?: string;
   detail?: string;

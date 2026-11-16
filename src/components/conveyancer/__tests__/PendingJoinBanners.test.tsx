@@ -14,7 +14,12 @@ const svc = vi.hoisted(() => ({
 }));
 vi.mock('@/services/conveyancerJoin.service', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/services/conveyancerJoin.service')>();
-  return { joinOfferText: actual.joinOfferText, registrationOf: actual.registrationOf, conveyancerJoinService: svc };
+  return {
+    joinOfferText: actual.joinOfferText,
+    registrationOf: actual.registrationOf,
+    SRA_JOIN_NOT_YET_SUPPORTED: actual.SRA_JOIN_NOT_YET_SUPPORTED,
+    conveyancerJoinService: svc,
+  };
 });
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: (sel: (s: { principalId: string; isAuthenticated: boolean }) => unknown) =>
@@ -81,12 +86,25 @@ describe('PendingJoinBanners', () => {
   it('should show an SRA firm under its SRA number, never as CLC, after redeeming', async () => {
     svc.readPendingJoinCode.mockReturnValue('CODE');
     svc.redeemJoinCode.mockResolvedValue({
-      success: true, firmName: 'Holden Smith Law Limited', clcId: null, registration: 'SRA 654648',
+      success: true, firmName: 'Holden Smith Law Limited', clcId: '', registration: 'SRA 654648',
     });
     renderAt('/dashboard');
     fireEvent.click(await screen.findByRole('button', { name: 'Join' }));
     expect(await screen.findByText(/\(SRA 654648\)/)).toBeInTheDocument();
     expect(screen.queryByText(/CLC/)).not.toBeInTheDocument();
+  });
+
+  it('should tell an SRA firm joining is coming shortly, keep its code, and not call the link dead', async () => {
+    const message = 'Joining deals as an SRA-regulated firm is coming shortly. PropXchain will be in touch, and this link will work once it is ready.';
+    svc.readPendingJoinCode.mockReturnValue('CODE');
+    svc.redeemJoinCode.mockResolvedValue({ success: false, error: 'sra_join_not_yet_supported', detail: message });
+    renderAt('/dashboard');
+    fireEvent.click(await screen.findByRole('button', { name: 'Join' }));
+    expect(await screen.findByText(message)).toBeInTheDocument();
+    expect(screen.queryByText(/can no longer be used/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Join' })).not.toBeInTheDocument();
+    expect(svc.clearPendingJoinCode).not.toHaveBeenCalled();
   });
 
   it('should read the labelled registration from the Pro join page arrival link', async () => {

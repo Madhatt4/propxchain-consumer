@@ -10,7 +10,7 @@
 export type Regulator = 'CLC' | 'SRA';
 
 export interface RegulatedFirmRow {
-  regulator?: string | null;
+  regulator?: Regulator | null;
   clc_id?: string | null;
   sra_number?: string | null;
 }
@@ -30,6 +30,12 @@ export function regulatorNumber(row: RegulatedFirmRow): RegulatorNumber | null {
   return number === '' ? null : { regulator, number };
 }
 
+/** "SRA 654648" / "CLC 1234567", or null when the firm's own number is missing. */
+export function registrationText(row: RegulatedFirmRow): string | null {
+  const reg = regulatorNumber(row);
+  return reg ? `${reg.regulator} ${reg.number}` : null;
+}
+
 /** "SRA #654648" / "CLC #1234567" — the regulated line on a provider card. */
 export function regulatedLabel(row: RegulatedFirmRow): string {
   const reg = regulatorNumber(row);
@@ -38,6 +44,6 @@ export function regulatedLabel(row: RegulatedFirmRow): string {
 }
 
 /** True when any firm shown is SRA regulated, so the SRA must be credited on screen. */
-export function showsSraFirm(firms: Array<{ regulator?: string | null }>): boolean {
+export function showsSraFirm(firms: Array<Pick<RegulatedFirmRow, 'regulator'>>): boolean {
   return firms.some((f) => f.regulator === 'SRA');
 }

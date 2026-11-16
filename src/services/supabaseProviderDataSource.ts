@@ -4,7 +4,7 @@
 import { supabase } from '../lib/supabase';
 import { postcodeService, calculateDistanceMiles } from './postcodeService';
 import { currentUserIsTestAccount, keepFirmsFor } from './testFirm';
-import { regulatedLabel } from './regulator';
+import { regulatedLabel, type Regulator } from './regulator';
 import type { Provider } from '../components/providers/types';
 import type { ProviderDataSource, ProviderDataSourceOptions } from './providerDataSource';
 
@@ -15,7 +15,7 @@ export interface ConveyancerPanelRow {
   /** Null for an SRA firm. Read the firm's number through ./regulator, never this directly. */
   clc_id: string | null;
   /** 'CLC' or 'SRA'. Optional so a row read before the column existed still maps (as CLC). */
-  regulator?: string | null;
+  regulator?: Regulator | null;
   sra_number?: string | null;
   postcode: string | null;
   city: string | null;

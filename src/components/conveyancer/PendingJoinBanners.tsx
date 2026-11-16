@@ -17,7 +17,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { conveyancerJoinService, joinOfferText, registrationOf, type JoinPreview } from '@/services/conveyancerJoin.service';
+import { conveyancerJoinService, joinOfferText, registrationOf, SRA_JOIN_NOT_YET_SUPPORTED, type JoinPreview } from '@/services/conveyancerJoin.service';
 import { useAuthStore } from '@/stores/authStore';
 
 interface JoinedFirm {
@@ -44,6 +44,7 @@ export const PendingJoinBanners: React.FC<{ onJoined?: () => void }> = ({ onJoin
   const [joinFailure, setJoinFailure] = useState<JoinFailure | null>(null);
   const [offer, setOffer] = useState<PendingOffer | null>(null);
   const [isJoining, setIsJoining] = useState(false);
+  const [notYet, setNotYet] = useState<string | null>(null);
 
   // Arrival from JoinConveyancerPage's success screen: show the first-run
   // banner, then strip the params so a refresh doesn't repeat it.
@@ -93,6 +94,11 @@ export const PendingJoinBanners: React.FC<{ onJoined?: () => void }> = ({ onJoin
       setJoinedFirm({ firmName: redeem.firmName, registration: registrationOf(redeem) ?? undefined });
       setJoinFailure(null);
       onJoined?.();
+    } else if (redeem.error === SRA_JOIN_NOT_YET_SUPPORTED) {
+      // Not a failure: the code stays saved and valid; joining opens up later.
+      setOffer(null);
+      setJoinFailure(null);
+      setNotYet(redeem.detail ?? 'Joining deals as an SRA-regulated firm is coming shortly. PropXchain will be in touch.');
     } else if (redeem.error && DEAD_CODE_ERRORS.has(redeem.error)) {
       conveyancerJoinService.clearPendingJoinCode();
       setOffer(null);
@@ -129,6 +135,11 @@ export const PendingJoinBanners: React.FC<{ onJoined?: () => void }> = ({ onJoin
               Don&rsquo;t join
             </button>
           </div>
+        </div>
+      )}
+      {notYet && (
+        <div role="status" className="mb-6 rounded-lg border border-teal-300 dark:border-teal-700 bg-teal-50 dark:bg-teal-900/20 px-4 py-3">
+          <p className="text-sm text-teal-800 dark:text-teal-300">{notYet}</p>
         </div>
       )}
       {joinFailure && (
