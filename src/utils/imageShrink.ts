@@ -2,13 +2,12 @@
 // Copyright (C) 2026 PropXchain Ltd
 
 /**
- * Shrink a phone photo before upload so the document check can read it.
- * Jev, which reads certificate photos, refuses anything over 1568 px a side
- * rather than resizing it, and a phone photo is usually 3000-4000 px
- * (decision Q15, 2026-10-15). Shrinking here is free and also cuts storage.
+ * Shrink a phone photo before upload to cut storage and upload time. Photos
+ * are no longer sent to the document check (it cannot blank out personal
+ * details in a photo), so they are stored but never read.
  *
  * Only JPEG and PNG are touched. Anything the browser cannot decode (HEIC on
- * most browsers) is uploaded as it is, and the check answers "unreadable".
+ * most browsers) is uploaded as it is.
  * The browser applies the photo's EXIF rotation while decoding, so the
  * shrunk copy is upright.
  */
@@ -84,7 +83,7 @@ export async function shrinkImageForUpload(file: File, codec?: ImageCodec): Prom
     const blob = await decoded.draw(to);
     return new File([blob], file.name, { type: file.type, lastModified: file.lastModified });
   } catch {
-    // A photo we cannot shrink still uploads; the check will say it could not read it.
+    // A photo we cannot shrink still uploads as it is.
     return file;
   }
 }

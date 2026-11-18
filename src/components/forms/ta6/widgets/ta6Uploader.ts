@@ -70,7 +70,7 @@ export function makeTa6Uploader(
   transactionId: string,
 ): (file: File, context?: DocScanContext) => Promise<TA6Upload> {
   return async (picked: File, context?: DocScanContext): Promise<TA6Upload> => {
-    // A phone photo is shrunk first so the certificate check can read it; the
+    // A phone photo is shrunk first to save storage (photos are not read); the
     // hash, the stored bytes and the on-chain proof are all of the shrunk copy.
     const file = await shrinkImageForUpload(picked);
     const contentType = file.type || 'application/octet-stream';

@@ -28,7 +28,7 @@ export interface DocFact {
   id: string;
   factKey: string;
   value: string;
-  /** Null when code read it from the document's text; Jev's certainty for a photo. */
+  /** Null when code read it from the document's text; Jev's certainty from an older build that read photos. */
   confidence: number | null;
   method: DocFactMethod;
   /** On an in-date fact: the certificate's last valid day, `YYYY-MM-DD`, when it could be read. */

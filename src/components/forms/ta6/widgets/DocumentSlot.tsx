@@ -133,7 +133,7 @@ const AttachedControls: React.FC<AttachedControlsProps> = ({
             setScan({ phase: 'failed' });
             return;
           }
-          setScan({ phase: 'done', summary: describeScan(classification, SLOT_EXPECTATIONS[refCode]) });
+          setScan({ phase: 'done', summary: describeScan(classification, SLOT_EXPECTATIONS[refCode], file) });
           const name = confidentTypeName(classification);
           if (name) setSessionType({ documentId: upload.documentId, name });
           latest.current.onClassified?.(classification);

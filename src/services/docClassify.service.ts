@@ -95,7 +95,11 @@ export type DocFindingKey =
 
 export interface DocPropertyCheck {
   expectedPostcode: string | null;
-  /** The postcodes read off a PDF. For a photo, only this property's when Jev saw it: Jev compares, it does not read another out. */
+  /**
+   * The postcodes read off the document's text. Empty for a different-postcode
+   * result from an older build that judged photos, which compared without
+   * reading the other postcode out.
+   */
   foundPostcodes: string[];
   /** True when the transaction's postcode is the document's, false when the document gives another, null when either side is empty or unclear. */
   postcodeMatches: boolean | null;
@@ -118,7 +122,7 @@ export interface DocClassification {
   inDate: boolean | null;
   /** 0..1 yes-probability that the document is about this property; null when unreadable. */
   matchesProperty: number | null;
-  /** True when nothing could be read: an image-only PDF, a HEIC, or a photo outside the size limits. */
+  /** True when nothing could be read: any photo (photos are not sent for reading), a HEIC, or an image-only PDF. */
   unreadable: boolean;
   /**
    * The reason behind `matchesProperty`, computed in code by the function:
@@ -269,7 +273,7 @@ function propertyLine(result: DocClassification): { text: string; caution: boole
     return { text: `It gives this property's postcode, ${check.expectedPostcode}.`, caution: false };
   }
   if (check?.postcodeMatches === false && check.expectedPostcode) {
-    // A photo's check says the postcode differs without reading it out.
+    // An older build's photo check said the postcode differs without reading it out; keep the wording for those rows.
     const text = check.foundPostcodes.length > 0
       ? `It gives postcode ${check.foundPostcodes.join(' and ')}, not this property's ${check.expectedPostcode}.`
       : `It shows a different postcode from this property's ${check.expectedPostcode}.`;
@@ -288,20 +292,40 @@ function propertyLine(result: DocClassification): { text: string; caution: boole
   return { text: "It doesn't seem to name this property. Check the address on it is yours.", caution: true };
 }
 
+const PHOTO_LINE = "We can't read photos of documents. Please upload the original PDF.";
+
+function isImageFile(file?: { type?: string; name?: string }): boolean {
+  if (!file) return false;
+  return /^image\//i.test(file.type ?? '') || /\.(png|jpe?g|heic|heif)$/i.test(file.name ?? '');
+}
+
+function isPdfFile(file?: { type?: string; name?: string }): boolean {
+  if (!file) return false;
+  return file.type === 'application/pdf' || /\.pdf$/i.test(file.name ?? '');
+}
+
+/** Photos are never sent for reading, so an image gets the PDF ask; a PDF is unreadable only when it has no text. */
+function unreadableLine(file?: { type?: string; name?: string }): string {
+  if (isImageFile(file)) return PHOTO_LINE;
+  if (isPdfFile(file)) return 'This PDF has no text we can read, so it may be a scan. If you have the original PDF, please upload that.';
+  return `It may be a photo, or a scan with no text in it. ${PHOTO_LINE}`;
+}
+
 /**
  * The verdict card for one scanned upload. `expects` is what the slot asks
  * for; a confidently typed document that is not one of those gets a line
  * saying so, since the right paperwork on the wrong question helps no one.
  */
-export function describeScan(result: DocClassification, expects?: SlotExpectation): ScanSummary {
+export function describeScan(
+  result: DocClassification,
+  expects?: SlotExpectation,
+  file?: { type?: string; name?: string },
+): ScanSummary {
   if (result.unreadable) {
     return {
       tone: 'unknown',
       headline: "We couldn't read this file.",
-      details: [
-        'It may be a scan with no text in it, or a photo that is blurred or too small. A clearer photo or the original PDF will help.',
-        CONVEYANCER_LINE,
-      ],
+      details: [unreadableLine(file), CONVEYANCER_LINE],
     };
   }
   if (result.docType === 'other' || result.confidence < DOC_TYPE_CONFIDENCE_AT) {

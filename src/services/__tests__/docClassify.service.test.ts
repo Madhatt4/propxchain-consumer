@@ -86,7 +86,24 @@ describe('docClassify.service', () => {
       const scan = describeScan({ ...EPC, unreadable: true, docType: 'other', confidence: 0 });
       expect(scan.tone).toBe('unknown');
       expect(scan.headline).toBe("We couldn't read this file.");
-      expect(scan.details[0]).toMatch(/clearer photo or the original PDF/);
+      expect(scan.details[0]).toMatch(/We can't read photos of documents\. Please upload the original PDF\./);
+      expect(scan.details[0]).not.toMatch(/clearer photo/);
+    });
+
+    it('should ask for the original PDF when the unreadable file is an image', () => {
+      const unreadable = { ...EPC, unreadable: true, docType: 'other' as const, confidence: 0 };
+      for (const file of [{ type: 'image/jpeg', name: 'a.jpg' }, { type: '', name: 'b.HEIC' }, { type: 'image/png' }]) {
+        expect(describeScan(unreadable, undefined, file).details[0]).toBe(
+          "We can't read photos of documents. Please upload the original PDF.",
+        );
+      }
+    });
+
+    it('should not call an unreadable PDF a photo', () => {
+      const unreadable = { ...EPC, unreadable: true, docType: 'other' as const, confidence: 0 };
+      const line = describeScan(unreadable, undefined, { type: 'application/pdf', name: 'a.pdf' }).details[0];
+      expect(line).toMatch(/no text we can read/);
+      expect(line).not.toMatch(/photo/i);
     });
 
     it('should not name a type below the confidence threshold or when the answer is other', () => {
