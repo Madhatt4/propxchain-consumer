@@ -58,6 +58,8 @@ export const NO_HELP_PREFIXES: readonly string[] = [
   '/register',
   '/conveyancer/join',
   '/pro/conveyancer/join',
+  // The seller's one-button accept; it opens signed out and sends them to register.
+  '/seller-invite',
   '/auth',
   '/reset-password',
   '/forgot-password',
