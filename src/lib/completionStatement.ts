@@ -59,7 +59,7 @@ export function statementUploaderOf(details: unknown): string | null {
 }
 
 /** "docHash=…;docType=…; bot=…" to a key/value map. */
-function metadataFields(metadata: unknown): Map<string, string> {
+export function metadataFields(metadata: unknown): Map<string, string> {
   const raw = Array.isArray(metadata) ? metadata[0] : metadata;
   const fields = new Map<string, string>();
   if (typeof raw !== 'string') return fields;

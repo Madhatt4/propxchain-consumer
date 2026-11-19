@@ -56,3 +56,66 @@ describe('loadPhaseChecklistState — registration application', () => {
     expect(state?.items.find((i) => i.id === 'land-registry-registered')?.completed).toBe(false);
   });
 });
+
+describe('loadPhaseChecklistState — title and EPC documents', () => {
+  // createTransaction sets buyer = seller until a buyer joins: that is seller prep.
+  const SELLER_PREP_TX = [{ status: { pending: null }, buyer: 'seller-p', seller: 'seller-p' }];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGetTransaction.mockResolvedValue(SELLER_PREP_TX);
+  });
+
+  it('should tick documents uploaded when a registered document is the title', async () => {
+    // Arrange
+    mockGetEvents.mockResolvedValue([
+      { eventType: 'doc_registered', timestamp: 7n, details: 'x', metadata: ['docHash=ab12;docType=titleDeeds'] },
+    ]);
+
+    // Act
+    const state = await loadPhaseChecklistState('TX-TEST-2');
+
+    // Assert
+    expect(state?.phase).toBe('sellerPrep');
+    expect(state?.items.find((i) => i.id === 'documents-uploaded')?.completed).toBe(true);
+  });
+
+  it('should read the document type past a bot stamp on the metadata', async () => {
+    // Arrange
+    mockGetEvents.mockResolvedValue([
+      {
+        eventType: 'doc_registered',
+        timestamp: 7n,
+        details: 'x',
+        metadata: ['docHash=ab12;docType=epc-certificate; bot=aaaaa-aa; bot_owner=none; bot_client=; bot_attribution=unattributed'],
+      },
+    ]);
+
+    // Act
+    const state = await loadPhaseChecklistState('TX-TEST-2');
+
+    // Assert
+    expect(state?.items.find((i) => i.id === 'documents-uploaded')?.completed).toBe(true);
+  });
+
+  it('should not tick documents uploaded for a proof of funds document', async () => {
+    // Arrange
+    mockGetEvents.mockResolvedValue([
+      { eventType: 'doc_registered', timestamp: 7n, details: 'x', metadata: ['docHash=ab12;docType=proofOfFunds'] },
+    ]);
+
+    // Act
+    const state = await loadPhaseChecklistState('TX-TEST-2');
+
+    // Assert
+    expect(state?.items.find((i) => i.id === 'documents-uploaded')?.completed).toBe(false);
+  });
+
+  it('should not tick documents uploaded when the event carries no metadata', async () => {
+    mockGetEvents.mockResolvedValue([{ eventType: 'doc_registered', timestamp: 7n, details: 'x', metadata: [] }]);
+
+    const state = await loadPhaseChecklistState('TX-TEST-2');
+
+    expect(state?.items.find((i) => i.id === 'documents-uploaded')?.completed).toBe(false);
+  });
+});
