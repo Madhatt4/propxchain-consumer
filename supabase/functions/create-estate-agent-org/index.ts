@@ -1,6 +1,14 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
+import { corsHeaders, preflight } from '../_shared/cors.ts';
+import { checkRateLimit } from '../_shared/rate-limit.ts';
+import {
+  type CompaniesHouseCompany,
+  decideCompaniesHouse,
+  parseServerCompany,
+} from './verification.ts';
+
 /**
  * Estate agent organisation creation edge function (estate-agent portal phase 1).
  *
@@ -34,6 +42,18 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
  * omitted, verification is skipped entirely and the org is created
  * unverified.
  *
+ * Trust (verification.ts): only this function's own Companies House lookup
+ * can mark an org verified, and a verified org is stored under the
+ * REGISTERED company name, not the typed agency name. companies_house_data
+ * from the client is accepted for compatibility but never stored or trusted.
+ * If the lookup fails the org is still created, unverified and with no
+ * snapshot: this runs silently on first sign-in, so rejecting would strand
+ * the signup with no screen to explain why.
+ *
+ * Writes go through create_estate_agent_org_atomic as the SERVICE ROLE (the
+ * RPC is revoked from anon and authenticated), so the trust columns are set
+ * here and nowhere the browser can reach.
+ *
  * Output (200):
  *   { organisation: <full row> }
  *
@@ -41,16 +61,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
  *   401 unauthorized                          — invalid/missing JWT
  *   400 bad_request                           — input validation failed
  *   422 company_dissolved                     — CH says company is dissolved
- *   422 ch_mismatch                           — server-side CH lookup name mismatches client payload
+ *   429 rate_limited                          — too many attempts for this user
  *   500 internal_error                        — anything else
  */
-
-const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers':
-    'Content-Type, authorization, apikey, x-client-info',
-  'Content-Type': 'application/json',
-};
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
@@ -58,17 +71,14 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '
 // UK company numbers: 8 digits OR 2-letter prefix + 6 digits
 const UK_COMPANY_NUMBER_RE = /^([0-9]{8}|[A-Z]{2}[0-9]{6})$/;
 
+// Creation normally happens once, on first sign-in, retrying on later
+// sign-ins only if it failed. 10 an hour leaves room for that and caps how
+// hard one account can drive the Companies House lookup.
+const RATE_LIMIT_MAX = 10;
+const RATE_LIMIT_WINDOW_SECONDS = 60 * 60;
+
 const REDRESS_SCHEMES = ['PRS', 'TPO'] as const;
 type RedressScheme = (typeof REDRESS_SCHEMES)[number];
-
-interface CompaniesHouseCompany {
-  companyNumber: string;
-  name: string;
-  status: string;
-  incorporatedOn: string;
-  address: Record<string, string | undefined>;
-  isActive: boolean;
-}
 
 interface CreateOrgRequest {
   name?: string;
@@ -77,11 +87,12 @@ interface CreateOrgRequest {
   redress_number?: string | null;
   redress_pending?: boolean;
   companies_house_number?: string | null;
+  /** Ignored: never stored, never trusted. Kept so old clients still parse. */
   companies_house_data?: CompaniesHouseCompany | null;
 }
 
-function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), { status, headers: CORS_HEADERS });
+function jsonResponse(req: Request, body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), { status, headers: corsHeaders(req) });
 }
 
 function normalizeCompanyNumber(input: string): string | null {
@@ -100,7 +111,7 @@ function normalizeCompanyNumber(input: string): string | null {
  */
 async function verifyCompanyServerSide(
   companyNumber: string,
-): Promise<CompaniesHouseCompany | null> {
+): Promise<unknown> {
   const anonKey = Deno.env.get('SUPABASE_ANON_KEY') || '';
   if (!anonKey) {
     console.error('SUPABASE_ANON_KEY missing — cannot call companies-house-lookup');
@@ -118,7 +129,7 @@ async function verifyCompanyServerSide(
       body: JSON.stringify({ companyNumber }),
     });
     if (!response.ok) return null;
-    return (await response.json()) as CompaniesHouseCompany | null;
+    return await response.json();
   } catch (err) {
     console.error('Server-side CH verification failed:', err);
     return null;
@@ -126,27 +137,25 @@ async function verifyCompanyServerSide(
 }
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: CORS_HEADERS });
-  }
+  if (req.method === 'OPTIONS') return preflight(req);
   if (req.method !== 'POST') {
-    return jsonResponse({ error: 'method_not_allowed' }, 405);
+    return jsonResponse(req, { error: 'method_not_allowed' }, 405);
   }
 
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     console.error('SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing');
-    return jsonResponse({ error: 'internal_error' }, 500);
+    return jsonResponse(req, { error: 'internal_error' }, 500);
   }
 
   const authHeader = req.headers.get('Authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return jsonResponse({ error: 'unauthorized' }, 401);
+    return jsonResponse(req, { error: 'unauthorized' }, 401);
   }
 
   const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || '';
   if (!SUPABASE_ANON_KEY) {
     console.error('SUPABASE_ANON_KEY is missing');
-    return jsonResponse({ error: 'internal_error' }, 500);
+    return jsonResponse(req, { error: 'internal_error' }, 500);
   }
 
   const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -157,7 +166,7 @@ serve(async (req) => {
   const { data: userData, error: userErr } = await userClient.auth.getUser();
   if (userErr || !userData?.user) {
     console.error('getUser failed:', userErr);
-    return jsonResponse({ error: 'unauthorized' }, 401);
+    return jsonResponse(req, { error: 'unauthorized' }, 401);
   }
   const user = userData.user;
 
@@ -165,11 +174,21 @@ serve(async (req) => {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
+  const rl = await checkRateLimit({
+    key: `create-estate-agent-org:user:${user.id}`,
+    limit: RATE_LIMIT_MAX,
+    windowSeconds: RATE_LIMIT_WINDOW_SECONDS,
+    supabaseAdmin: serviceClient,
+  });
+  if (!rl.allowed) {
+    return jsonResponse(req, { error: 'rate_limited', resetIn: rl.retryAfter }, 429);
+  }
+
   let parsed: CreateOrgRequest;
   try {
     parsed = (await req.json()) as CreateOrgRequest;
   } catch {
-    return jsonResponse({ error: 'bad_request', message: 'invalid JSON' }, 400);
+    return jsonResponse(req, { error: 'bad_request', message: 'invalid JSON' }, 400);
   }
 
   const clientName = parsed.name?.trim() ?? '';
@@ -178,93 +197,83 @@ serve(async (req) => {
   const clientRedressNumber = parsed.redress_number?.trim() ?? '';
   const redressPending = parsed.redress_pending === true;
   const rawNumber = parsed.companies_house_number?.trim() ?? '';
-  const clientCh = parsed.companies_house_data ?? null;
 
   // Audit #47: cap clientName length so a 100 KB payload doesn't reach the
   // RPC. Companies House limits company names to 160 chars; allow 200 here
   // for headroom.
   if (clientName.length > 200) {
-    return jsonResponse({ error: 'bad_request', message: 'name exceeds 200 chars' }, 400);
+    return jsonResponse(req, { error: 'bad_request', message: 'name exceeds 200 chars' }, 400);
   }
   if (!clientName) {
-    return jsonResponse({ error: 'bad_request', message: 'name required' }, 400);
+    return jsonResponse(req, { error: 'bad_request', message: 'name required' }, 400);
   }
 
   if (clientBranch.length > 120) {
-    return jsonResponse({ error: 'bad_request', message: 'branch exceeds 120 chars' }, 400);
+    return jsonResponse(req, { error: 'bad_request', message: 'branch exceeds 120 chars' }, 400);
   }
   if (!clientBranch) {
-    return jsonResponse({ error: 'bad_request', message: 'branch required' }, 400);
+    return jsonResponse(req, { error: 'bad_request', message: 'branch required' }, 400);
   }
 
   if (!REDRESS_SCHEMES.includes(clientRedressScheme as RedressScheme)) {
     return jsonResponse(
+      req,
       { error: 'bad_request', message: 'redress_scheme must be PRS or TPO' },
       400,
     );
   }
 
   if (clientRedressNumber.length > 40) {
-    return jsonResponse({ error: 'bad_request', message: 'redress_number exceeds 40 chars' }, 400);
+    return jsonResponse(req, { error: 'bad_request', message: 'redress_number exceeds 40 chars' }, 400);
   }
   if (!clientRedressNumber && !redressPending) {
-    return jsonResponse({ error: 'bad_request', message: 'redress_number required' }, 400);
+    return jsonResponse(req, { error: 'bad_request', message: 'redress_number required' }, 400);
   }
 
   // Companies House is optional for estate agents. Skip verification
   // entirely when no company number was supplied.
   let normalizedNumber: string | null = null;
-  let verified = false;
-  let snapshot: CompaniesHouseCompany | null = null;
+  let serverCh: CompaniesHouseCompany | null = null;
 
   if (rawNumber) {
     normalizedNumber = normalizeCompanyNumber(rawNumber);
     if (!normalizedNumber) {
       return jsonResponse(
+        req,
         { error: 'bad_request', message: 'invalid companies_house_number format' },
         400,
       );
     }
+    serverCh = parseServerCompany(await verifyCompanyServerSide(normalizedNumber), normalizedNumber);
+  }
 
-    const serverCh = await verifyCompanyServerSide(normalizedNumber);
-    snapshot = clientCh;
-
-    if (serverCh) {
-      if (clientCh && clientCh.name !== serverCh.name) {
-        return jsonResponse(
-          { error: 'ch_mismatch', message: 'company name mismatch with Companies House' },
-          422,
-        );
-      }
-      if (!serverCh.isActive) {
-        return jsonResponse(
-          { error: 'company_dissolved', message: 'company is not active on Companies House' },
-          422,
-        );
-      }
-      verified = true;
-      snapshot = serverCh;
-    }
+  const decision = decideCompaniesHouse(clientName, serverCh);
+  if (decision.kind === 'dissolved') {
+    return jsonResponse(
+      req,
+      { error: 'company_dissolved', message: 'company is not active on Companies House' },
+      422,
+    );
   }
 
   const { data: orgRow, error: rpcErr } = await serviceClient.rpc(
     'create_estate_agent_org_atomic',
     {
       p_user_id: user.id,
-      p_name: clientName,
+      p_name: decision.name,
       p_branch: clientBranch,
       p_redress_scheme: clientRedressScheme,
       p_redress_number: clientRedressNumber || null,
       p_companies_house_number: normalizedNumber ?? null,
-      p_companies_house_verified: verified,
-      p_ch_snapshot: snapshot as unknown as Record<string, unknown> | null,
+      p_companies_house_verified: decision.verified,
+      p_ch_snapshot: decision.snapshot as unknown as Record<string, unknown> | null,
     },
   );
 
   if (rpcErr) {
     console.error(`create_estate_agent_org_atomic RPC failed for user ${user.id}:`, rpcErr);
-    return jsonResponse({ error: 'internal_error' }, 500);
+    return jsonResponse(req, { error: 'internal_error' }, 500);
   }
 
-  return jsonResponse({ organisation: orgRow }, 200);
+  return jsonResponse(req, { organisation: orgRow }, 200);
 });
