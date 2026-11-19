@@ -121,7 +121,6 @@ const JoinTransactionPage: React.FC = () => {
           onClose={() => navigate('/dashboard')}
           initialCode={initialInviteCode}
           rightmoveUrl={rightmoveUrl}
-          inviteContext={inviteContext}
         />
 
         {/* Information Section */}

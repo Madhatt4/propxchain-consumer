@@ -2,6 +2,7 @@
 // Copyright (C) 2025 PropXchain Ltd
 
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useThemeClasses } from '../hooks/useThemeClasses';
 import { Transaction } from '../types/transaction.types';
 import { icpService } from '../services/icp.service';
@@ -9,64 +10,39 @@ import { scrapeRightmoveListing as scrapePropertyListing } from '@/services/righ
 import { storeRightmoveData } from '@/utils/rightmoveStorage';
 import { isValidInviteCode, normaliseInviteCode, formatInviteCodeInput } from '@/utils/inviteCode';
 import { logger } from '@/utils/logger';
-import SolicitorOnboarding from './auth/SolicitorOnboarding';
-import type { SolicitorRecord, RegulatoryBody } from '../types/solicitor.types';
 import { getStorePrincipalId, getStoreIsAuthenticated } from '../stores/authStore';
 import { partyRoleService } from '../services/partyRole.service';
 import { checkPlotClaim, claimPlot, getPlotDeveloperPrincipal, plotClaimBlockedReason } from '../services/plotClaim.service';
-import type { PartyRole } from '../services/shareParty.service';
-import type { InviteContext } from '@/utils/inviteContext';
 
 interface TransactionInviteProps {
   onJoinSuccess: (transaction: Transaction) => void;
   onClose?: () => void;
   initialCode?: string;
   rightmoveUrl?: string;
-  /** Role / side / inviter hints carried on the join link (wallet spec decision 15). */
-  inviteContext?: InviteContext;
 }
 
-type JoinRole = 'buyer' | 'seller' | 'solicitor' | 'estate-agent' | 'mortgage-broker' | 'lender' | 'other';
+// An invite code is for the buyer only (Marc, 2026-11-19), so the join always
+// goes through the buyer-only canister method. Conveyancers come in through an
+// accepted estimate; agents are invited by the seller from the deal page.
+const BUYER_TAKEN_MESSAGE = 'This deal already has a buyer. Ask the seller for help.';
 
-/** Join-screen role → the off-chain party role recorded for the Transaction Wallet roster. */
-const PARTY_ROLE_BY_JOIN_ROLE: Record<JoinRole, PartyRole> = {
-  buyer: 'buyer',
-  seller: 'seller',
-  solicitor: 'conveyancer',
-  'estate-agent': 'estate_agent',
-  'mortgage-broker': 'mortgage_broker',
-  lender: 'lender',
-  other: 'other',
-};
+/** The canister's error text when the buyer slot is held by someone else (transaction_manager). */
+const BUYER_TAKEN_CANISTER_TEXT = 'buyer slot already taken';
 
-const JOIN_ROLE_BY_INVITE_ROLE: Record<string, JoinRole> = {
-  buyer: 'buyer',
-  seller: 'seller',
-  conveyancer: 'solicitor',
-  estate_agent: 'estate-agent',
-  mortgage_broker: 'mortgage-broker',
-  lender: 'lender',
-  other: 'other',
-};
+function joinErrorMessage(err: unknown): string {
+  const message = err instanceof Error ? err.message : '';
+  if (message.toLowerCase().includes(BUYER_TAKEN_CANISTER_TEXT)) return BUYER_TAKEN_MESSAGE;
+  return message || 'Failed to join transaction. Please try again.';
+}
 
-const EXTRA_ROLES: ReadonlyArray<{ value: JoinRole; label: string }> = [
-  { value: 'mortgage-broker', label: 'Mortgage broker' },
-  { value: 'lender', label: 'Lender' },
-  { value: 'other', label: 'Someone else' },
-];
-
-const TransactionInvite: React.FC<TransactionInviteProps> = ({ onJoinSuccess, onClose, initialCode, rightmoveUrl, inviteContext }) => {
+const TransactionInvite: React.FC<TransactionInviteProps> = ({ onJoinSuccess, onClose, initialCode, rightmoveUrl }) => {
   const themeClasses = useThemeClasses();
   const [inviteCode, setInviteCode] = useState(initialCode || '');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [selectedRole, setSelectedRole] = useState<JoinRole>(
-    (inviteContext?.role && JOIN_ROLE_BY_INVITE_ROLE[inviteContext.role]) || 'buyer',
-  );
   const [buyerCount, setBuyerCount] = useState<1 | 2>(1);
-  const [step, setStep] = useState<'enter-code' | 'select-role' | 'solicitor-onboarding' | 'success'>('enter-code');
+  const [step, setStep] = useState<'enter-code' | 'select-role' | 'success'>('enter-code');
   const [foundTransaction, setFoundTransaction] = useState<Transaction | null>(null);
-  const [gdprConsent, setGdprConsent] = useState(false);
 
   // Update invite code when initialCode prop changes
   useEffect(() => {
@@ -209,36 +185,8 @@ const TransactionInvite: React.FC<TransactionInviteProps> = ({ onJoinSuccess, on
     }
   };
 
-  const deriveActingFor = (tx: Transaction): 'buyer' | 'seller' => {
-    // If no buyer solicitor slot filled, default to buyer side
-    if (!('buyerSolicitor' in tx) || !(tx as unknown as Record<string, unknown>)['buyerSolicitor']) {
-      return 'buyer';
-    }
-    if (!('sellerSolicitor' in tx) || !(tx as unknown as Record<string, unknown>)['sellerSolicitor']) {
-      return 'seller';
-    }
-    return 'buyer';
-  };
-
-  const toCandidSolicitorRecord = (record: SolicitorRecord): Record<string, unknown> => {
-    const regulatoryBodyVariant: Record<RegulatoryBody, Record<string, null>> = {
-      sra: { sra: null },
-      clc: { clc: null },
-    };
-    return {
-      ...record,
-      regulatoryBody: regulatoryBodyVariant[record.regulatoryBody],
-    };
-  };
-
   const handleJoinTransaction = async () => {
     if (!foundTransaction) return;
-
-    // Solicitors go through the onboarding flow instead of joining directly
-    if (selectedRole === 'solicitor') {
-      setStep('solicitor-onboarding');
-      return;
-    }
 
     setIsLoading(true);
     setError('');
@@ -359,70 +307,34 @@ const TransactionInvite: React.FC<TransactionInviteProps> = ({ onJoinSuccess, on
         void partyRoleService.recordRoleFromChain(canisterTxId);
 
         // Store buyer count
-        if (selectedRole === 'buyer') {
-          const txPartyCount = JSON.parse(localStorage.getItem('txPartyCount') || '{}');
-          txPartyCount[plot.id] = { buyerCount };
-          localStorage.setItem('txPartyCount', JSON.stringify(txPartyCount));
-        }
+        const txPartyCount = JSON.parse(localStorage.getItem('txPartyCount') || '{}');
+        txPartyCount[plot.id] = { buyerCount };
+        localStorage.setItem('txPartyCount', JSON.stringify(txPartyCount));
 
         setStep('success');
         setTimeout(() => {
           onJoinSuccess(foundTransaction);
         }, 1500);
       } else {
-        // Consumer flow — join via ICP canister. For buyers we use the
-        // atomic AsBuyer variant which adds caller to accessList AND
-        // assigns them as buyer in a single canister call (with the lock
-        // held). Closes the 2-call race the previous implementation had
-        // (joinTransactionByInviteCode + assignBuyer): if assignBuyer
-        // failed, the joiner was stuck in accessList with buyer slot
-        // still on the seller placeholder, and deriveUserRole showed
-        // them the seller view. The atomic method either both or neither.
-        // The canister gates against displacing an already-assigned buyer.
-        const updatedTransaction =
-          selectedRole === 'buyer'
-            ? await icpService.joinTransactionByInviteCodeAsBuyer(canonicalCode)
-            : await icpService.joinTransactionByInviteCode(canonicalCode);
+        // Consumer flow — join via ICP canister with the atomic AsBuyer
+        // method, which adds caller to accessList AND assigns them as buyer
+        // in a single canister call (with the lock held). The canister
+        // refuses to displace an already-assigned buyer.
+        const updatedTransaction = await icpService.joinTransactionByInviteCodeAsBuyer(canonicalCode);
 
-        if (selectedRole === 'buyer') {
-          // Store buyer count for this transaction (used for document checklist)
-          const txPartyCount = JSON.parse(localStorage.getItem('txPartyCount') || '{}');
-          txPartyCount[foundTransaction.id] = {
-            ...txPartyCount[foundTransaction.id],
-            buyerCount: buyerCount
-          };
-          localStorage.setItem('txPartyCount', JSON.stringify(txPartyCount));
-        }
-
-        // Record my role + side off-chain for the Transaction Wallet roster (best-effort).
-        // A buyer's row comes from the chain, which has just made them the buyer:
-        // the role table only takes a self-written buyer row on an emailed invite.
-        // A seller goes through the chain too: on an agent-led deal the agent
-        // holds the seller slot, and the seller the agent invited takes it over
-        // there (record-party-role). Any other seller falls back to their invite.
-        const myPrincipal = getStorePrincipalId();
-        const recordMine = (): void => {
-          if (!myPrincipal) return;
-          const partyRole = PARTY_ROLE_BY_JOIN_ROLE[selectedRole];
-          const side =
-            partyRole === 'buyer' || partyRole === 'seller' ? partyRole : inviteContext?.side ?? null;
-          void partyRoleService.recordMyRole({
-            transactionId: String(foundTransaction.id),
-            principal: myPrincipal,
-            role: partyRole,
-            side,
-            invitedBy: inviteContext?.invitedBy ?? null,
-          });
+        // Store buyer count for this transaction (used for document checklist)
+        const txPartyCount = JSON.parse(localStorage.getItem('txPartyCount') || '{}');
+        txPartyCount[foundTransaction.id] = {
+          ...txPartyCount[foundTransaction.id],
+          buyerCount: buyerCount
         };
-        if (selectedRole === 'buyer') {
-          void partyRoleService.recordRoleFromChain(String(foundTransaction.id));
-        } else if (selectedRole === 'seller') {
-          void partyRoleService.recordRoleFromChain(String(foundTransaction.id)).then((outcome) => {
-            if (!outcome.ok) recordMine();
-          });
-        } else {
-          recordMine();
-        }
+        localStorage.setItem('txPartyCount', JSON.stringify(txPartyCount));
+
+        // Record the buyer row off-chain for the Transaction Wallet roster
+        // (best-effort). It comes from the chain, which has just made them the
+        // buyer: the role table only takes a self-written buyer row on an
+        // emailed invite.
+        void partyRoleService.recordRoleFromChain(String(foundTransaction.id));
 
         // Fetch and store listing if URL was passed via invite link
         if (rightmoveUrl) {
@@ -444,9 +356,9 @@ const TransactionInvite: React.FC<TransactionInviteProps> = ({ onJoinSuccess, on
         }, 1500);
       }
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error('Error joining transaction:', err);
-      setError(err.message || 'Failed to join transaction. Please try again.');
+      setError(joinErrorMessage(err));
     } finally {
       setIsLoading(false);
     }
@@ -546,7 +458,7 @@ const TransactionInvite: React.FC<TransactionInviteProps> = ({ onJoinSuccess, on
       {step === 'select-role' && foundTransaction && (
         <>
           <p className={`${themeClasses.textSecondary} mb-4`}>
-            Transaction found! Select your role in this transaction:
+            Transaction found. You are joining as the buyer.
           </p>
 
           {/* Transaction Info */}
@@ -567,174 +479,50 @@ const TransactionInvite: React.FC<TransactionInviteProps> = ({ onJoinSuccess, on
             </div>
           </div>
 
-          {/* Role Selection */}
+          {/* Invite codes are buyer-only; point everyone else to their own way in. */}
+          <p className={`text-sm ${themeClasses.textSecondary} mb-6`}>
+            This invite is for the buyer. Conveyancers join a deal when their estimate is accepted, and can{' '}
+            <Link to="/register/conveyancer" className="underline">register</Link> for the conveyancer dashboard.
+            Estate agents are invited by the seller from the deal page.
+          </p>
+
+          {/* Buyer Count Selection */}
           <div className="mb-6">
-            <label className={`block text-sm font-medium ${themeClasses.textPrimary} mb-3`}>
-              Select Your Role
+            <label className={`block text-sm font-medium ${themeClasses.textPrimary} mb-2`}>
+              Who will be on the new title?
             </label>
-            <div className="grid grid-cols-1 gap-3">
+            <p className={`text-xs ${themeClasses.textTertiary} mb-3`}>
+              This determines how many sets of ID documents are required
+            </p>
+            <div className="grid grid-cols-2 gap-3">
               <button
-                onClick={() => setSelectedRole('buyer')}
-                className={`p-4 rounded-lg border-2 transition-all text-left ${
-                  selectedRole === 'buyer'
+                type="button"
+                onClick={() => setBuyerCount(1)}
+                className={`p-4 rounded-lg border-2 transition-all ${
+                  buyerCount === 1
                     ? 'border-gray-500 bg-gray-200 dark:bg-gray-800/20'
                     : `${themeClasses.border} ${themeClasses.cardSecondary}`
                 }`}
               >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className={`font-semibold ${themeClasses.textPrimary}`}>Buyer</p>
-                    <p className={`text-sm ${themeClasses.textTertiary}`}>I am purchasing this property</p>
-                  </div>
-                  {selectedRole === 'buyer' && (
-                    <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                  )}
-                </div>
+                <div className="text-2xl mb-2">👤</div>
+                <p className={`text-sm font-medium ${themeClasses.textPrimary}`}>Just me</p>
+                <p className={`text-xs ${themeClasses.textTertiary}`}>Single buyer</p>
               </button>
-
               <button
-                onClick={() => setSelectedRole('seller')}
-                className={`p-4 rounded-lg border-2 transition-all text-left ${
-                  selectedRole === 'seller'
+                type="button"
+                onClick={() => setBuyerCount(2)}
+                className={`p-4 rounded-lg border-2 transition-all ${
+                  buyerCount === 2
                     ? 'border-gray-500 bg-gray-200 dark:bg-gray-800/20'
                     : `${themeClasses.border} ${themeClasses.cardSecondary}`
                 }`}
               >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className={`font-semibold ${themeClasses.textPrimary}`}>Seller</p>
-                    <p className={`text-sm ${themeClasses.textTertiary}`}>I am selling this property</p>
-                  </div>
-                  {selectedRole === 'seller' && (
-                    <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                  )}
-                </div>
-              </button>
-
-              <button
-                onClick={() => setSelectedRole('solicitor')}
-                className={`p-4 rounded-lg border-2 transition-all text-left ${
-                  selectedRole === 'solicitor'
-                    ? 'border-gray-500 bg-gray-200 dark:bg-gray-800/20'
-                    : `${themeClasses.border} ${themeClasses.cardSecondary}`
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className={`font-semibold ${themeClasses.textPrimary}`}>Solicitor / Conveyancer</p>
-                    <p className={`text-sm ${themeClasses.textTertiary}`}>Legal representative for this transaction</p>
-                  </div>
-                  {selectedRole === 'solicitor' && (
-                    <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                  )}
-                </div>
-              </button>
-
-              <button
-                onClick={() => setSelectedRole('estate-agent')}
-                className={`p-4 rounded-lg border-2 transition-all text-left ${
-                  selectedRole === 'estate-agent'
-                    ? 'border-gray-500 bg-gray-200 dark:bg-gray-800/20'
-                    : `${themeClasses.border} ${themeClasses.cardSecondary}`
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className={`font-semibold ${themeClasses.textPrimary}`}>Estate Agent</p>
-                    <p className={`text-sm ${themeClasses.textTertiary}`}>Property agent facilitating the sale</p>
-                  </div>
-                  {selectedRole === 'estate-agent' && (
-                    <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                  )}
-                </div>
+                <div className="text-2xl mb-2">👥</div>
+                <p className={`text-sm font-medium ${themeClasses.textPrimary}`}>Me and my partner</p>
+                <p className={`text-xs ${themeClasses.textTertiary}`}>Joint buyers</p>
               </button>
             </div>
           </div>
-
-          {/* Other roles (broker / lender / other) — kept compact */}
-          <div className="mb-4">
-            <label htmlFor="join-other-role" className={`block text-xs ${themeClasses.textTertiary} mb-1`}>
-              Joining as someone else?
-            </label>
-            <select
-              id="join-other-role"
-              value={EXTRA_ROLES.some((r) => r.value === selectedRole) ? selectedRole : ''}
-              onChange={(e) => {
-                if (e.target.value) setSelectedRole(e.target.value as JoinRole);
-              }}
-              className={`w-full rounded-md border px-3 py-2 text-sm ${themeClasses.border} ${themeClasses.cardSecondary} ${themeClasses.textPrimary}`}
-            >
-              <option value="">— pick above, or choose —</option>
-              {EXTRA_ROLES.map((r) => (
-                <option key={r.value} value={r.value}>{r.label}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Buyer Count Selection - only show when buyer is selected */}
-          {selectedRole === 'buyer' && (
-            <div className="mb-6">
-              <label className={`block text-sm font-medium ${themeClasses.textPrimary} mb-2`}>
-                Who will be on the new title?
-              </label>
-              <p className={`text-xs ${themeClasses.textTertiary} mb-3`}>
-                This determines how many sets of ID documents are required
-              </p>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setBuyerCount(1)}
-                  className={`p-4 rounded-lg border-2 transition-all ${
-                    buyerCount === 1
-                      ? 'border-gray-500 bg-gray-200 dark:bg-gray-800/20'
-                      : `${themeClasses.border} ${themeClasses.cardSecondary}`
-                  }`}
-                >
-                  <div className="text-2xl mb-2">👤</div>
-                  <p className={`text-sm font-medium ${themeClasses.textPrimary}`}>Just me</p>
-                  <p className={`text-xs ${themeClasses.textTertiary}`}>Single buyer</p>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setBuyerCount(2)}
-                  className={`p-4 rounded-lg border-2 transition-all ${
-                    buyerCount === 2
-                      ? 'border-gray-500 bg-gray-200 dark:bg-gray-800/20'
-                      : `${themeClasses.border} ${themeClasses.cardSecondary}`
-                  }`}
-                >
-                  <div className="text-2xl mb-2">👥</div>
-                  <p className={`text-sm font-medium ${themeClasses.textPrimary}`}>Me and my partner</p>
-                  <p className={`text-xs ${themeClasses.textTertiary}`}>Joint buyers</p>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* GDPR consent — solicitor role only */}
-          {selectedRole === 'solicitor' && (
-            <div className="mb-6">
-              <label className="flex items-start gap-3 cursor-pointer p-4 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-600/40 dark:bg-amber-900/10">
-                <input
-                  type="checkbox"
-                  checked={gdprConsent}
-                  onChange={(e) => setGdprConsent(e.target.checked)}
-                  className="mt-0.5 w-4 h-4 shrink-0 accent-amber-500 cursor-pointer"
-                />
-                <span className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                  By inviting a solicitor/conveyancer, I consent to sharing all transaction data — including property details, party names, documents, and progress — with the invited professional. Transaction records stored on the Internet Computer blockchain cannot be erased after completion.
-                </span>
-              </label>
-            </div>
-          )}
 
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 dark:bg-red-900/20 dark:border-red-700 rounded-lg">
@@ -751,9 +539,9 @@ const TransactionInvite: React.FC<TransactionInviteProps> = ({ onJoinSuccess, on
             </button>
             <button
               onClick={handleJoinTransaction}
-              disabled={isLoading || (selectedRole === 'solicitor' && !gdprConsent)}
+              disabled={isLoading}
               className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all ${
-                isLoading || (selectedRole === 'solicitor' && !gdprConsent)
+                isLoading
                   ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
                   : 'bg-gray-700 text-white hover:bg-gray-600'
               }`}
@@ -774,36 +562,6 @@ const TransactionInvite: React.FC<TransactionInviteProps> = ({ onJoinSuccess, on
         </>
       )}
 
-      {/* Step: Solicitor Onboarding */}
-      {step === 'solicitor-onboarding' && foundTransaction && (
-        <SolicitorOnboarding
-          transactionId={foundTransaction.id}
-          inviteCode={inviteCode}
-          callerRole={deriveActingFor(foundTransaction)}
-          onComplete={async (record) => {
-            setIsLoading(true);
-            setError('');
-            try {
-              // TODO: pass toCandidSolicitorRecord(record) to icpService.registerSolicitor(inviteCode, ...) once the canister method is wired
-              void toCandidSolicitorRecord(record);
-              const updatedTransaction = await icpService.joinTransactionByInviteCode(canonicalCode);
-              setStep('success');
-              setTimeout(() => {
-                onJoinSuccess(updatedTransaction as Transaction);
-              }, 1500);
-            } catch (err: unknown) {
-              const message = err instanceof Error ? err.message : 'Failed to join as solicitor.';
-              logger.error('Solicitor join error:', err);
-              setError(message);
-              setStep('select-role');
-            } finally {
-              setIsLoading(false);
-            }
-          }}
-          onBack={() => setStep('select-role')}
-        />
-      )}
-
       {/* Step 3: Success */}
       {step === 'success' && (
         <div className="text-center py-8">
@@ -816,7 +574,7 @@ const TransactionInvite: React.FC<TransactionInviteProps> = ({ onJoinSuccess, on
             Successfully Joined!
           </h4>
           <p className={`${themeClasses.textSecondary} mb-2`}>
-            You have been added to the transaction chain as a <span className="capitalize font-semibold">{selectedRole}</span>.
+            You have been added to the transaction chain as the <span className="font-semibold">buyer</span>.
           </p>
           <p className={`text-sm ${themeClasses.textTertiary}`}>
             Loading chain view...
