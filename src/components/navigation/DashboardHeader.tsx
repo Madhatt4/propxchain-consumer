@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { authUtils } from '../../utils/auth';
+import { useAuthStore } from '../../stores/authStore';
 import NotificationBell from '../common/NotificationBell';
 import RateLimitIndicator from '../common/RateLimitIndicator';
 
@@ -29,8 +29,12 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 }) => {
   const navigate = useNavigate();
 
-  const handleLogout = async () => {
-    await authUtils.logout();
+  // The store's logout is the one sign-out path: it ends the Supabase or II
+  // session and wipes deal drafts. A full page load to the home page (rather
+  // than a router navigate) also drops anything still held in memory.
+  const handleLogout = async (): Promise<void> => {
+    await useAuthStore.getState().logout();
+    window.location.href = '/';
   };
 
   const getInitials = (firstName?: string, lastName?: string) => {
