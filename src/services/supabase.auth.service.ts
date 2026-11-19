@@ -1,5 +1,6 @@
 import { AuthError, Session, User } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
+import { logger } from '@/utils/logger';
+import { removeStoredSession, supabase } from '../lib/supabase';
 import { trackSignUp } from '../lib/analytics';
 import { KeyPairService } from './keyPair.service';
 import { registerVerifiedPrincipal } from './principalRegistration';
@@ -298,9 +299,27 @@ export const supabaseAuthService = {
     }
   },
 
-  /** Sign out and clear Supabase session */
+  /**
+   * Sign out and clear the Supabase session.
+   *
+   * supabase-js forgets the saved session only once the server confirms. When
+   * that request fails (offline, a 5xx) it RETURNS an error and keeps the
+   * session, so the next page load would sign the last user back in. A failed
+   * sign-out therefore clears this device itself; the server-side session is
+   * left to expire, which is the most an unreachable server allows.
+   */
   async signOut(): Promise<void> {
-    await supabase.auth.signOut();
+    let failure: unknown = null;
+    try {
+      const { error } = await supabase.auth.signOut();
+      failure = error;
+    } catch (err) {
+      failure = err;
+    }
+    if (failure) {
+      logger.warn('Sign-out did not reach the server; clearing the session on this device', failure);
+      await removeStoredSession();
+    }
   },
 
   /** Get current Supabase session */
