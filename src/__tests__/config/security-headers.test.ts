@@ -73,6 +73,20 @@ describe('security headers', () => {
     expect(csp).not.toContain('https://*.workers.dev')
     expect(csp).not.toContain('https://*.onrender.com')
     expect(csp).not.toMatch(/script-src[^;]*'unsafe-inline'/)
+    // Any Supabase project would do as an exfiltration endpoint.
+    expect(csp).not.toContain('https://*.supabase.co')
+  })
+
+  it('should not allow eval in production scripts', () => {
+    // With Google's tag host in script-src, eval would hand whoever can edit
+    // the tag arbitrary code on the origin holding sign-in tokens. The bundle
+    // has no WebAssembly, so 'wasm-unsafe-eval' is not needed either.
+    const scriptSrc = SECURITY_HEADERS['Content-Security-Policy']
+      .split(';')
+      .find((d: string) => d.trim().startsWith('script-src'))
+    expect(scriptSrc).toBeDefined()
+    expect(scriptSrc).not.toContain("'unsafe-eval'")
+    expect(scriptSrc).not.toContain("'wasm-unsafe-eval'")
   })
 
   it('should keep localhost out of the production Internet Identity origins (M5)', () => {
