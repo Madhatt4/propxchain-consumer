@@ -42,6 +42,8 @@ export const authUtils = {
   },
 
   // Clear authentication data — clears Zustand auth state and legacy LS keys.
+  // Not a sign-out: the Supabase/II session survives it. Sign out with
+  // useAuthStore.getState().logout(), the only path that ends the session.
   clearAuthData: (): void => {
     useAuthStore.setState({
       isAuthenticated: false,
@@ -54,15 +56,6 @@ export const authUtils = {
     localStorage.removeItem('currentPhase');
     localStorage.removeItem('completedPhases');
     localStorage.removeItem('wizardSaves');
-  },
-
-  // Logout (with ICP service integration)
-  logout: async (): Promise<void> => {
-    authUtils.clearAuthData();
-    window.location.href = '/';
-    icpService.logout().catch(error => {
-      logger.error('Error logging out from ICP:', error);
-    });
   },
 
   // Check if session is valid (Internet Identity based)

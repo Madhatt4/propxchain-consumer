@@ -582,6 +582,14 @@ export const useAuthStore = create<AuthState>()(
           localStorage.removeItem('onboardingRole');
           localStorage.removeItem('pendingTier');
 
+          // Legacy dashboard wizard state (Dashboard_Modern) holds property
+          // details. The old header sign-out cleared these; keep doing so now
+          // that every sign-out comes through here.
+          localStorage.removeItem('wizardData');
+          localStorage.removeItem('currentPhase');
+          localStorage.removeItem('completedPhases');
+          localStorage.removeItem('wizardSaves');
+
           // Deal data (form drafts, doc lists, KYC, transaction UI state)
           // persists across logouts on shared devices. Wipe it so the next
           // sign-in starts clean (security scan L8).
