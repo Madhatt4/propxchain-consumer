@@ -66,4 +66,16 @@ describe('authStore.logout resets per-user singletons', () => {
     expect(useAuthStore.getState().isAuthenticated).toBe(false);
     expect(useAuthStore.getState().principalId).toBeNull();
   });
+
+  it('should still sign this browser out and wipe deal drafts when the sign-out call throws', async () => {
+    localStorage.setItem('ta6_tx_1', '{"draft":true}');
+    mockSignOut.mockRejectedValue(new Error('storage unavailable'));
+
+    await useAuthStore.getState().logout();
+
+    expect(useAuthStore.getState().isAuthenticated).toBe(false);
+    expect(useAuthStore.getState().principalId).toBeNull();
+    expect(localStorage.getItem('ta6_tx_1')).toBeNull();
+    expect(mockIcpLogout).toHaveBeenCalledTimes(1);
+  });
 });
