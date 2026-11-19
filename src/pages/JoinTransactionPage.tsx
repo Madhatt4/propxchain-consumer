@@ -12,6 +12,25 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { logger } from '@/utils/logger';
 import { useIsAuthenticated as useStoreIsAuthenticated } from '../stores/authStore';
 import { Logo } from '@/components/brand/Logo';
+import { normaliseInviteCode } from '@/utils/inviteCode';
+
+/**
+ * Seller invites emailed before 2026-11-19 open /join/<code>?role=seller. The
+ * code is the buyer's only now (Marc, 2026-11-19), so such a link goes to the
+ * seller's accept page for its deal instead. Null when the code no longer
+ * resolves (a buyer has used it up), or the lookup fails.
+ */
+async function sellerInviteTransactionId(code: string): Promise<string | null> {
+  try {
+    const { icpService } = await import('../services/icp.service');
+    await icpService.initialize();
+    const tx = (await icpService.getTransactionByInviteCode(normaliseInviteCode(code) ?? code)) as { id?: unknown } | null;
+    return tx && tx.id !== undefined && tx.id !== null ? String(tx.id) : null;
+  } catch (err) {
+    logger.warn('JoinTransactionPage: old seller link did not resolve', err);
+    return null;
+  }
+}
 
 const JoinTransactionPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -23,6 +42,22 @@ const JoinTransactionPage: React.FC = () => {
   const [initialInviteCode, setInitialInviteCode] = useState<string>('');
   const rightmoveUrl = searchParams.get('rm') || undefined;
   const inviteContext = readInviteContext(searchParams);
+  const isOldSellerLink = inviteContext.role === 'seller' && Boolean(id);
+  const [isSellerLinkStale, setIsSellerLinkStale] = useState(false);
+
+  useEffect(() => {
+    if (!storeIsAuthenticated || !isOldSellerLink || !id) return;
+    let active = true;
+    void (async () => {
+      const transactionId = await sellerInviteTransactionId(decodeURIComponent(id));
+      if (!active) return;
+      if (transactionId) navigate(`/seller-invite/${encodeURIComponent(transactionId)}`, { replace: true });
+      else setIsSellerLinkStale(true);
+    })();
+    return () => {
+      active = false;
+    };
+  }, [storeIsAuthenticated, isOldSellerLink, id, navigate]);
 
   useEffect(() => {
     if (!storeIsAuthenticated) {
@@ -63,6 +98,26 @@ const JoinTransactionPage: React.FC = () => {
     // Navigate to the main dashboard where the joined transaction will appear
     navigate('/dashboard');
   };
+
+  if (isReady && isOldSellerLink) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <main className="mx-auto max-w-xl px-6 py-16 text-center">
+          {isSellerLinkStale ? (
+            <>
+              <h1 className="font-[Fraunces] text-2xl font-semibold text-gray-900 dark:text-gray-50">This invite link is out of date</h1>
+              <p className="mt-2 font-[DM_Sans] text-sm text-gray-500 dark:text-gray-400">
+                Ask your estate agent to send you the invite again.
+              </p>
+              <Button variant="outline" className="mt-6" onClick={() => navigate('/dashboard')}>Go to my dashboard</Button>
+            </>
+          ) : (
+            <p className="font-[DM_Sans] text-sm text-gray-500 dark:text-gray-400">One moment…</p>
+          )}
+        </main>
+      </div>
+    );
+  }
 
   if (!isReady) {
     return (

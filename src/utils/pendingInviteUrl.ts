@@ -16,14 +16,16 @@ export const PENDING_INVITE_URL_KEY = 'propxchain_pending_invite_url';
 
 /** A seller's invitation to their estate agent: exactly one 64-hex code, nothing after it. */
 const AGENT_JOIN_PATH = /^\/agent\/join\/[0-9a-f]{64}$/;
+/** A seller's accept page for their agent-led sale: one transaction id, nothing after it. */
+const SELLER_INVITE_PATH = /^\/seller-invite\/[A-Za-z0-9_-]{1,80}$/;
 export const PENDING_AGENT_INVITE_KEY = 'propxchain_pending_agent_invite';
 /** Long enough to verify an email and sign in; short enough that a shared browser does not keep it for the next person. */
 export const AGENT_INVITE_TTL_MS = 24 * 60 * 60 * 1000;
 
 /**
  * Store a path + search string to return to after login. Only `/join...`
- * paths and the estate agent invitation path `/agent/join/<code>` are
- * accepted — this value is later fed straight into `navigate()`, so anything
+ * paths, the seller's accept page `/seller-invite/<transactionId>` and the
+ * estate agent invitation path `/agent/join/<code>` are accepted — this value is later fed straight into `navigate()`, so anything
  * else (an absolute URL, an unrelated in-app path) is rejected to prevent it
  * being used as an open-redirect vector via localStorage.
  *
@@ -37,7 +39,7 @@ export function storePendingInviteUrl(pathWithSearch: string): void {
     localStorage.setItem(PENDING_AGENT_INVITE_KEY, JSON.stringify({ path: pathWithSearch, expiresAt: Date.now() + AGENT_INVITE_TTL_MS }));
     return;
   }
-  if (!pathWithSearch.startsWith('/join')) return;
+  if (!pathWithSearch.startsWith('/join') && !SELLER_INVITE_PATH.test(pathWithSearch)) return;
   localStorage.setItem(PENDING_INVITE_URL_KEY, pathWithSearch);
 }
 

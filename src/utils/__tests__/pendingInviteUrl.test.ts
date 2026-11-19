@@ -42,6 +42,18 @@ describe('pendingInviteUrl', () => {
     expect(consumePendingInviteUrl()).toBeNull();
   });
 
+  it("should store the seller's accept page for one transaction id", () => {
+    storePendingInviteUrl('/seller-invite/tx_1794076530509808062');
+    expect(consumePendingInviteUrl()).toBe('/seller-invite/tx_1794076530509808062');
+  });
+
+  it('should refuse a seller accept path with anything after the transaction id', () => {
+    for (const path of ['/seller-invite/', '/seller-invite/tx_1/../../dashboard', '/seller-invite/tx_1?next=https://evil.example', '/seller-invite/tx_1//evil.example']) {
+      storePendingInviteUrl(path);
+      expect(consumePendingInviteUrl()).toBeNull();
+    }
+  });
+
   it('should store an estate agent invitation path with a 64-hex code', () => {
     const path = `/agent/join/${'a'.repeat(64)}`;
     storePendingInviteUrl(path);

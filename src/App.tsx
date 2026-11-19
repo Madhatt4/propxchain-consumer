@@ -82,6 +82,7 @@ const AllTransactionsAuditPage = lazy(() => import('./pages/AllTransactionsAudit
 const AdminTestingPanel = lazy(() => import('./pages/AdminTestingPanel'));
 const ShareTransactionPage = lazy(() => import('./pages/ShareTransactionPage'));
 const JoinTransactionPage = lazy(() => import('./pages/JoinTransactionPage'));
+const SellerInvitePage = lazy(() => import('./pages/SellerInvitePage'));
 const PricingPage = lazy(() => import('./pages/PricingPage'));
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
 const MessagesPage = lazy(() => import('./components/messaging/MessagesPage'));
@@ -331,6 +332,8 @@ function App() {
               <Route path="/transaction/:id/share" element={<ProtectedRoute><RequirePrincipal><RequireProfile><ShareTransactionPage /></RequireProfile></RequirePrincipal></ProtectedRoute>} />
               <Route path="/join" element={<ProtectedRoute><RequirePrincipal><RequireProfile><JoinTransactionPage /></RequireProfile></RequirePrincipal></ProtectedRoute>} />
               <Route path="/join/:id" element={<ProtectedRoute><RequirePrincipal><RequireProfile><JoinTransactionPage /></RequireProfile></RequirePrincipal></ProtectedRoute>} />
+              {/* The seller's accept for an agent-led sale (no invite code). Not behind ProtectedRoute: a signed-out seller is sent to register and back; the page applies RequirePrincipal itself. */}
+              <Route path="/seller-invite/:transactionId" element={<SellerInvitePage />} />
               {/* The hand-over confirm page (agent CRM): the email tap signs the client in, the grant happens here. */}
               <Route path="/delegate/:id" element={<ProtectedRoute><RequirePrincipal><RequireProfile><DelegatePage /></RequireProfile></RequirePrincipal></ProtectedRoute>} />
               <Route path="/exchange/:transactionId" element={<ProtectedRoute><RequirePrincipal><RequireProfile><ExchangeStatusPage /></RequireProfile></RequirePrincipal></ProtectedRoute>} />

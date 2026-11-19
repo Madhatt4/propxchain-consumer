@@ -187,6 +187,20 @@ describe('partyRoleService.recordRoleFromChain', () => {
     expect(outcome).toEqual({ ok: false, error: 'not_a_principal_party' });
   });
 
+  it("should pass the canister's reason through when a seller handover is refused", async () => {
+    mockInvoke.mockResolvedValue({
+      data: null,
+      error: {
+        message: 'Edge Function returned a non-2xx status code',
+        context: { json: () => Promise.resolve({ error: 'handover_refused', detail: 'The seller slot has already been handed over' }) },
+      },
+    });
+
+    const outcome = await partyRoleService.recordRoleFromChain('tx_1');
+
+    expect(outcome).toEqual({ ok: false, error: 'handover_refused', detail: 'The seller slot has already been handed over' });
+  });
+
   it('should fall back to the transport message when the body is not JSON', async () => {
     mockInvoke.mockResolvedValue({
       data: null,

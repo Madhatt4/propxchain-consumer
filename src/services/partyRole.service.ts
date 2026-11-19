@@ -75,7 +75,7 @@ export interface PartyRoleRow {
 
 export type ChainRoleOutcome =
   | { ok: true; role: DealSide; side: DealSide; created: boolean }
-  | { ok: false; error: string };
+  | { ok: false; error: string; detail?: string };
 
 interface ChainRoleResponse {
   ok?: boolean;
@@ -85,16 +85,23 @@ interface ChainRoleResponse {
   error?: string;
 }
 
+interface InvokeFailure {
+  code: string;
+  /** The canister's own reason, e.g. why a seller handover was refused. */
+  detail?: string;
+}
+
 /** supabase-js throws on non-2xx with a generic message; the machine-readable reason is in the body. */
-async function invokeErrorCode(error: {
+async function invokeFailure(error: {
   message: string;
-  context?: { json?: () => Promise<{ error?: string }> };
-}): Promise<string> {
+  context?: { json?: () => Promise<{ error?: string; detail?: string }> };
+}): Promise<InvokeFailure> {
   try {
     const body = await error.context?.json?.();
-    return body?.error ?? error.message;
+    const code = body?.error ?? error.message;
+    return typeof body?.detail === 'string' ? { code, detail: body.detail } : { code };
   } catch {
-    return error.message;
+    return { code: error.message };
   }
 }
 
@@ -160,6 +167,10 @@ class PartyRoleService {
    * Ask the chain-verified writer to record my row for a deal I hold the
    * seller or buyer slot on. Returns the refusal code rather than throwing so
    * callers can stay fire-and-forget.
+   *
+   * It is also how an invited seller accepts an agent-led sale
+   * (SellerInvitePage): the function hands them the seller slot on chain
+   * first, with no code join (Marc, 2026-11-19).
    */
   async recordRoleFromChain(transactionId: string): Promise<ChainRoleOutcome> {
     const { data } = await supabase.auth.getSession();
@@ -179,9 +190,9 @@ class PartyRoleService {
       body: { transactionId, ...proof },
     });
     if (error) {
-      const code = await invokeErrorCode(error);
+      const { code, detail } = await invokeFailure(error);
       logger.warn(`[partyRole] ${RECORD_FROM_CHAIN_FN} refused ${transactionId}: ${code}`);
-      return { ok: false, error: code };
+      return detail === undefined ? { ok: false, error: code } : { ok: false, error: code, detail };
     }
     if (!res?.ok || !res.role || !res.side) {
       return { ok: false, error: res?.error ?? 'unexpected_response' };
