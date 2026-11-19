@@ -386,8 +386,6 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
 
       logger.info('[Upload] Verification registered, ID:', verificationDocId);
 
-      icpService.emitDocumentUploadedEvent(transactionId, documentType, documentHash);
-
       setUploadState((prev) => ({ ...prev, progress: 85 }));
 
       // Step 7: Register Oscar result on-chain (if available)

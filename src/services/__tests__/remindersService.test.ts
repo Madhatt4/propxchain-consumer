@@ -63,21 +63,49 @@ describe('generateReminders — seller rules', () => {
 });
 
 describe('generateReminders — buyer rules', () => {
-  it('fires buyer-solicitor-delay 3+ days after buyer_joined', () => {
-    const rems = generateReminders(
-      input({
-        now: 5 * DAY,
-        events: [{ eventType: 'buyer_joined', timestamp: 0 }],
-      }),
-    );
-    expect(rems.map((r) => r.id)).toContain('buyer-solicitor-delay');
-  });
+  it.each(['buyer_self_assigned', 'buyer_assigned'])(
+    'should fire buyer-solicitor-delay 3+ days after the canister event %s',
+    (eventType) => {
+      // Arrange
+      const events = [{ eventType, timestamp: 0 }];
 
-  it('fires searches-delay 5+ days after buyer_joined', () => {
+      // Act
+      const rems = generateReminders(input({ now: 5 * DAY, events }));
+
+      // Assert
+      const r = rems.find((x) => x.id === 'buyer-solicitor-delay');
+      expect(r).toBeDefined();
+      expect(r?.source).toBe(eventType);
+    },
+  );
+
+  it('should count days from the earliest buyer arrival event', () => {
     const rems = generateReminders(
       input({
         now: 6 * DAY,
-        events: [{ eventType: 'buyer_joined', timestamp: 0 }],
+        events: [
+          { eventType: 'buyer_assigned', timestamp: 4 * DAY },
+          { eventType: 'buyer_self_assigned', timestamp: 0 },
+        ],
+      }),
+    );
+
+    expect(rems.find((r) => r.id === 'searches-delay')?.triggeredAt).toBe(0);
+  });
+
+  it('should not fire buyer rules on the never-written buyer_joined name', () => {
+    const rems = generateReminders(
+      input({ now: 30 * DAY, events: [{ eventType: 'buyer_joined', timestamp: 0 }] }),
+    );
+
+    expect(rems.map((r) => r.id)).not.toContain('buyer-solicitor-delay');
+  });
+
+  it('fires searches-delay 5+ days after the buyer self-assigned', () => {
+    const rems = generateReminders(
+      input({
+        now: 6 * DAY,
+        events: [{ eventType: 'buyer_self_assigned', timestamp: 0 }],
       }),
     );
     expect(rems.map((r) => r.id)).toContain('searches-delay');
@@ -88,7 +116,7 @@ describe('generateReminders — buyer rules', () => {
       input({
         now: 20 * DAY,
         events: [
-          { eventType: 'buyer_joined', timestamp: 0 },
+          { eventType: 'buyer_self_assigned', timestamp: 0 },
           { eventType: 'searches_ordered', timestamp: 6 * DAY },
         ],
       }),
@@ -100,7 +128,7 @@ describe('generateReminders — buyer rules', () => {
     const rems = generateReminders(
       input({
         now: 15 * DAY,
-        events: [{ eventType: 'buyer_joined', timestamp: 0 }],
+        events: [{ eventType: 'buyer_self_assigned', timestamp: 0 }],
       }),
     );
     const m = rems.find((r) => r.id === 'buyer-mortgage-delay');
@@ -224,7 +252,7 @@ describe('generateReminders — ordering', () => {
         now: 30 * DAY,
         events: [
           { eventType: 'transaction_created', timestamp: 0 },
-          { eventType: 'buyer_joined', timestamp: 1 * DAY },
+          { eventType: 'buyer_assigned', timestamp: 1 * DAY },
           { eventType: 'blockchain_completed', timestamp: 16 * DAY },
         ],
       }),

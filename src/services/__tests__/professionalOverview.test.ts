@@ -55,7 +55,7 @@ describe('buildProfessionalOverview — attention', () => {
     });
     const t2 = snap({
       transactionId: 'tx-2',
-      events: [{ eventType: 'buyer_joined', timestamp: 0 }],
+      events: [{ eventType: 'buyer_self_assigned', timestamp: 0 }],
     });
 
     const o = buildProfessionalOverview([t1, t2], 15 * DAY);
@@ -92,7 +92,7 @@ describe('buildProfessionalOverview — attention', () => {
     const snaps: TransactionSnapshot[] = Array.from({ length: 30 }).map((_, i) =>
       snap({
         transactionId: `tx-${i}`,
-        events: [{ eventType: 'buyer_joined', timestamp: 0 }],
+        events: [{ eventType: 'buyer_self_assigned', timestamp: 0 }],
       }),
     );
     const o = buildProfessionalOverview(snaps, 10 * DAY, 10);

@@ -39,23 +39,31 @@ function makeOkResult(overrides: Record<string, unknown> = {}): { ok: Record<str
   };
 }
 
-describe('icpService.joinTransactionByInviteCode — audit wiring', () => {
+// The ledger refuses browser writes, so the join itself writes no audit event
+// from here. The plain join assigns no buyer and the canister records nothing
+// for it; a buyer arrives on-chain as buyer_self_assigned or buyer_assigned.
+describe('icpService.joinTransactionByInviteCode — no browser ledger write', () => {
   const logEvent = vi.fn();
   const joinTransactionByInviteCode = vi.fn();
+  const joinTransactionByInviteCodeAsBuyer = vi.fn();
 
   // `ledgerManager` and `transactionManager` are getters that read the private
   // *Actor fields, so tests write to the backing fields directly.
   type ICPServicePrivates = {
-    transactionManagerActor: { joinTransactionByInviteCode: typeof joinTransactionByInviteCode } | null;
+    transactionManagerActor: {
+      joinTransactionByInviteCode: typeof joinTransactionByInviteCode;
+      joinTransactionByInviteCodeAsBuyer: typeof joinTransactionByInviteCodeAsBuyer;
+    } | null;
     ledgerManagerActor: { logEvent: typeof logEvent } | null;
   };
 
   beforeEach(() => {
     logEvent.mockReset().mockResolvedValue({ ok: BigInt(1) });
     joinTransactionByInviteCode.mockReset();
+    joinTransactionByInviteCodeAsBuyer.mockReset();
 
     const internals = icpService as unknown as ICPServicePrivates;
-    internals.transactionManagerActor = { joinTransactionByInviteCode };
+    internals.transactionManagerActor = { joinTransactionByInviteCode, joinTransactionByInviteCodeAsBuyer };
     internals.ledgerManagerActor = { logEvent };
   });
 
@@ -65,61 +73,44 @@ describe('icpService.joinTransactionByInviteCode — audit wiring', () => {
     internals.ledgerManagerActor = null;
   });
 
-  it('fires buyer_joined logEvent with the transaction id when join succeeds', async () => {
+  it('should return the joined deal and write no ledger event when the join succeeds', async () => {
     joinTransactionByInviteCode.mockResolvedValue(makeOkResult({ id: 'tx-042' }));
 
-    await icpService.joinTransactionByInviteCode(VALID_CODE);
-
-    // logEvent is fire-and-forget; flush microtasks so the catch-chain resolves.
+    const joined = await icpService.joinTransactionByInviteCode(VALID_CODE);
     await Promise.resolve();
 
-    expect(logEvent).toHaveBeenCalledTimes(1);
-    const [txId, eventType, details, metadata] = logEvent.mock.calls[0];
-    expect(txId).toBe('tx-042');
-    expect(eventType).toBe('buyer_joined');
-    expect(details).toContain(VALID_CODE);
-    expect(metadata).toEqual([]);
+    expect(joined).toMatchObject({ id: 'tx-042' });
+    expect(logEvent).not.toHaveBeenCalled();
   });
 
-  it('uppercases the invite code before the canister call and audit message', async () => {
+  it('should uppercase the invite code before the canister call', async () => {
     joinTransactionByInviteCode.mockResolvedValue(makeOkResult());
 
     await icpService.joinTransactionByInviteCode(VALID_CODE.toLowerCase());
-    await Promise.resolve();
 
     expect(joinTransactionByInviteCode).toHaveBeenCalledWith(VALID_CODE);
-    expect(logEvent.mock.calls[0][2]).toContain(VALID_CODE);
   });
 
-  it('does NOT fire logEvent when the canister returns err', async () => {
+  it('should throw the canister error', async () => {
     joinTransactionByInviteCode.mockResolvedValue({ err: 'Invite code not found' });
 
-    await expect(
-      icpService.joinTransactionByInviteCode(VALID_CODE),
-    ).rejects.toThrow('Invite code not found');
-
+    await expect(icpService.joinTransactionByInviteCode(VALID_CODE)).rejects.toThrow('Invite code not found');
     expect(logEvent).not.toHaveBeenCalled();
   });
 
-  it('does NOT fire logEvent when the code format is invalid (no canister call made)', async () => {
-    await expect(
-      icpService.joinTransactionByInviteCode('not-a-code'),
-    ).rejects.toThrow(/Invalid invite code format/i);
+  it('should refuse a malformed code without calling the canister', async () => {
+    await expect(icpService.joinTransactionByInviteCode('not-a-code')).rejects.toThrow(/Invalid invite code format/i);
 
     expect(joinTransactionByInviteCode).not.toHaveBeenCalled();
-    expect(logEvent).not.toHaveBeenCalled();
   });
 
-  it('does not propagate logEvent rejections (fire-and-forget)', async () => {
-    joinTransactionByInviteCode.mockResolvedValue(makeOkResult());
-    logEvent.mockRejectedValueOnce(new Error('ledger canister unreachable'));
+  it('should leave the buyer_self_assigned event to the canister on a buyer self-join', async () => {
+    joinTransactionByInviteCodeAsBuyer.mockResolvedValue(makeOkResult({ id: 'tx-043' }));
 
-    await expect(
-      icpService.joinTransactionByInviteCode(VALID_CODE),
-    ).resolves.toMatchObject({ id: 'tx-001' });
-
-    // Flush microtasks so the catch handler runs before the test ends.
+    const joined = await icpService.joinTransactionByInviteCodeAsBuyer(VALID_CODE);
     await Promise.resolve();
-    expect(logEvent).toHaveBeenCalledTimes(1);
+
+    expect(joined).toMatchObject({ id: 'tx-043' });
+    expect(logEvent).not.toHaveBeenCalled();
   });
 });

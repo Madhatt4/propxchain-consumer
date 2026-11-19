@@ -17,11 +17,38 @@
 
 import type { Phase } from './phase';
 
+/**
+ * The on-chain events that put a buyer on the deal, both written by
+ * transaction_manager (joinTransactionByInviteCodeAsBuyer, assignBuyer). The
+ * plain joinTransactionByInviteCode writes no event and assigns no buyer.
+ */
+export const BUYER_ARRIVAL_EVENTS: string[] = ['buyer_self_assigned', 'buyer_assigned'];
+
+/**
+ * Document types that count as "the title" or "the EPC": the two seller
+ * upload slots under both of their key spellings, plus the official copy of
+ * the register fetched from HM Land Registry through the platform, which is
+ * the title itself.
+ */
+export const TITLE_OR_EPC_DOC_TYPES: string[] = [
+  'titleDeeds',
+  'title-deeds',
+  'energyPerformanceCertificate',
+  'epc-certificate',
+  'hmlr-register-extract',
+];
+
 export interface ChecklistItem {
   id: string;
   label: string;
   /** Event types that mark this item as complete. Any match = done. */
   completedByEvents: string[];
+  /**
+   * When set, a matching event only counts if it carries one of these
+   * document types. Without it "a document was registered" would tick an item
+   * that names particular documents.
+   */
+  completedByDocTypes?: string[];
 }
 
 export interface ChecklistItemState extends ChecklistItem {
@@ -59,16 +86,22 @@ const DEFINITIONS: Record<Phase, ChecklistItem[]> = {
       completedByEvents: ['seller_forms_completed'],
     },
     {
+      // transaction_manager writes doc_registered for ANY document attached to
+      // the deal, so the document type is checked too: a bank statement must
+      // not tick an item that names the title and the EPC. Either one ticks it
+      // (Marc, 2026-11-19); the EPC is often looked up rather than uploaded.
       id: 'documents-uploaded',
       label: 'Title + EPC documents uploaded',
-      completedByEvents: ['document_uploaded'],
+      completedByEvents: ['doc_registered'],
+      completedByDocTypes: TITLE_OR_EPC_DOC_TYPES,
     },
   ],
   buyerSetup: [
     {
       id: 'buyer-joined',
       label: 'Buyer joined the transaction',
-      completedByEvents: ['buyer_joined'],
+      // The buyer takes the slot themselves or the seller assigns them.
+      completedByEvents: BUYER_ARRIVAL_EVENTS,
     },
     {
       id: 'buyer-onboarded',
@@ -170,9 +203,17 @@ const DEFINITIONS: Record<Phase, ChecklistItem[]> = {
 // Derivation
 // ============================================
 
-interface AuditEventLike {
+export interface AuditEventLike {
   eventType: string;
   timestamp: number;
+  /** The docType a doc_registered event carries in its metadata, when read. */
+  docType?: string;
+}
+
+function eventCompletes(item: ChecklistItem, event: AuditEventLike): boolean {
+  if (!item.completedByEvents.includes(event.eventType)) return false;
+  if (!item.completedByDocTypes) return true;
+  return event.docType !== undefined && item.completedByDocTypes.includes(event.docType);
 }
 
 export function getChecklistForPhase(phase: Phase): ChecklistItem[] {
@@ -182,7 +223,8 @@ export function getChecklistForPhase(phase: Phase): ChecklistItem[] {
 /**
  * Produce the live checklist state for the current phase by matching each
  * item's completion triggers against the transaction's audit event stream.
- * An item is completed if ANY of its completedByEvents appears in the stream.
+ * An item is completed if ANY of its completedByEvents appears in the stream
+ * (and, where the item names document types, carries one of them).
  */
 export function deriveChecklistState(
   phase: Phase,
@@ -192,7 +234,7 @@ export function deriveChecklistState(
   const itemStates: ChecklistItemState[] = items.map((item) => {
     let earliest: number | null = null;
     for (const e of events) {
-      if (item.completedByEvents.includes(e.eventType)) {
+      if (eventCompletes(item, e)) {
         if (earliest === null || e.timestamp < earliest) earliest = e.timestamp;
       }
     }

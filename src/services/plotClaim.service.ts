@@ -13,8 +13,7 @@
  */
 
 import { supabase } from '@/lib/supabase';
-import { icpService } from '@/services/icp.service';
-import { logger } from '@/utils/logger';
+import { recordDealAttestation } from '@/services/dealAttestation.service';
 
 export type PlotClaimCheck = 'ok' | 'reserved_for_other' | 'taken' | 'not_found';
 
@@ -54,7 +53,8 @@ export async function checkPlotClaim(code: string): Promise<PlotClaimCheck> {
 
 /**
  * Reserve the plot for the signed-in buyer against their new on-chain deal,
- * then record it on that deal's ledger. The event carries no personal data.
+ * then ask deal-attest to record it on that deal's ledger. The server reads the
+ * claim itself; a failed audit write never fails the claim.
  */
 export async function claimPlot(code: string, transactionId: string): Promise<string> {
   const { data, error } = await supabase.rpc('claim_plot', {
@@ -66,14 +66,7 @@ export async function claimPlot(code: string, transactionId: string): Promise<st
   }
   const plotId = data as string;
 
-  void icpService.ledgerManager
-    ?.logEvent(
-      transactionId,
-      'plot_claimed',
-      'Buyer claimed the developer plot',
-      [JSON.stringify({ plotId })],
-    )
-    .catch((err: unknown) => logger.warn('[plotClaim] logEvent failed', err));
+  recordDealAttestation({ kind: 'plot_claim', transactionId });
 
   return plotId;
 }

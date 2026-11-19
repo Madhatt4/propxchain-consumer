@@ -4,8 +4,9 @@
 /**
  * Search sign-off for one deal. The buyer and/or the buyer's conveyancer
  * each sign off the searches whose results are back. The record lives in
- * Supabase (search_signoffs); its SHA-256 goes on the deal's ledger, so the
- * chain proves what was signed and when, with no names on it.
+ * Supabase (search_signoffs); the deal-attest edge function reads the row and
+ * puts its SHA-256 on the deal's ledger, so the chain proves what was signed
+ * and when, with no names on it.
  *
  * Every rule is enforced server-side (migration 20260927_search_signoffs):
  * the server works out the signer's role, picks the orders and computes the
@@ -13,8 +14,7 @@
  */
 
 import { supabase } from '@/lib/supabase';
-import { icpService } from '@/services/icp.service';
-import { logger } from '@/utils/logger';
+import { recordDealAttestation } from '@/services/dealAttestation.service';
 
 export type SignOffRole = 'buyer' | 'conveyancer';
 
@@ -63,12 +63,6 @@ function toRecord(row: SignOffRow): SearchSignOffRecord {
   };
 }
 
-function logToLedger(transactionId: string, eventType: string, details: string, payload: object): void {
-  void icpService.ledgerManager
-    ?.logEvent(transactionId, eventType, details, [JSON.stringify(payload)])
-    .catch((err: unknown) => logger.warn('[searchSignOff] logEvent failed', { eventType, err }));
-}
-
 /** The caller's role for signing off on this deal, or null if they can't. */
 export async function getMySignOffRole(transactionId: string): Promise<SignOffRole | null> {
   const { data, error } = await supabase.rpc('my_search_signoff_role', { p_transaction_id: transactionId });
@@ -101,23 +95,15 @@ export async function signOffSearches(transactionId: string, notes: string): Pro
     p_notes: notes,
   });
   if (error) throw new Error(error.message);
-  const row = (data as Array<{ id: string; signer_role: SignOffRole; search_order_ids: string[]; record_hash: string }>)[0];
-  logToLedger(transactionId, 'searches_signed_off', 'Search results signed off', {
-    signOffId: row.id,
-    signerRole: row.signer_role,
-    searchCount: row.search_order_ids.length,
-    recordHash: row.record_hash,
-  });
+  const row = (data as Array<{ id: string }>)[0];
+  recordDealAttestation({ kind: 'search_signoff', signOffId: row.id });
 }
 
-export async function revokeSignOff(transactionId: string, signOffId: string, reason: string): Promise<void> {
-  const { data, error } = await supabase.rpc('revoke_search_signoff', {
+export async function revokeSignOff(signOffId: string, reason: string): Promise<void> {
+  const { error } = await supabase.rpc('revoke_search_signoff', {
     p_signoff_id: signOffId,
     p_reason: reason,
   });
   if (error) throw new Error(error.message);
-  logToLedger(transactionId, 'searches_signoff_revoked', 'Search sign-off revoked', {
-    signOffId,
-    revokeHash: data as string,
-  });
+  recordDealAttestation({ kind: 'search_signoff_revoked', signOffId });
 }

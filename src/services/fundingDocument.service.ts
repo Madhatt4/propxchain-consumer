@@ -106,9 +106,6 @@ class FundingDocumentService {
       propertyId,
     );
 
-    // Audit anchor: the seller's "Tick" milestone notice and the conveyancer's
-    // access both derive from this event + transaction membership.
-    icpService.emitDocumentUploadedEvent(transactionId, documentType, fileHash);
     await this.updateProgress(transactionId, documentType);
 
     return {

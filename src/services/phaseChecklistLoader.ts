@@ -16,7 +16,8 @@ import {
   statusIsExchanged,
   type Phase,
 } from './phase';
-import { deriveChecklistState, type PhaseChecklistState } from './phaseChecklist';
+import { deriveChecklistState, type AuditEventLike, type PhaseChecklistState } from './phaseChecklist';
+import { metadataFields } from '@/lib/completionStatement';
 import { isSimulatedLrSubmission } from '@/lib/simulatedLrSubmission';
 
 /** Null when the transaction cannot be read (not a party, transient error). */
@@ -41,10 +42,16 @@ export async function loadPhaseChecklistState(
   const ledgerEvents = Array.isArray(eventsRaw)
     ? eventsRaw
         .filter((e) => !isSimulatedLrSubmission(String(e.eventType ?? ''), String(e.details ?? '')))
-        .map((e) => ({
-          eventType: String(e.eventType ?? ''),
-          timestamp: Number(e.timestamp ?? 0),
-        }))
+        .map((e): AuditEventLike => {
+          const eventType = String(e.eventType ?? '');
+          const event: AuditEventLike = { eventType, timestamp: Number(e.timestamp ?? 0) };
+          // Only a registered document carries a type the checklist cares about.
+          if (eventType === 'doc_registered') {
+            const docType = metadataFields(e.metadata).get('docType');
+            if (docType) event.docType = docType;
+          }
+          return event;
+        })
     : [];
   // Merge ledger events with locally-derived synthetic events. Ledger
   // is canonical; synthetic closes the window between a local stage

@@ -28,7 +28,6 @@ vi.mock('../../../../services/icp.service', () => ({
     documentStorageActor: {
       registerDocumentProof: (...args: unknown[]) => mockRegisterProof(...args),
     },
-    emitDocumentUploadedEvent: () => undefined,
   },
 }));
 

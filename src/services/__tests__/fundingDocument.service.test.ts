@@ -24,7 +24,6 @@ vi.mock('../../lib/supabase', () => ({
 const registerDocumentProof = vi.fn();
 const registerDocument = vi.fn();
 const updateMemberDocuments = vi.fn();
-const emitDocumentUploadedEvent = vi.fn();
 const ensureDocumentStorageActor = vi.fn();
 vi.mock('../icp.service', () => ({
   icpService: {
@@ -45,7 +44,6 @@ vi.mock('../icp.service', () => ({
     // Now routed through the icpService wrapper (which stringifies the id and
     // attaches the CSRF token) rather than the raw user_management actor.
     updateMemberDocuments: (...a: unknown[]) => updateMemberDocuments(...a),
-    emitDocumentUploadedEvent: (...a: unknown[]) => emitDocumentUploadedEvent(...a),
   },
 }));
 
@@ -82,7 +80,9 @@ describe('fundingDocumentService.uploadFundingDocument', () => {
 
     expect(record.storageDocId).toBe(11);
     expect(record.verificationDocId).toBe(22);
-    expect(emitDocumentUploadedEvent).toHaveBeenCalledOnce();
+    // The proof names the deal, so document_storage calls the canister's
+    // onDocumentRegistered, which writes the doc_registered audit event.
+    expect(proofArgs[5]).toEqual(['tx_5']);
   });
 
   it('should keep the user filename off every on-chain field', async () => {
@@ -94,7 +94,6 @@ describe('fundingDocumentService.uploadFundingDocument', () => {
     expect(proofArgs[0]).toBe('mortgageAgreement.pdf'); // on-chain fileName
     expect(proofArgs[4]).not.toMatch(/Jane|Smith/); // on-chain storageLocation
     expect(registerDocument.mock.calls[0][5]).toEqual(['mortgageAgreement.pdf']);
-    expect(emitDocumentUploadedEvent).toHaveBeenCalledWith('tx_5', 'mortgageAgreement', 'a'.repeat(64));
     // Off-chain record still carries the real name for the UI.
     expect(record.fileName).toBe('Mortgage offer - Jane Smith.pdf');
   });

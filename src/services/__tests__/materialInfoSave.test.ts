@@ -3,8 +3,8 @@
 
 /**
  * The Sales pack's inline answers save through Stage 1's path: merge into the
- * stored listing, storeRightmoveData (local + chain), one audit event per
- * changed field, provenance marked as the seller's own.
+ * stored listing, storeRightmoveData (local + chain), provenance marked as
+ * the seller's own. The canister's setListingData writes the audit event.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { PropertyListing } from '@/types/listing.types';
@@ -47,12 +47,10 @@ describe('saveMaterialInfoPatch', () => {
     expect(merged.provenance).toEqual({ price: 'adapter', councilTaxBand: 'user' });
   });
 
-  it('should log one listing_edited event per changed field', async () => {
+  it('should write no ledger event from the browser, leaving it to setListingData', async () => {
     await saveMaterialInfoPatch('tx-1', { councilTaxBand: 'D', propertyType: 'Detached' });
-    expect(logEvent).toHaveBeenCalledTimes(1);
-    expect(logEvent).toHaveBeenCalledWith('tx-1', 'listing_edited', 'councilTaxBand updated', [
-      JSON.stringify({ field: 'councilTaxBand', oldValue: '', newValue: 'D' }),
-    ]);
+    expect(storeRightmoveData).toHaveBeenCalledTimes(1);
+    expect(logEvent).not.toHaveBeenCalled();
   });
 
   it('should report a chain failure while keeping the local save', async () => {
