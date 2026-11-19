@@ -23,7 +23,12 @@ export interface ExplainerAnalysis {
 }
 
 export interface ExplainerRequest {
-  cacheKey: string;
+  /**
+   * Ignored. Older clients still send it; the server derives its own key from
+   * the analysis (cache-key.ts) because a client key could be pointed at
+   * another area's cached narration.
+   */
+  cacheKey?: string;
   analysis: ExplainerAnalysis;
 }
 
