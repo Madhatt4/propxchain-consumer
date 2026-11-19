@@ -20,8 +20,7 @@
  * markup can no longer run script. The hashes are of the LF-checked-out source,
  * which is byte-for-byte what the built site serves;
  * src/__tests__/config/security-headers.test.ts fails if index.html changes
- * without updating them. 'unsafe-eval' stays until a click-through proves
- * nothing needs it (carded).
+ * without updating them.
  */
 export const INLINE_SCRIPT_HASHES = [
   "'sha256-cXiZeUoUH0eop2rOqJhm04zC59cbQUgK4gBwP0p8/mk='", // gtag dataLayer bootstrap
@@ -33,7 +32,13 @@ export const INLINE_SCRIPT_HASHES = [
 /** @type {Record<string, string[]>} */
 const CSP_DIRECTIVES = {
   'default-src': ["'self'"],
-  'script-src': ["'self'", ...INLINE_SCRIPT_HASHES, "'unsafe-eval'", 'https://www.googletagmanager.com'],
+  // No 'unsafe-eval': with Google's tag host allowed, it would let anyone who
+  // can edit the tag run arbitrary code on the origin that holds sign-in
+  // tokens. The built bundle has no eval, no live new Function and no
+  // WebAssembly (so no 'wasm-unsafe-eval' either). The only Function("return
+  // this") calls are core-js global-object fallbacks behind globalThis, which
+  // every supported browser has, so they never run.
+  'script-src': ["'self'", ...INLINE_SCRIPT_HASHES, 'https://www.googletagmanager.com'],
   'style-src': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
   'img-src': [
     "'self'",
@@ -67,7 +72,11 @@ const CSP_DIRECTIVES = {
     'https://icp-api.io',
     'https://identity.ic0.app',
     'https://id.ai',
-    'https://*.supabase.co',
+    // This app's own Supabase project only (auth, REST, storage, edge
+    // functions share the host; wss for realtime). A wildcard would let a
+    // script exfiltrate to any Supabase project.
+    'https://bhacvhrbdmlkawpkhklq.supabase.co',
+    'wss://bhacvhrbdmlkawpkhklq.supabase.co',
     // M4: exact hosts, not *.workers.dev / *.onrender.com (anyone can host
     // there, so those wildcards let injected script send data to its own
     // Worker). *.hatton-marc.workers.dev is only this Cloudflare account.
