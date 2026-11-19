@@ -296,7 +296,11 @@ describe('getQuotesForTransaction integration', () => {
 
     const quotes = await conveyancerQuoteService.getQuotesForTransaction('tx-1');
 
-    expect(select).toHaveBeenCalledWith('*, conveyancer_panel!inner(practice_name, pexa_enabled)');
+    const selected = select.mock.calls[0][0] as string;
+    expect(selected.endsWith(', conveyancer_panel!inner(practice_name, pexa_enabled)')).toBe(true);
+    // Never `*`: signed-in users have no grant on quote_token, so `*` is refused.
+    expect(selected).not.toContain('*');
+    expect(selected).not.toContain('quote_token');
     expect(quotes.map((q) => q.isConveyancerPexaEnabled)).toEqual([true, false]);
   });
 });

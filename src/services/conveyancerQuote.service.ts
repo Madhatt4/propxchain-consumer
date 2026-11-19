@@ -29,6 +29,15 @@ interface ConveyancerQuoteRow {
   created_at: string;
 }
 
+// Named, never `*`: signed-in users have no read grant on quote_token (the
+// firm's credential for submitting a quote), so `*` is refused by Postgres.
+// A column added to ConveyancerQuoteRow needs adding here AND to the column
+// grant in the monorepo (migration 20261119100100_conveyancer_quote_token_hidden.sql).
+export const QUOTE_COLUMNS =
+  'id, transaction_id, conveyancer_id, status, property_address, title_number, tenure, ' +
+  'transaction_type, legal_fee, disbursements_estimate, vat, estimated_weeks, conditions, ' +
+  'quoted_at, accepted_at, created_at';
+
 function mapQuoteRow(row: ConveyancerQuoteRow): ConveyancerQuote {
   return {
     id: row.id,
@@ -170,7 +179,7 @@ async function getQuotesForTransaction(transactionId: string): Promise<Conveyanc
   const { data, error } = await supabase
     .from('conveyancer_quotes')
     // pexa_enabled needs migration 20261106120000 applied first, or this embed errors.
-    .select('*, conveyancer_panel!inner(practice_name, pexa_enabled)')
+    .select(`${QUOTE_COLUMNS}, conveyancer_panel!inner(practice_name, pexa_enabled)`)
     .eq('transaction_id', transactionId)
     .order('created_at', { ascending: true });
 
@@ -199,7 +208,7 @@ async function acceptQuote(quoteId: string): Promise<{ success: boolean; error?:
   // signed by the accepting party's own principal, not a service identity.
   const { data: quoteRow } = await supabase
     .from('conveyancer_quotes')
-    .select('*, conveyancer_panel!inner(practice_name)')
+    .select(`${QUOTE_COLUMNS}, conveyancer_panel!inner(practice_name)`)
     .eq('id', quoteId)
     .single();
   if (quoteRow) {
