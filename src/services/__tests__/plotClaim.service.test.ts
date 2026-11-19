@@ -6,7 +6,13 @@ vi.mock('@/lib/supabase', () => ({ supabase: { rpc: (...a: unknown[]) => rpc(...
 vi.mock('@/services/icp.service', () => ({ icpService: { ledgerManager: { logEvent } } }));
 vi.mock('@/utils/logger', () => ({ logger: { warn: vi.fn(), error: vi.fn(), info: vi.fn() } }));
 
-import { checkPlotClaim, claimPlot, plotClaimBlockedReason, releaseMyPlot } from '../plotClaim.service';
+import {
+  checkPlotClaim,
+  claimPlot,
+  getPlotDeveloperPrincipal,
+  plotClaimBlockedReason,
+  releaseMyPlot,
+} from '../plotClaim.service';
 
 describe('plotClaim.service', () => {
   beforeEach(() => {
@@ -21,6 +27,27 @@ describe('plotClaim.service', () => {
 
     expect(rpc).toHaveBeenCalledWith('check_plot_claim', { p_code: 'TX-ABCD-EFGH' });
     expect(check).toBe('reserved_for_other');
+  });
+
+  it('should look the developer principal up by invite code, never by plot id', async () => {
+    rpc.mockResolvedValue({ data: 'aaaaa-bbbbb-ccccc-ddddd-eeeee-fff', error: null });
+
+    const principal = await getPlotDeveloperPrincipal('TX-ABCD-EFGH');
+
+    expect(rpc).toHaveBeenCalledWith('get_plot_developer_principal_by_code', { p_code: 'TX-ABCD-EFGH' });
+    expect(principal).toBe('aaaaa-bbbbb-ccccc-ddddd-eeeee-fff');
+  });
+
+  it('should return null when the developer has not pinned a principal yet', async () => {
+    rpc.mockResolvedValue({ data: null, error: null });
+
+    expect(await getPlotDeveloperPrincipal('TX-ABCD-EFGH')).toBeNull();
+  });
+
+  it('should throw when the principal lookup fails', async () => {
+    rpc.mockResolvedValue({ data: null, error: { message: 'permission denied' } });
+
+    await expect(getPlotDeveloperPrincipal('TX-ABCD-EFGH')).rejects.toThrow(/Could not resolve the developer/);
   });
 
   it('should explain every blocked outcome and allow ok', () => {
