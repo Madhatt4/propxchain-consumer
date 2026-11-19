@@ -30,6 +30,20 @@ export function plotClaimBlockedReason(check: PlotClaimCheck): string | null {
   return check === 'ok' ? null : CHECK_MESSAGES[check];
 }
 
+/**
+ * The developer organisation's pinned ICP principal for the plot this invite
+ * code belongs to, or null when the developer has not signed in yet. Asked by
+ * code, never by plot id: plot ids are public, and only someone holding the
+ * invite should learn who the seller is.
+ */
+export async function getPlotDeveloperPrincipal(code: string): Promise<string | null> {
+  const { data, error } = await supabase.rpc('get_plot_developer_principal_by_code', { p_code: code });
+  if (error) {
+    throw new Error(`Could not resolve the developer for this plot: ${error.message}`);
+  }
+  return typeof data === 'string' && data.length > 0 ? data : null;
+}
+
 export async function checkPlotClaim(code: string): Promise<PlotClaimCheck> {
   const { data, error } = await supabase.rpc('check_plot_claim', { p_code: code });
   if (error) {

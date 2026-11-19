@@ -13,7 +13,7 @@ import SolicitorOnboarding from './auth/SolicitorOnboarding';
 import type { SolicitorRecord, RegulatoryBody } from '../types/solicitor.types';
 import { getStorePrincipalId, getStoreIsAuthenticated } from '../stores/authStore';
 import { partyRoleService } from '../services/partyRole.service';
-import { checkPlotClaim, claimPlot, plotClaimBlockedReason } from '../services/plotClaim.service';
+import { checkPlotClaim, claimPlot, getPlotDeveloperPrincipal, plotClaimBlockedReason } from '../services/plotClaim.service';
 import type { PartyRole } from '../services/shareParty.service';
 import type { InviteContext } from '@/utils/inviteContext';
 
@@ -279,13 +279,13 @@ const TransactionInvite: React.FC<TransactionInviteProps> = ({ onJoinSuccess, on
           return;
         }
 
-        // Resolve developer's pinned ICP principal via SECURITY DEFINER RPC
+        // Resolve the developer's pinned ICP principal by invite code
         // (development_sites is org-only RLS — the buyer can't read it directly).
-        const { data: developerPrincipal, error: principalError } = await supabase
-          .rpc('get_plot_developer_principal', { p_plot_id: plot.id });
-
-        if (principalError) {
-          logger.error('get_plot_developer_principal RPC failed:', principalError);
+        let developerPrincipal: string | null;
+        try {
+          developerPrincipal = await getPlotDeveloperPrincipal(canonicalCode);
+        } catch (principalError) {
+          logger.error('Developer principal lookup failed:', principalError);
           setError('Unable to resolve developer for this plot. Please try again.');
           setIsLoading(false);
           return;
