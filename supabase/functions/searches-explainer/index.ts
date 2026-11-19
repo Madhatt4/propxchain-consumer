@@ -3,8 +3,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
 import { corsHeaders, preflight } from '../_shared/cors.ts';
 import { checkRateLimit } from '../_shared/rate-limit.ts';
+import { deriveCacheKey, parseAnalysis, serialiseAnalysis } from './cache-key.ts';
 import { generateNarration } from './explainer.ts';
-import type { ExplainerRequest } from './types.ts';
 
 /**
  * searches-explainer — plain-English narration of one property's search
@@ -22,6 +22,11 @@ import type { ExplainerRequest } from './types.ts';
  *
  * The model, the rubric and the prompt are fixed in source. Nothing about the
  * Claude call is taken from the request body.
+ *
+ * Cache key: derived HERE, as a SHA-256 of the validated analysis exactly as
+ * it is sent to the model (cache-key.ts). A `cacheKey` field in the body is
+ * ignored: trusting it let one user store narration for a crafted analysis
+ * under another area's key, which every later customer there was then shown.
  *
  * Auth posture: deployed --no-verify-jwt because the project's JWT signing key
  * is ES256, which the runtime gateway cannot verify. Auth is enforced in code,
@@ -75,20 +80,23 @@ serve(async (req: Request) => {
     return json(req, { error: 'rate_limited', resetIn: rl.retryAfter }, 429);
   }
 
-  let body: ExplainerRequest;
+  let body: unknown;
   try {
-    body = (await req.json()) as ExplainerRequest;
+    body = await req.json();
   } catch {
     return json(req, { error: 'invalid_json' }, 400);
   }
-  if (!body?.cacheKey || !body?.analysis) {
+  const analysis = parseAnalysis((body as { analysis?: unknown } | null)?.analysis);
+  if (!analysis) {
     return json(req, { error: 'invalid_request' }, 400);
   }
+  const modelInput = serialiseAnalysis(analysis);
+  const cacheKey = await deriveCacheKey(modelInput);
 
   const { data: cached } = await adminClient
     .from('searches_explainer_cache')
     .select('narration')
-    .eq('cache_key', body.cacheKey)
+    .eq('cache_key', cacheKey)
     .maybeSingle();
 
   if (cached?.narration) {
@@ -103,7 +111,7 @@ serve(async (req: Request) => {
 
   let narration: string[] | null = null;
   try {
-    narration = await generateNarration(OPENROUTER_API_KEY, body.analysis);
+    narration = await generateNarration(OPENROUTER_API_KEY, modelInput);
   } catch {
     return json(req, { narration: null });
   }
@@ -111,7 +119,7 @@ serve(async (req: Request) => {
   if (narration) {
     await adminClient
       .from('searches_explainer_cache')
-      .upsert({ cache_key: body.cacheKey, narration }, { onConflict: 'cache_key' });
+      .upsert({ cache_key: cacheKey, narration }, { onConflict: 'cache_key' });
   }
 
   return json(req, { narration });

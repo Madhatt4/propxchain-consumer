@@ -561,13 +561,20 @@ export const useAuthStore = create<AuthState>()(
         // removing the server copy needs the signed-in session. No-op on the web.
         await removeDevicePushToken().catch(() => undefined);
 
+        // Ending the session is caught on its own: whatever goes wrong here, the
+        // wipe below must still run, or a failed sign-out leaves the last user's
+        // deal drafts and signed-in state on a shared computer.
         try {
           if (authMethod === 'supabase') {
             await supabaseAuthService.signOut();
           } else if (authMethod === 'ii' && authClient) {
             await authClient.signOut();
           }
+        } catch (error) {
+          logger.error('Sign-out: ending the session failed; clearing this browser anyway', error);
+        }
 
+        try {
           localStorage.removeItem('user');
           localStorage.removeItem('token');
           localStorage.removeItem('propxchain-session-start');
@@ -581,6 +588,14 @@ export const useAuthStore = create<AuthState>()(
           localStorage.removeItem('userName');
           localStorage.removeItem('onboardingRole');
           localStorage.removeItem('pendingTier');
+
+          // Legacy dashboard wizard state (Dashboard_Modern) holds property
+          // details. The old header sign-out cleared these; keep doing so now
+          // that every sign-out comes through here.
+          localStorage.removeItem('wizardData');
+          localStorage.removeItem('currentPhase');
+          localStorage.removeItem('completedPhases');
+          localStorage.removeItem('wizardSaves');
 
           // Deal data (form drafts, doc lists, KYC, transaction UI state)
           // persists across logouts on shared devices. Wipe it so the next
