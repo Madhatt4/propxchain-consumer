@@ -106,7 +106,7 @@ export function SearchesTab({ transactionId }: TransactionTabProps): JSX.Element
         myUserId={view.myUserId}
         resultsBack={resultsBack}
         onSignOff={async (notes) => { await signOffSearches(transactionId, notes); await reload(); }}
-        onRevoke={async (id, reason) => { await revokeSignOff(transactionId, id, reason); await reload(); }}
+        onRevoke={async (id, reason) => { await revokeSignOff(id, reason); await reload(); }}
       />
     </div>
   );

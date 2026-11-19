@@ -729,14 +729,12 @@ describe('groupEventsIntoMilestones', () => {
       'contract_exchanged',   // useTransactionFlow.completeStage (seller-6 / buyer-6)
       'blockchain_completed', // useTransactionFlow.completeStage (seller-7 / buyer-7)
       'provider_selected',    // useTransactionFlow.selectProvider
-      'buyer_joined',         // icpService.joinTransactionByInviteCode
-      'document_uploaded',    // icpService.emitDocumentUploadedEvent
-      'plot_claimed',         // plotClaim.service.claimPlot (developer plot via invite code)
+      'plot_claimed',         // deal-attest, kind plot_claim (developer plot via invite code)
 
       // Ship 2c: stage-specific event types for the previously-unmapped stages
       'searches_ordered',              // seller-2
-      'searches_signed_off',           // searchSignOff.service.signOffSearches
-      'searches_signoff_revoked',      // searchSignOff.service.revokeSignOff
+      'searches_signed_off',           // deal-attest, kind search_signoff
+      'searches_signoff_revoked',      // deal-attest, kind search_signoff_revoked
       'seller_forms_completed',        // seller-3
       'seller_conveyancer_confirmed',  // seller-5
       'buyer_onboarded',               // buyer-1
@@ -751,6 +749,8 @@ describe('groupEventsIntoMilestones', () => {
       'quote_received',       // transaction_manager.recordQuote audit
       'conveyancer_selected', // transaction_manager.selectConveyancer audit
       'buyer_self_assigned',  // transaction_manager buyer slot self-claim
+      'buyer_assigned',       // transaction_manager.assignBuyer
+      'doc_registered',       // transaction_manager.onDocumentRegistered
 
       // transaction_manager.recordHmlrFetched — title register pulled (Stage 1)
       'hmlr_register_fetched',

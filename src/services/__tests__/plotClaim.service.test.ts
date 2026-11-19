@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { rpc, logEvent } = vi.hoisted(() => ({ rpc: vi.fn(), logEvent: vi.fn() }));
+const { rpc, invoke, warn } = vi.hoisted(() => ({ rpc: vi.fn(), invoke: vi.fn(), warn: vi.fn() }));
 
-vi.mock('@/lib/supabase', () => ({ supabase: { rpc: (...a: unknown[]) => rpc(...a) } }));
-vi.mock('@/services/icp.service', () => ({ icpService: { ledgerManager: { logEvent } } }));
-vi.mock('@/utils/logger', () => ({ logger: { warn: vi.fn(), error: vi.fn(), info: vi.fn() } }));
+vi.mock('@/lib/supabase', () => ({
+  supabase: { rpc: (...a: unknown[]) => rpc(...a), functions: { invoke: (...a: unknown[]) => invoke(...a) } },
+}));
+vi.mock('@/utils/logger', () => ({ logger: { warn, error: vi.fn(), info: vi.fn() } }));
 
 import {
   checkPlotClaim,
@@ -17,7 +18,8 @@ import {
 describe('plotClaim.service', () => {
   beforeEach(() => {
     rpc.mockReset();
-    logEvent.mockReset().mockResolvedValue({ ok: BigInt(1) });
+    invoke.mockReset().mockResolvedValue({ data: { recorded: true }, error: null });
+    warn.mockReset();
   });
 
   it('should ask the server whether the signed-in buyer may claim the code', async () => {
@@ -57,23 +59,35 @@ describe('plotClaim.service', () => {
     expect(plotClaimBlockedReason('not_found')).toMatch(/could not find/);
   });
 
-  it('should claim through the server and log a ledger event with no personal data', async () => {
+  it('should claim through the server and ask deal-attest to record it by transaction id only', async () => {
     rpc.mockResolvedValue({ data: 'plot-uuid', error: null });
 
     const plotId = await claimPlot('TX-ABCD-EFGH', 'tx_42');
 
     expect(rpc).toHaveBeenCalledWith('claim_plot', { p_code: 'TX-ABCD-EFGH', p_transaction_id: 'tx_42' });
     expect(plotId).toBe('plot-uuid');
-    expect(logEvent).toHaveBeenCalledWith('tx_42', 'plot_claimed', 'Buyer claimed the developer plot', [
-      JSON.stringify({ plotId: 'plot-uuid' }),
-    ]);
+    expect(invoke).toHaveBeenCalledWith('deal-attest', { body: { kind: 'plot_claim', transactionId: 'tx_42' } });
   });
 
-  it('should throw and log nothing when the server refuses the claim', async () => {
+  it('should still return the plot when the attestation call fails', async () => {
+    rpc.mockResolvedValue({ data: 'plot-uuid', error: null });
+    invoke.mockResolvedValue({
+      data: null,
+      error: { message: 'not found', context: { status: 404, json: async () => ({ error: 'not_deployed' }) } },
+    });
+
+    const plotId = await claimPlot('TX-ABCD-EFGH', 'tx_42');
+    await vi.waitFor(() => expect(warn).toHaveBeenCalled());
+
+    expect(plotId).toBe('plot-uuid');
+    expect(warn).toHaveBeenCalledWith('[dealAttest] attestation not recorded', { kind: 'plot_claim', code: 'not_deployed' });
+  });
+
+  it('should throw and attest nothing when the server refuses the claim', async () => {
     rpc.mockResolvedValue({ data: null, error: { message: 'this plot is not available to you' } });
 
     await expect(claimPlot('TX-ABCD-EFGH', 'tx_42')).rejects.toThrow(/not available to you/);
-    expect(logEvent).not.toHaveBeenCalled();
+    expect(invoke).not.toHaveBeenCalled();
   });
 
   it("should release the leaving buyer's own plot through the server", async () => {

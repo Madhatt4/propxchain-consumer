@@ -79,7 +79,6 @@ export function makeTa6Uploader(
     const path = await uploadBytes(file, transactionId, fileHash, contentType);
     const storageLocation = `supabase://${STORAGE_BUCKET}/${path}`;
     const documentId = await registerProof(file, fileHash, contentType, storageLocation, transactionId);
-    icpService.emitDocumentUploadedEvent(transactionId, TA6_ATTACHMENT_DOC_TYPE, fileHash);
     // classifyDocument never rejects: every failure is a null.
     const classification = classifyDocument(transactionId, path, context);
     const findings = classification.then(findingsOf);

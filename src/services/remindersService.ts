@@ -17,6 +17,8 @@
  * See docs/Upgrades/propxchain-v3-roadmap.md Phase 4 Task 4.3.
  */
 
+import { BUYER_ARRIVAL_EVENTS } from './phaseChecklist';
+
 export type ReminderUrgency = 'low' | 'medium' | 'high' | 'critical';
 
 export interface Reminder {
@@ -56,10 +58,12 @@ export interface ReminderInput {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-function firstEvent(events: AuditEventLike[], type: string): AuditEventLike | null {
+/** Earliest event of the given type, or of any of the given types. */
+function firstEvent(events: AuditEventLike[], type: string | string[]): AuditEventLike | null {
+  const types = typeof type === 'string' ? [type] : type;
   let earliest: AuditEventLike | null = null;
   for (const e of events) {
-    if (e.eventType === type && (earliest === null || e.timestamp < earliest.timestamp)) {
+    if (types.includes(e.eventType) && (earliest === null || e.timestamp < earliest.timestamp)) {
       earliest = e;
     }
   }
@@ -113,7 +117,7 @@ function ruleSellerForms(input: ReminderInput): Reminder | null {
 }
 
 function ruleBuyerSolicitor(input: ReminderInput): Reminder | null {
-  const joined = firstEvent(input.events, 'buyer_joined');
+  const joined = firstEvent(input.events, BUYER_ARRIVAL_EVENTS);
   if (!joined) return null;
   const days = daysBetween(joined.timestamp, input.now);
   if (days < 3) return null;
@@ -124,12 +128,12 @@ function ruleBuyerSolicitor(input: ReminderInput): Reminder | null {
     message: `Buyer solicitor not appointed (${days} days since buyer joined).`,
     suggestedAction: 'Instruct a conveyancing solicitor to order searches and review the pack.',
     triggeredAt: joined.timestamp,
-    source: 'buyer_joined',
+    source: joined.eventType,
   };
 }
 
 function ruleBuyerMortgage(input: ReminderInput): Reminder | null {
-  const joined = firstEvent(input.events, 'buyer_joined');
+  const joined = firstEvent(input.events, BUYER_ARRIVAL_EVENTS);
   if (!joined) return null;
   const days = daysBetween(joined.timestamp, input.now);
   if (days < 14) return null;
@@ -140,12 +144,12 @@ function ruleBuyerMortgage(input: ReminderInput): Reminder | null {
     message: `Mortgage not confirmed (${days} days since buyer joined).`,
     suggestedAction: 'Submit the mortgage application and obtain an offer — skip if cash buyer.',
     triggeredAt: joined.timestamp,
-    source: 'buyer_joined',
+    source: joined.eventType,
   };
 }
 
 function ruleSearches(input: ReminderInput): Reminder | null {
-  const joined = firstEvent(input.events, 'buyer_joined');
+  const joined = firstEvent(input.events, BUYER_ARRIVAL_EVENTS);
   if (!joined) return null;
   const days = daysBetween(joined.timestamp, input.now);
   if (days < 5) return null;
@@ -156,12 +160,12 @@ function ruleSearches(input: ReminderInput): Reminder | null {
     message: `Property searches not ordered (${days} days since buyer joined).`,
     suggestedAction: 'Order Local Authority, Water & Drainage, and Environmental searches now.',
     triggeredAt: joined.timestamp,
-    source: 'buyer_joined',
+    source: joined.eventType,
   };
 }
 
 function ruleSurvey(input: ReminderInput): Reminder | null {
-  const joined = firstEvent(input.events, 'buyer_joined');
+  const joined = firstEvent(input.events, BUYER_ARRIVAL_EVENTS);
   if (!joined) return null;
   const days = daysBetween(joined.timestamp, input.now);
   if (days < 14) return null;
@@ -172,7 +176,7 @@ function ruleSurvey(input: ReminderInput): Reminder | null {
     message: `No survey recorded (${days} days since buyer joined).`,
     suggestedAction: 'Book a survey if planning one — it can be the bottleneck to exchange.',
     triggeredAt: joined.timestamp,
-    source: 'buyer_joined',
+    source: joined.eventType,
   };
 }
 

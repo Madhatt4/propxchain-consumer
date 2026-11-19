@@ -224,6 +224,7 @@ const MILESTONE_MAP: Record<string, string> = {
   // Buyer setup + progress
   buyer_joined: 'Buyer Joined',
   buyer_self_assigned: 'Buyer Joined',
+  buyer_assigned: 'Buyer Joined', // transaction_manager.assignBuyer
   plot_claimed: 'Buyer Joined', // developer plot claimed via its invite code
   buyer_onboarded: 'Buyer Onboarded',
   mortgage_confirmed: 'Mortgage Confirmed',
@@ -237,6 +238,7 @@ const MILESTONE_MAP: Record<string, string> = {
   provider_selected: 'Providers Selected',
   conveyancer_selected: 'Providers Selected',
   document_uploaded: 'Documents Uploaded',
+  doc_registered: 'Documents Uploaded', // transaction_manager.onDocumentRegistered
   document_verified: 'Documents Verified',
   aml_verified: 'AML Verified',
   stage_completed: 'Stages Completed',

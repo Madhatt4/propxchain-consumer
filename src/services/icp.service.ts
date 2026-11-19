@@ -2251,36 +2251,12 @@ class ICPService {
         [file.type || 'application/octet-stream']
       );
 
-      this.emitDocumentUploadedEvent(transactionId, documentType, documentHash);
-
       return {
         storageDocumentId: Number(storageDocumentId),
         verificationDocumentId: Number(verificationDocumentId),
         documentHash: documentHash
       };
     }, { cacheKey });
-  }
-
-  /**
-   * Fire-and-forget `document_uploaded` audit event.
-   * No-op when transactionId is missing (property-level uploads pre-transaction).
-   * Mirrors the pattern used for buyer_joined / stage_completed / provider_selected.
-   * Takes no filename: the ledger is permanent and filenames carry personal data.
-   */
-  emitDocumentUploadedEvent(
-    transactionId: string | undefined,
-    documentType: string,
-    fileHash: string,
-  ): void {
-    if (!transactionId) return;
-    void this.ledgerManager
-      ?.logEvent(
-        transactionId,
-        'document_uploaded',
-        `Document (${documentType}) registered on chain`,
-        [JSON.stringify({ documentType, fileHash })],
-      )
-      .catch((err: unknown) => logger.error('[audit] logEvent failed', { transactionId, eventType: 'document_uploaded', err }));
   }
 
   /**
@@ -2792,16 +2768,6 @@ class ICPService {
             propertyCategory: tx.propertyCategory,
           };
 
-          // Fire-and-forget audit event — must not block the UI
-          void this.ledgerManager
-            ?.logEvent(
-              tx.id,
-              'buyer_joined',
-              `Buyer redeemed invite code ${inviteCode.toUpperCase()}`,
-              [],
-            )
-            .catch((err: unknown) => logger.error('[audit] logEvent failed', { transactionId: tx.id, eventType: 'buyer_joined', err }));
-
           return formatted;
         } else if ('err' in result) {
           throw new Error(result.err);
@@ -2861,15 +2827,7 @@ class ICPService {
             propertyCategory: tx.propertyCategory,
           };
 
-          void this.ledgerManager
-            ?.logEvent(
-              tx.id,
-              'buyer_self_assigned',
-              `Caller self-assigned as buyer via invite code ${inviteCode.toUpperCase()}`,
-              [],
-            )
-            .catch((err: unknown) => logger.error('[audit] logEvent failed', { transactionId: tx.id, eventType: 'buyer_self_assigned', err }));
-
+          // The canister writes buyer_self_assigned itself (transaction_manager).
           return formatted;
         } else if ('err' in result) {
           throw new Error(result.err);

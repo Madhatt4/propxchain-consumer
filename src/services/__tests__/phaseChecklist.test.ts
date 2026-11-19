@@ -42,12 +42,53 @@ describe('deriveChecklistState', () => {
 
   it('picks the earliest matching event when multiple are present', () => {
     const state = deriveChecklistState('buyerSetup', [
-      { eventType: 'buyer_joined', timestamp: 500 },
-      { eventType: 'buyer_joined', timestamp: 200 },
-      { eventType: 'buyer_joined', timestamp: 800 },
+      { eventType: 'buyer_assigned', timestamp: 500 },
+      { eventType: 'buyer_self_assigned', timestamp: 200 },
+      { eventType: 'buyer_assigned', timestamp: 800 },
     ]);
     const joined = state.items.find((i) => i.id === 'buyer-joined');
     expect(joined?.completedAt).toBe(200);
+  });
+
+  it.each(['buyer_self_assigned', 'buyer_assigned'])(
+    'should tick buyer joined on the canister event %s',
+    (eventType) => {
+      // Arrange
+      const events = [{ eventType, timestamp: 300 }];
+
+      // Act
+      const state = deriveChecklistState('buyerSetup', events);
+
+      // Assert
+      const joined = state.items.find((i) => i.id === 'buyer-joined');
+      expect(joined?.completed).toBe(true);
+      expect(joined?.completedAt).toBe(300);
+    },
+  );
+
+  it('should not tick buyer joined on the never-written buyer_joined name', () => {
+    const state = deriveChecklistState('buyerSetup', [{ eventType: 'buyer_joined', timestamp: 1 }]);
+
+    expect(state.items.find((i) => i.id === 'buyer-joined')?.completed).toBe(false);
+  });
+
+  it('should tick documents uploaded on the canister doc_registered event', () => {
+    // Arrange
+    const events = [{ eventType: 'doc_registered', timestamp: 40 }];
+
+    // Act
+    const state = deriveChecklistState('sellerPrep', events);
+
+    // Assert
+    const docs = state.items.find((i) => i.id === 'documents-uploaded');
+    expect(docs?.completed).toBe(true);
+    expect(docs?.completedAt).toBe(40);
+  });
+
+  it('should not tick documents uploaded on the never-written document_uploaded name', () => {
+    const state = deriveChecklistState('sellerPrep', [{ eventType: 'document_uploaded', timestamp: 1 }]);
+
+    expect(state.items.find((i) => i.id === 'documents-uploaded')?.completed).toBe(false);
   });
 
   it('calculates progress as completed/total', () => {

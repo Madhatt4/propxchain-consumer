@@ -17,6 +17,13 @@
 
 import type { Phase } from './phase';
 
+/**
+ * The on-chain events that put a buyer on the deal, both written by
+ * transaction_manager (joinTransactionByInviteCodeAsBuyer, assignBuyer). The
+ * plain joinTransactionByInviteCode writes no event and assigns no buyer.
+ */
+export const BUYER_ARRIVAL_EVENTS: string[] = ['buyer_self_assigned', 'buyer_assigned'];
+
 export interface ChecklistItem {
   id: string;
   label: string;
@@ -59,16 +66,20 @@ const DEFINITIONS: Record<Phase, ChecklistItem[]> = {
       completedByEvents: ['seller_forms_completed'],
     },
     {
+      // transaction_manager writes doc_registered for ANY document attached to
+      // the deal; its metadata carries docType=, which this event-type match
+      // does not read, so the item ticks on the first document of any kind.
       id: 'documents-uploaded',
       label: 'Title + EPC documents uploaded',
-      completedByEvents: ['document_uploaded'],
+      completedByEvents: ['doc_registered'],
     },
   ],
   buyerSetup: [
     {
       id: 'buyer-joined',
       label: 'Buyer joined the transaction',
-      completedByEvents: ['buyer_joined'],
+      // The buyer takes the slot themselves or the seller assigns them.
+      completedByEvents: BUYER_ARRIVAL_EVENTS,
     },
     {
       id: 'buyer-onboarded',

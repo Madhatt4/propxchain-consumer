@@ -40,7 +40,6 @@ vi.mock('../icp.service', () => ({
     documentStorageActor: {
       registerDocumentProof: (...args: unknown[]) => mockRegisterProof(...args),
     },
-    emitDocumentUploadedEvent: () => undefined,
     getDocumentsByTransaction: (...args: unknown[]) => mockGetDocuments(...args),
     getDocumentStatus: (...args: unknown[]) => mockGetDocumentStatus(...args),
     deleteStorageDocument: (...args: unknown[]) => mockDeleteStorageDocument(...args),

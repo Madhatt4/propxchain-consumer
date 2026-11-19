@@ -91,10 +91,9 @@ interface StageProps {
   onAfterEdit?: () => void;
 }
 
-/** Compute a per-field diff between the form's previous and new values.
- *  Used to emit one `listing_edited` audit event per changed field with the
- *  old/new pair embedded in metadata so the on-chain trail captures exactly
- *  what changed. */
+/** Compute a per-field diff between the form's previous and new values, for
+ *  the edit log line. The on-chain trail entry is the canister's own
+ *  `listing_updated`, written by setListingData. */
 function diffDetails(
   prev: PropertyDetailsValue,
   next: PropertyDetailsValue,
@@ -491,20 +490,6 @@ export function ListPropertyStage({ stage, onComplete, transactionId, onListingI
         } catch (err) {
           logger.warn('[stage1] updateTitleNumber threw:', err);
         }
-      }
-
-      // Fire-and-forget audit events — one per changed field so the audit
-      // trail UI can render row-per-edit. Caller principal + timestamp are
-      // recorded server-side by ledger_manager.
-      for (const c of changes) {
-        void icpService.ledgerManager
-          ?.logEvent(
-            transactionId,
-            'listing_edited',
-            `${c.field} updated`,
-            [JSON.stringify({ field: c.field, oldValue: c.oldValue, newValue: c.newValue })],
-          )
-          .catch((err: unknown) => logger.warn('[stage1] logEvent failed', err));
       }
 
       onAfterEdit?.();

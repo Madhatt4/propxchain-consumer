@@ -62,7 +62,7 @@ describe('PhaseChecklist — live fetch path', () => {
       { id: 'tx-1', buyer: 'buyer-p', seller: 'seller-p', status: { active: null } },
     ]);
     mockGetEventsByTransaction.mockResolvedValueOnce([
-      { eventType: 'buyer_joined', timestamp: 1 },
+      { eventType: 'buyer_self_assigned', timestamp: 1 },
     ]);
 
     render(<PhaseChecklist transactionId="tx-1" />);

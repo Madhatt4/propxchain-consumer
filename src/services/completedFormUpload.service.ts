@@ -130,7 +130,6 @@ export async function uploadCompletedForm(
   const docType = canonicalUploadDocType(formId);
   const storageLocation = `supabase://${STORAGE_BUCKET}/${path}`;
   const documentId = await registerFormProof(file, fileHash, contentType, storageLocation, transactionId, docType);
-  icpService.emitDocumentUploadedEvent(transactionId, docType, fileHash);
   return { documentId, ...judgement };
 }
 

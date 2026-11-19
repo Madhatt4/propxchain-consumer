@@ -37,7 +37,6 @@ export async function uploadTA6Document(
   const path = await uploadFormBytes(file, transactionId, 'ta6', fileHash, contentType);
   const storageLocation = `supabase://${STORAGE_BUCKET}/${path}`;
   const documentId = await registerFormProof(file, fileHash, contentType, storageLocation, transactionId, docType);
-  icpService.emitDocumentUploadedEvent(transactionId, docType, fileHash);
   return documentId;
 }
 

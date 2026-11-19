@@ -156,10 +156,6 @@ export function PropertyInfoStage({ stage, onComplete, transactionId, postcode, 
   // Findings stored for forms uploaded in an earlier session, merged at
   // render so they show whichever of the two reads lands first.
   const [storedFindings, setStoredFindings] = useState<Partial<Record<FormId, string[]>>>({});
-  // Form IDs touched during this edit session. Drives audit-event emission
-  // on save — only forms the user actually re-saved get a `ta_form_edited`
-  // event, not every form on the stage. Reset whenever edit mode toggles.
-  const [editedInSession, setEditedInSession] = useState<Set<FormId>>(new Set());
 
   const isCompleted = stage.status === 'completed' && !isEditing;
 
@@ -204,11 +200,6 @@ export function PropertyInfoStage({ stage, onComplete, transactionId, postcode, 
     return () => { cancelled = true; };
   }, [transactionId, isEditing, stage.status]);
 
-  // Reset the edit-session change tracker whenever edit mode toggles.
-  useEffect(() => {
-    if (!isEditing) setEditedInSession(new Set());
-  }, [isEditing]);
-
   if (isCompleted) {
     return (
       <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-sm font-medium">
@@ -235,7 +226,6 @@ export function PropertyInfoStage({ stage, onComplete, transactionId, postcode, 
         ...prev,
         [formId]: { method: 'uploaded', detail: file.name, check, findings: (findings ?? []).map((f) => f.label) },
       }));
-      if (isEditing) setEditedInSession((s) => new Set(s).add(formId));
       // The seller must be able to tell the file was checked, even when it
       // passed: the line below the file name stays, this just announces it.
       toast({
@@ -268,22 +258,8 @@ export function PropertyInfoStage({ stage, onComplete, transactionId, postcode, 
       onCancelEdit?.();
       return;
     }
-    // Emit one ta_form_edited event per form touched in this edit session.
-    // Caller principal + timestamp are recorded server-side by ledger_manager.
-    // Each updateTA6/TA10/TA7 call already lands on chain via the form
-    // pages' save handlers — this event captures the "edit during a completed
-    // stage" intent so the audit trail distinguishes initial fill from
-    // post-completion revision.
-    for (const formId of editedInSession) {
-      void icpService.ledgerManager
-        ?.logEvent(
-          transactionId,
-          'ta_form_edited',
-          `${formId.toUpperCase()} updated in edit mode`,
-          [JSON.stringify({ formId })],
-        )
-        .catch((err: unknown) => logger.warn('[stage3] logEvent failed', err));
-    }
+    // No audit write here: the canister records each save itself
+    // (ta6_updated / ta10_updated / ta7_updated, and <form>_uploaded for a PDF).
     onAfterEdit?.();
     onCancelEdit?.();
   }
