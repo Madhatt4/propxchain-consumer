@@ -32,7 +32,7 @@ PropXchain is MCP-native. Every transaction a user can see in the web app can al
 ## Key Features
 
 - 2-phase transaction creation wizard (property details then transaction details)
-- Invite code system (TX-XXXX-XXXX) for parties to join transactions
+- Invite code system (TX-XXXX-XXXX): the seller side shares the deal's code with the buyer, who joins as the buyer
 - Transaction lifecycle: active, exchanged, completion_initiated, blockchain_completed, land_registry_registered
 - GDPR-compliant document storage (SHA-256 hash on-chain, files stay local)
 - Solicitor document verification via hash comparison

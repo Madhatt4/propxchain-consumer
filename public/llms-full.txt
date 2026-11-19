@@ -46,7 +46,7 @@ PropXchain brings transparency, speed, and blockchain-backed trust to UK propert
 
 Key capabilities:
 - 2-phase transaction creation with postcode search via Land Registry API
-- Invite code system (TX-XXXX-XXXX) for multi-party access
+- Invite code system (TX-XXXX-XXXX): the seller side shares the deal's code with the buyer, who joins as the buyer
 - Property chain linking across related transactions
 - Solicitor document verification with audit trail
 - Contract exchange with dual solicitor signatures
@@ -605,13 +605,13 @@ public shared(msg) func trigger_land_registry_submission(
 ```
 
 #### joinTransactionByInviteCode
-Join a transaction using an invite code.
+Join a transaction as the buyer using its invite code.
 ```motoko
 public shared(msg) func joinTransactionByInviteCode(
     inviteCode: Text
 ) : async Result.Result<Transaction, Text>
 ```
-Adds caller's principal to the transaction's access list.
+Joins as the buyer: the caller becomes the buyer if the deal has no buyer yet, and is refused otherwise (already on the deal, the deal already has a buyer, or contracts have exchanged). The code never adds a seller, a conveyancer or any other role, and it stops working once a buyer has joined. A seller takes over an agent-led sale by accepting the estate agent's emailed invite; conveyancers join when their estimate is accepted. AI agents are refused: an agent's owner connects it from the deal page.
 
 #### getInviteCode
 Get invite code for a transaction.
@@ -1427,7 +1427,7 @@ All linked transactions complete together on the same completion date.
 
 ### Invite Code System
 Format: TX-XXXX-XXXX (e.g., "TX-A7F2-9K3L")
-Share to give parties access: joinTransactionByInviteCode(inviteCode) adds caller to accessList.
+The seller side shares it with the buyer: joinTransactionByInviteCode(inviteCode) joins the caller as the buyer, once. It is used up when the buyer joins.
 
 ---
 
@@ -1626,7 +1626,7 @@ Join a transaction as the user's assistant using the invite code they share. Ide
 - Input: { inviteCode: "TX-XXXX-XXXX", botName }
 
 #### propxchain_join_transaction
-Join a transaction as a party.
+Join a transaction as the buyer using the deal's invite code. Refused if the caller is already on the deal, the deal already has a buyer, or contracts have exchanged.
 - Input: { inviteCode }
 
 #### propxchain_list_my_transactions
@@ -1853,14 +1853,14 @@ async function uploadDocument(file: File, transactionId: string) {
 }
 ```
 
-### Join Transaction via Invite Code
+### Join Transaction via Invite Code (as the buyer)
 ```typescript
 const result = await icpService.transactionManagerActor.joinTransactionByInviteCode(
     "TX-A7F2-9K3L"
 );
 if ('ok' in result) {
     const tx = result.ok;
-    // User now has access to this transaction
+    // The caller is now the buyer on this transaction
 }
 ```
 
