@@ -38,7 +38,17 @@ export async function buildPrincipalProof(message: string): Promise<PrincipalPro
   const identity = await icpService.getAuthenticatedIdentity();
   if (!identity) throw new Error('no_identity');
 
-  const keyIdentity = identity as unknown as Ed25519KeyIdentity;
+  return signPrincipalProof(identity as unknown as Ed25519KeyIdentity, message);
+}
+
+/**
+ * Sign `message` with a self-key already in hand. Sign-in uses this directly:
+ * the identity exists there before icpService has adopted it.
+ */
+export async function signPrincipalProof(
+  keyIdentity: Ed25519KeyIdentity,
+  message: string,
+): Promise<PrincipalProof> {
   if (typeof keyIdentity.sign !== 'function' || typeof keyIdentity.getPublicKey !== 'function') {
     throw new Error('unsupported_identity');
   }

@@ -2,6 +2,7 @@ import { AuthError, Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { trackSignUp } from '../lib/analytics';
 import { KeyPairService } from './keyPair.service';
+import { registerVerifiedPrincipal } from './principalRegistration';
 import { Ed25519KeyIdentity } from '@propxchain/core-client';
 import { CompaniesHouseCompany } from './companies-house.service';
 
@@ -206,6 +207,7 @@ export const supabaseAuthService = {
         const { identity, encryptedKey: newKey } = await KeyPairService.generateAndEncrypt(user.id);
         await saveNewKey(newKey, identity.getPrincipal().toText());
         await this._upsertEmailRegistration(user, identity.getPrincipal().toText());
+        await registerVerifiedPrincipal(identity, user.id);
         const orgJustCreated = await this._maybeCreatePendingDeveloperOrg(user, session);
         await this._maybeCreatePendingEstateAgentOrg(user, session);
         await this._maybeLockDeveloperPrincipal(user.id, identity.getPrincipal().toText());
@@ -224,6 +226,7 @@ export const supabaseAuthService = {
         user,
         user.user_metadata?.icp_principal || identity.getPrincipal().toText(),
       );
+      await registerVerifiedPrincipal(identity, user.id);
       const orgJustCreated = await this._maybeCreatePendingDeveloperOrg(user, session);
       await this._maybeCreatePendingEstateAgentOrg(user, session);
       await this._maybeLockDeveloperPrincipal(user.id, identity.getPrincipal().toText());
