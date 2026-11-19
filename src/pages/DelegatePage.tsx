@@ -21,6 +21,7 @@ const ERROR_COPY: Record<string, string> = {
   wrong_party: 'This request was sent to the other side of the deal. Sign in with the account the email was sent to.',
   forbidden: 'This request was addressed to someone else.',
   join_failed: "We could not add you to the deal just now. Try again in a moment.",
+  seller_accept_failed: 'We could not hand the sale over to you. Sign in with the email your estate agent invited, or ask them for help.',
   no_invite: 'Your agent needs to send you the invitation to the deal first.',
   agent_principal_unknown: 'Your agent is not on this deal yet. Ask them to open it once, then try again.',
   wrong_state: 'This request has already been answered.',
