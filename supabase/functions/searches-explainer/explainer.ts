@@ -13,7 +13,6 @@
 import OpenAI from 'npm:openai@4.104.0';
 
 import { EXPLAINER_RUBRIC } from './rubric.ts';
-import type { ExplainerAnalysis } from './types.ts';
 
 const MODEL = 'deepseek/deepseek-v4-flash-0731';
 
@@ -26,9 +25,15 @@ const NARRATION_SCHEMA = {
   additionalProperties: false,
 } as const;
 
+/**
+ * `modelInput` is the already-serialised, validated analysis
+ * (serialiseAnalysis in cache-key.ts). Taking the string rather than the
+ * object keeps the bytes the model sees identical to the bytes the cache key
+ * was hashed from.
+ */
 export async function generateNarration(
   apiKey: string,
-  analysis: ExplainerAnalysis,
+  modelInput: string,
 ): Promise<string[] | null> {
   const client = new OpenAI({
     apiKey,
@@ -54,7 +59,7 @@ export async function generateNarration(
     // it replaces. scripts/check-explainer-rubric.sh enforces it.
     messages: [
       { role: 'system', content: EXPLAINER_RUBRIC },
-      { role: 'user', content: JSON.stringify(analysis) },
+      { role: 'user', content: modelInput },
     ],
   });
 
