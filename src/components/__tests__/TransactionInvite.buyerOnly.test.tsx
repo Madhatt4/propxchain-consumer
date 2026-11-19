@@ -131,6 +131,53 @@ describe('TransactionInvite - invite codes are buyer-only', () => {
     expect(mockPlainJoin).not.toHaveBeenCalled();
   });
 
+  it("should read the canister's current buyer-taken text as the same plain message", async () => {
+    mockJoinAsBuyer.mockRejectedValue(new Error('This deal already has a buyer'));
+    await renderAtJoinStep();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Join Transaction' }));
+
+    await screen.findByText('This deal already has a buyer. Ask the seller for help.');
+  });
+
+  it('should treat "already the buyer" as a join that went through and go on to the deal', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      mockJoinAsBuyer.mockRejectedValue(new Error('You are already the buyer on this deal'));
+      const onJoinSuccess = vi.fn();
+      await renderAtJoinStep(onJoinSuccess);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Join Transaction' }));
+
+      await screen.findByText('Successfully Joined!');
+      vi.advanceTimersByTime(1500);
+      await waitFor(() => expect(onJoinSuccess).toHaveBeenCalledWith(expect.objectContaining({ id: 'tx_1' })));
+      expect(mockRecordFromChain).toHaveBeenCalledWith('tx_1');
+      expect(screen.queryByText('You are already the buyer on this deal')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('should say the code only adds the buyer when the caller is already on the deal', async () => {
+    mockJoinAsBuyer.mockRejectedValue(new Error('You are already on this deal. The invite code only adds the buyer'));
+    await renderAtJoinStep();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Join Transaction' }));
+
+    await screen.findByText('You are already on this deal. The invite code only adds the buyer.');
+    expect(screen.queryByText('Successfully Joined!')).toBeNull();
+  });
+
+  it('should say a used-up code has been used, and to ask the seller for a new one', async () => {
+    mockJoinAsBuyer.mockRejectedValue(new Error('Invalid invite code'));
+    await renderAtJoinStep();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Join Transaction' }));
+
+    await screen.findByText('This invite code has already been used. Ask the seller for a new one.');
+  });
+
   it('should pass any other canister error through unchanged', async () => {
     mockJoinAsBuyer.mockRejectedValue(new Error('Cannot self-assign as buyer after contract exchange'));
     await renderAtJoinStep();

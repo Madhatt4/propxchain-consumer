@@ -26,12 +26,32 @@ interface TransactionInviteProps {
 // accepted estimate; agents are invited by the seller from the deal page.
 const BUYER_TAKEN_MESSAGE = 'This deal already has a buyer. Ask the seller for help.';
 
-/** The canister's error text when the buyer slot is held by someone else (transaction_manager). */
-const BUYER_TAKEN_CANISTER_TEXT = 'buyer slot already taken';
+/** The canister's refusal texts when the buyer slot is held by someone else, before and after 2026-11-19 (invite_join.mo). */
+const BUYER_TAKEN_CANISTER_TEXTS = ['buyer slot already taken', 'this deal already has a buyer'];
+
+/** invite_join.mo ALREADY_BUYER, matched exactly: the caller is the buyer already (a retry after a lost reply). */
+const ALREADY_BUYER_CANISTER_TEXT = 'You are already the buyer on this deal';
+const ALREADY_ON_DEAL_CANISTER_TEXT = 'You are already on this deal. The invite code only adds the buyer';
+/** invite_join.mo INVALID_CODE: at the join step the code resolved a moment ago, so a buyer has just used it up. */
+const INVALID_CODE_CANISTER_TEXT = 'Invalid invite code';
+
+const ALREADY_ON_DEAL_MESSAGE = 'You are already on this deal. The invite code only adds the buyer.';
+const CODE_USED_MESSAGE = 'This invite code has already been used. Ask the seller for a new one.';
+
+function canisterText(err: unknown): string {
+  return err instanceof Error ? err.message.trim() : '';
+}
+
+function isAlreadyBuyer(err: unknown): boolean {
+  return canisterText(err) === ALREADY_BUYER_CANISTER_TEXT;
+}
 
 function joinErrorMessage(err: unknown): string {
-  const message = err instanceof Error ? err.message : '';
-  if (message.toLowerCase().includes(BUYER_TAKEN_CANISTER_TEXT)) return BUYER_TAKEN_MESSAGE;
+  const message = canisterText(err);
+  const lower = message.toLowerCase();
+  if (BUYER_TAKEN_CANISTER_TEXTS.some((text) => lower.includes(text))) return BUYER_TAKEN_MESSAGE;
+  if (message === ALREADY_ON_DEAL_CANISTER_TEXT) return ALREADY_ON_DEAL_MESSAGE;
+  if (message === INVALID_CODE_CANISTER_TEXT) return CODE_USED_MESSAGE;
   return message || 'Failed to join transaction. Please try again.';
 }
 
@@ -357,6 +377,16 @@ const TransactionInvite: React.FC<TransactionInviteProps> = ({ onJoinSuccess, on
       }
 
     } catch (err: unknown) {
+      if (isAlreadyBuyer(err)) {
+        // The join went through on an earlier try whose reply was lost: record
+        // the buyer row that try never reached (best-effort), then go on.
+        void partyRoleService.recordRoleFromChain(String(foundTransaction.id));
+        setStep('success');
+        setTimeout(() => {
+          onJoinSuccess(foundTransaction);
+        }, 1500);
+        return;
+      }
       logger.error('Error joining transaction:', err);
       setError(joinErrorMessage(err));
     } finally {
