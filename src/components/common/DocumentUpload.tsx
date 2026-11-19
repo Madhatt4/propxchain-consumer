@@ -34,7 +34,11 @@ interface DocumentUploadProps {
   onDelete?: (document: Document) => void;
   existingDocument?: Document;
   disabled?: boolean;
-  /** Enable Oscar AI document analysis */
+  /**
+   * Run the Oscar AI document analysis before registering. Off by default:
+   * its backend was retired (decision 2026-10-15) and the address it calls is
+   * suspended, so with it on every upload first waits on a call that fails.
+   */
   enableOscarAnalysis?: boolean;
   /** Transaction context for Oscar validation */
   transactionContext?: TransactionContext;
@@ -69,7 +73,7 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
   onDelete,
   existingDocument,
   disabled = false,
-  enableOscarAnalysis = true,
+  enableOscarAnalysis = false,
   transactionContext,
   isSolicitor = false
 }) => {
@@ -584,6 +588,14 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
       });
 
       const oscarResult = await runOscarAnalysis(file);
+
+      // The analysis is advisory. With no result there is nothing to review
+      // and the Proceed button (shown only beside a result) never appears, so
+      // pausing here would strand the upload: register the document instead.
+      if (!oscarResult) {
+        await proceedWithRegistration(file, null);
+        return;
+      }
 
       // If Oscar found critical errors, pause for user review (but not for solicitor review requirement)
       if (
