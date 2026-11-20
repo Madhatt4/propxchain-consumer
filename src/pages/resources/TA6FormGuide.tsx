@@ -120,7 +120,8 @@ const TA6FormGuide: React.FC = () => (
 
     <GuideH2 id="related">TA6, TA10 and TA7</GuideH2>
     <GuideP>
-      The TA6 usually travels with the TA10 (fittings and contents) and, for
+      The TA6 usually travels with the TA10 (fittings and contents, see{' '}
+      <GuideLink to="/resources/selling/ta10-form-explained">the TA10 form explained</GuideLink>) and, for
       leasehold homes, the TA7 (leasehold information). See{' '}
       <GuideLink to="/resources/selling/property-information-forms-explained">TA6, TA10 and TA7 explained</GuideLink>{' '}
       for how the three fit together, and{' '}

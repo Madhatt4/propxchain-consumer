@@ -12,6 +12,7 @@
  */
 
 import { LAW_SOCIETY_TA6_URL, REMOVED_SECTIONS, TA6_SECTIONS } from '../src/pages/resources/ta6GuideData.mjs';
+import { LAW_SOCIETY_TA_FORMS_URL, TA10_EDITION, TA10_FLASHPOINTS } from '../src/pages/resources/ta10GuideData.mjs';
 import {
   CORE_PACK_FROM,
   HMLR_ANNUAL_REPORT_URL,
@@ -111,6 +112,8 @@ export const resourcePages = [
   <p>The three forms every seller fills in, what each one asks, why your answers are legally binding representations rather than opinions, and the questions people most often get wrong.</p>
   <h3><a href="/resources/selling/ta6-form-explained">The TA6 form explained</a></h3>
   <p>The TA6 Property Information Form (6th edition), in use since 30 March 2026: what changed, what each of the 15 sections asks, what to have ready, and how to answer without creating problems later.</p>
+  <h3><a href="/resources/selling/ta10-form-explained">The TA10 form explained</a></h3>
+  <p>The TA10 Fittings and Contents Form: which edition is current, what stays and what goes, the items behind most completion-day disputes, and how to fill it in room by room.</p>
 
   <h2><a href="/resources/buying">Buying</a></h2>
   <p>The buyer-side journey, from agreement in principle to keys.</p>
@@ -167,6 +170,8 @@ ${categoryOverview('selling')}
   <p>The three forms every seller fills in, what each one asks, why your answers are legally binding representations rather than opinions, and the questions people most often get wrong.</p>
   <h2><a href="/resources/selling/ta6-form-explained">The TA6 form explained</a></h2>
   <p>The TA6 Property Information Form (6th edition), in use since 30 March 2026: what changed, what each of the 15 sections asks, what to have ready, and how to answer without creating problems later.</p>
+  <h2><a href="/resources/selling/ta10-form-explained">The TA10 form explained</a></h2>
+  <p>The TA10 Fittings and Contents Form: which edition is current, what stays and what goes, the items behind most completion-day disputes, and how to fill it in room by room.</p>
 </main>`.replace(
       '</main>',
       `<script type="application/ld+json">${breadcrumbJsonLd([{ name: 'Home', path: '/' },
@@ -625,7 +630,7 @@ ${SEARCHES_AT_A_GLANCE.map((s) => `      <tr><td>${escHtml(s.name)}</td><td>${es
     category: 'selling',
     catName: 'Selling',
     published: '2026-06-12',
-    modified: '2026-08-21',
+    modified: '2026-11-20',
     title: 'TA6, TA10 and TA7 Forms: What Sellers Fill In · PropXchain',
     description:
       'The three forms every seller fills in, what each one asks, and why your answers are legally binding representations rather than opinions.',
@@ -650,6 +655,7 @@ ${SEARCHES_AT_A_GLANCE.map((s) => `      <tr><td>${escHtml(s.name)}</td><td>${es
 <section aria-labelledby="ti-ta10">
   <h2 id="ti-ta10">TA10 — Fittings and Contents</h2>
   <p>Room by room, what stays and what goes. It reads as trivial and it is the single most common source of completion-day arguments — light fittings taken down on the morning of the move, curtains the buyer assumed were included, a shed that turned out to be going with the seller.</p>
+  <p>For the items that cause most disputes and how to fill it in, see <a href="/resources/selling/ta10-form-explained">the TA10 form explained</a>.</p>
 </section>
 
 <section aria-labelledby="ti-ta7">
@@ -682,7 +688,7 @@ ${SEARCHES_AT_A_GLANCE.map((s) => `      <tr><td>${escHtml(s.name)}</td><td>${es
     category: 'selling',
     catName: 'Selling',
     published: '2026-09-27',
-    modified: '2026-09-27',
+    modified: '2026-11-20',
     crumb: 'The TA6 form explained',
     title: 'What Is a TA6 Form? The 6th Edition Explained · PropXchain',
     description: 'What the TA6 property information form is, what each of its 15 sections asks, and what to have ready. The 6th edition replaced older forms on 30 March 2026.',
@@ -739,7 +745,7 @@ ${TA6_SECTIONS.map((s) => `      <tr><td>${s.n}. ${escHtml(s.title)}</td><td>${e
 
 <section aria-labelledby="t6-related">
   <h2 id="t6-related">TA6, TA10 and TA7</h2>
-  <p>The TA6 usually travels with the TA10 (fittings and contents) and, for leasehold homes, the TA7 (leasehold information). See <a href="/resources/selling/property-information-forms-explained">TA6, TA10 and TA7 explained</a> for how the three fit together, and <a href="/resources/selling/what-is-a-property-pack">what is a sales pack</a> for everything else a buyer will ask for.</p>
+  <p>The TA6 usually travels with the TA10 (fittings and contents, see <a href="/resources/selling/ta10-form-explained">the TA10 form explained</a>) and, for leasehold homes, the TA7 (leasehold information). See <a href="/resources/selling/property-information-forms-explained">TA6, TA10 and TA7 explained</a> for how the three fit together, and <a href="/resources/selling/what-is-a-property-pack">what is a sales pack</a> for everything else a buyer will ask for.</p>
 </section>
 
 <section aria-labelledby="t6-propxchain">
@@ -749,6 +755,73 @@ ${TA6_SECTIONS.map((s) => `      <tr><td>${s.n}. ${escHtml(s.title)}</td><td>${e
 </section>
 
 <p>Ready to get your TA6 done before you list? <a href="/register">Start free</a>.</p>
+</main>`,
+  }),
+  withJsonLd({
+    route: 'resources/selling/ta10-form-explained',
+    category: 'selling',
+    catName: 'Selling',
+    published: '2026-11-20',
+    modified: '2026-11-20',
+    crumb: 'The TA10 form explained',
+    title: 'What Is a TA10 Form? Fittings and Contents · PropXchain',
+    description: 'What the TA10 fittings and contents form covers, which items cause most completion-day disputes, and how to fill it in room by room.',
+    main: `<main id="seo-fallback" role="main" aria-label="The TA10 form explained — guide">
+<p class="muted">Loading PropXchain…</p>
+<h1>The TA10 form explained</h1>
+<p>The TA10 is the form where a seller lists what stays and what goes. It looks like the easy one, and it is behind more completion-day arguments than any other. Here is what it covers, the items that cause trouble, and how to fill it in so nobody is surprised when the keys change hands.</p>
+
+<section aria-labelledby="t10-what">
+  <h2 id="t10-what">What is the TA10 form?</h2>
+  <p>The TA10 is the Law Society's <strong>Fittings and Contents Form</strong>. The seller uses it to say which items are included in the sale price and which are excluded: light fittings, curtains, appliances, carpets, garden items and anything else a buyer might expect to find. The Law Society says you will likely need one for every sale and purchase.</p>
+  <p>It travels with the <a href="/resources/selling/ta6-form-explained">TA6 property information form</a>, and your conveyancer usually sends both at once. It normally goes out with the contract papers, so the buyer is entitled to expect exactly what you listed.</p>
+</section>
+
+<section aria-labelledby="t10-edition">
+  <h2 id="t10-edition">Which edition is current?</h2>
+  <p>The current form is the TA10 (${TA10_EDITION.edition}, ${TA10_EDITION.year}) (<a href="${LAW_SOCIETY_TA_FORMS_URL}" rel="noopener noreferrer">Law Society</a>). When the TA6 and TA7 were replaced on 30 March 2026, the TA10 was not, so the form you are sent now is the same one sellers have used for years.</p>
+  <p>The Law Society does not make its transaction forms available to the public. Your conveyancer gets the TA10 through a licensed supplier and sends it to you, so there is no need to hunt for a PDF.</p>
+</section>
+
+<section aria-labelledby="t10-fixtures">
+  <h2 id="t10-fixtures">Fixtures, fittings and why the form exists</h2>
+  <p>As a rough rule, <strong>fixtures</strong> are attached to the building and stay with it, and <strong>fittings</strong> are free-standing and go with you. The trouble is that plenty of items sit in between: a curtain pole, a fitted wardrobe, a wall-mounted TV bracket. The TA10 removes the guesswork by asking you to decide, item by item, and write it down.</p>
+</section>
+
+<section aria-labelledby="t10-filling-in">
+  <h2 id="t10-filling-in">How to fill it in</h2>
+  <ul>
+    <li><strong>Go room by room.</strong> Walk round the house with the form, including the loft, garage and garden, rather than filling it in from memory.</li>
+    <li><strong>Mark every item.</strong> If you are taking it, mark it excluded. If you are leaving it, mark it included. A blank is what starts an argument.</li>
+    <li><strong>Name anything unusual.</strong> A hot tub, a home EV charger or a bespoke light fitting needs its own line.</li>
+    <li><strong>Say if something is for sale.</strong> If you would sell an item you are taking, such as a fridge or garden furniture, say so; your conveyancer can agree a price with the buyer's side.</li>
+  </ul>
+</section>
+
+<section aria-labelledby="t10-flashpoints">
+  <h2 id="t10-flashpoints">The items that cause the most disputes</h2>
+  <table>
+    <caption>TA10 items that most often cause a dispute</caption>
+    <thead><tr><th scope="col">Item</th><th scope="col">Why it causes trouble</th><th scope="col">What to do</th></tr></thead>
+    <tbody>
+${TA10_FLASHPOINTS.map((f) => `      <tr><td>${escHtml(f.item)}</td><td>${escHtml(f.why)}</td><td>${escHtml(f.tip)}</td></tr>`).join('\n')}
+    </tbody>
+  </table>
+  <p><strong>Changing your mind:</strong> tell your conveyancer straight away, before exchange of contracts if you can. Once contracts are exchanged the list is part of what you agreed, and removing an item you marked as included can give the buyer a claim against you.</p>
+</section>
+
+<section aria-labelledby="t10-related">
+  <h2 id="t10-related">TA10, TA6 and TA7</h2>
+  <p>The TA10 is one of three forms most sellers fill in. See <a href="/resources/selling/property-information-forms-explained">TA6, TA10 and TA7 explained</a> for how they fit together, and <a href="/resources/selling/what-is-a-property-pack">what is a sales pack</a> for everything else a buyer will ask for.</p>
+</section>
+
+<section aria-labelledby="t10-propxchain">
+  <h2 id="t10-propxchain">Filling in your TA10 on PropXchain</h2>
+  <p>On PropXchain the TA10 is a room-by-room checklist, free, with common items already listed for each room and an outdoor list for the garden. You mark each item included or excluded, add a note on condition or model, and add anything that is not on the list. You can export a PDF record for your conveyancer, and the answers go into your property pack, which you can share with buyers through a read-only link that removes personal details.</p>
+  <p>PropXchain's checklist is its own record of your answers, not the official Law Society form, and your conveyancer may still ask you to sign the official TA10 through their supplier. See <a href="/pricing">pricing</a> for what is free and what is paid per item.</p>
+</section>
+
+<p>Ready to get your TA10 done before you list? <a href="/register">Start free</a>.</p>
 </main>`,
   }),
 ];

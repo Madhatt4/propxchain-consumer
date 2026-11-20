@@ -65,7 +65,7 @@ export const PROPERTY_CHECK_SECTIONS = [
   {
     id: 'heritage',
     heading: 'Is the property listed or in a conservation area?',
-    more: { to: '/listed-building-check', label: 'More on listed buildings and conservation areas' },
+    more: { to: '/listed-building-check', label: 'More on conservation areas and listed buildings' },
     paragraphs: [
       'The check reports whether the address is a listed building or sits in a conservation area, a scheduled monument or a world heritage site.',
       'Listing and conservation area status limit what you can change, from windows to extensions, and some works need consent. Knowing before you offer saves a surprise at the searches stage.',

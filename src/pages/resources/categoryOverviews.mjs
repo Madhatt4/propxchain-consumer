@@ -30,7 +30,7 @@ export const CATEGORY_OVERVIEWS = Object.freeze({
       'Plain-English guides to selling a home in England and Wales: sales packs, the TA6, TA10 and TA7 forms, and what to prepare before you list.',
     overview: Object.freeze([
       'Much of the delay in a house sale comes from information that is collected late. The buyer\'s conveyancer and lender will ask for the title register, the searches, the seller\'s property information forms and a set of certificates and guarantees. In a traditional sale these are gathered one request at a time after an offer is accepted, while everyone waits.',
-      'The guides in this section cover the seller\'s side of that work: what a sales pack is and why gathering it before you list makes a sale less likely to fall through, how the TA6, TA10 and TA7 forms fit together, and what each section of the TA6 (6th edition) asks. Your answers on these forms are statements a buyer is entitled to rely on, so the guides also explain when "not known" is the honest answer.',
+      'The guides in this section cover the seller\'s side of that work: what a sales pack is and why gathering it before you list makes a sale less likely to fall through, how the TA6, TA10 and TA7 forms fit together, what each section of the TA6 (6th edition) asks, and which TA10 items cause the most disputes. Your answers on these forms are statements a buyer is entitled to rely on, so the guides also explain when "not known" is the honest answer.',
       'Nothing here replaces your conveyancer, who remains responsible for the legal work. The aim is to help you arrive with the paperwork ready, so the legal work starts from a complete file rather than a list of requests.',
     ]),
   }),
