@@ -81,9 +81,7 @@ const CSP_DIRECTIVES = {
     // there, so those wildcards let injected script send data to its own
     // Worker). *.hatton-marc.workers.dev is only this Cloudflare account.
     'https://*.hatton-marc.workers.dev',
-    'https://propxchain.onrender.com',
     'https://propxchain-proxy-render.onrender.com',
-    'https://propxchain-4k8l.onrender.com',
     'https://*.stripe.com',
     'https://landregistry.data.gov.uk',
     'https://api.postcodes.io',
