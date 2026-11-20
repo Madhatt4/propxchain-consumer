@@ -4,12 +4,14 @@ const db = vi.hoisted(() => ({
   from: vi.fn(),
   scans: { data: [] as unknown, error: null as { code: string; message: string } | null },
   personal: { data: [] as unknown, error: null as { code: string; message: string } | null },
+  rpc: vi.fn(),
   selected: [] as string[],
   filters: [] as Array<[string, string]>,
 }));
 
 vi.mock('../../lib/supabase', () => ({
   supabase: {
+    rpc: (name: string, args: unknown) => db.rpc(name, args),
     from: (table: string) => {
       db.from(table);
       const result = table === 'search_scans' ? db.scans : db.personal;
@@ -44,6 +46,7 @@ const ROW = {
   flags: [{ statement: 'A planning notice is recorded.', search_name: 'LLC1', location: 'Part 3' }],
   warnings: ['Page 4 could not be read.'],
   personal_findings_count: 2,
+  attempts: 1,
 };
 
 const FINDING = {
@@ -63,6 +66,7 @@ describe('fetchSharedSearchScans', () => {
     db.filters.length = 0;
     db.scans = { data: [ROW], error: null };
     db.personal = { data: [], error: null };
+    db.rpc.mockReset().mockResolvedValue({ data: false, error: null });
   });
 
   it('should name its columns and never select user_id', async () => {
@@ -98,7 +102,68 @@ describe('fetchSharedSearchScans', () => {
       warnings: ['Page 4 could not be read.'],
       personalFindingsCount: 2,
       personalFindings: null,
+      hasRetriesLeft: true,
+      isOrderedByViewer: false,
     });
+  });
+
+  it('should mark a scan the viewer ordered, asked of is_own_search_scan', async () => {
+    db.rpc.mockResolvedValue({ data: true, error: null });
+
+    const [scan] = await fetchSharedSearchScans('tx_1');
+
+    expect(scan.isOrderedByViewer).toBe(true);
+    expect(db.rpc).toHaveBeenCalledWith('is_own_search_scan', { p_scan_id: 'scan-1' });
+  });
+
+  it('should never select or filter on user_id', async () => {
+    db.rpc.mockResolvedValue({ data: true, error: null });
+
+    await fetchSharedSearchScans('tx_1');
+
+    expect(db.selected.join(' ')).not.toContain('user_id');
+    expect(db.filters.map(([column]) => column)).not.toContain('user_id');
+  });
+
+  it('should treat the viewer as not the orderer when the function is not there yet', async () => {
+    db.rpc.mockResolvedValue({ data: null, error: { code: 'PGRST202', message: 'function not found' } });
+
+    const [scan] = await fetchSharedSearchScans('tx_1');
+
+    expect(scan.isOrderedByViewer).toBe(false);
+  });
+
+  it('should treat the viewer as not the orderer when the call throws', async () => {
+    db.rpc.mockRejectedValue(new Error('network down'));
+
+    const [scan] = await fetchSharedSearchScans('tx_1');
+
+    expect(scan.isOrderedByViewer).toBe(false);
+  });
+
+  it('should ask about ownership only for finished scans', async () => {
+    db.scans.data = [
+      { ...ROW, id: 'done', status: 'complete' },
+      { ...ROW, id: 'waiting', status: 'pending' },
+      { ...ROW, id: 'failed', status: 'error' },
+    ];
+
+    await fetchSharedSearchScans('tx_1');
+
+    expect(db.rpc).toHaveBeenCalledTimes(1);
+    expect(db.rpc).toHaveBeenCalledWith('is_own_search_scan', { p_scan_id: 'done' });
+  });
+
+  it('should say retries remain below five attempts and none at five', async () => {
+    db.scans.data = [
+      { ...ROW, id: 'a', status: 'error', attempts: 4 },
+      { ...ROW, id: 'b', status: 'error', attempts: 5 },
+      { ...ROW, id: 'c', status: 'error', attempts: null },
+    ];
+
+    const scans = await fetchSharedSearchScans('tx_1');
+
+    expect(scans.map((s) => s.hasRetriesLeft)).toEqual([true, false, true]);
   });
 
   it('should never read scan_judgements', async () => {

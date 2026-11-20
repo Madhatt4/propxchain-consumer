@@ -62,9 +62,9 @@ export interface SharedScanFlag {
 }
 
 /**
- * A `search_scans` row with scope 'shared'. Deliberately has no user id: other
- * parties can read that column on the row, and it is nobody's business but the
- * orderer's.
+ * A `search_scans` row with scope 'shared'. Deliberately has no user id: who
+ * ordered a search is nobody's business but the orderer's, so the viewer only
+ * learns whether it was them (isOrderedByViewer).
  */
 export interface SharedSearchScan {
   id: string;
@@ -78,6 +78,10 @@ export interface SharedSearchScan {
   personalFindingsCount: number;
   /** Only ever non-null for the person who ordered the search (RLS). */
   personalFindings: ScanFinding[] | null;
+  /** True while the server will still try a failed or stuck scan again. */
+  hasRetriesLeft: boolean;
+  /** The viewer ordered this search, so it is "your" search to them. */
+  isOrderedByViewer: boolean;
 }
 
 // --- HMLR scan (the odd one out — a DIFFERENT shape we normalise) -------------

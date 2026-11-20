@@ -5,9 +5,9 @@
  * Reads shared search scans: built on the server from the provider's delivery,
  * one per order, read by every party on the transaction.
  *
- * Columns are listed by hand and must stay that way. Every party can read the
- * whole row, including `user_id`, so a wildcard would hand the orderer's id to
- * the other side of the deal.
+ * Columns are listed by hand and must stay that way. `user_id` is not readable
+ * by the browser and nothing here may select or filter on it: whether the viewer
+ * ordered a scan comes from the is_own_search_scan RPC instead.
  */
 
 import { supabase } from '../lib/supabase';
@@ -20,7 +20,10 @@ import type {
 } from '../types/scan.types';
 
 export const SHARED_SCAN_COLUMNS =
-  'id, provider, provider_order_id, status, explainer, flags, warnings, personal_findings_count';
+  'id, provider, provider_order_id, status, explainer, flags, warnings, personal_findings_count, attempts';
+
+// claim_shared_search_scan stops re-claiming a row after this many runs.
+export const MAX_SCAN_ATTEMPTS = 5;
 
 // Postgres and PostgREST codes for a column or table that does not exist yet.
 // The site can deploy before the migration, and then there are simply no shared
@@ -38,6 +41,7 @@ interface SharedScanRow {
   flags: unknown;
   warnings: unknown;
   personal_findings_count: number | null;
+  attempts: number | null;
 }
 
 interface PersonalFindingsRow {
@@ -87,6 +91,26 @@ async function fetchPersonalFindings(scanIds: string[]): Promise<Map<string, Sca
   );
 }
 
+/**
+ * Which of these scans the caller ordered, asked one scan at a time of
+ * is_own_search_scan (true only for the caller's own). Any error, including the
+ * function not existing yet, counts as "not mine": it only costs the wording
+ * ("the searches" instead of "your searches"), so it never throws.
+ */
+async function isOwnScan(scanId: string): Promise<boolean> {
+  try {
+    const { data, error } = await supabase.rpc('is_own_search_scan', { p_scan_id: scanId });
+    return !error && data === true;
+  } catch {
+    return false;
+  }
+}
+
+async function fetchOrderedScanIds(scanIds: string[]): Promise<Set<string>> {
+  const owned = await Promise.all(scanIds.map(async (id) => ((await isOwnScan(id)) ? id : null)));
+  return new Set(owned.filter((id): id is string => id !== null));
+}
+
 /** Throws on a real failure, so the tab can say so instead of showing nothing. */
 export async function fetchSharedSearchScans(transactionId: string): Promise<SharedSearchScan[]> {
   const { data, error } = await supabase
@@ -103,9 +127,11 @@ export async function fetchSharedSearchScans(transactionId: string): Promise<Sha
   }
 
   const rows = (data ?? []) as SharedScanRow[];
-  const personal = await fetchPersonalFindings(
-    rows.filter((r) => (r.personal_findings_count ?? 0) > 0).map((r) => r.id),
-  );
+  const [personal, ordered] = await Promise.all([
+    fetchPersonalFindings(rows.filter((r) => (r.personal_findings_count ?? 0) > 0).map((r) => r.id)),
+    // Only finished scans are worded as "your" or "the" searches.
+    fetchOrderedScanIds(rows.filter((r) => r.status === 'complete').map((r) => r.id)),
+  ]);
 
   return rows.map((row) => ({
     id: row.id,
@@ -117,5 +143,7 @@ export async function fetchSharedSearchScans(transactionId: string): Promise<Sha
     warnings: toWarnings(row.warnings),
     personalFindingsCount: row.personal_findings_count ?? 0,
     personalFindings: personal.get(row.id) ?? null,
+    hasRetriesLeft: (row.attempts ?? 0) < MAX_SCAN_ATTEMPTS,
+    isOrderedByViewer: ordered.has(row.id),
   }));
 }

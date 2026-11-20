@@ -383,12 +383,6 @@ const DashboardPage: React.FC = () => {
                   Dashboard
                 </button>
                 <button
-                  onClick={() => navigate('/oscar')}
-                  className={`px-4 py-2 ${themeClasses.navText}`}
-                >
-                  Oscar AI
-                </button>
-                <button
                   onClick={() => navigate('/dashboard/properties')}
                   className={`px-4 py-2 ${themeClasses.navText}`}
                 >

@@ -17,11 +17,6 @@
     "dist/**",
     "dist-backup/**",
     "**/*.d.ts",
-    "src/components/oscar/**",
-    "src/pages/OscarDashboard.tsx",
-    "src/services/oscar/**",
-    "src/types/oscar.types.ts",
-    "src/utils/oscarGreeting.ts",
     "src/components/conveyancer/ConveyancerPanel.tsx",
     "src/services/conveyancer.service.ts"
   ],

@@ -77,6 +77,17 @@ describe('security headers', () => {
     expect(csp).not.toContain('https://*.supabase.co')
   })
 
+  it('should not allow the retired Render hosts, only the HMLR proxy', () => {
+    const connectSrc = SECURITY_HEADERS['Content-Security-Policy']
+      .split(';')
+      .find((d: string) => d.trim().startsWith('connect-src'))
+    const hosts = connectSrc?.trim().split(/\s+/) ?? []
+    expect(hosts).not.toContain('https://propxchain.onrender.com')
+    expect(hosts).not.toContain('https://propxchain-4k8l.onrender.com')
+    // hmlrTitle.service still calls it.
+    expect(hosts).toContain('https://propxchain-proxy-render.onrender.com')
+  })
+
   it('should not allow eval in production scripts', () => {
     // With Google's tag host in script-src, eval would hand whoever can edit
     // the tag arbitrary code on the origin holding sign-in tokens. The bundle

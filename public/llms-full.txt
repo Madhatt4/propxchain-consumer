@@ -1286,7 +1286,7 @@ Law firm management. Handles firm creation, team member management, and firm-lev
 In-app messaging system for communication between transaction parties (buyers, sellers, solicitors).
 
 ### Oscar Canister (khstc-3qaaa-aaaaa-qdyfq-cai)
-AI assistant canister. Oscar provides transaction guidance, document analysis, and conveyancing process explanations. Frontend sends TransactionSummaryInput[] via oscarService.ts; backend builds system prompt and calls Anthropic API.
+AI assistant canister. Oscar provides transaction guidance and conveyancing process explanations. The backend builds the system prompt and calls the Anthropic API.
 
 ---
 
