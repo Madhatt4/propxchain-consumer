@@ -2,7 +2,7 @@
 // Copyright (C) 2026 PropXchain Ltd
 // deno test supabase/functions/send-party-invite/link.test.ts
 import { assert, assertEquals } from 'https://deno.land/std@0.224.0/assert/mod.ts';
-import { inviteFootnote, inviteLink } from './link.ts';
+import { inviteFootnote, inviteLink, isInviteRole } from './link.ts';
 
 const CODE = 'TX-ABCD-EFGH';
 
@@ -30,4 +30,15 @@ Deno.test('inviteLink should encode the transaction id in the seller link', () =
 Deno.test('inviteFootnote should tell the seller to use the invited email', () => {
   assert(inviteFootnote('seller').includes('with this email address'));
   assertEquals(inviteFootnote('buyer'), 'Create your free PropXchain account to open your sale — it takes a minute.');
+});
+
+Deno.test('isInviteRole should accept only the buyer and the seller', () => {
+  assert(isInviteRole('buyer'));
+  assert(isInviteRole('seller'));
+});
+
+Deno.test('isInviteRole should reject every other role, so the code is never sent to them', () => {
+  for (const role of ['estate_agent', 'conveyancer', 'mortgage_broker', 'lender', 'other', '', 'BUYER', null, undefined, 1]) {
+    assertEquals(isInviteRole(role), false, String(role));
+  }
 });

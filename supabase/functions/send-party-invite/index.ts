@@ -3,7 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { checkRateLimit } from '../_shared/rate-limit.ts';
 import { corsHeaders, preflight } from '../_shared/cors.ts';
 import { readChainInvite } from '../_shared/chain-invite.ts';
-import { inviteFootnote, inviteLink } from './link.ts';
+import { inviteFootnote, inviteLink, isInviteRole, type InviteRole } from './link.ts';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') || '';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
@@ -13,24 +13,13 @@ const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || '';
 const RATE_LIMIT_WINDOW_SECONDS = 60 * 60;
 const RATE_LIMIT_MAX = 10;
 
-const ALLOWED_ROLES = [
-  'seller',
-  'buyer',
-  'conveyancer',
-  'mortgage_broker',
-  'lender',
-  'other',
-  'estate_agent',
-] as const;
-type Role = (typeof ALLOWED_ROLES)[number];
-
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // invite_code and property_address may still arrive from older clients; they
 // are ignored. Both are read from the deal on-chain (security scan M13).
 interface PartyInviteRequest {
   transaction_id: string;
-  role: Role;
+  role: InviteRole;
   side?: 'buyer' | 'seller';
   recipient_name: string;
   recipient_email: string;
@@ -195,8 +184,7 @@ serve(async (req) => {
   if (
     typeof body.transaction_id !== 'string' ||
     !body.transaction_id ||
-    typeof body.role !== 'string' ||
-    !ALLOWED_ROLES.includes(body.role) ||
+    !isInviteRole(body.role) ||
     (body.side !== undefined && body.side !== 'buyer' && body.side !== 'seller') ||
     typeof body.recipient_name !== 'string' ||
     body.recipient_name.length < 1 ||

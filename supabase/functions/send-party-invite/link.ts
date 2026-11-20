@@ -6,9 +6,18 @@
 // The deal's invite code is the buyer's way in only (Marc, 2026-11-19). A
 // seller takes over an agent-led sale by signing in with the invited email and
 // accepting on /seller-invite/<transactionId>, so their link and email never
-// carry the code. Every other role keeps the join link.
+// carry the code. Only buyers and sellers are invited here: estate agents come
+// in through the seller's agent invite and conveyancers through an accepted
+// estimate, so no other role is ever sent the code.
 
 export const SITE = 'https://propxchain.com';
+
+export const INVITE_ROLES = ['buyer', 'seller'] as const;
+export type InviteRole = (typeof INVITE_ROLES)[number];
+
+export function isInviteRole(role: unknown): role is InviteRole {
+  return typeof role === 'string' && (INVITE_ROLES as readonly string[]).includes(role);
+}
 
 export interface InviteLinkInput {
   role: string;
