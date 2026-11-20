@@ -33,6 +33,8 @@ const SCAN: SharedSearchScan = {
   warnings: ['Page 4 could not be read.'],
   personalFindingsCount: 0,
   personalFindings: null,
+  hasRetriesLeft: true,
+  isOrderedByViewer: true,
 };
 
 const RETURNED = {
@@ -76,6 +78,66 @@ describe('AiScansTab searches', () => {
     ).toBeInTheDocument();
   });
 
+  it('should call them "the searches" to anyone who did not order them', async () => {
+    svc.fetchSharedSearchScans.mockResolvedValue([scan({ isOrderedByViewer: false })]);
+
+    renderTab();
+
+    expect(
+      await screen.findByText('This is an automated summary of the searches, not legal advice.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/your searches/)).not.toBeInTheDocument();
+  });
+
+  it('should say nothing stood out when a finished scan flags nothing', async () => {
+    svc.fetchSharedSearchScans.mockResolvedValue([scan({ flags: [], warnings: [], explainer: '' })]);
+
+    renderTab();
+
+    expect(await screen.findByText('Nothing stood out in these searches.')).toBeInTheDocument();
+  });
+
+  it('should not say nothing stood out when a scan has flags', async () => {
+    svc.fetchSharedSearchScans.mockResolvedValue([SCAN]);
+
+    renderTab();
+    await screen.findByText('A planning notice is recorded.');
+
+    expect(screen.queryByText('Nothing stood out in these searches.')).not.toBeInTheDocument();
+  });
+
+  it.each(['pending', 'error'] as const)(
+    'should not call a %s scan scanned and shared, nor show the summary footer',
+    async (status) => {
+      svc.fetchSharedSearchScans.mockResolvedValue([scan({ status, explainer: '' })]);
+
+      renderTab();
+      await screen.findByText('Search summary: OneSearch');
+
+      expect(screen.queryByText(/Scanned automatically and shared/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/not legal advice/)).not.toBeInTheDocument();
+    },
+  );
+
+  it('should show the shared line on a finished scan', async () => {
+    svc.fetchSharedSearchScans.mockResolvedValue([SCAN]);
+
+    renderTab();
+
+    expect(await screen.findByText(/Scanned automatically and shared/)).toBeInTheDocument();
+  });
+
+  it('should not promise a retry once the attempts have run out', async () => {
+    svc.fetchSharedSearchScans.mockResolvedValue([
+      scan({ status: 'error', explainer: '', hasRetriesLeft: false }),
+    ]);
+
+    renderTab();
+
+    expect(await screen.findByText("We couldn't scan this search automatically.")).toBeInTheDocument();
+    expect(screen.queryByText(/We try a few times/)).not.toBeInTheDocument();
+  });
+
   it('should keep warnings apart from flags', async () => {
     svc.fetchSharedSearchScans.mockResolvedValue([SCAN]);
 
@@ -101,6 +163,7 @@ describe('AiScansTab searches', () => {
     renderTab();
 
     expect(await screen.findByText(/couldn't scan this search/)).toBeInTheDocument();
+    expect(screen.getByText(/We try a few times automatically/)).toBeInTheDocument();
     expect(screen.queryByText(/scan_failed/)).not.toBeInTheDocument();
   });
 

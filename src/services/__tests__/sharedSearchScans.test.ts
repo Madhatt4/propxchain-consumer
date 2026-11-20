@@ -4,15 +4,18 @@ const db = vi.hoisted(() => ({
   from: vi.fn(),
   scans: { data: [] as unknown, error: null as { code: string; message: string } | null },
   personal: { data: [] as unknown, error: null as { code: string; message: string } | null },
+  mine: { data: [] as unknown, error: null as { code: string; message: string } | null },
+  session: { user: { id: 'viewer' } } as { user: { id: string } } | null,
   selected: [] as string[],
   filters: [] as Array<[string, string]>,
 }));
 
 vi.mock('../../lib/supabase', () => ({
   supabase: {
+    auth: { getSession: async () => ({ data: { session: db.session } }) },
     from: (table: string) => {
       db.from(table);
-      const result = table === 'search_scans' ? db.scans : db.personal;
+      let result = table === 'search_scans' ? db.scans : db.personal;
       const chain = {
         select: (columns: string) => {
           db.selected.push(columns);
@@ -20,6 +23,8 @@ vi.mock('../../lib/supabase', () => ({
         },
         eq: (column: string, value: string) => {
           db.filters.push([column, value]);
+          // The "which did I order" read is the only one that filters on user_id.
+          if (column === 'user_id') result = db.mine;
           return chain;
         },
         in: () => chain,
@@ -44,6 +49,7 @@ const ROW = {
   flags: [{ statement: 'A planning notice is recorded.', search_name: 'LLC1', location: 'Part 3' }],
   warnings: ['Page 4 could not be read.'],
   personal_findings_count: 2,
+  attempts: 1,
 };
 
 const FINDING = {
@@ -63,6 +69,8 @@ describe('fetchSharedSearchScans', () => {
     db.filters.length = 0;
     db.scans = { data: [ROW], error: null };
     db.personal = { data: [], error: null };
+    db.mine = { data: [], error: null };
+    db.session = { user: { id: 'viewer' } };
   });
 
   it('should name its columns and never select user_id', async () => {
@@ -77,7 +85,7 @@ describe('fetchSharedSearchScans', () => {
   it('should read only shared rows on this transaction', async () => {
     await fetchSharedSearchScans('tx_1');
 
-    expect(db.filters).toEqual([
+    expect(db.filters.slice(0, 2)).toEqual([
       ['transaction_id', 'tx_1'],
       ['scope', 'shared'],
     ]);
@@ -98,7 +106,48 @@ describe('fetchSharedSearchScans', () => {
       warnings: ['Page 4 could not be read.'],
       personalFindingsCount: 2,
       personalFindings: null,
+      hasRetriesLeft: true,
+      isOrderedByViewer: false,
     });
+  });
+
+  it('should mark a scan the viewer ordered by filtering on their own id', async () => {
+    db.mine.data = [{ id: 'scan-1' }];
+
+    const [scan] = await fetchSharedSearchScans('tx_1');
+
+    expect(scan.isOrderedByViewer).toBe(true);
+    expect(db.filters).toContainEqual(['user_id', 'viewer']);
+    expect(db.selected).toContain('id');
+  });
+
+  it('should treat the viewer as not the orderer when the ownership read fails', async () => {
+    db.mine = { data: null, error: { code: '500', message: 'boom' } };
+
+    const [scan] = await fetchSharedSearchScans('tx_1');
+
+    expect(scan.isOrderedByViewer).toBe(false);
+  });
+
+  it('should not ask about ownership when nobody is signed in', async () => {
+    db.session = null;
+
+    const [scan] = await fetchSharedSearchScans('tx_1');
+
+    expect(scan.isOrderedByViewer).toBe(false);
+    expect(db.filters).not.toContainEqual(expect.arrayContaining(['user_id']));
+  });
+
+  it('should say retries remain below five attempts and none at five', async () => {
+    db.scans.data = [
+      { ...ROW, id: 'a', status: 'error', attempts: 4 },
+      { ...ROW, id: 'b', status: 'error', attempts: 5 },
+      { ...ROW, id: 'c', status: 'error', attempts: null },
+    ];
+
+    const scans = await fetchSharedSearchScans('tx_1');
+
+    expect(scans.map((s) => s.hasRetriesLeft)).toEqual([true, false, true]);
   });
 
   it('should never read scan_judgements', async () => {

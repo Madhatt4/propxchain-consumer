@@ -116,8 +116,9 @@ function ScanBody({ scan }: { scan: SharedSearchScan }): JSX.Element {
   if (scan.status === 'error') {
     return (
       <StatusLine icon={<AlertTriangle className="h-4 w-4 text-destructive" />}>
-        We couldn't scan this search this time. We try a few times automatically, so it may still
-        appear here.
+        {scan.hasRetriesLeft
+          ? "We couldn't scan this search this time. We try a few times automatically, so it may still appear here."
+          : "We couldn't scan this search automatically."}
       </StatusLine>
     );
   }
@@ -136,7 +137,11 @@ function ScanBody({ scan }: { scan: SharedSearchScan }): JSX.Element {
       {scan.explainer && (
         <p className="whitespace-pre-line text-sm leading-relaxed text-foreground/90">{scan.explainer}</p>
       )}
-      <FlagList flags={scan.flags} />
+      {scan.flags.length === 0 ? (
+        <p className="text-sm text-foreground/90">Nothing stood out in these searches.</p>
+      ) : (
+        <FlagList flags={scan.flags} />
+      )}
       <WarningList warnings={scan.warnings} />
       <PersonalCount scan={scan} />
     </div>
@@ -150,9 +155,11 @@ function ScanCard({ scan }: { scan: SharedSearchScan }): JSX.Element {
         <CardTitle className="text-lg">
           Search summary: {PROVIDER_LABELS[scan.provider] ?? scan.provider}
         </CardTitle>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Scanned automatically and shared with everyone on this transaction.
-        </p>
+        {scan.status === 'complete' && (
+          <p className="mt-1 text-sm text-muted-foreground">
+            Scanned automatically and shared with everyone on this transaction.
+          </p>
+        )}
       </CardHeader>
       <CardContent>
         <ScanBody scan={scan} />
@@ -173,14 +180,21 @@ export function SharedSearchScans({ transactionId }: { transactionId: string }):
   }
   if (!scans || scans.length === 0) return null;
 
+  // Only a finished scan is a summary. "Your" only for the person who ordered
+  // every one of them; to the other side and the conveyancers they are "the" searches.
+  const finished = scans.filter((scan) => scan.status === 'complete');
+  const whose = finished.every((scan) => scan.isOrderedByViewer) ? 'your' : 'the';
+
   return (
     <div className="space-y-4">
       {scans.map((scan) => (
         <ScanCard key={scan.id} scan={scan} />
       ))}
-      <p className="text-xs text-muted-foreground">
-        This is an automated summary of your searches, not legal advice.
-      </p>
+      {finished.length > 0 && (
+        <p className="text-xs text-muted-foreground">
+          This is an automated summary of {whose} searches, not legal advice.
+        </p>
+      )}
     </div>
   );
 }

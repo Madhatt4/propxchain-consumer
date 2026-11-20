@@ -20,7 +20,10 @@ import type {
 } from '../types/scan.types';
 
 export const SHARED_SCAN_COLUMNS =
-  'id, provider, provider_order_id, status, explainer, flags, warnings, personal_findings_count';
+  'id, provider, provider_order_id, status, explainer, flags, warnings, personal_findings_count, attempts';
+
+// claim_shared_search_scan stops re-claiming a row after this many runs.
+export const MAX_SCAN_ATTEMPTS = 5;
 
 // Postgres and PostgREST codes for a column or table that does not exist yet.
 // The site can deploy before the migration, and then there are simply no shared
@@ -38,6 +41,7 @@ interface SharedScanRow {
   flags: unknown;
   warnings: unknown;
   personal_findings_count: number | null;
+  attempts: number | null;
 }
 
 interface PersonalFindingsRow {
@@ -87,6 +91,25 @@ async function fetchPersonalFindings(scanIds: string[]): Promise<Map<string, Sca
   );
 }
 
+/**
+ * Which of these scans the caller ordered. Filtering on the caller's own id
+ * answers that without reading anyone's user_id back. A failure only costs the
+ * wording ("the searches" instead of "your searches"), so it never throws.
+ */
+async function fetchOrderedScanIds(transactionId: string): Promise<Set<string>> {
+  const { data: auth } = await supabase.auth.getSession();
+  const userId = auth.session?.user.id;
+  if (!userId) return new Set();
+  const { data, error } = await supabase
+    .from('search_scans')
+    .select('id')
+    .eq('transaction_id', transactionId)
+    .eq('scope', 'shared')
+    .eq('user_id', userId);
+  if (error || !data) return new Set();
+  return new Set((data as Array<{ id: string }>).map((row) => row.id));
+}
+
 /** Throws on a real failure, so the tab can say so instead of showing nothing. */
 export async function fetchSharedSearchScans(transactionId: string): Promise<SharedSearchScan[]> {
   const { data, error } = await supabase
@@ -103,9 +126,10 @@ export async function fetchSharedSearchScans(transactionId: string): Promise<Sha
   }
 
   const rows = (data ?? []) as SharedScanRow[];
-  const personal = await fetchPersonalFindings(
-    rows.filter((r) => (r.personal_findings_count ?? 0) > 0).map((r) => r.id),
-  );
+  const [personal, ordered] = await Promise.all([
+    fetchPersonalFindings(rows.filter((r) => (r.personal_findings_count ?? 0) > 0).map((r) => r.id)),
+    rows.length > 0 ? fetchOrderedScanIds(transactionId) : Promise.resolve(new Set<string>()),
+  ]);
 
   return rows.map((row) => ({
     id: row.id,
@@ -117,5 +141,7 @@ export async function fetchSharedSearchScans(transactionId: string): Promise<Sha
     warnings: toWarnings(row.warnings),
     personalFindingsCount: row.personal_findings_count ?? 0,
     personalFindings: personal.get(row.id) ?? null,
+    hasRetriesLeft: (row.attempts ?? 0) < MAX_SCAN_ATTEMPTS,
+    isOrderedByViewer: ordered.has(row.id),
   }));
 }

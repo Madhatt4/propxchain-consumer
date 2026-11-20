@@ -78,6 +78,10 @@ export interface SharedSearchScan {
   personalFindingsCount: number;
   /** Only ever non-null for the person who ordered the search (RLS). */
   personalFindings: ScanFinding[] | null;
+  /** True while the server will still try a failed or stuck scan again. */
+  hasRetriesLeft: boolean;
+  /** The viewer ordered this search, so it is "your" search to them. */
+  isOrderedByViewer: boolean;
 }
 
 // --- HMLR scan (the odd one out — a DIFFERENT shape we normalise) -------------
