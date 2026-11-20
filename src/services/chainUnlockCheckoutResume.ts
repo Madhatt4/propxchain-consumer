@@ -1,4 +1,5 @@
-// PropXchain — SPDX-License-Identifier: Proprietary
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 PropXchain Ltd
 
 /**
  * Helpers for the VMC chain-unlock Stripe-checkout resume flow, split out

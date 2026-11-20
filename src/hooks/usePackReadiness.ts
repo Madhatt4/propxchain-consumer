@@ -1,6 +1,5 @@
-// PropXchain - Open Source Blockchain Property Conveyancing Platform
-// Copyright (C) 2026 PropXchain Contributors
-// SPDX-License-Identifier: Proprietary
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 PropXchain Ltd
 
 /**
  * Shared by the Sales pack tab and the Overview chip so both read one

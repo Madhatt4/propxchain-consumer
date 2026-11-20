@@ -1,4 +1,6 @@
-// PropXchain — SPDX-License-Identifier: Proprietary
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 PropXchain Ltd
+
 import { useCallback, useEffect, useState } from 'react';
 import { isChainUnlocked } from '@/services/chainEntitlement.service';
 import { retryWithBackoff } from '@/utils/retryWithBackoff';

@@ -1,6 +1,5 @@
-// PropXchain - Open Source Blockchain Property Conveyancing Platform
-// Copyright (C) 2025 PropXchain Contributors
-// SPDX-License-Identifier: Proprietary
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 PropXchain Ltd
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { getPresentationRequest, verifyPresented, walletVcMode, type VerifyResult } from '@/services/walletVc.service';

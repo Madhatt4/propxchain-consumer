@@ -24,7 +24,10 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 
-const PHRASE = ['Proprietary', 'and', 'confidential'].join(' ');
+const PHRASES = [
+  ['Proprietary', 'and', 'confidential'].join(' '),
+  ['SPDX-License-Identifier:', 'Proprietary'].join(' '),
+];
 const BINARY = /\.(png|jpe?g|gif|webp|avif|ico|mp4|webm|woff2?|ttf|otf|pdf|wasm|gz|zip)$/i;
 
 const files = execFileSync('git', ['ls-files'], { encoding: 'utf8' })
@@ -33,14 +36,15 @@ const files = execFileSync('git', ['ls-files'], { encoding: 'utf8' })
 
 const hits = files.filter((f) => {
   try {
-    return readFileSync(f, 'utf8').includes(PHRASE);
+    const text = readFileSync(f, 'utf8');
+    return PHRASES.some((p) => text.includes(p));
   } catch {
     return false; // listed but absent from this checkout, e.g. a sparse CI clone
   }
 });
 
 if (hits.length > 0) {
-  console.error(`License header check FAILED: ${hits.length} file(s) still say "${PHRASE}".`);
+  console.error(`License header check FAILED: ${hits.length} file(s) still claim to be proprietary.`);
   for (const f of hits) console.error(`  ${f}`);
   console.error('\nReplace the notice with:\n  // SPDX-License-Identifier: AGPL-3.0-or-later\n  // Copyright (C) <year> PropXchain Ltd');
   process.exit(1);
