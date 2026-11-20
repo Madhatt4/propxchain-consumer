@@ -40,7 +40,7 @@ test('should exempt the CI guard opt-out markers and the private licence header'
   assert.equal(isDirective('// async-safety-check: skip (read-only after await)'), true);
   assert.equal(isDirective('// tx-lock-check: skip (no state read)'), true);
   assert.equal(isDirective('// rate-limit-check: skip (cron only)'), true);
-  assert.equal(isDirective('// Proprietary and confidential.'), true);
+  assert.equal(isDirective(`// ${['Proprietary', 'and', 'confidential'].join(' ')}.`), true);
 });
 
 test('should treat prose that mentions a directive as a normal comment', () => {

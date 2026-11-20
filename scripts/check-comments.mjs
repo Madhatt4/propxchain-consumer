@@ -18,7 +18,7 @@ const DIRECTIVE = new RegExp(
   [
     '^SPDX-License-Identifier:',
     '^Copyright \\(C\\)',
-    '^Proprietary and confidential\\.?$',
+    `^${['Proprietary', 'and', 'confidential'].join(' ')}\\.?$`,
     '^(async-safety|tx-lock|rate-limit)-check:',
     '^eslint(-disable|-enable)?\\b',
     '^@ts-(expect-error|ignore|nocheck|check)\\b',

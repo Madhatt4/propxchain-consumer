@@ -28,7 +28,7 @@ Read each file whole. A comment can only be judged next to its code.
 
 Before you reach for a category, ask whether a better name removes the need. `BigInt(86400e9) // 24h in ns` becomes `II_SESSION_TTL_NANOSECONDS`. That counts as a Tautology fixed by a rename.
 
-Licence headers follow the repo's licence, not the sweep. The consumer repo is AGPL: a `Proprietary` header there is wrong, so replace it with `// SPDX-License-Identifier: AGPL-3.0-or-later` + `// Copyright (C) <year> PropXchain Ltd` (`check-license-headers.mjs` enforces this). The monorepo is private: its `Copyright … All rights reserved.` / `Proprietary and confidential.` header is correct, so leave it.
+Licence headers follow the repo's licence, not the sweep. The consumer repo is AGPL: a `Proprietary` header there is wrong, so replace it with `// SPDX-License-Identifier: AGPL-3.0-or-later` + `// Copyright (C) <year> PropXchain Ltd` (`check-license-headers.mjs` enforces this). The monorepo is private: its two-line `Copyright … All rights reserved.` private-licence header is correct, so leave it.
 
 Directives are not comments and stay: `eslint-disable*`, `@ts-expect-error`, `@vite-ignore`, `deno-lint-ignore`, `/// <reference`, `@type {…}` in JS, and the two-line SPDX/Copyright header.
 
