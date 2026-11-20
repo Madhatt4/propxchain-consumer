@@ -13,6 +13,7 @@ import { type MouseEvent } from 'react';
 import { Link } from 'react-router-dom';
 
 import { FREE_REPORT_PATH, IS_REGISTRATION_OPEN } from '@/config/registration';
+import { trackCtaClick } from '@/lib/analytics';
 import { liveCategories } from '@/pages/resources/resourcesMeta';
 
 import { HeroAddressCheck } from './HeroAddressCheck';
@@ -170,7 +171,11 @@ export function HeroSection({ isDark, onToggleTheme, onScrollTo }: HeroSectionPr
                 run four buttons across the hero; the nav still links every
                 audience section. */}
             {IS_REGISTRATION_OPEN ? (
-              <Link to="/register" className="btn-primary px-8 py-3.5">
+              <Link
+                to="/register"
+                className="btn-primary px-8 py-3.5"
+                onClick={() => trackCtaClick('hero', 'create_account')}
+              >
                 Create your free account
               </Link>
             ) : (

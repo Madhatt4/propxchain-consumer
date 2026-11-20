@@ -2,7 +2,8 @@
 // Copyright (C) 2025 PropXchain Ltd
 
 import { consumePendingInviteUrl } from '@/utils/pendingInviteUrl';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { trackRegisterStarted } from '../../lib/analytics';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -333,6 +334,12 @@ const EmailFormView: React.FC<EmailFormProps> = ({
   const inputBase =
     'w-full rounded-md border bg-white px-4 py-3 font-dm-sans text-base text-[#1A1A1A] focus:outline-none focus:ring-1';
   const inputWithIcon = `${inputBase} pl-11`;
+  const hasStartedRef = useRef(false);
+  const onFormFocus = (): void => {
+    if (hasStartedRef.current) return;
+    hasStartedRef.current = true;
+    trackRegisterStarted();
+  };
 
   return (
     <>
@@ -357,7 +364,7 @@ const EmailFormView: React.FC<EmailFormProps> = ({
       <div className="mt-8">
         {error && <Notice tone="error">{error}</Notice>}
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+        <form onSubmit={handleSubmit(onSubmit)} onFocus={onFormFocus} className="space-y-5">
           <div>
             <label htmlFor="name" className="block font-dm-sans text-sm font-medium text-[#1A1A1A]">
               Full name

@@ -1,5 +1,30 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { trackPageView, trackSignUp, trackWaitlistJoin } from '../analytics';
+import { trackCtaClick, trackPageView, trackRegisterStarted, trackSignUp, trackWaitlistJoin } from '../analytics';
+
+describe('trackCtaClick / trackRegisterStarted', () => {
+  beforeEach(() => {
+    delete window.gtag;
+  });
+
+  it('should be no-ops when gtag is not present', () => {
+    expect(() => trackCtaClick('hero', 'create_account')).not.toThrow();
+    expect(() => trackRegisterStarted()).not.toThrow();
+  });
+
+  it('should send cta_click with the location and label', () => {
+    const layer: unknown[][] = [];
+    window.gtag = (...args: unknown[]) => { layer.push(args); };
+    trackCtaClick('hero', 'create_account');
+    expect(layer).toEqual([['event', 'cta_click', { cta_location: 'hero', cta_label: 'create_account' }]]);
+  });
+
+  it('should send register_started with no personal data', () => {
+    const layer: unknown[][] = [];
+    window.gtag = (...args: unknown[]) => { layer.push(args); };
+    trackRegisterStarted();
+    expect(layer).toEqual([['event', 'register_started', {}]]);
+  });
+});
 
 describe('trackSignUp / trackWaitlistJoin', () => {
   beforeEach(() => {
