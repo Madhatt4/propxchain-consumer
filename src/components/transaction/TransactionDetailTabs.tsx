@@ -27,6 +27,7 @@ import { useToast } from '@/hooks/use-toast';
 import DocumentStatusList from '@/components/documents/DocumentStatusList';
 import { hiddenDocumentStatuses, statusProgressDocuments, type DocumentStatusRow } from '@/lib/documentStatus';
 import { shortLogHash } from '@/lib/auditCodes';
+import { describeDocumentAudit } from '@/lib/localAuditCodes';
 import { mapWithConcurrency } from '@/lib/mapWithConcurrency';
 import LegalTab from './LegalTab';
 import type { SolicitorRecord } from '../../types/solicitor.types';
@@ -58,6 +59,8 @@ interface ChecklistItem {
 interface BlockchainActivity {
   id: string;
   action: string;
+  /** The entry in words when its metadata is in the code form; else the action. */
+  label: string;
   timestamp: string;
   actor: string;
   hash?: string;
@@ -220,6 +223,7 @@ const TransactionDetailTabs: React.FC<TransactionDetailTabsProps> = ({
             return logs.map((log: any) => ({
               id: `${log.id}`,
               action: log.action,
+              label: describeDocumentAudit(log.metadata) ?? log.action,
               timestamp: new Date(Number(log.timestamp) / 1000000).toISOString(),
               actor: log.actorPrincipal?.toString()?.slice(0, 12) + '...' || 'Unknown',
               hash: shortLogHash(log.metadata),
@@ -1233,7 +1237,7 @@ const TransactionDetailTabs: React.FC<TransactionDetailTabsProps> = ({
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
                         <span style={{ color: 'var(--text-main)', fontSize: '13px' }}>
-                          <strong>{activity.action}</strong> by {activity.actor}
+                          <strong>{activity.label}</strong> by {activity.actor}
                         </span>
                         <span className="shrink-0" style={{ color: 'var(--text-muted)', fontSize: '11px' }}>
                           {new Date(activity.timestamp).toLocaleDateString('en-GB')} {new Date(activity.timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
