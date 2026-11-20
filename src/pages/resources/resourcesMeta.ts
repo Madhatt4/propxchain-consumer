@@ -149,7 +149,7 @@ export const RESOURCES: ResourceArticle[] = [
     teaser:
       'The three forms every seller fills in, what each one asks, why your answers are legally binding representations rather than opinions, and the questions people most often get wrong.',
     readingTime: '7 min read',
-    updated: '2026-08-21',
+    updated: '2026-11-20',
   },
   {
     status: 'published',
@@ -162,7 +162,20 @@ export const RESOURCES: ResourceArticle[] = [
     teaser:
       'The TA6 Property Information Form (6th edition), in use since 30 March 2026: what changed, what each of the 15 sections asks, what to have ready, and how to answer without creating problems later.',
     readingTime: '8 min read',
-    updated: '2026-09-27',
+    updated: '2026-11-20',
+  },
+  {
+    status: 'published',
+    slug: 'ta10-form-explained',
+    category: 'selling',
+    planNumber: null,
+    title: 'The TA10 form explained',
+    documentTitle:
+      'What Is a TA10 Form? Fittings and Contents · PropXchain',
+    teaser:
+      'The TA10 Fittings and Contents Form: which edition is current, what stays and what goes, the items behind most completion-day disputes, and how to fill it in room by room.',
+    readingTime: '5 min read',
+    updated: '2026-11-20',
   },
   // --- Selling (planned, plan numbers 1–16) ---
   { status: 'planned', slug: 'getting-sale-ready', category: 'selling', planNumber: 1, title: 'Getting Sale-Ready: The Paperwork That Decides Whether You Exchange in Weeks or Months', keyword: 'sale ready property', intent: 'Informational', phase: 3 },

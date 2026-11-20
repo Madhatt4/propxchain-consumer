@@ -64,7 +64,8 @@ const PropertyInfoFormsGuide: React.FC = () => (
     <GuideP>
       Anything you intend to take, mark as excluded. Anything you would rather leave than move,
       mark as included — buyers routinely pay a little more for white goods rather than buy their
-      own.
+      own. For the items that cause most disputes and how to fill it in, see{' '}
+      <GuideLink to="/resources/selling/ta10-form-explained">the TA10 form explained</GuideLink>.
     </GuideP>
 
     <GuideH2 id="ta7">TA7 — Leasehold Information</GuideH2>

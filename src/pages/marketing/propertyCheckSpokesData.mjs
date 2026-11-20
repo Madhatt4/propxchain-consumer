@@ -97,28 +97,28 @@ export const FLOOD_RISK_SPOKE = {
 export const HERITAGE_SPOKE = {
   route: 'listed-building-check',
   meta: {
-    title: 'Listed Building & Conservation Area Check · PropXchain',
+    title: 'Conservation Area & Listed Building Check · PropXchain',
     description:
-      'Check free if a property in England is listed or in a conservation area, and whether a scheduled monument or world heritage site applies. No sign-up.',
+      'Check free if a property in England is in a conservation area or is a listed building, and whether a scheduled monument applies. No sign-up.',
   },
-  h1: 'Listed building and conservation area check',
+  h1: 'Conservation area and listed building check',
   intro:
-    'Enter a house number and postcode to see whether the property is a listed building, sits in a conservation area, or falls within a scheduled monument or world heritage site. Free, instant, no sign-up. England only.',
+    'Enter a house number and postcode to see whether the property sits in a conservation area, is a listed building, or falls within a scheduled monument or world heritage site. Free, instant, no sign-up. England only.',
   sections: [
-    {
-      id: 'listed-buildings',
-      heading: 'What listing means',
-      paragraphs: [
-        'Historic England lists buildings of special architectural or historic interest in three grades: Grade I, Grade II* and Grade II. Most listed homes are Grade II. The check shows the grade where the list records it.',
-        'Listed building consent is needed for works that affect the building’s character, inside or out, and carrying out such works without it is a criminal offence.',
-      ],
-    },
     {
       id: 'conservation-areas',
       heading: 'What a conservation area means',
       paragraphs: [
         'Councils designate conservation areas to protect the character of a place. Inside one you need permission to demolish most buildings, permitted development rights are narrower, and you must give the council six weeks’ notice before cutting down or pruning most trees.',
         'Some councils go further with an Article 4 direction, which removes specific permitted development rights.',
+      ],
+    },
+    {
+      id: 'listed-buildings',
+      heading: 'What listing means',
+      paragraphs: [
+        'Historic England lists buildings of special architectural or historic interest in three grades: Grade I, Grade II* and Grade II. Most listed homes are Grade II. The check shows the grade where the list records it.',
+        'Listed building consent is needed for works that affect the building’s character, inside or out, and carrying out such works without it is a criminal offence.',
       ],
     },
     {
@@ -138,19 +138,19 @@ export const HERITAGE_SPOKE = {
   ],
   faqs: [
     {
-      q: 'How do I find out if a house is listed?',
-      a: 'Enter the house number and postcode on this page. The check looks the address up in the listed building data on planning.data.gov.uk, which comes from Historic England’s National Heritage List for England.',
+      q: 'How do I check if a property is in a conservation area?',
+      a: 'Enter the house number and postcode on this page. The check shows any conservation area the address falls in, using the boundaries councils publish to planning.data.gov.uk. A few councils have not published theirs yet, so if in doubt ask the council.',
     },
     {
-      q: 'How do I check if a property is in a conservation area?',
-      a: 'The same check shows any conservation area the address falls in, using the boundaries councils publish to planning.data.gov.uk. A few councils have not published theirs yet, so if in doubt ask the council.',
+      q: 'How do I find out if a house is listed?',
+      a: 'The same check looks the address up in the listed building data on planning.data.gov.uk, which comes from Historic England’s National Heritage List for England.',
     },
     {
       q: 'Does the heritage check cover Wales?',
       a: 'No. The heritage data covers England only. Cadw holds the list of historic buildings in Wales.',
     },
     {
-      q: 'Is the listed building check free?',
+      q: 'Is the conservation area and listed building check free?',
       a: 'Yes. It uses free government data, with no account and no email needed.',
     },
   ],
