@@ -5,9 +5,9 @@
  * Reads shared search scans: built on the server from the provider's delivery,
  * one per order, read by every party on the transaction.
  *
- * Columns are listed by hand and must stay that way. Every party can read the
- * whole row, including `user_id`, so a wildcard would hand the orderer's id to
- * the other side of the deal.
+ * Columns are listed by hand and must stay that way. `user_id` is not readable
+ * by the browser and nothing here may select or filter on it: whether the viewer
+ * ordered a scan comes from the is_own_search_scan RPC instead.
  */
 
 import { supabase } from '../lib/supabase';
@@ -92,22 +92,23 @@ async function fetchPersonalFindings(scanIds: string[]): Promise<Map<string, Sca
 }
 
 /**
- * Which of these scans the caller ordered. Filtering on the caller's own id
- * answers that without reading anyone's user_id back. A failure only costs the
- * wording ("the searches" instead of "your searches"), so it never throws.
+ * Which of these scans the caller ordered, asked one scan at a time of
+ * is_own_search_scan (true only for the caller's own). Any error, including the
+ * function not existing yet, counts as "not mine": it only costs the wording
+ * ("the searches" instead of "your searches"), so it never throws.
  */
-async function fetchOrderedScanIds(transactionId: string): Promise<Set<string>> {
-  const { data: auth } = await supabase.auth.getSession();
-  const userId = auth.session?.user.id;
-  if (!userId) return new Set();
-  const { data, error } = await supabase
-    .from('search_scans')
-    .select('id')
-    .eq('transaction_id', transactionId)
-    .eq('scope', 'shared')
-    .eq('user_id', userId);
-  if (error || !data) return new Set();
-  return new Set((data as Array<{ id: string }>).map((row) => row.id));
+async function isOwnScan(scanId: string): Promise<boolean> {
+  try {
+    const { data, error } = await supabase.rpc('is_own_search_scan', { p_scan_id: scanId });
+    return !error && data === true;
+  } catch {
+    return false;
+  }
+}
+
+async function fetchOrderedScanIds(scanIds: string[]): Promise<Set<string>> {
+  const owned = await Promise.all(scanIds.map(async (id) => ((await isOwnScan(id)) ? id : null)));
+  return new Set(owned.filter((id): id is string => id !== null));
 }
 
 /** Throws on a real failure, so the tab can say so instead of showing nothing. */
@@ -128,7 +129,8 @@ export async function fetchSharedSearchScans(transactionId: string): Promise<Sha
   const rows = (data ?? []) as SharedScanRow[];
   const [personal, ordered] = await Promise.all([
     fetchPersonalFindings(rows.filter((r) => (r.personal_findings_count ?? 0) > 0).map((r) => r.id)),
-    rows.length > 0 ? fetchOrderedScanIds(transactionId) : Promise.resolve(new Set<string>()),
+    // Only finished scans are worded as "your" or "the" searches.
+    fetchOrderedScanIds(rows.filter((r) => r.status === 'complete').map((r) => r.id)),
   ]);
 
   return rows.map((row) => ({

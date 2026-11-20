@@ -62,9 +62,9 @@ export interface SharedScanFlag {
 }
 
 /**
- * A `search_scans` row with scope 'shared'. Deliberately has no user id: other
- * parties can read that column on the row, and it is nobody's business but the
- * orderer's.
+ * A `search_scans` row with scope 'shared'. Deliberately has no user id: who
+ * ordered a search is nobody's business but the orderer's, so the viewer only
+ * learns whether it was them (isOrderedByViewer).
  */
 export interface SharedSearchScan {
   id: string;

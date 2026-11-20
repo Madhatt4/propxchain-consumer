@@ -4,18 +4,17 @@ const db = vi.hoisted(() => ({
   from: vi.fn(),
   scans: { data: [] as unknown, error: null as { code: string; message: string } | null },
   personal: { data: [] as unknown, error: null as { code: string; message: string } | null },
-  mine: { data: [] as unknown, error: null as { code: string; message: string } | null },
-  session: { user: { id: 'viewer' } } as { user: { id: string } } | null,
+  rpc: vi.fn(),
   selected: [] as string[],
   filters: [] as Array<[string, string]>,
 }));
 
 vi.mock('../../lib/supabase', () => ({
   supabase: {
-    auth: { getSession: async () => ({ data: { session: db.session } }) },
+    rpc: (name: string, args: unknown) => db.rpc(name, args),
     from: (table: string) => {
       db.from(table);
-      let result = table === 'search_scans' ? db.scans : db.personal;
+      const result = table === 'search_scans' ? db.scans : db.personal;
       const chain = {
         select: (columns: string) => {
           db.selected.push(columns);
@@ -23,8 +22,6 @@ vi.mock('../../lib/supabase', () => ({
         },
         eq: (column: string, value: string) => {
           db.filters.push([column, value]);
-          // The "which did I order" read is the only one that filters on user_id.
-          if (column === 'user_id') result = db.mine;
           return chain;
         },
         in: () => chain,
@@ -69,8 +66,7 @@ describe('fetchSharedSearchScans', () => {
     db.filters.length = 0;
     db.scans = { data: [ROW], error: null };
     db.personal = { data: [], error: null };
-    db.mine = { data: [], error: null };
-    db.session = { user: { id: 'viewer' } };
+    db.rpc.mockReset().mockResolvedValue({ data: false, error: null });
   });
 
   it('should name its columns and never select user_id', async () => {
@@ -85,7 +81,7 @@ describe('fetchSharedSearchScans', () => {
   it('should read only shared rows on this transaction', async () => {
     await fetchSharedSearchScans('tx_1');
 
-    expect(db.filters.slice(0, 2)).toEqual([
+    expect(db.filters).toEqual([
       ['transaction_id', 'tx_1'],
       ['scope', 'shared'],
     ]);
@@ -111,31 +107,51 @@ describe('fetchSharedSearchScans', () => {
     });
   });
 
-  it('should mark a scan the viewer ordered by filtering on their own id', async () => {
-    db.mine.data = [{ id: 'scan-1' }];
+  it('should mark a scan the viewer ordered, asked of is_own_search_scan', async () => {
+    db.rpc.mockResolvedValue({ data: true, error: null });
 
     const [scan] = await fetchSharedSearchScans('tx_1');
 
     expect(scan.isOrderedByViewer).toBe(true);
-    expect(db.filters).toContainEqual(['user_id', 'viewer']);
-    expect(db.selected).toContain('id');
+    expect(db.rpc).toHaveBeenCalledWith('is_own_search_scan', { p_scan_id: 'scan-1' });
   });
 
-  it('should treat the viewer as not the orderer when the ownership read fails', async () => {
-    db.mine = { data: null, error: { code: '500', message: 'boom' } };
+  it('should never select or filter on user_id', async () => {
+    db.rpc.mockResolvedValue({ data: true, error: null });
+
+    await fetchSharedSearchScans('tx_1');
+
+    expect(db.selected.join(' ')).not.toContain('user_id');
+    expect(db.filters.map(([column]) => column)).not.toContain('user_id');
+  });
+
+  it('should treat the viewer as not the orderer when the function is not there yet', async () => {
+    db.rpc.mockResolvedValue({ data: null, error: { code: 'PGRST202', message: 'function not found' } });
 
     const [scan] = await fetchSharedSearchScans('tx_1');
 
     expect(scan.isOrderedByViewer).toBe(false);
   });
 
-  it('should not ask about ownership when nobody is signed in', async () => {
-    db.session = null;
+  it('should treat the viewer as not the orderer when the call throws', async () => {
+    db.rpc.mockRejectedValue(new Error('network down'));
 
     const [scan] = await fetchSharedSearchScans('tx_1');
 
     expect(scan.isOrderedByViewer).toBe(false);
-    expect(db.filters).not.toContainEqual(expect.arrayContaining(['user_id']));
+  });
+
+  it('should ask about ownership only for finished scans', async () => {
+    db.scans.data = [
+      { ...ROW, id: 'done', status: 'complete' },
+      { ...ROW, id: 'waiting', status: 'pending' },
+      { ...ROW, id: 'failed', status: 'error' },
+    ];
+
+    await fetchSharedSearchScans('tx_1');
+
+    expect(db.rpc).toHaveBeenCalledTimes(1);
+    expect(db.rpc).toHaveBeenCalledWith('is_own_search_scan', { p_scan_id: 'done' });
   });
 
   it('should say retries remain below five attempts and none at five', async () => {
