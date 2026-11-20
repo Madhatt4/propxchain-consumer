@@ -83,6 +83,11 @@ jobs:
         # bringing it back.
         run: node scripts/check-license-headers.mjs
 
+      - name: Check no new code comments (ratchet)
+        run: |
+          node --test scripts/check-comments.test.mjs
+          node scripts/check-comments.mjs
+
       - name: Build
         run: pnpm build
         env:

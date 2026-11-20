@@ -76,6 +76,7 @@ _design-reference/
 *.md
 !/README.md
 !/public/**/*.md
+!/.claude/skills/delete-comment/SKILL.md
 docs/handoffs/
 docs/plans/
 docs/runbooks/

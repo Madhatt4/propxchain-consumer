@@ -1,4 +1,6 @@
-// PropXchain — SPDX-License-Identifier: Proprietary
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 PropXchain Ltd
+
 import { useCallback, useEffect, useState } from 'react';
 import { Loader2, Link2 } from 'lucide-react';
 import stripePaymentService, { type VerifySessionResult } from '@/services/stripePayment.service';

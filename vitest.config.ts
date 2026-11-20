@@ -24,7 +24,7 @@ export default defineConfig({
     },
     // Supabase edge functions are Deno (https:// + npm: imports) and ship their
     // own `deno test` suite — keep them out of the vitest (happy-dom) run.
-    exclude: [...configDefaults.exclude, 'supabase/**'],
+    exclude: [...configDefaults.exclude, 'supabase/**', 'scripts/check-comments.test.mjs'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
