@@ -8,7 +8,8 @@
  * those events stay. This flags them the same way the MCP audit tool does
  * (propxchain-mcp-server/src/tools/audit.ts, simulatedLrNote): the exact event
  * type and details text. The buyer's conveyancer's real record has different
- * details text, so it is never flagged.
+ * details text (a sentence before ADR 0019 step 1c, the code
+ * `lr_application_recorded` since), so it is never flagged.
  */
 
 export const SIMULATED_LR_NOTE =

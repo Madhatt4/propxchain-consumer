@@ -15,6 +15,10 @@ describe('simulatedLrNote', () => {
     expect(simulatedLrNote('lr_submission', real)).toBeNull();
   });
 
+  it("should not flag the code the buyer's conveyancer's record is written as now", () => {
+    expect(simulatedLrNote('lr_submission', 'lr_application_recorded')).toBeNull();
+  });
+
   it('should not flag the same text on another event type, or near-miss text', () => {
     expect(simulatedLrNote('blockchain_completed', 'Land Registry submission triggered')).toBeNull();
     expect(simulatedLrNote('lr_submission', 'land registry submission triggered')).toBeNull();
