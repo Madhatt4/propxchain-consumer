@@ -58,7 +58,11 @@ export function tsCommentRanges(text, fileName, ts) {
       if (!seen.has(r.pos)) seen.set(r.pos, { pos: r.pos, end: r.end, raw: text.slice(r.pos, r.end) });
     }
   };
+  const emptyJsxExpressions = [];
   const visit = (node) => {
+    if (node.kind === ts.SyntaxKind.JsxExpression && !node.expression) {
+      emptyJsxExpressions.push({ start: node.getStart(sf), end: node.getEnd() });
+    }
     if (node.kind !== ts.SyntaxKind.JsxText) {
       collect(ts.getLeadingCommentRanges(text, node.getFullStart()));
       collect(ts.getTrailingCommentRanges(text, node.getEnd()));
@@ -66,7 +70,12 @@ export function tsCommentRanges(text, fileName, ts) {
     for (const child of node.getChildren(sf)) visit(child);
   };
   visit(sf);
-  return [...seen.values()].sort((a, b) => a.pos - b.pos);
+  return [...seen.values()]
+    .sort((a, b) => a.pos - b.pos)
+    .map((c) => {
+      const wrapper = emptyJsxExpressions.find((w) => w.start < c.pos && c.end < w.end);
+      return wrapper ? { ...c, jsxWrapper: wrapper } : c;
+    });
 }
 
 export function motokoCommentRanges(text) {
@@ -78,8 +87,8 @@ export function motokoCommentRanges(text) {
       i++;
       while (i < text.length && text[i] !== '"') i += text[i] === '\\' ? 2 : 1;
       i++;
-    } else if (text[i] === "'" && /^'(\\.[^']*|[^\\'])'/.test(text.slice(i, i + 12))) {
-      i = text.indexOf("'", i + 2) + 1;
+    } else if (text[i] === "'" && /^'(\\(u\{[0-9a-fA-F]+\}|.)|[^\\'])'/.test(text.slice(i, i + 16))) {
+      i += text.slice(i, i + 16).match(/^'(\\(u\{[0-9a-fA-F]+\}|.)|[^\\'])'/)[0].length;
     } else if (text.startsWith('//', i)) {
       const end = text.indexOf('\n', i);
       const stop = end === -1 ? text.length : end;

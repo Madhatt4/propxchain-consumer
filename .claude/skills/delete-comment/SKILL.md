@@ -22,11 +22,13 @@ Read each file whole. A comment can only be judged next to its code.
 | Category | Test | Action |
 |---|---|---|
 | **Tautology** | The code already says it (`// Selector hooks`, `/** Non-hook accessor */`, `// 1. Check session first`) | Delete |
-| **Stale** | Names a plan step, ticket, old SDK version, internal note or file that no longer applies (`// 1a.9:`, `see project_x flow`, a `Proprietary` licence line) | Delete. A wrong licence header is replaced with the AGPL SPDX pair, not just deleted. |
+| **Stale** | Names a plan step, ticket, old SDK version, internal note or file that no longer applies (`// 1a.9:`, `see project_x flow`) | Delete |
 | **Excuse** | Explains why the code has to be odd: a cycle dodged with a dynamic import, a retry hiding a race, a value mirrored by hand, a name that needs a warning | Delete the comment and file an issue to remove the oddity |
 | **Decision Record** | A non-obvious *why* that someone would undo without knowing it: ordering rules, security reasons, things deliberately not done or not persisted | Move into an ADR, then delete |
 
 Before you reach for a category, ask whether a better name removes the need. `BigInt(86400e9) // 24h in ns` becomes `II_SESSION_TTL_NANOSECONDS`. That counts as a Tautology fixed by a rename.
+
+Licence headers follow the repo's licence, not the sweep. The consumer repo is AGPL: a `Proprietary` header there is wrong, so replace it with `// SPDX-License-Identifier: AGPL-3.0-or-later` + `// Copyright (C) <year> PropXchain Ltd` (`check-license-headers.mjs` enforces this). The monorepo is private: its `Copyright … All rights reserved.` / `Proprietary and confidential.` header is correct, so leave it.
 
 Directives are not comments and stay: `eslint-disable*`, `@ts-expect-error`, `@vite-ignore`, `deno-lint-ignore`, `/// <reference`, `@type {…}` in JS, and the two-line SPDX/Copyright header.
 

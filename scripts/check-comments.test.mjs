@@ -90,6 +90,17 @@ test('should strip own-line, trailing and JSX comments but keep directives', () 
   assert.equal(stripComments(src, 'x.tsx', ts), expected);
 });
 
+test('should keep the braces of a block whose only content is a comment', () => {
+  assert.equal(stripComments('function f() { /* x */ }\n', 'x.ts', ts), 'function f() { }\n');
+  assert.equal(stripComments('const o = {\n  // only\n};\n', 'x.ts', ts), 'const o = {\n};\n');
+  assert.equal(stripComments('module {\n  // only\n}\n', 'x.mo', ts), 'module {\n}\n');
+});
+
+test('should not desync on a Motoko escaped-quote char literal', () => {
+  const src = "let q = '\\'';\nlet s = \"// no\";\n// yes\n";
+  assert.equal(motokoCommentRanges(src).length, 1);
+});
+
 test('should collapse the blank lines a removed block leaves behind', () => {
   const src = 'const a = 1;\n\n/**\n * Gone.\n */\n\nconst b = 2;\n';
   assert.equal(stripComments(src, 'x.ts', ts), 'const a = 1;\n\nconst b = 2;\n');

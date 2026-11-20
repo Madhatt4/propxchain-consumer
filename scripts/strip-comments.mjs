@@ -7,15 +7,9 @@ import { pathToFileURL } from 'node:url';
 
 import { commentRanges } from './check-comments.mjs';
 
-function widen(text, { pos, end }) {
-  let start = pos;
-  let stop = end;
-  const before = text.slice(0, start).match(/\{\s*$/);
-  const after = text.slice(stop).match(/^\s*\}/);
-  if (before && after) {
-    start -= before[0].length;
-    stop += after[0].length;
-  }
+function widen(text, { pos, end, jsxWrapper }) {
+  const start = jsxWrapper ? jsxWrapper.start : pos;
+  const stop = jsxWrapper ? jsxWrapper.end : end;
   const lineStart = text.lastIndexOf('\n', start - 1) + 1;
   const lineEndIdx = text.indexOf('\n', stop);
   const lineEnd = lineEndIdx === -1 ? text.length : lineEndIdx;
