@@ -19,7 +19,7 @@ import { icpService } from './icp.service';
 import { logger } from '@/utils/logger';
 import { CANISTER_IDS } from '@/config/canisterIds';
 import type { AuditEvent } from './transactionAudit';
-import { sanitizeText } from './transactionAudit';
+import { describeEventDetails, sanitizeText } from './transactionAudit';
 
 // Anomaly event types — recorded on-chain for integrity but NOT progress
 // milestones. The per-transaction timeline buckets these into "Other"; at
@@ -83,7 +83,8 @@ function normalizeEvent(raw: Record<string, unknown>): AuditEvent {
     eventType: String(raw.eventType),
     timestamp: Number(raw.timestamp), // nanoseconds
     caller: String(raw.caller),
-    details: sanitizeText(String(raw.details ?? '')),
+    // Codes become sentences; an older event's sentence is shown as written.
+    details: describeEventDetails(String(raw.eventType), sanitizeText(String(raw.details ?? ''))),
     metadata,
   };
 }

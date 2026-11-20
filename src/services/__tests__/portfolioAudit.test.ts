@@ -203,6 +203,21 @@ describe('fetchPortfolioAudit', () => {
     expect(ev.timestamp).toBe(2_000 * NS_PER_MS);
     expect(ev.caller).toBe('aaaaa-aa');
     expect(ev.metadata).toBe('{&quot;docType&quot;:&quot;TA6&quot;}'); // sanitized
+    expect(ev.details).toBe('uploaded TA6'); // an older sentence is kept as written
+  });
+
+  it('should say a canister code in words', async () => {
+    // Arrange
+    mockGetAllTransactions.mockResolvedValue([{ id: 'tx-1' }]);
+    mockGetEventsByTransaction.mockResolvedValue([
+      { eventId: 1n, transactionId: 'tx-1', eventType: 'listing_updated', timestamp: 1n, caller: 'aaaaa-aa', details: 'listing_stored', metadata: [] },
+    ]);
+
+    // Act
+    const result = await fetchPortfolioAudit();
+
+    // Assert
+    expect(result.transactions[0].events[0].details).toBe('Listing data stored');
   });
 
   it('should query events for each transaction id (stringified) and merge them', async () => {

@@ -44,18 +44,24 @@ const SHA256_HEX = /^[0-9a-f]{64}$/;
 
 /**
  * Who registered a completion statement, from the audit event's details.
- * The event carries no structured uploader: its caller is transaction_manager
- * and its metadata holds only docHash and docType, so the sentence is the only
- * source every party may read. It is written by
- * packages/core/src/transaction_manager/audit_text.mo, docRegistered:
- *   "Document " # safe(docType) # " registered by " # uploadedBy,
- * Anything that is not exactly that sentence, with a principal at the end,
- * reads as unknown, so a change of wording finds no statement (fail closed).
+ * The event's caller is transaction_manager and its metadata holds only
+ * docHash and docType, so details are the only place every party may read the
+ * uploader. packages/core/src/transaction_manager/audit_codes.mo docRegistered
+ * writes the code form:
+ *   doc_registered|completion_statement|<principal>
+ * Events from before the codes (ADR 0019 step 1c) carry the old sentence and
+ * stay on the trail, so it is still read:
+ *   Document completion_statement registered by <principal>
+ * Anything that is not exactly one of the two reads as unknown, so a change of
+ * format finds no statement (fail closed).
  */
-const REGISTERED_BY = /^Document completion_statement registered by ([a-z0-9]{5}(?:-[a-z0-9]{1,5})+)$/;
+const PRINCIPAL = '([a-z0-9]{5}(?:-[a-z0-9]{1,5})+)';
+const REGISTERED_BY_CODE = new RegExp(`^doc_registered\\|completion_statement\\|${PRINCIPAL}$`);
+const REGISTERED_BY_LEGACY = new RegExp(`^Document completion_statement registered by ${PRINCIPAL}$`);
 
 export function statementUploaderOf(details: unknown): string | null {
-  return typeof details === 'string' ? (REGISTERED_BY.exec(details)?.[1] ?? null) : null;
+  if (typeof details !== 'string') return null;
+  return (REGISTERED_BY_CODE.exec(details) ?? REGISTERED_BY_LEGACY.exec(details))?.[1] ?? null;
 }
 
 /** "docHash=…;docType=…; bot=…" to a key/value map. */

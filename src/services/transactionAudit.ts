@@ -9,6 +9,7 @@ import { icpService } from './icp.service';
 import { supabase } from '../lib/supabase';
 import { logger } from '@/utils/logger';
 import { hiddenDocumentStatuses, toDocumentStatusRows, type DocumentStatusRow } from '@/lib/documentStatus';
+import { describeAuditCode } from '@/lib/auditCodes';
 import { simulatedLrNote } from '@/lib/simulatedLrSubmission';
 
 // ============================================
@@ -279,13 +280,16 @@ const DELEGATION_DETAILS: Record<string, string> = {
 };
 
 /**
- * The ledger records a delegation as `role|kind` (message_manager
- * delegation_events.mo): roles only, no names. Say it in words on the audit
- * trail; every other event keeps its own details.
+ * The ledger records events as codes and ids, never names (ADR 0019): a
+ * delegation as `role|kind` (message_manager delegation_events.mo), everything
+ * transaction_manager writes as a code from audit_codes.mo. Say it in words on
+ * the audit trail; an older event's sentence is shown as written.
  */
 export function describeEventDetails(eventType: string, details: string): string {
-  if (eventType !== 'delegation_granted' && eventType !== 'delegation_revoked') return details;
-  return DELEGATION_DETAILS[details] ?? details;
+  if (eventType === 'delegation_granted' || eventType === 'delegation_revoked') {
+    return DELEGATION_DETAILS[details] ?? details;
+  }
+  return describeAuditCode(details);
 }
 
 export function groupEventsIntoMilestones(events: AuditEvent[]): Milestone[] {

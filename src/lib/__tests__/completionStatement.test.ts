@@ -33,7 +33,7 @@ const ns = (ms: number): bigint => BigInt(ms) * 1_000_000n;
 function docEvent(docType: string, hash: string, by: string, atMs: number = NOV_6): Record<string, unknown> {
   return {
     eventType: 'doc_registered',
-    details: `Document ${docType} registered by ${by}`,
+    details: `doc_registered|${docType}|${by}`,
     metadata: [`docHash=${hash};docType=${docType}`],
     timestamp: ns(atMs),
   };
@@ -69,14 +69,26 @@ describe('completionStatementsFromEvents', () => {
 });
 
 describe('statementUploaderOf', () => {
-  // Pinned to transaction_manager/audit_text.mo, docRegistered:
-  //   "Document " # safe(docType) # " registered by " # uploadedBy,
-  it('should read the principal from the exact canister sentence', () => {
+  // Pinned to transaction_manager/audit_codes.mo, docRegistered:
+  //   doc_registered|<docType>|<uploadedBy>
+  it('should read the principal from the canister code', () => {
+    expect(statementUploaderOf(`doc_registered|completion_statement|${SELLER_CONV}`)).toBe(SELLER_CONV);
+  });
+
+  // Events written before the codes keep the old sentence on the trail.
+  it('should still read the principal from the pre-code sentence', () => {
     expect(statementUploaderOf(`Document completion_statement registered by ${SELLER_CONV}`)).toBe(SELLER_CONV);
+    const event = { ...docEvent('completion_statement', HASH_A, SELLER_CONV), details: `Document completion_statement registered by ${SELLER_CONV}` };
+    expect(completionStatementsFromEvents([event], SELLER_CONV).map((s) => s.fileHash)).toEqual([HASH_A]);
   });
 
   it.each([
     ['other wording', `Completion statement uploaded by ${SELLER_CONV}`],
+    ['a code with trailing values', `doc_registered|completion_statement|${SELLER_CONV}|x`],
+    ['a code for another document type', `doc_registered|tr1_transfer|${SELLER_CONV}`],
+    ['a code with a word, not a principal', 'doc_registered|completion_statement|someone'],
+    ['the code without its values', 'doc_registered'],
+    ['a bare document type', 'completion_statement'],
     ['trailing text', `Document completion_statement registered by ${SELLER_CONV} (bot)`],
     ['another document type', `Document tr1_transfer registered by ${SELLER_CONV}`],
     ['a word, not a principal', 'Document completion_statement registered by someone'],

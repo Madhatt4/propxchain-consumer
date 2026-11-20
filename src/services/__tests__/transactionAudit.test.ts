@@ -846,4 +846,9 @@ describe('describeEventDetails', () => {
     expect(describeEventDetails('document_uploaded', 'seller|granted')).toBe('seller|granted');
     expect(describeEventDetails('delegation_granted', 'other')).toBe('other');
   });
+
+  it('should say a canister code in words, and keep an older sentence as written', () => {
+    expect(describeEventDetails('keys_released', 'keys_released|agent')).toBe("Keys released, confirmed by the seller's agent");
+    expect(describeEventDetails('transaction_created', 'Transaction created for 1 High Street')).toBe('Transaction created for 1 High Street');
+  });
 });

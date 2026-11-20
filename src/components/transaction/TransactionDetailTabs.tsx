@@ -26,6 +26,7 @@ import { ChevronDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import DocumentStatusList from '@/components/documents/DocumentStatusList';
 import { hiddenDocumentStatuses, statusProgressDocuments, type DocumentStatusRow } from '@/lib/documentStatus';
+import { shortLogHash } from '@/lib/auditCodes';
 import { mapWithConcurrency } from '@/lib/mapWithConcurrency';
 import LegalTab from './LegalTab';
 import type { SolicitorRecord } from '../../types/solicitor.types';
@@ -221,7 +222,7 @@ const TransactionDetailTabs: React.FC<TransactionDetailTabsProps> = ({
               action: log.action,
               timestamp: new Date(Number(log.timestamp) / 1000000).toISOString(),
               actor: log.actorPrincipal?.toString()?.slice(0, 12) + '...' || 'Unknown',
-              hash: log.metadata?.match(/Hash: ([a-f0-9]+)/)?.[1]?.slice(0, 16) + '...',
+              hash: shortLogHash(log.metadata),
               metadata: log.metadata
             }));
           } catch (e) {
