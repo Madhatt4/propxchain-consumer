@@ -199,7 +199,7 @@ export function TransactionDocumentsTab({ transactionId }: TransactionTabProps):
             to={`/transaction/${transactionId}/share`}
             className="inline-flex items-center gap-1 rounded-md border border-border px-2.5 py-1.5 text-xs font-medium text-foreground hover:bg-muted"
           >
-            <UserPlus className="h-3.5 w-3.5" /> Invite someone
+            <UserPlus className="h-3.5 w-3.5" /> Invite your buyer
           </Link>
           <button
             type="button"

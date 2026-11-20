@@ -4,12 +4,8 @@ import { Transaction } from '../types/transaction.types';
 import { icpService } from '../services/icp.service';
 import { getRightmoveData } from '@/utils/rightmoveStorage';
 import { getStorePrincipalId } from '@/stores/authStore';
-import {
-  INVITE_ROLE_OPTIONS,
-  withInviteContext,
-  type InviteContext,
-  type InviteRole,
-} from '@/utils/inviteContext';
+import { withInviteContext, type InviteContext } from '@/utils/inviteContext';
+import { useBuyerInviteState } from '@/hooks/useBuyerInviteState';
 import QRCode from 'qrcode';
 
 // shadcn-ui components
@@ -20,6 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { logger } from '@/utils/logger';
 import AppTopBar from '@/components/navigation/AppTopBar';
+import { BuyerInviteUnavailable, BuyerOnlyNote } from '@/components/transaction/BuyerInviteNotice';
 
 /** Build the join link: ?rm= if a Rightmove URL exists for this tx, plus the invite role/side hints. */
 function buildJoinLink(origin: string, shareableId: string, txId: string, ctx: InviteContext = {}): string {
@@ -29,18 +26,6 @@ function buildJoinLink(origin: string, shareableId: string, txId: string, ctx: I
   return withInviteContext(withRm, ctx);
 }
 
-/** Which side of the deal the current user is on (drives the invite's `side` hint). */
-function mySideOf(tx: { seller?: unknown; buyer?: unknown } | null, me: string | null): 'buyer' | 'seller' | undefined {
-  if (!tx || !me) return undefined;
-  const asText = (p: unknown): string =>
-    p && typeof (p as { toText?: () => string }).toText === 'function'
-      ? (p as { toText: () => string }).toText()
-      : String(p ?? '');
-  if (asText(tx.seller) === me) return 'seller';
-  if (asText(tx.buyer) === me) return 'buyer';
-  return undefined;
-}
-
 const ShareTransactionPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -48,13 +33,14 @@ const ShareTransactionPage: React.FC = () => {
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
   const [copied, setCopied] = useState(false);
   const [shareMethod, setShareMethod] = useState<'link' | 'id'>('id');
-  const [inviteRole, setInviteRole] = useState<InviteRole>('estate_agent');
   const myPrincipal = getStorePrincipalId();
+  // The code is the buyer's way in only (lib/buyerInvite), so the link always says so.
   const inviteCtx: InviteContext = {
-    role: inviteRole,
-    side: mySideOf(transaction, myPrincipal),
+    role: 'buyer',
+    side: 'buyer',
     invitedBy: myPrincipal ?? undefined,
   };
+  const inviteState = useBuyerInviteState(id);
   // The QR effect closes over the first render; the ref keeps the link hints current.
   const inviteCtxRef = useRef(inviteCtx);
   inviteCtxRef.current = inviteCtx;
@@ -84,12 +70,6 @@ const ShareTransactionPage: React.FC = () => {
       logger.error('Error generating QR code:', err);
     }
   };
-
-  // Re-encode the QR whenever the invitee role changes
-  useEffect(() => {
-    if (transaction) void generateQRCodeForTransaction(transaction);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inviteRole]);
 
   useEffect(() => {
     const loadTransaction = async () => {
@@ -191,9 +171,9 @@ const ShareTransactionPage: React.FC = () => {
 
     const shareableId = (transaction as any).inviteCode || transaction.id;
     const joinLink = buildJoinLink(window.location.origin, shareableId, transaction.id, inviteCtx);
-    const subject = encodeURIComponent(`PropXchain Transaction Invitation - ${transaction.propertyAddress}`);
+    const subject = encodeURIComponent(`Join as the buyer on PropXchain - ${transaction.propertyAddress}`);
     const body = encodeURIComponent(
-      `You've been invited to join a property transaction on PropXchain!\n\n` +
+      `You've been invited to join this property sale on PropXchain as the buyer.\n\n` +
       `Property: ${transaction.propertyAddress}\n` +
       `Invite Code: ${shareableId}\n\n` +
       `To join:\n` +
@@ -214,7 +194,7 @@ const ShareTransactionPage: React.FC = () => {
     const shareableId = (transaction as any).inviteCode || transaction.id;
     const joinLink = buildJoinLink(window.location.origin, shareableId, transaction.id, inviteCtx);
     const message = encodeURIComponent(
-      `PropXchain Invitation: ${transaction.propertyAddress}\n` +
+      `PropXchain: join as the buyer for ${transaction.propertyAddress}\n` +
       `Invite Code: ${shareableId}\n` +
       `Join at: ${joinLink}`
     );
@@ -252,7 +232,7 @@ const ShareTransactionPage: React.FC = () => {
     <div className="min-h-screen bg-[var(--bg-main)]">
       <AppTopBar
         title={transaction.propertyAddress || 'Property'}
-        subtitle="Share transaction"
+        subtitle="Invite your buyer"
         backTo={`/transaction/${transaction.id}/flow`}
         backLabel="Back to transaction"
       />
@@ -265,7 +245,7 @@ const ShareTransactionPage: React.FC = () => {
             <div className="flex items-start justify-between">
               <div>
                 <h2 className="text-2xl font-bold text-[var(--text-main)] mb-2">
-                  Share Transaction
+                  Invite your buyer
                 </h2>
                 <p className="text-lg text-[var(--text-secondary)] mb-1">
                   {transaction.propertyAddress}
@@ -287,24 +267,16 @@ const ShareTransactionPage: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Who is being invited — labels them and puts them on your side of the deal */}
+        {inviteState !== 'share' ? (
+          <Card className="bg-[var(--bg-card)] border-[var(--border-color)] mb-6">
+            <CardContent className="p-6">
+              <BuyerInviteUnavailable state={inviteState} />
+            </CardContent>
+          </Card>
+        ) : (
+        <>
         <div className="mb-4">
-          <label htmlFor="invite-role" className="block text-xs font-medium text-[var(--text-muted)] mb-1">
-            Who are you inviting?
-          </label>
-          <select
-            id="invite-role"
-            value={inviteRole}
-            onChange={(e) => setInviteRole(e.target.value as InviteRole)}
-            className="w-full rounded-md border border-[var(--border-color)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-main)]"
-          >
-            {INVITE_ROLE_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
-          <p className="mt-1 text-xs text-[var(--text-muted)]">
-            The link and QR below carry this so they appear correctly in your Transaction Wallet.
-          </p>
+          <BuyerOnlyNote transactionId={String(transaction.id)} />
         </div>
 
         {/* Share Method Tabs */}
@@ -314,7 +286,7 @@ const ShareTransactionPage: React.FC = () => {
             variant={shareMethod === 'id' ? 'default' : 'secondary'}
             className={cn("flex-1", shareMethod === 'id' && "bg-[var(--bg-section)] hover:bg-[var(--border-light)]")}
           >
-            Share Transaction ID
+            Share invite code
           </Button>
           <Button
             onClick={() => setShareMethod('link')}
@@ -329,9 +301,9 @@ const ShareTransactionPage: React.FC = () => {
         {shareMethod === 'id' && (
           <Card className="bg-[var(--bg-card)] border-[var(--border-color)] mb-6">
             <CardHeader>
-              <CardTitle className="text-[var(--text-main)]">Transaction ID</CardTitle>
+              <CardTitle className="text-[var(--text-main)]">Invite code</CardTitle>
               <CardDescription className="text-[var(--text-muted)]">
-                Share this ID with the other party. They can enter it in PropXchain to join the transaction.
+                Give this code to your buyer. They enter it in PropXchain to join the deal as the buyer.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -385,7 +357,7 @@ const ShareTransactionPage: React.FC = () => {
             <CardHeader>
               <CardTitle className="text-[var(--text-main)]">Invite Link</CardTitle>
               <CardDescription className="text-[var(--text-muted)]">
-                Share this link with the other party. Clicking it will take them directly to the join page.
+                Send this link to your buyer. It takes them straight to the join page.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -445,7 +417,7 @@ const ShareTransactionPage: React.FC = () => {
         {/* Instructions */}
         <Card className="bg-[var(--bg-card)] border-[var(--border-color)]">
           <CardHeader>
-            <CardTitle className="text-[var(--text-main)]">How to Join (For the Other Party)</CardTitle>
+            <CardTitle className="text-[var(--text-main)]">How your buyer joins</CardTitle>
           </CardHeader>
           <CardContent>
             <ol className="space-y-3 text-[var(--text-muted)]">
@@ -478,19 +450,21 @@ const ShareTransactionPage: React.FC = () => {
                   4
                 </Badge>
                 <span>
-                  <strong className="text-[var(--text-main)]">Paste and Join</strong> - Enter the Transaction ID and click "Join Transaction"
+                  <strong className="text-[var(--text-main)]">Paste and Join</strong> - Enter the invite code and click "Join Transaction"
                 </span>
               </li>
             </ol>
 
             <div className="mt-6 p-4 bg-[var(--bg-card)]/20 border border-[var(--border-color)] rounded-lg">
               <p className="text-[var(--text-secondary)] text-sm">
-                <strong>Privacy Note:</strong> The other party will only see transaction progress information.
+                <strong>Privacy Note:</strong> Your buyer will only see transaction progress information.
                 Full property details remain private to their own transaction while maintaining GDPR compliance.
               </p>
             </div>
           </CardContent>
         </Card>
+        </>
+        )}
 
         {/* Current Participants */}
         {transaction.parties && transaction.parties.length > 0 && (
