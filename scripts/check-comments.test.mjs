@@ -36,6 +36,13 @@ test('should exempt tool directives and licence headers', () => {
   assert.equal(countComments(src, 'x.ts', ts), 0);
 });
 
+test('should exempt the CI guard opt-out markers and the private licence header', () => {
+  assert.equal(isDirective('// async-safety-check: skip (read-only after await)'), true);
+  assert.equal(isDirective('// tx-lock-check: skip (no state read)'), true);
+  assert.equal(isDirective('// rate-limit-check: skip (cron only)'), true);
+  assert.equal(isDirective('// Proprietary and confidential.'), true);
+});
+
 test('should treat prose that mentions a directive as a normal comment', () => {
   assert.equal(isDirective('// we avoid eslint here because'), false);
   assert.equal(isDirective('// eslint-disable-line'), true);
