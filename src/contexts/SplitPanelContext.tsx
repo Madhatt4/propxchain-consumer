@@ -161,7 +161,7 @@ interface SplitPanelProviderProps {
  * @example
  * ```tsx
  * <SplitPanelProvider>
- *   <OscarDashboard />
+ *   <Dashboard />
  * </SplitPanelProvider>
  * ```
  */

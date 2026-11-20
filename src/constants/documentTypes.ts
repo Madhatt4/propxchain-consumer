@@ -19,25 +19,24 @@ export type UserRole = 'buyer' | 'seller' | 'solicitor' | 'admin';
 export interface DocumentSubtype {
   id: string;
   label: string;
-  oscarType?: string; // Maps to Oscar AI verification type
 }
 
 /**
  * Acceptable document subtypes for each main document category
- * These align with UK property conveyancing requirements and Oscar AI verification
+ * These align with UK property conveyancing requirements
  */
 export const DOCUMENT_SUBTYPES: Record<string, DocumentSubtype[]> = {
   // Proof of Identity - Acceptable ID documents
   'Proof of Identity': [
-    { id: 'passport', label: 'Passport', oscarType: 'passport' },
-    { id: 'driving_licence', label: 'Driving Licence', oscarType: 'driving_licence' },
+    { id: 'passport', label: 'Passport' },
+    { id: 'driving_licence', label: 'Driving Licence' },
     { id: 'national_id', label: 'National ID Card' },
     { id: 'biometric_permit', label: 'Biometric Residence Permit' }
   ],
 
   // Proof of Address - Must be dated within last 3 months
   'Proof of Address': [
-    { id: 'bank_statement', label: 'Bank Statement', oscarType: 'bank_statement' },
+    { id: 'bank_statement', label: 'Bank Statement' },
     { id: 'utility_bill', label: 'Utility Bill (Gas/Electric/Water)' },
     { id: 'council_tax', label: 'Council Tax Bill' },
     { id: 'mortgage_statement', label: 'Mortgage Statement' }
@@ -45,7 +44,7 @@ export const DOCUMENT_SUBTYPES: Record<string, DocumentSubtype[]> = {
 
   // Proof of Funds - Evidence of purchase funds
   'Proof of Funds': [
-    { id: 'bank_statement', label: 'Bank Statement', oscarType: 'bank_statement' },
+    { id: 'bank_statement', label: 'Bank Statement' },
     { id: 'savings_statement', label: 'Savings Account Statement' },
     { id: 'investment_statement', label: 'Investment Portfolio Statement' },
     { id: 'gift_letter', label: 'Gift Letter (with supporting bank statement)' },
@@ -54,31 +53,31 @@ export const DOCUMENT_SUBTYPES: Record<string, DocumentSubtype[]> = {
 
   // Title Deeds - Property ownership documents
   'Title Deeds': [
-    { id: 'official_copy', label: 'Official Copy of Register', oscarType: 'title_deed' },
+    { id: 'official_copy', label: 'Official Copy of Register' },
     { id: 'title_plan', label: 'Title Plan' },
     { id: 'lease_document', label: 'Lease Document (Leasehold)' }
   ],
 
   // Mortgage Agreement
   'Mortgage Agreement': [
-    { id: 'mortgage_offer', label: 'Mortgage Offer', oscarType: 'mortgage_offer' },
+    { id: 'mortgage_offer', label: 'Mortgage Offer' },
     { id: 'mortgage_aip', label: 'Agreement in Principle' }
   ],
 
   // Energy Performance Certificate
   'Energy Performance Certificate': [
-    { id: 'epc_certificate', label: 'EPC Certificate', oscarType: 'epc_certificate' }
+    { id: 'epc_certificate', label: 'EPC Certificate' }
   ],
 
   // TA6 Property Information Form
   'TA6 Property Information Form': [
-    { id: 'ta6_form', label: 'TA6 Form (Law Society)', oscarType: 'ta6_form' },
+    { id: 'ta6_form', label: 'TA6 Form (Law Society)' },
     { id: 'ta6_equivalent', label: 'Equivalent Property Information Form' }
   ],
 
   // TA10 Fittings & Contents
   'TA10 Fittings & Contents Form': [
-    { id: 'ta10_form', label: 'TA10 Form (Law Society)', oscarType: 'ta10_form' },
+    { id: 'ta10_form', label: 'TA10 Form (Law Society)' },
     { id: 'ta10_equivalent', label: 'Equivalent Fittings Form' }
   ],
 
@@ -104,16 +103,6 @@ export const DOCUMENT_SUBTYPES: Record<string, DocumentSubtype[]> = {
  */
 export function getDocumentSubtypes(documentType: string): DocumentSubtype[] {
   return DOCUMENT_SUBTYPES[documentType] || [];
-}
-
-/**
- * Get Oscar verification type from subtype
- */
-export function getOscarTypeFromSubtype(documentType: string, subtypeId: string): string | null {
-  const subtypes = DOCUMENT_SUBTYPES[documentType];
-  if (!subtypes) return null;
-  const subtype = subtypes.find(s => s.id === subtypeId);
-  return subtype?.oscarType || null;
 }
 
 /**

@@ -37,7 +37,7 @@ PropXchain is MCP-native. Every transaction a user can see in the web app can al
 - GDPR-compliant document storage (SHA-256 hash on-chain, files stay local)
 - Solicitor document verification via hash comparison
 - Property intelligence via Land Registry API, Environment Agency flood data, Historic England heritage checks, and local authority planning data
-- Oscar AI assistant for guided conveyancing and document analysis
+- Oscar AI assistant for guided conveyancing
 - Role-based access control across 18 user types
 - Internet Identity authentication (no passwords, blockchain-native)
 - Legal forms: TA6 (Property Information), TA7 (Leasehold), TA10 (Fixtures and Fittings)

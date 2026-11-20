@@ -386,7 +386,7 @@ const TransactionDetailTabs: React.FC<TransactionDetailTabsProps> = ({
         logger.warn(`[Delete] No verificationDocumentId for document ${doc.id} — verification record may be orphaned`);
       }
 
-      // Clean up localStorage (Oscar results, ID mappings) and IndexedDB registry
+      // Clean up localStorage (old analysis results, ID mappings) and IndexedDB registry
       cleanupDocumentState(doc);
 
       // Update local state immediately (instant UI feedback)
@@ -905,23 +905,6 @@ const TransactionDetailTabs: React.FC<TransactionDetailTabsProps> = ({
                                   }}>
                                     ✓ Uploaded
                                   </div>
-                                  {existingDoc.storageDocumentId && (
-                                    <button
-                                      onClick={() => window.location.href = `/oscar?docId=${existingDoc.storageDocumentId}&txId=${transaction.id}`}
-                                      style={{
-                                        background: '#0D9488',
-                                        color: '#fff',
-                                        padding: '4px 10px',
-                                        borderRadius: '4px',
-                                        fontSize: '11px',
-                                        fontWeight: 600,
-                                        border: 'none',
-                                        cursor: 'pointer',
-                                      }}
-                                    >
-                                      Ask Oscar
-                                    </button>
-                                  )}
                                 </div>
                               )}
                             </div>
@@ -985,23 +968,6 @@ const TransactionDetailTabs: React.FC<TransactionDetailTabsProps> = ({
                               }}>
                                 ✓ Uploaded
                               </div>
-                              {existingDoc.storageDocumentId && (
-                                <button
-                                  onClick={() => window.location.href = `/oscar?docId=${existingDoc.storageDocumentId}&txId=${transaction.id}`}
-                                  style={{
-                                    background: '#0D9488',
-                                    color: '#fff',
-                                    padding: '4px 10px',
-                                    borderRadius: '4px',
-                                    fontSize: '11px',
-                                    fontWeight: 600,
-                                    border: 'none',
-                                    cursor: 'pointer',
-                                  }}
-                                >
-                                  Ask Oscar
-                                </button>
-                              )}
                             </div>
                           )}
                         </div>
