@@ -3,6 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { checkRateLimit } from '../_shared/rate-limit.ts';
 import { corsHeaders, preflight } from '../_shared/cors.ts';
 import { readChainInvite } from '../_shared/chain-invite.ts';
+import { inviteFootnote, inviteLink, isInviteRole, type InviteRole } from './link.ts';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') || '';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
@@ -12,24 +13,13 @@ const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || '';
 const RATE_LIMIT_WINDOW_SECONDS = 60 * 60;
 const RATE_LIMIT_MAX = 10;
 
-const ALLOWED_ROLES = [
-  'seller',
-  'buyer',
-  'conveyancer',
-  'mortgage_broker',
-  'lender',
-  'other',
-  'estate_agent',
-] as const;
-type Role = (typeof ALLOWED_ROLES)[number];
-
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // invite_code and property_address may still arrive from older clients; they
 // are ignored. Both are read from the deal on-chain (security scan M13).
 interface PartyInviteRequest {
   transaction_id: string;
-  role: Role;
+  role: InviteRole;
   side?: 'buyer' | 'seller';
   recipient_name: string;
   recipient_email: string;
@@ -50,8 +40,9 @@ function buildInviteHtml(opts: {
   propertyAddress: string;
   joinLink: string;
   senderLine: string;
+  footnote: string;
 }): string {
-  const { recipientName, propertyAddress, joinLink, senderLine } = opts;
+  const { recipientName, propertyAddress, joinLink, senderLine, footnote } = opts;
   return `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8" /><title>You've been invited to PropXchain</title></head>
@@ -86,7 +77,7 @@ function buildInviteHtml(opts: {
                 <a href="${joinLink}" style="color:#0D9488;word-break:break-all;">${joinLink}</a>
               </p>
               <p style="margin:16px 0 0;font-size:13px;color:#6b7280;">
-                Create your free PropXchain account to open your sale — it takes a minute.
+                ${escapeHtml(footnote)}
               </p>
             </td>
           </tr>
@@ -193,8 +184,7 @@ serve(async (req) => {
   if (
     typeof body.transaction_id !== 'string' ||
     !body.transaction_id ||
-    typeof body.role !== 'string' ||
-    !ALLOWED_ROLES.includes(body.role) ||
+    !isInviteRole(body.role) ||
     (body.side !== undefined && body.side !== 'buyer' && body.side !== 'seller') ||
     typeof body.recipient_name !== 'string' ||
     body.recipient_name.length < 1 ||
@@ -271,7 +261,7 @@ serve(async (req) => {
 
   // M13: the code in the join link and the address in the email are the
   // deal's own, read on-chain, so an agent cannot point a branded invite at
-  // another deal or a made-up address.
+  // another deal or a made-up address. A seller's link carries no code (link.ts).
   const chainInvite = await readChainInvite(body.transaction_id);
   if (!chainInvite.ok) {
     return new Response(JSON.stringify({ error: chainInvite.error }), {
@@ -317,7 +307,15 @@ serve(async (req) => {
     );
   }
 
-  const joinLink = `https://propxchain.com/join/${encodeURIComponent(inviteCode)}?role=${body.role}&side=${body.side ?? ''}&by=${invitedByPrincipal}`;
+  // party_invites.invite_code is NOT NULL, so the row above still records the
+  // deal's code; only the link decides what the recipient sees (link.ts).
+  const joinLink = inviteLink({
+    role: body.role,
+    transactionId: body.transaction_id,
+    inviteCode,
+    side: body.side,
+    invitedByPrincipal,
+  });
 
   const senderLine = 'Your estate agent';
   const html = buildInviteHtml({
@@ -325,6 +323,7 @@ serve(async (req) => {
     propertyAddress,
     joinLink,
     senderLine,
+    footnote: inviteFootnote(body.role),
   });
 
   const emailSent = await sendEmail({

@@ -695,7 +695,7 @@ const Dashboard_PremiumContent: React.FC = () => {
               className="share-btn text-xs sm:text-sm"
               onClick={() => navigate(`/transaction/${selectedTransaction.id}/share`)}
             >
-              Share / Invite
+              Invite your buyer
             </button>
             <button
               className="share-btn text-xs sm:text-sm"

@@ -21,6 +21,11 @@ vi.mock('../icp.service', () => ({
   },
 }));
 
+const mockRecordFromChain = vi.fn();
+vi.mock('../partyRole.service', () => ({
+  partyRoleService: { recordRoleFromChain: (...args: unknown[]) => mockRecordFromChain(...args) },
+}));
+
 import { DelegationError, grantDelegation, loadDelegationStatus, requestDelegation, revokeDelegation, sendPaymentLink } from '../delegation.service';
 
 const ID = 'd1000000-0000-0000-0000-000000000001';
@@ -36,6 +41,7 @@ describe('delegation.service', () => {
     mockProof.mockReset().mockResolvedValue({ principal: 'p', publicKeyDer: 'k', signature: 's' });
     mockJoin.mockReset().mockResolvedValue({ ok: {} });
     mockJoinAsBuyer.mockReset().mockResolvedValue({ ok: {} });
+    mockRecordFromChain.mockReset().mockResolvedValue({ ok: true, role: 'seller', side: 'seller', created: true });
     mockGetSession.mockReset().mockResolvedValue({ data: { session: { user: { id: 'u1' } } } });
   });
 
@@ -52,15 +58,45 @@ describe('delegation.service', () => {
     expect(mockInvoke).toHaveBeenCalledWith('agent-delegation', { body: { action: 'grant', delegationId: ID, principal: 'p', publicKeyDer: 'k', signature: 's' } });
   });
 
-  it('grantDelegation joins by the invite code first when the client is not on the deal yet, then grants again', async () => {
+  it('grantDelegation accepts the seller invite when the seller is not on the deal yet, then grants again', async () => {
     mockInvoke
-      .mockResolvedValueOnce(failure({ error: 'not_yet_on_chain', inviteCode: 'TX-AAAA-BBBB' }))
+      .mockResolvedValueOnce(failure({ error: 'not_yet_on_chain', inviteCode: null, acceptSellerInvite: true }))
       .mockResolvedValueOnce({ data: { ok: true, delegation: STATUS }, error: null })
       .mockResolvedValueOnce({ data: { ok: true, state: 'active', ledgerPending: true }, error: null });
     expect(await grantDelegation(ID)).toMatchObject({ state: 'active', ledgerPending: true });
-    expect(mockJoin).toHaveBeenCalledWith('TX-AAAA-BBBB');
+    expect(mockRecordFromChain).toHaveBeenCalledWith('tx_1');
+    expect(mockJoin).not.toHaveBeenCalled();
     expect(mockJoinAsBuyer).not.toHaveBeenCalled();
     expect(mockInvoke).toHaveBeenCalledTimes(3);
+  });
+
+  it('grantDelegation never joins a seller with an invite code, even if an older platform sends one', async () => {
+    mockInvoke
+      .mockResolvedValueOnce(failure({ error: 'not_yet_on_chain', inviteCode: 'TX-AAAA-BBBB' }))
+      .mockResolvedValueOnce({ data: { ok: true, delegation: STATUS }, error: null })
+      .mockResolvedValueOnce({ data: { ok: true, state: 'active', ledgerPending: false }, error: null });
+    await grantDelegation(ID);
+    expect(mockRecordFromChain).toHaveBeenCalledWith('tx_1');
+    expect(mockJoin).not.toHaveBeenCalled();
+    expect(mockJoinAsBuyer).not.toHaveBeenCalled();
+  });
+
+  it('grantDelegation stops with seller_accept_failed when the handover is refused, without granting again', async () => {
+    mockInvoke
+      .mockResolvedValueOnce(failure({ error: 'not_yet_on_chain', inviteCode: null, acceptSellerInvite: true }))
+      .mockResolvedValueOnce({ data: { ok: true, delegation: STATUS }, error: null });
+    mockRecordFromChain.mockResolvedValue({ ok: false, error: 'agent_flow_owns_roles' });
+    await expect(grantDelegation(ID)).rejects.toMatchObject({ code: 'seller_accept_failed', payload: { reason: 'agent_flow_owns_roles' } });
+    expect(mockInvoke).toHaveBeenCalledTimes(2);
+  });
+
+  it('grantDelegation reports no_invite when a buyer is not on the deal and no code came back', async () => {
+    mockInvoke
+      .mockResolvedValueOnce(failure({ error: 'not_yet_on_chain', inviteCode: null, acceptSellerInvite: false }))
+      .mockResolvedValueOnce({ data: { ok: true, delegation: { ...STATUS, role: 'buyer' } }, error: null });
+    await expect(grantDelegation(ID)).rejects.toMatchObject({ code: 'no_invite' });
+    expect(mockJoinAsBuyer).not.toHaveBeenCalled();
+    expect(mockRecordFromChain).not.toHaveBeenCalled();
   });
 
   it('grantDelegation uses the buyer join for a buyer delegation and surfaces the platform error code otherwise', async () => {

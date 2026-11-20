@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { icpService } from '../../services/icp.service';
 import { logger } from '@/utils/logger';
+import { useBuyerInviteState } from '@/hooks/useBuyerInviteState';
+import { BuyerInviteUnavailable, BuyerOnlyNote } from '@/components/transaction/BuyerInviteNotice';
 
 interface InviteStakeholderModalProps {
   isOpen: boolean;
@@ -24,6 +26,9 @@ export const InviteStakeholderModal: React.FC<InviteStakeholderModalProps> = ({
   const [copiedLink, setCopiedLink] = useState(false);
   const [inviteCode, setInviteCode] = useState<string>(propInviteCode || '');
   const [loadingCode, setLoadingCode] = useState(false);
+  // The code is the buyer's way in only (lib/buyerInvite): the seller side
+  // gives it to the buyer, and nobody else is ever sent it.
+  const inviteState = useBuyerInviteState(transactionId);
 
   // Fetch invite code from blockchain if not provided
   React.useEffect(() => {
@@ -50,10 +55,10 @@ export const InviteStakeholderModal: React.FC<InviteStakeholderModalProps> = ({
       }
     };
 
-    if (isOpen && !inviteCode) {
+    if (isOpen && inviteState === 'share' && !inviteCode) {
       fetchInviteCode();
     }
-  }, [isOpen, transactionId, propInviteCode]);
+  }, [isOpen, transactionId, propInviteCode, inviteState]);
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(inviteCode);
@@ -73,9 +78,9 @@ export const InviteStakeholderModal: React.FC<InviteStakeholderModalProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold">Invite Stakeholder</DialogTitle>
+          <DialogTitle className="text-xl font-bold">Invite your buyer</DialogTitle>
           <DialogDescription>
-            Add people to the transaction for <strong>{transactionAddress}</strong>
+            Give your buyer the invite code for <strong>{transactionAddress}</strong>
           </DialogDescription>
         </DialogHeader>
 
@@ -86,8 +91,14 @@ export const InviteStakeholderModal: React.FC<InviteStakeholderModalProps> = ({
               directly — now transaction_manager/admin only (security scan
               2026-09-23, C1) — and was already broken (NaN transaction id,
               admin-only user search). */}
+            {inviteState !== 'share' ? (
+              <div className="mt-4">
+                <BuyerInviteUnavailable state={inviteState} />
+              </div>
+            ) : (
             <div className="space-y-6 mt-4">
             <div className="space-y-4">
+              <BuyerOnlyNote transactionId={transactionId} />
               <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
                 <label className="text-sm text-gray-600 dark:text-gray-400 mb-2 block">Invite Code</label>
                 <div className="flex gap-2">
@@ -116,7 +127,7 @@ export const InviteStakeholderModal: React.FC<InviteStakeholderModalProps> = ({
                   </Button>
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                  Share this code with buyers. They can enter it on the Join page.
+                  Give this code to your buyer. They enter it on the Join page to join as the buyer.
                 </p>
               </div>
 
@@ -147,14 +158,14 @@ export const InviteStakeholderModal: React.FC<InviteStakeholderModalProps> = ({
                     variant="outline"
                     className="border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white"
                     disabled={!inviteCode}
-                    onClick={() => window.open(`mailto:?subject=Join My Property Transaction&body=Join my property transaction on PropXchain!%0A%0AInvite Code: ${inviteCode}%0A%0AVisit ${window.location.origin}/join and enter the code above.`)}
+                    onClick={() => window.open(`mailto:?subject=Join as the buyer on PropXchain&body=Join my property sale on PropXchain as the buyer.%0A%0AInvite Code: ${inviteCode}%0A%0AVisit ${window.location.origin}/join and enter the code above.`)}
                 >
                   <Mail className="w-4 h-4 mr-2" />
                   Email Invite
                 </Button>
                 <Button
                     className="bg-gray-700 hover:bg-gray-600"
-                    onClick={() => window.open(`/share-transaction/${transactionId}`, '_blank')}
+                    onClick={() => window.open(`/transaction/${encodeURIComponent(transactionId)}/share`, '_blank')}
                 >
                   <UserPlus className="w-4 h-4 mr-2" />
                   More Options
@@ -162,6 +173,7 @@ export const InviteStakeholderModal: React.FC<InviteStakeholderModalProps> = ({
               </div>
             </div>
             </div>
+            )}
         </div>
       </DialogContent>
     </Dialog>

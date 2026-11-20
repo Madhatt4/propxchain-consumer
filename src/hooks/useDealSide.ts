@@ -27,14 +27,27 @@ async function loadParties(transactionId: string): Promise<DealParties | null> {
   };
 }
 
-export function useDealSide(transactionId: string | null | undefined): DealSide | null {
+export interface DealPartiesQuery {
+  parties: DealParties | null | undefined;
+  principal: string | null;
+  isPending: boolean;
+  isError: boolean;
+}
+
+/** The deal's parties from the chain, shared (one query key) by every caller. */
+export function useDealParties(transactionId: string | null | undefined): DealPartiesQuery {
   const principal = usePrincipalId();
   const { data, isError, isPending } = useQuery({
     queryKey: ['deal-parties', transactionId],
     enabled: Boolean(transactionId),
     queryFn: () => loadParties(transactionId as string),
   });
+  return { parties: data, principal: principal ?? null, isPending, isError };
+}
+
+export function useDealSide(transactionId: string | null | undefined): DealSide | null {
+  const { parties, principal, isError, isPending } = useDealParties(transactionId);
   if (isError) return 'other';
   if (!principal || isPending) return null;
-  return data ? dealSideOf(data, principal) : 'other';
+  return parties ? dealSideOf(parties, principal) : 'other';
 }

@@ -11,6 +11,7 @@
  */
 import { supabase } from '../lib/supabase';
 import { icpService } from './icp.service';
+import { partyRoleService } from './partyRole.service';
 import { buildPrincipalProof } from './principalProof';
 import type { DealSide } from './shareParty.service';
 
@@ -82,12 +83,11 @@ async function signedInUserId(): Promise<string> {
   return id;
 }
 
-async function joinByInvite(inviteCode: string, role: DealSide): Promise<void> {
+/** The deal's invite code is the buyer's way in only (Marc, 2026-11-19), so only a buyer joins with it. */
+async function joinAsBuyer(inviteCode: string): Promise<void> {
   let result: unknown;
   try {
-    result = role === 'buyer'
-      ? await icpService.joinTransactionByInviteCodeAsBuyer(inviteCode)
-      : await icpService.joinTransactionByInviteCode(inviteCode);
+    result = await icpService.joinTransactionByInviteCodeAsBuyer(inviteCode);
   } catch (err) {
     // The canister call itself failed (network, agent): still a join failure to the client.
     throw new DelegationError('join_failed', { detail: err instanceof Error ? err.message : String(err) });
@@ -98,9 +98,22 @@ async function joinByInvite(inviteCode: string, role: DealSide): Promise<void> {
 }
 
 /**
+ * A seller is never handed the buyer's code: they take their place by
+ * accepting the agent's emailed invite, which runs record-party-role (the
+ * on-chain handover), the same call the /seller-invite page makes.
+ */
+async function acceptSellerInvite(transactionId: string): Promise<void> {
+  const outcome = await partyRoleService.recordRoleFromChain(transactionId);
+  if (!outcome.ok) {
+    throw new DelegationError('seller_accept_failed', { reason: outcome.error, ...(outcome.detail ? { detail: outcome.detail } : {}) });
+  }
+}
+
+/**
  * The button on the confirm page. Proves the client's principal, and if the
- * client has not joined the deal on-chain yet, joins by the agent's invite
- * code first and grants again. Nothing is granted without this call.
+ * client is not on the deal on-chain yet, takes their place first and grants
+ * again: a seller accepts the agent's emailed invite, a buyer joins by the
+ * deal's invite code. Nothing is granted without this call.
  */
 export async function grantDelegation(delegationId: string): Promise<DelegationOutcome> {
   const userId = await signedInUserId();
@@ -112,10 +125,16 @@ export async function grantDelegation(delegationId: string): Promise<DelegationO
     return await attempt();
   } catch (err) {
     if (err instanceof DelegationError && err.code === 'not_yet_on_chain') {
+      const status = await loadDelegationStatus(delegationId);
+      // Older platform builds sent a seller the code instead of the flag; a
+      // seller still never joins with it.
+      if (err.payload.acceptSellerInvite === true || status.role === 'seller') {
+        await acceptSellerInvite(status.transactionId);
+        return attempt();
+      }
       const inviteCode = typeof err.payload.inviteCode === 'string' ? err.payload.inviteCode : null;
       if (!inviteCode) throw new DelegationError('no_invite');
-      const status = await loadDelegationStatus(delegationId);
-      await joinByInvite(inviteCode, status.role);
+      await joinAsBuyer(inviteCode);
       return attempt();
     }
     throw err;

@@ -33,8 +33,8 @@ const QuickActions: React.FC<QuickActionProps> = ({ onAction }) => {
     },
     {
       id: 'invite-stakeholder',
-      title: 'Invite Stakeholder',
-      description: 'Add solicitor or agent',
+      title: 'Invite your buyer',
+      description: 'Give them your invite code',
       icon: Users,
       color: 'text-purple-400',
       bgColor: 'bg-purple-500/10',
