@@ -137,6 +137,19 @@ export function compare(baseline, current) {
   return { grew, shrank, baselineTotal: total(baseline), currentTotal: total(current) };
 }
 
+export function updateRefusal(baseline, current) {
+  const raised = Object.entries(current).filter(([f, n]) => f in baseline && n > baseline[f]);
+  if (raised.length > 0) return `comments added to ${raised.map(([f]) => f).join(', ')}`;
+  const freed = Object.entries(baseline)
+    .filter(([f]) => !(f in current))
+    .reduce((s, [, n]) => s + n, 0);
+  const arrived = Object.entries(current)
+    .filter(([f]) => !(f in baseline))
+    .reduce((s, [, n]) => s + n, 0);
+  if (arrived > freed) return `new files carry ${arrived} comments but moved or deleted files freed only ${freed}`;
+  return null;
+}
+
 function scan(ts) {
   const files = execFileSync('git', ['ls-files'], { encoding: 'utf8' })
     .split('\n')
@@ -190,9 +203,10 @@ function main() {
   const { grew, shrank, baselineTotal, currentTotal } = compare(baseline, current);
 
   if (isUpdate) {
-    if (currentTotal > baselineTotal) {
+    const refusal = updateRefusal(baseline, current);
+    if (refusal) {
       process.stderr.write(
-        `Refusing to raise the comment baseline: ${currentTotal} comments now, ${baselineTotal} allowed.\n` +
+        `Refusing to raise the comment baseline: ${refusal}.\n` +
           'Delete comments rather than adding them; the reason belongs in an ADR, a test name or a clearer identifier.\n',
       );
       process.exit(1);

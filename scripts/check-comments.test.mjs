@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { test } from 'node:test';
 
-import { compare, countComments, isDirective, motokoCommentRanges } from './check-comments.mjs';
+import { compare, countComments, isDirective, motokoCommentRanges, updateRefusal } from './check-comments.mjs';
 import { stripComments } from './strip-comments.mjs';
 
 const ts = createRequire(import.meta.url)('typescript');
@@ -104,6 +104,19 @@ test('should not desync on a Motoko escaped-quote char literal', () => {
 test('should collapse the blank lines a removed block leaves behind', () => {
   const src = 'const a = 1;\n\n/**\n * Gone.\n */\n\nconst b = 2;\n';
   assert.equal(stripComments(src, 'x.ts', ts), 'const a = 1;\n\nconst b = 2;\n');
+});
+
+test('should refuse an update that adds comments to one file while deleting elsewhere', () => {
+  const refusal = updateRefusal({ 'a.ts': 1, 'b.ts': 5 }, { 'a.ts': 2, 'b.ts': 0 });
+  assert.match(refusal ?? '', /a\.ts/);
+});
+
+test('should allow an update for a renamed file that keeps its comments', () => {
+  assert.equal(updateRefusal({ 'old.ts': 3, 'b.ts': 2 }, { 'new.ts': 3, 'b.ts': 1 }), null);
+});
+
+test('should refuse a new file whose comments exceed what moved files freed', () => {
+  assert.match(updateRefusal({ 'old.ts': 1 }, { 'new.ts': 2 }) ?? '', /freed only 1/);
 });
 
 test('should return empty lists when nothing changed', () => {
