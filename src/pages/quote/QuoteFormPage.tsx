@@ -22,7 +22,7 @@ type PageState =
   | 'error';
 
 interface PropertyDetails {
-  address: string;
+  propertyAddress: string;
   price?: number;
   transactionId?: string;
   solicitorFirm?: string;
@@ -283,10 +283,10 @@ export default function QuoteFormPage(): JSX.Element {
           <div className="bg-white dark:bg-[#0F1729] border border-gray-200 dark:border-[#1E293B] rounded-xl p-6">
             <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Property Details</h2>
             <dl className="space-y-3">
-              {property.address && (
+              {property.propertyAddress && (
                 <div className="flex justify-between text-sm">
                   <dt className="text-gray-500 dark:text-[#94A3B8]">Address</dt>
-                  <dd className="text-gray-800 dark:text-[#E5E7EB] font-medium text-right max-w-xs">{property.address}</dd>
+                  <dd className="text-gray-800 dark:text-[#E5E7EB] font-medium text-right max-w-xs">{property.propertyAddress}</dd>
                 </div>
               )}
               {property.price !== undefined && (
