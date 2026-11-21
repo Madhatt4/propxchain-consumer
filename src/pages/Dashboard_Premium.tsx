@@ -12,7 +12,6 @@ import PropertyPriceHistory from '../components/property/PropertyPriceHistory';
 import TransactionDetailTabs from '../components/transaction/TransactionDetailTabs';
 import { Transaction, Document } from '../types/transaction.types';
 import { TRANSACTION_STATUS_LABEL, TRANSACTION_STATUS_PROGRESS, isTransactionStatus } from '@/types/transactionStatus';
-// subscriptionService removed — consumer model uses £75 flat fee per transaction
 import { LandRegistryAddress, LAND_REGISTRY_URLS } from '../services/landRegistryService';
 // useTransactionProgressFromData removed - progress tracking to be reimplemented
 import { getPartyCountsForTransaction, getRequiredDocumentsForRole } from '../constants/documentTypes';
@@ -148,8 +147,6 @@ const Dashboard_PremiumContent: React.FC = () => {
   }, [principalId]);
 
   const { isDark } = useTheme();
-
-  // Subscription state removed — consumer model uses £75 flat fee
 
   // Progress tracking state (detail view only — cards use status-based progress)
   const [, setTransactionDocuments] = useState<Document[]>([]);

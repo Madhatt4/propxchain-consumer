@@ -23,7 +23,7 @@
  *
  * NO TIER FILTER (Marc, 2026-10-15): the platform is free, so the Narrator
  * runs for every buyer/seller on the roster. The old premium filter read
- * `ai_scan_entitlements` as a stand-in for the £75 tier; that read is gone.
+ * `ai_scan_entitlements` as a tier gate; that read is gone.
  */
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
