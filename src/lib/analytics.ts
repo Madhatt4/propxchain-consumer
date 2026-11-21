@@ -37,6 +37,16 @@ export function trackSignUp(method: SignUpMethod): void {
   window.gtag('event', 'sign_up', { method });
 }
 
+export function trackCtaClick(location: string, label: string): void {
+  if (typeof window.gtag !== 'function') return;
+  window.gtag('event', 'cta_click', { cta_location: location, cta_label: label });
+}
+
+export function trackRegisterStarted(): void {
+  if (typeof window.gtag !== 'function') return;
+  window.gtag('event', 'register_started', {});
+}
+
 /**
  * Reports a new waitlist entry (custom event `join_waitlist`). Duplicates are
  * not reported. Carries no personal data — only where the form was and the
