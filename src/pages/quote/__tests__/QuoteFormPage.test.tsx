@@ -68,4 +68,21 @@ describe('QuoteFormPage', () => {
     expect(screen.getByRole('button', { name: 'Submit Estimate' })).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/quote/i);
   });
+
+  it('should show the property address returned by the edge function', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(JSON.stringify({ propertyAddress: '1 Test Street' }))),
+    );
+
+    render(
+      <MemoryRouter initialEntries={['/quote/abc']}>
+        <Routes>
+          <Route path="/quote/:token" element={<QuoteFormPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText('1 Test Street')).toBeInTheDocument();
+  });
 });
