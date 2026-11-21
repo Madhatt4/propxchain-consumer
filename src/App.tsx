@@ -288,8 +288,6 @@ function App() {
               {/* Protected routes (auth required) */}
               <Route path="/profile-setup" element={<ProtectedRoute><ProfileSetup /></ProtectedRoute>} />
               <Route path="/onboarding/role" element={<ProtectedRoute><RoleSelectionPage /></ProtectedRoute>} />
-              {/* The £75 seller-fee page was removed when the platform went free
-                  (2026-10-15); old links land on the free start flow. */}
               <Route path="/onboarding/payment" element={<Navigate to="/start-transaction" replace />} />
               <Route path="/onboarding/join" element={<ProtectedRoute><OnboardingJoinPage /></ProtectedRoute>} />
               {/* Renamed from /onboarding/verify-identity — v3 Scope Reset
