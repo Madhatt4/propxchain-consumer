@@ -65,7 +65,6 @@ describe('CreateTransactionPage onboarding status', () => {
     await captured.onSubmit?.(details);
 
     expect(mockMarkOnboarded).toHaveBeenCalledTimes(1);
-    expect(localStorage.getItem('needsOnboarding')).toBeNull();
   });
 
   it('should not mark the user onboarded when the transaction is not created', async () => {

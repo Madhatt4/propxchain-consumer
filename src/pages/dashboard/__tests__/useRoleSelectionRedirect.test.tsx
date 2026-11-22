@@ -7,7 +7,7 @@ import { renderHook } from '@testing-library/react';
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', () => ({ useNavigate: () => mockNavigate }));
 
-const adminState = { isAdmin: false, isLoading: false, role: null };
+const adminState = { isAdmin: false, isLoading: false, isError: false, role: null };
 vi.mock('@/hooks/useIsAdmin', () => ({ useIsAdmin: () => adminState }));
 
 import { useAuthStore } from '@/stores/authStore';
@@ -36,6 +36,7 @@ beforeEach(() => {
   localStorage.clear();
   adminState.isAdmin = false;
   adminState.isLoading = false;
+  adminState.isError = false;
 });
 
 describe('useRoleSelectionRedirect', () => {
@@ -68,6 +69,23 @@ describe('useRoleSelectionRedirect', () => {
 
     tx = { ...loadedNoTransactions, transactionCount: 1 };
     rerender();
+
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it('should not redirect when the admin check failed', () => {
+    signIn({ propxchain_needs_onboarding: true });
+    adminState.isError = true;
+
+    renderHook(() => useRoleSelectionRedirect(loadedNoTransactions));
+
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it('should not redirect a buyer who has a transaction but no onboarded flag', () => {
+    signIn({ role: 'buyer', propxchain_needs_onboarding: true });
+
+    renderHook(() => useRoleSelectionRedirect({ ...loadedNoTransactions, transactionCount: 1 }));
 
     expect(mockNavigate).not.toHaveBeenCalled();
   });

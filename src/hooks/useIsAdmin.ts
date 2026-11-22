@@ -11,6 +11,7 @@ interface UseIsAdminResult {
   isAdmin: boolean;
   role: AdminRoleString;
   isLoading: boolean;
+  isError: boolean;
 }
 
 /**
@@ -25,7 +26,7 @@ interface UseIsAdminResult {
 export function useIsAdmin(): UseIsAdminResult {
   const principalId = useAuthStore((s) => s.principalId);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ['amIAdmin', principalId],
     queryFn: async () => {
       const isAdmin = await (await icpService.requireUserManagement()).amIAdmin();
@@ -50,5 +51,6 @@ export function useIsAdmin(): UseIsAdminResult {
     isAdmin: data?.isAdmin ?? false,
     role: data?.role ?? null,
     isLoading,
+    isError,
   };
 }

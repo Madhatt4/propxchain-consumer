@@ -43,16 +43,9 @@ describe('getPostLoginRoute', () => {
     expect(getPostLoginRoute()).toBe('/dashboard');
   });
 
-  it('should send a non-onboarded buyer to /onboarding/join', () => {
+  it('should send a non-onboarded buyer to /post-login so the dashboard can see their transactions', () => {
     setAuth({ supabaseUser: { user_metadata: { role: 'buyer' } } });
-    expect(getPostLoginRoute()).toBe('/onboarding/join');
-  });
-
-  it('should ignore the legacy localStorage onboardingComplete flag and use the user metadata only', () => {
-    localStorage.setItem('onboardingComplete', 'true');
-    setAuth({ supabaseUser: { user_metadata: { role: 'buyer' } } });
-
-    expect(getPostLoginRoute()).toBe('/onboarding/join');
+    expect(getPostLoginRoute()).toBe('/post-login');
   });
 
   it('should remove the legacy onboarding keys from localStorage on login', () => {

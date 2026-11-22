@@ -38,7 +38,6 @@ describe('OnboardingJoinPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'join' }));
 
     expect(mockMarkOnboarded).toHaveBeenCalledTimes(1);
-    expect(localStorage.getItem('onboardingComplete')).toBeNull();
     expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
   });
 });

@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { logger } from '@/utils/logger';
+import { markUserOnboarded } from '@/services/onboardingStatus';
 import { useIsAuthenticated as useStoreIsAuthenticated } from '../stores/authStore';
 import { Logo } from '@/components/brand/Logo';
 import { normaliseInviteCode } from '@/utils/inviteCode';
@@ -95,7 +96,7 @@ const JoinTransactionPage: React.FC = () => {
   }, [id, storeIsAuthenticated, navigate, location.pathname, location.search, inviteContext.role]);
 
   const handleJoinSuccess = (_transaction: Transaction) => {
-    // Navigate to the main dashboard where the joined transaction will appear
+    void markUserOnboarded();
     navigate('/dashboard');
   };
 

@@ -6,6 +6,7 @@ import { decideRoleSelection, shouldSendToRoleSelection, type RoleSelectionInput
 
 const settledNewUser = (over: Partial<RoleSelectionInput> = {}): RoleSelectionInput => ({
   adminLoading: false,
+  adminError: false,
   isAdmin: false,
   txLoading: false,
   txError: null,
@@ -36,6 +37,12 @@ describe('decideRoleSelection', () => {
 
     expect(decideRoleSelection(input)).toBe('wait');
     expect(shouldSendToRoleSelection(input)).toBe(false);
+  });
+
+  it('should keep the user on the dashboard when the admin check failed', () => {
+    const input = settledNewUser({ adminError: true });
+
+    expect(decideRoleSelection(input)).toBe('stay');
   });
 
   it('should wait rather than redirect while transactions are still loading', () => {

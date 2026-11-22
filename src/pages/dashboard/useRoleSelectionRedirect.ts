@@ -19,7 +19,7 @@ export interface TransactionsLoadState {
 
 export function useRoleSelectionRedirect(tx: TransactionsLoadState): void {
   const navigate = useNavigate();
-  const { isAdmin, isLoading: adminLoading } = useIsAdmin();
+  const { isAdmin, isLoading: adminLoading, isError: adminError } = useIsAdmin();
   const principalId = useAuthStore((s) => s.principalId);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const authMethod = useAuthStore((s) => s.authMethod);
@@ -34,6 +34,7 @@ export function useRoleSelectionRedirect(tx: TransactionsLoadState): void {
     if (hasDecided.current || !principalId || !isAuthenticated) return;
     const decision = decideRoleSelection({
       adminLoading,
+      adminError,
       isAdmin,
       txLoading: !tx.transactionsLoaded || tx.transactionsLoading,
       txError: tx.transactionsError,
@@ -45,7 +46,7 @@ export function useRoleSelectionRedirect(tx: TransactionsLoadState): void {
     hasDecided.current = true;
     if (decision === 'role-selection') navigate(ROLE_SELECTION_PATH);
   }, [
-    principalId, isAuthenticated, adminLoading, isAdmin, authMethod, metadata, navigate,
+    principalId, isAuthenticated, adminLoading, adminError, isAdmin, authMethod, metadata, navigate,
     tx.transactionsLoaded, tx.transactionsLoading, tx.transactionsError, tx.transactionCount,
   ]);
 }

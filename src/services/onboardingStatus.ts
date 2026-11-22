@@ -10,6 +10,11 @@ export const ONBOARDED_KEY = 'propxchain_onboarded';
 
 type OnboardingMetadataPatch = Partial<Record<typeof NEEDS_ONBOARDING_KEY | typeof ONBOARDED_KEY, boolean>>;
 
+function isStillSignedInAs(userId: string): boolean {
+  const { authMethod, supabaseUser } = useAuthStore.getState();
+  return authMethod === 'supabase' && supabaseUser?.id === userId;
+}
+
 async function writeOnboardingMetadata(patch: OnboardingMetadataPatch): Promise<void> {
   if (useAuthStore.getState().authMethod !== 'supabase') return;
   try {
@@ -18,7 +23,7 @@ async function writeOnboardingMetadata(patch: OnboardingMetadataPatch): Promise<
       logger.warn('Onboarding status: user metadata write failed', error);
       return;
     }
-    if (data.user) useAuthStore.setState({ supabaseUser: data.user });
+    if (data.user && isStillSignedInAs(data.user.id)) useAuthStore.setState({ supabaseUser: data.user });
   } catch (err) {
     logger.warn('Onboarding status: user metadata write threw', err);
   }

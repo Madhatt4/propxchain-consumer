@@ -33,7 +33,6 @@ import { useAuthStore, usePrincipalId, useIsAuthenticated } from '../stores/auth
 import { usePortalKinds } from '@/components/navigation/usePortalSections';
 import PendingJoinBanners from '@/components/conveyancer/PendingJoinBanners';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
-import { useRoleSelectionRedirect } from './dashboard/useRoleSelectionRedirect';
 import { getRightmoveData, syncListingFromChain } from '@/utils/rightmoveStorage';
 import NextStepCard from '@/components/common/NextStepCard';
 import WelcomeCards from '@/components/onboarding/WelcomeCards';
@@ -44,6 +43,7 @@ import {
   hasDismissedDemoProperty,
   dismissDemoProperty,
 } from '@/utils/firstRun';
+import { useRoleSelectionRedirect } from './dashboard/useRoleSelectionRedirect';
 
 // View modes for the dashboard
 type ViewMode = 'list' | 'detail';

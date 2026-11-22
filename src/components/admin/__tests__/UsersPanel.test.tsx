@@ -99,6 +99,7 @@ describe('UsersPanel', () => {
       isAdmin: true,
       role: 'super',
       isLoading: false,
+      isError: false,
     });
   });
 

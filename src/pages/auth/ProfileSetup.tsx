@@ -7,6 +7,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuthStore } from '../../stores/authStore';
 import { markUserNeedsOnboarding } from '../../services/onboardingStatus';
 
+const CONSUMER_USER_TYPES: ReadonlySet<string> = new Set(['seller', 'buyer']);
+
 interface User {
   id?: string;
   principal?: string;
@@ -255,7 +257,7 @@ const ProfileSetup: React.FC = () => {
       if (isDeveloper) {
         navigate('/pro/builder');
       } else {
-        await markUserNeedsOnboarding();
+        if (CONSUMER_USER_TYPES.has(userType)) await markUserNeedsOnboarding();
         navigate('/onboarding/role');
       }
     } catch (err: any) {
