@@ -3,6 +3,7 @@
 
 import { useAuthStore } from '../../stores/authStore';
 import { consumePendingInviteUrl } from '../../utils/pendingInviteUrl';
+import { clearLegacyOnboardingKeys } from '../../utils/legacyOnboardingKeys';
 
 /**
  * Shared post-login routing decision for the consumer app. Used by LoginPage
@@ -23,6 +24,7 @@ import { consumePendingInviteUrl } from '../../utils/pendingInviteUrl';
  * login (LoginPage reads it from `location.state.from`). When set, it wins.
  */
 export function getPostLoginRoute(fromPath?: string): string {
+  clearLegacyOnboardingKeys();
   const pendingInviteUrl = consumePendingInviteUrl();
   if (pendingInviteUrl) return pendingInviteUrl;
 
@@ -39,13 +41,5 @@ export function getPostLoginRoute(fromPath?: string): string {
   // choose a role + mobile before any dashboard.
   if (authState.authMethod === 'supabase' && !role) return '/profile-setup';
 
-
-  const onboarded = authState.supabaseUser?.user_metadata?.propxchain_onboarded === true
-    || localStorage.getItem('onboardingComplete') === 'true';
-  // Sellers are deliberately not funnelled here. The onboarded flag is only
-  // set by the paid route (PaymentSuccessPage), and Starter is free, so a
-  // Starter seller never gets it and would land on /start-transaction on
-  // every login. The dashboard carries its own "Start a transaction" action.
-  if (!onboarded && role === 'buyer') return '/onboarding/join';
   return '/post-login';
 }

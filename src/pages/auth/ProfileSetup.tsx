@@ -5,6 +5,9 @@ import AppTopBar from '@/components/navigation/AppTopBar';
 import { logger } from '@/utils/logger';
 import { useToast } from '@/hooks/use-toast';
 import { useAuthStore } from '../../stores/authStore';
+import { markUserNeedsOnboarding } from '../../services/onboardingStatus';
+
+const CONSUMER_USER_TYPES: ReadonlySet<string> = new Set(['seller', 'buyer']);
 
 interface User {
   id?: string;
@@ -254,7 +257,7 @@ const ProfileSetup: React.FC = () => {
       if (isDeveloper) {
         navigate('/pro/builder');
       } else {
-        localStorage.setItem('needsOnboarding', 'true');
+        if (CONSUMER_USER_TYPES.has(userType)) await markUserNeedsOnboarding();
         navigate('/onboarding/role');
       }
     } catch (err: any) {

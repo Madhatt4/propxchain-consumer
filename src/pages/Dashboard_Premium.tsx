@@ -43,6 +43,7 @@ import {
   hasDismissedDemoProperty,
   dismissDemoProperty,
 } from '@/utils/firstRun';
+import { useRoleSelectionRedirect } from './dashboard/useRoleSelectionRedirect';
 
 // View modes for the dashboard
 type ViewMode = 'list' | 'detail';
@@ -77,12 +78,21 @@ const Dashboard_PremiumContent: React.FC = () => {
   // Get transactions and documents from context - single source of truth
   const {
     transactions,
+    transactionsLoaded,
+    transactionsLoading,
+    transactionsError,
     refreshTransactions,
     transactionDocuments: contextDocuments,
     hiddenDocumentStatus,
     refreshDocuments,
     setSelectedTransaction: setContextTransaction,
   } = useSplitPanel();
+  useRoleSelectionRedirect({
+    transactionsLoaded,
+    transactionsLoading,
+    transactionsError,
+    transactionCount: transactions.length,
+  });
 
   const [selectedTransaction, setSelectedTransactionLocal] = useState<Transaction | null>(null);
   const setActiveTransaction = useActiveTransactionStore((s) => s.setActiveTransaction);
@@ -320,23 +330,12 @@ const Dashboard_PremiumContent: React.FC = () => {
       return;
     }
 
-    // Check if user still needs onboarding (admin bypass)
-    const needsOnboarding = localStorage.getItem('needsOnboarding') === 'true';
-    const onboardingComplete = localStorage.getItem('onboardingComplete') === 'true';
-    if (needsOnboarding && !onboardingComplete) {
-      const isAdmin = isAdminFromCanister;
-      if (!isAdmin) {
-        navigate('/onboarding/role');
-        return;
-      }
-    }
-
     setUser({ principal: principalId });
 
     // Transactions are loaded by SplitPanelContext - no local fetch needed
     // Admin check is handled by PremiumSidebar component
     loadUserProfile();
-  }, [principalId, isAuthenticated, navigate, isAdminFromCanister]);
+  }, [principalId, isAuthenticated]);
 
   // Auto-select transaction from navigation state (e.g., after creating a new transaction)
   useEffect(() => {

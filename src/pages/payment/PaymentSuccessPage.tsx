@@ -18,6 +18,7 @@ import { loadSearchPendingState } from '@/services/searchCheckoutResume';
 import { loadChainUnlockPendingState } from '@/services/chainUnlockCheckoutResume';
 import { HMLR_PENDING_KEY } from '@/services/hmlrPullPending';
 import { logger } from '@/utils/logger';
+import { markUserOnboarded } from '@/services/onboardingStatus';
 
 export default function PaymentSuccessPage(): React.ReactElement {
   const [searchParams] = useSearchParams();
@@ -44,7 +45,7 @@ export default function PaymentSuccessPage(): React.ReactElement {
     const principalId = useAuthStore.getState().principalId;
 
     if (!principalId) {
-      localStorage.setItem('onboardingComplete', 'true');
+      void markUserOnboarded();
       navigate('/dashboard', { replace: true });
       return;
     }
@@ -63,6 +64,7 @@ export default function PaymentSuccessPage(): React.ReactElement {
       }
 
       logger.info('Payment verified:', verification);
+      void markUserOnboarded();
 
       // Tier-aware routing — HMLR title pulls return to their originating
       // transaction page so HMLRTitlePullButton can resume the flow via

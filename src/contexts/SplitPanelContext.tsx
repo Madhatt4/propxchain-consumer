@@ -47,6 +47,7 @@ const initialState: SplitPanelState = {
   userRole: null,
   transactions: [],
   transactionsLoading: false,
+  transactionsLoaded: false,
   transactionsError: null,
   transactionDocuments: [],
   hiddenDocumentStatus: [],
@@ -97,6 +98,11 @@ function splitPanelReducer(
       return {
         ...state,
         transactionsError: action.payload,
+      };
+    case 'MARK_TRANSACTIONS_LOADED':
+      return {
+        ...state,
+        transactionsLoaded: true,
       };
     case 'REFRESH_TRANSACTIONS':
       return {
@@ -212,6 +218,7 @@ export const SplitPanelProvider: React.FC<SplitPanelProviderProps> = ({
       dispatch({ type: 'SET_TRANSACTIONS_ERROR', payload: errorMessage });
     } finally {
       dispatch({ type: 'SET_TRANSACTIONS_LOADING', payload: false });
+      dispatch({ type: 'MARK_TRANSACTIONS_LOADED' });
     }
   }, []); // EMPTY DEPENDENCY ARRAY - dispatch is stable from useReducer
 
@@ -352,6 +359,7 @@ export const SplitPanelProvider: React.FC<SplitPanelProviderProps> = ({
       userRole,
       transactions: state.transactions,
       transactionsLoading: state.transactionsLoading,
+      transactionsLoaded: state.transactionsLoaded,
       transactionsError: state.transactionsError,
       transactionDocuments: state.transactionDocuments,
       hiddenDocumentStatus: state.hiddenDocumentStatus,
@@ -370,6 +378,7 @@ export const SplitPanelProvider: React.FC<SplitPanelProviderProps> = ({
       userRole,
       state.transactions,
       state.transactionsLoading,
+      state.transactionsLoaded,
       state.transactionsError,
       state.transactionDocuments,
       state.hiddenDocumentStatus,

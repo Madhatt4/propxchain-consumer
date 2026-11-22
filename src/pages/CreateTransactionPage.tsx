@@ -7,6 +7,7 @@ import { icpService } from '../services/icp.service';
 import { partyRoleService } from '../services/partyRole.service';
 import { logger } from '../utils/logger';
 import { usePrincipalId } from '../stores/authStore';
+import { markUserOnboarded } from '../services/onboardingStatus';
 
 import type { RightmovePropertyListing } from '@/types/rightmove.types';
 import type { PropertyListing, Tenure } from '@/types/listing.types';
@@ -122,8 +123,7 @@ const CreateTransactionPage: React.FC = () => {
     txPartyCount[transactionId] = { sellerCount: details.sellerCount, buyerCount: 1 };
     localStorage.setItem('txPartyCount', JSON.stringify(txPartyCount));
 
-    // Clear onboarding flags
-    localStorage.removeItem('needsOnboarding');
+    void markUserOnboarded();
 
     return { transactionId, inviteCode };
   };

@@ -39,7 +39,7 @@ describe('DashboardSidebar', () => {
   });
 
   it('should show the estate agent portal link to admins and navigate to it', () => {
-    mockUseIsAdmin.mockReturnValue({ isAdmin: true, role: 'regular', isLoading: false });
+    mockUseIsAdmin.mockReturnValue({ isAdmin: true, role: 'regular', isLoading: false, isError: false });
 
     renderSidebar();
     fireEvent.click(screen.getByRole('button', { name: /estate agent portal/i }));
@@ -49,7 +49,7 @@ describe('DashboardSidebar', () => {
   });
 
   it('should hide the admin-only items from non-admins', () => {
-    mockUseIsAdmin.mockReturnValue({ isAdmin: false, role: null, isLoading: false });
+    mockUseIsAdmin.mockReturnValue({ isAdmin: false, role: null, isLoading: false, isError: false });
 
     renderSidebar();
 
