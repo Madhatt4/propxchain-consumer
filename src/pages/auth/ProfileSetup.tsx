@@ -5,6 +5,7 @@ import AppTopBar from '@/components/navigation/AppTopBar';
 import { logger } from '@/utils/logger';
 import { useToast } from '@/hooks/use-toast';
 import { useAuthStore } from '../../stores/authStore';
+import { markUserNeedsOnboarding } from '../../services/onboardingStatus';
 
 interface User {
   id?: string;
@@ -254,7 +255,7 @@ const ProfileSetup: React.FC = () => {
       if (isDeveloper) {
         navigate('/pro/builder');
       } else {
-        localStorage.setItem('needsOnboarding', 'true');
+        await markUserNeedsOnboarding();
         navigate('/onboarding/role');
       }
     } catch (err: any) {

@@ -5,7 +5,7 @@ import { Key, Loader2 } from 'lucide-react';
 import { Transaction } from '@/types/transaction.types';
 import { Logo } from '@/components/brand/Logo';
 import { usePrincipalId } from '@/stores/authStore';
-import { supabase } from '@/lib/supabase';
+import { markUserOnboarded } from '@/services/onboardingStatus';
 
 export default function OnboardingJoinPage(): JSX.Element {
   const navigate = useNavigate();
@@ -26,14 +26,8 @@ export default function OnboardingJoinPage(): JSX.Element {
   }
 
   const handleJoinSuccess = (_transaction: Transaction): void => {
-    localStorage.setItem('onboardingComplete', 'true');
     localStorage.removeItem('onboardingRole');
-    localStorage.removeItem('needsOnboarding');
-    // Persist to Supabase user_metadata so a later login doesn't funnel
-    // the buyer back to /onboarding/join on a new session / device.
-    void supabase.auth.updateUser({
-      data: { propxchain_onboarded: true },
-    });
+    void markUserOnboarded();
     navigate('/dashboard');
   };
 

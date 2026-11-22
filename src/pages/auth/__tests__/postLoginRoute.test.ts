@@ -48,6 +48,24 @@ describe('getPostLoginRoute', () => {
     expect(getPostLoginRoute()).toBe('/onboarding/join');
   });
 
+  it('should ignore the legacy localStorage onboardingComplete flag and use the user metadata only', () => {
+    localStorage.setItem('onboardingComplete', 'true');
+    setAuth({ supabaseUser: { user_metadata: { role: 'buyer' } } });
+
+    expect(getPostLoginRoute()).toBe('/onboarding/join');
+  });
+
+  it('should remove the legacy onboarding keys from localStorage on login', () => {
+    localStorage.setItem('needsOnboarding', 'true');
+    localStorage.setItem('onboardingComplete', 'true');
+    setAuth({ supabaseUser: { user_metadata: { role: 'seller' } } });
+
+    getPostLoginRoute();
+
+    expect(localStorage.getItem('needsOnboarding')).toBeNull();
+    expect(localStorage.getItem('onboardingComplete')).toBeNull();
+  });
+
   it('should send an already-onboarded seller to /post-login', () => {
     setAuth({ supabaseUser: { user_metadata: { role: 'seller', propxchain_onboarded: true } } });
     expect(getPostLoginRoute()).toBe('/post-login');

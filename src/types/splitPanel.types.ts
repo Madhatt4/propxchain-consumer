@@ -80,6 +80,7 @@ export interface SplitPanelState {
   transactions: Transaction[];
   /** Loading state for transactions fetch */
   transactionsLoading: boolean;
+  transactionsLoaded: boolean;
   /** Error message if transactions fetch failed */
   transactionsError: string | null;
   /** Documents for selected transaction */
@@ -105,6 +106,7 @@ export type SplitPanelAction =
   | { type: 'SET_TRANSACTIONS'; payload: Transaction[] }
   | { type: 'SET_TRANSACTIONS_LOADING'; payload: boolean }
   | { type: 'SET_TRANSACTIONS_ERROR'; payload: string | null }
+  | { type: 'MARK_TRANSACTIONS_LOADED' }
   | { type: 'REFRESH_TRANSACTIONS' }
   | { type: 'SET_DOCUMENTS'; payload: DocumentProofInfo[] }
   | { type: 'SET_HIDDEN_DOCUMENT_STATUS'; payload: DocumentStatusRow[] }
@@ -124,6 +126,7 @@ export interface SplitPanelContextType {
   transactions: Transaction[];
   /** Loading state for transactions */
   transactionsLoading: boolean;
+  transactionsLoaded: boolean;
   /** Error message if transactions failed to load */
   transactionsError: string | null;
   /** Documents for selected transaction */
