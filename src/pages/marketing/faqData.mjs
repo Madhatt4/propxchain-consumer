@@ -93,7 +93,7 @@ export const FAQ_GROUPS = [
       {
         // Canonical — verbatim from PricingPage.tsx
         q: 'What about solicitor/conveyancer fees?',
-        a: 'The conveyancer quotes you directly for your transaction. You compare and choose from the panel, or invite your own.',
+        a: 'The conveyancer gives you an estimate directly for your transaction. You compare and choose from the panel, or invite your own.',
       },
       {
         q: 'Can I use my own solicitor or conveyancer?',

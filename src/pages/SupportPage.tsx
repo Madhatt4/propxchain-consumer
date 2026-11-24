@@ -120,7 +120,7 @@ const SupportPage: React.FC = () => {
     },
     {
       question: 'What are the fees for using PropXchain?',
-      answer: 'Using PropXchain is free for buyers and sellers — no plans, no tiers, no platform fee. You pay per item for third-party items you order, such as searches, ID and AML checks and the £7 HM Land Registry title pull, each priced when you order. Your conveyancer quotes you directly.'
+      answer: 'Using PropXchain is free for buyers and sellers — no plans, no tiers, no platform fee. You pay per item for third-party items you order, such as searches, ID and AML checks and the £7 HM Land Registry title pull, each priced when you order. Your conveyancer gives you an estimate directly.'
     },
     {
       question: 'Can I invite my solicitor to the platform?',

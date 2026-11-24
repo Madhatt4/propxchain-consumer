@@ -86,7 +86,7 @@ const FindAConveyancerPage: React.FC = () => {
           Find a conveyancer — quoted on your actual transaction.
         </h1>
         <p className="mt-6 max-w-xl font-[DM_Sans] text-lg leading-relaxed text-[#6B7280] dark:text-[#94A3B8]">
-          Every conveyancer on the panel is regulated by the CLC or the SRA, quotes you directly
+          Every conveyancer on the panel is regulated by the CLC or the SRA, gives you an estimate directly
           with no PropXchain markup, and works from the same live transaction
           view you do.
         </p>
