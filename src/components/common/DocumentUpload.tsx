@@ -11,6 +11,7 @@ import { localDocumentRegistry } from '../../services/localDocumentRegistry';
 import { logger } from '@/utils/logger';
 import { cleanupDocumentState } from '@/utils/documentCleanup';
 import ScanButton from './ScanButton';
+import GoogleDriveButton from './GoogleDriveButton';
 
 interface DocumentUploadProps {
   transactionId?: string;
@@ -557,6 +558,12 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
         disabled={disabled || uploadState.isUploading}
       />
 
+      <GoogleDriveButton
+        onFiles={(files) => {
+          if (files[0]) void processFile(files[0]);
+        }}
+        disabled={disabled || uploadState.isUploading}
+      />
 
       {existingDocument && existingDocument.notes && (
         <div className="p-2 bg-gray-50 dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 rounded-md">

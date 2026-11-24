@@ -213,6 +213,9 @@ jobs:
           VITE_MAINTENANCE_MODE: ${{ vars.VITE_MAINTENANCE_MODE }}
           VITE_TITLE_WORKER_URL: ${{ vars.VITE_TITLE_WORKER_URL }}
           VITE_CARTO_BASEMAPS_KEY: ${{ vars.VITE_CARTO_BASEMAPS_KEY }}
+          VITE_GOOGLE_PICKER_API_KEY: ${{ vars.VITE_GOOGLE_PICKER_API_KEY }}
+          VITE_GOOGLE_OAUTH_CLIENT_ID: ${{ vars.VITE_GOOGLE_OAUTH_CLIENT_ID }}
+          VITE_GOOGLE_PICKER_APP_ID: ${{ vars.VITE_GOOGLE_PICKER_APP_ID }}
           # Both are read at build time by the Chain tab. Without them the
           # entitlement check compiles to `false` and the chain view to the
           # bundled sandbox sample, so a paid unlock can never show a chain.
