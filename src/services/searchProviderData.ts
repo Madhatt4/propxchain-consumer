@@ -8,6 +8,7 @@ export interface SearchItem {
   category: 'standard' | 'area-specific' | 'optional';
   /** Display copy for delivery turnaround (e.g. '24 hrs', '48 hrs'). */
   turnaround?: string;
+  pricedBySiteSize?: boolean;
   /**
    * PISCES product code, when this item maps to a OneSearch/PISCES product.
    * Used by onesearchService.placeOrder. Items from other providers (tmGroup,
@@ -635,6 +636,7 @@ export const groundsureRegionals: SearchItem[] = [
     id: 'groundsure-cheshire-salt',
     name: 'Cheshire Salt Search',
     pricePence: 3750,
+    pricedBySiteSize: true,
     included: false,
     category: 'area-specific',
     turnaround: '24 hrs',
@@ -643,6 +645,7 @@ export const groundsureRegionals: SearchItem[] = [
     id: 'groundsure-metalliferous-mining',
     name: 'Regulated Metalliferous Mining Search',
     pricePence: 7500,
+    pricedBySiteSize: true,
     included: false,
     category: 'area-specific',
     turnaround: '48 hrs',
@@ -651,6 +654,7 @@ export const groundsureRegionals: SearchItem[] = [
     id: 'groundsure-stone-mining',
     name: 'Regulated Stone Mining Search',
     pricePence: 7500,
+    pricedBySiteSize: true,
     included: false,
     category: 'area-specific',
     turnaround: '48 hrs',

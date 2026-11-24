@@ -81,6 +81,7 @@ export default function GroundsureBundlePicker({
   const totalPence = netPence + vatPence;
 
   const orderedItems = selectedBundle ? [selectedBundle, ...selectedAddOnItems] : selectedAddOnItems;
+  const hasSiteSizePricing = orderedItems.some((item) => item.pricedBySiteSize);
 
   function handleOrder(): void {
     if (orderedItems.length === 0) return;
@@ -168,7 +169,10 @@ export default function GroundsureBundlePicker({
                 className="flex justify-between text-sm text-gray-600 dark:text-gray-400"
               >
                 <span>{item.name}</span>
-                <span className="font-mono tabular-nums">{pence(grossPence(item.pricePence))}</span>
+                <span className="font-mono tabular-nums">
+                  {item.pricedBySiteSize ? 'from ' : ''}
+                  {pence(grossPence(item.pricePence))}
+                </span>
               </li>
             ))}
           </ul>
@@ -176,6 +180,7 @@ export default function GroundsureBundlePicker({
             <div className="flex justify-between">
               <span className="font-medium text-gray-900 dark:text-gray-100">Total</span>
               <span className="font-mono tabular-nums text-lg font-semibold text-teal-600 dark:text-teal-400">
+                {hasSiteSizePricing ? 'from ' : ''}
                 {pence(totalPence)}
               </span>
             </div>
@@ -185,6 +190,11 @@ export default function GroundsureBundlePicker({
           </div>
           {postcode && (
             <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">Pricing for {postcode}</p>
+          )}
+          {hasSiteSizePricing && (
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Some searches are priced by site size. You will see the exact price before you pay.
+            </p>
           )}
         </div>
       )}
@@ -210,7 +220,7 @@ export default function GroundsureBundlePicker({
           ? 'Placing order…'
           : orderedItems.length === 0
             ? 'Pick a bundle or a search to order'
-            : `Order ${orderedItems.length} search${orderedItems.length === 1 ? '' : 'es'} — ${pence(totalPence)}`}
+            : `Order ${orderedItems.length} search${orderedItems.length === 1 ? '' : 'es'} — ${hasSiteSizePricing ? 'from ' : ''}${pence(totalPence)}`}
       </button>
     </div>
   );

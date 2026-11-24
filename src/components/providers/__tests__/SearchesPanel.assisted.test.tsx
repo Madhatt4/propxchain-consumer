@@ -95,7 +95,7 @@ describe('SearchesPanel on an assisted deal', () => {
     markExplainerSeen('searches', 'tx-test-1');
     vi.mocked(postcodeService.getLocalAuthorityInfo).mockResolvedValue(laFixture());
     vi.mocked(actingSidesFor).mockResolvedValue(['seller']);
-    vi.mocked(groundsureService.placeOrderForProperty).mockResolvedValue({ success: true, id: 'row-1', ourReference: 'ref-1', retailGbp: 166.68 });
+    vi.mocked(groundsureService.placeOrderForProperty).mockResolvedValue({ success: true, id: 'row-1', ourReference: 'ref-1', retailGbp: 75.54 });
     vi.mocked(stripePaymentService.prepareSearchCheckoutSession).mockResolvedValue({
       sessionId: 'cs_test_1',
       url: 'https://checkout.stripe.com/c/pay/cs_test_1',
@@ -116,7 +116,7 @@ describe('SearchesPanel on an assisted deal', () => {
       productRef: 'groundsure:row-1',
     });
     const card = await screen.findByTestId('payment-handoff');
-    expect(card).toHaveTextContent('£166.68 to Groundsure');
+    expect(card).toHaveTextContent('£75.54 to Groundsure');
     expect(screen.getByRole('button', { name: 'Email the link to the seller' })).toBeEnabled();
     // The builders are out of the way while the client's payment is pending, so nothing can overwrite it.
     expect(screen.queryByTestId('assisted-note')).toBeNull();
@@ -144,12 +144,12 @@ describe('SearchesPanel on an assisted deal', () => {
 
   it('a refresh while the client has the link brings the waiting hand-over back, with the link marked sent', async () => {
     saveSearchPendingState({
-      provider: 'groundsure', transactionId: 'tx-test-1', searches: [], totalPence: 16668, ourReference: 'ref-1', sessionId: 'cs_test_1',
+      provider: 'groundsure', transactionId: 'tx-test-1', searches: [], totalPence: 7554, ourReference: 'ref-1', sessionId: 'cs_test_1',
       onBehalfOf: 'seller', checkoutUrl: 'https://checkout.stripe.com/c/pay/cs_test_1', linkSentTo: 's***r@example.test', startedAt: new Date().toISOString(),
     });
     vi.mocked(stripePaymentService.verifySession).mockRejectedValue(new Error('Payment not completed'));
     renderPanel();
-    expect(await screen.findByTestId('payment-handoff')).toHaveTextContent('£166.68 to Groundsure');
+    expect(await screen.findByTestId('payment-handoff')).toHaveTextContent('£75.54 to Groundsure');
     expect(screen.getByText(/Sent to/)).toHaveTextContent('s***r@example.test');
     expect(screen.queryByRole('button', { name: 'Choose a different order instead' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Send the link again' })).toBeEnabled();
@@ -158,7 +158,7 @@ describe('SearchesPanel on an assisted deal', () => {
 
   it('a paid session with no stash left on this device still settles from what Stripe says', async () => {
     saveSearchPendingState({
-      provider: 'groundsure', transactionId: 'tx-test-1', searches: [], totalPence: 16668, ourReference: 'ref-1', sessionId: 'cs_test_1',
+      provider: 'groundsure', transactionId: 'tx-test-1', searches: [], totalPence: 7554, ourReference: 'ref-1', sessionId: 'cs_test_1',
       onBehalfOf: 'seller', checkoutUrl: 'https://checkout.stripe.com/c/pay/cs_test_1', linkSentTo: 's***r@example.test', startedAt: new Date().toISOString(),
     });
     vi.mocked(stripePaymentService.verifySession).mockRejectedValueOnce(new Error('Payment not completed'));
@@ -166,7 +166,7 @@ describe('SearchesPanel on an assisted deal', () => {
     await screen.findByTestId('payment-handoff');
     window.localStorage.clear();
     vi.mocked(stripePaymentService.verifySession).mockResolvedValueOnce({
-      verified: true, principalId: 'principal-test', tier: '', amountPaid: 16668, sessionId: 'cs_test_1', type: 'search',
+      verified: true, principalId: 'principal-test', tier: '', amountPaid: 7554, sessionId: 'cs_test_1', type: 'search',
       provider: 'groundsure', onBehalfOf: 'seller', payerUserSub: 'client-1', transactionId: 'tx-test-1',
     });
     fireEvent.click(screen.getByRole('button', { name: 'Check payment' }));
@@ -177,7 +177,7 @@ describe('SearchesPanel on an assisted deal', () => {
   });
 
   it('a failed check is reported as a failed check, not as unpaid', async () => {
-    vi.mocked(sendPaymentLink).mockResolvedValue({ sentTo: 's***r@example.test', amountPence: 16668 });
+    vi.mocked(sendPaymentLink).mockResolvedValue({ sentTo: 's***r@example.test', amountPence: 7554 });
     renderPanel();
     await orderCheapestGroundsureBundle();
     fireEvent.click(await screen.findByRole('button', { name: 'Email the link to the seller' }));
@@ -199,7 +199,7 @@ describe('SearchesPanel on an assisted deal', () => {
   });
 
   it('emails the seller the link, then settles the order in their name once they have paid', async () => {
-    vi.mocked(sendPaymentLink).mockResolvedValue({ sentTo: 's***r@example.test', amountPence: 16668 });
+    vi.mocked(sendPaymentLink).mockResolvedValue({ sentTo: 's***r@example.test', amountPence: 7554 });
     renderPanel();
     await orderCheapestGroundsureBundle();
     fireEvent.click(await screen.findByRole('button', { name: 'Email the link to the seller' }));
@@ -218,7 +218,7 @@ describe('SearchesPanel on an assisted deal', () => {
     expect(onOrderComplete).not.toHaveBeenCalled();
 
     vi.mocked(stripePaymentService.verifySession).mockResolvedValueOnce({
-      verified: true, principalId: 'principal-test', tier: '', amountPaid: 16668, sessionId: 'cs_test_1', type: 'search',
+      verified: true, principalId: 'principal-test', tier: '', amountPaid: 7554, sessionId: 'cs_test_1', type: 'search',
       onBehalfOf: 'seller', payerUserSub: 'client-1', transactionId: 'tx-test-1',
     });
     fireEvent.click(screen.getByRole('button', { name: 'Check payment' }));
