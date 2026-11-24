@@ -4,7 +4,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 
 const mockInitialize = vi.fn();
@@ -87,6 +87,24 @@ describe('ExchangeStatusPage', () => {
     expect(screen.getByText('1 December 2026')).toBeInTheDocument();
     expect(screen.getAllByText('Recorded on PropXchain')).toHaveLength(2);
     expect(screen.getByText(/legally binding/)).toBeInTheDocument();
+  });
+
+  it('should offer add to calendar titled with the property address when a completion date exists', async () => {
+    mockGetTransaction.mockResolvedValue({ ...BASE_TX, completionDate: '2026-12-01' });
+    renderAt('TX-TEST-1');
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Add to calendar' }));
+
+    const href = screen.getByRole('link', { name: 'Google Calendar' }).getAttribute('href') ?? '';
+    expect(new URL(href).searchParams.get('text')).toBe('Completion: 1 Example Street, Testtown');
+  });
+
+  it('should not offer add to calendar when no completion date is recorded', async () => {
+    mockGetTransaction.mockResolvedValue(BASE_TX);
+    renderAt('TX-TEST-1');
+
+    await screen.findByText('Not exchanged yet');
+    expect(screen.queryByRole('button', { name: 'Add to calendar' })).not.toBeInTheDocument();
   });
 
   it('should say PropXchain does not hold money and offer no codes, escrow or sign actions', async () => {
