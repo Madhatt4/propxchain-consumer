@@ -15,6 +15,7 @@ import { RateLimitToast } from './components/common/RateLimitToast';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { Toaster } from '@/components/ui/toaster';
 import { AnalyticsTracker } from '@/components/analytics/AnalyticsTracker';
+import { CookieConsentBanner } from '@/components/analytics/CookieConsentBanner';
 import SessionWarningModal from './components/auth/SessionWarningModal';
 import SupportChatWidget from './components/support/SupportChatWidget';
 import ProtectedRoute from './components/auth/ProtectedRoute';
@@ -203,6 +204,7 @@ function App() {
           />
           <Router>
             <AnalyticsTracker />
+            <CookieConsentBanner />
             <BiometricGate />
             <PushBridge />
             {/* One mount for every dashboard route — the widget gates itself on

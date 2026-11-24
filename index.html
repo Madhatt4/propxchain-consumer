@@ -9,6 +9,14 @@
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
+      var pxcAnalyticsConsent = null;
+      try { pxcAnalyticsConsent = localStorage.getItem('propxchain_analytics_consent'); } catch (e) {}
+      gtag('consent', 'default', {
+        analytics_storage: pxcAnalyticsConsent === 'granted' ? 'granted' : 'denied',
+        ad_storage: 'denied',
+        ad_user_data: 'denied',
+        ad_personalization: 'denied'
+      });
       gtag('js', new Date());
       gtag('config', 'G-D01CE0HY6L', { send_page_view: false, allow_google_signals: false, allow_ad_personalization_signals: false });
     </script>
