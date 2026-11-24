@@ -42,8 +42,9 @@ const CSP_DIRECTIVES = {
     "'self'",
     ...INLINE_SCRIPT_HASHES,
     'https://www.googletagmanager.com',
-    'https://apis.google.com',
-    'https://accounts.google.com',
+    'https://apis.google.com/js/',
+    'https://apis.google.com/_/scs/',
+    'https://accounts.google.com/gsi/',
   ],
   'style-src': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
   'img-src': [
@@ -98,6 +99,7 @@ const CSP_DIRECTIVES = {
     // Remediation Authority) and the BGS radon atlas.
     'https://services-eu1.arcgis.com',
     'https://map.bgs.ac.uk',
+    'https://www.googleapis.com',
   ],
   'frame-src': [
     "'self'",
@@ -106,7 +108,6 @@ const CSP_DIRECTIVES = {
     'https://*.stripe.com',
     'https://docs.google.com',
     'https://accounts.google.com',
-    'https://content.googleapis.com',
   ],
   'object-src': ["'none'"],
   'base-uri': ["'self'"],
