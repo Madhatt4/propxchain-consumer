@@ -8,6 +8,7 @@ import path from 'path'
 import { describe, expect, it } from 'vitest'
 
 import {
+  CONTENT_SECURITY_POLICY,
   DEV_CONTENT_SECURITY_POLICY,
   INLINE_SCRIPT_HASHES,
   SECURITY_HEADERS,
@@ -112,5 +113,33 @@ describe('security headers', () => {
     }
 
     expect(defaultRule.allow_raw_access).toBe(false)
+  })
+})
+
+describe('Google Drive picker hosts', () => {
+  const directive = (name: string): string[] =>
+    (CONTENT_SECURITY_POLICY.split(';').map((d) => d.trim()).find((d) => d.startsWith(`${name} `)) ?? '')
+      .split(/\s+/)
+      .slice(1)
+
+  it('should let the page download picked files from the Drive API', () => {
+    expect(directive('connect-src')).toContain('https://www.googleapis.com')
+  })
+
+  it('should allow only the Google script paths the picker and sign-in load', () => {
+    const scripts = directive('script-src')
+    expect(scripts).toEqual(expect.arrayContaining([
+      'https://apis.google.com/js/',
+      'https://apis.google.com/_/scs/',
+      'https://accounts.google.com/gsi/',
+    ]))
+    expect(scripts).not.toContain('https://apis.google.com')
+    expect(scripts).not.toContain('https://accounts.google.com')
+  })
+
+  it('should frame only the Google picker and sign-in pages', () => {
+    const frames = directive('frame-src')
+    expect(frames).toEqual(expect.arrayContaining(['https://docs.google.com', 'https://accounts.google.com']))
+    expect(frames).not.toContain('https://content.googleapis.com')
   })
 })

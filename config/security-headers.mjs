@@ -38,7 +38,14 @@ const CSP_DIRECTIVES = {
   // WebAssembly (so no 'wasm-unsafe-eval' either). The only Function("return
   // this") calls are core-js global-object fallbacks behind globalThis, which
   // every supported browser has, so they never run.
-  'script-src': ["'self'", ...INLINE_SCRIPT_HASHES, 'https://www.googletagmanager.com'],
+  'script-src': [
+    "'self'",
+    ...INLINE_SCRIPT_HASHES,
+    'https://www.googletagmanager.com',
+    'https://apis.google.com/js/',
+    'https://apis.google.com/_/scs/',
+    'https://accounts.google.com/gsi/',
+  ],
   'style-src': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
   'img-src': [
     "'self'",
@@ -92,8 +99,16 @@ const CSP_DIRECTIVES = {
     // Remediation Authority) and the BGS radon atlas.
     'https://services-eu1.arcgis.com',
     'https://map.bgs.ac.uk',
+    'https://www.googleapis.com',
   ],
-  'frame-src': ["'self'", 'https://identity.ic0.app', 'https://id.ai', 'https://*.stripe.com'],
+  'frame-src': [
+    "'self'",
+    'https://identity.ic0.app',
+    'https://id.ai',
+    'https://*.stripe.com',
+    'https://docs.google.com',
+    'https://accounts.google.com',
+  ],
   'object-src': ["'none'"],
   'base-uri': ["'self'"],
   'form-action': ["'self'", 'https://*.stripe.com'],

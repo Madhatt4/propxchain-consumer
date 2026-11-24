@@ -25,6 +25,7 @@ import {
 } from '@/types/vault.types';
 import { transactionWalletService } from '@/services/transactionWallet.service';
 import { logger } from '@/utils/logger';
+import GoogleDriveButton from '../common/GoogleDriveButton';
 import { WalletFileRow } from './WalletFileRow';
 
 /** Icon per slot — matches the Credentials-tab row language (icon square + name + detail + chip). */
@@ -82,15 +83,11 @@ export function WalletDocumentUpload({
     if (!isBusy && !atCap) inputRef.current?.click();
   };
 
-  const onFile = async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
-    const file = e.target.files?.[0];
-    e.target.value = ''; // allow re-picking the same file
-    if (!file) return;
-
+  const storeFile = async (file: File): Promise<boolean> => {
     const validationError = validateVaultFile(file);
     if (validationError) {
       setError(validationError);
-      return;
+      return false;
     }
 
     setError(null);
@@ -99,12 +96,27 @@ export function WalletDocumentUpload({
       const doc = await vaultDocumentService.storeDocument(file, slot, caps, label);
       setLabel('');
       onStored(doc);
+      return true;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Upload failed. Please try again.';
       logger.error('[vault] upload failed', message);
       setError(message);
+      return false;
     } finally {
       setIsBusy(false);
+    }
+  };
+
+  const onFile = async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-picking the same file
+    if (!file) return;
+    await storeFile(file);
+  };
+
+  const storeFiles = async (files: File[]): Promise<void> => {
+    for (const file of files) {
+      if (!(await storeFile(file))) return;
     }
   };
 
@@ -260,6 +272,15 @@ export function WalletDocumentUpload({
             ? `Slot full (${maxFiles}) — upgrade for more`
             : 'Upload document (PDF, JPG, PNG · max 10MB)'}
       </button>
+
+      {!atCap && (
+        <GoogleDriveButton
+          onFiles={(files) => void storeFiles(files)}
+          multiple
+          disabled={isBusy}
+          className="mt-2"
+        />
+      )}
 
       {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
     </div>
