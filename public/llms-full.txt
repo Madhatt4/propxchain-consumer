@@ -1718,7 +1718,7 @@ Third-party items are paid per item, priced when you order:
 | ID and AML checks | Per check, priced when you order | Run by a regulated identity provider. |
 | HM Land Registry title pull | 7 GBP per title | Names the registered owner. |
 | Property chain check | 25 GBP, one-off per transaction | |
-| Conveyancer (reserved legal acts) | Quoted per transaction | The panel conveyancer quotes you directly. |
+| Conveyancer (reserved legal acts) | Estimated per transaction | The panel conveyancer gives you an estimate directly. |
 
 Stamp Duty Land Tax (SDLT) is separate and paid to HMRC, not to PropXchain. Standard SDLT rates apply based on purchase price.
 

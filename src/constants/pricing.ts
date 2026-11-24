@@ -42,5 +42,5 @@ export const PAID_ITEMS: readonly PaidItem[] = [
     note: 'Per title pull — names the registered owner',
   },
   { label: 'Property chain check', cost: '£25', priceGbp: 25, note: 'One-off, per transaction' },
-  { label: 'Conveyancer', cost: 'Quote', priceGbp: null, note: 'The conveyancer quotes you directly' },
+  { label: 'Conveyancer', cost: 'Estimate', priceGbp: null, note: 'The conveyancer gives you an estimate directly' },
 ];

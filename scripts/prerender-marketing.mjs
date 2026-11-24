@@ -221,7 +221,7 @@ export const pages = [
     <li><strong>ID &amp; AML checks:</strong> per check, priced when you order.</li>
     <li><strong>HM Land Registry title:</strong> £7 per title pull — names the registered owner.</li>
     <li><strong>Property chain check:</strong> £25, one-off per transaction.</li>
-    <li><strong>Conveyancer:</strong> the conveyancer quotes you directly.</li>
+    <li><strong>Conveyancer:</strong> the conveyancer gives you an estimate directly.</li>
   </ul>
   <p>You only pay for what you order, and you see the price before you pay.</p>
 </section>
@@ -236,7 +236,7 @@ export const pages = [
   <p>Only the third-party items you choose to order: property searches, ID and AML checks, the £7 HM Land Registry title pull and the £25 property chain check. Each one is priced when you order, before you pay.</p>
 
   <h3>What about solicitor or conveyancer fees?</h3>
-  <p>The conveyancer quotes you directly for your transaction. You compare and choose from the panel, or invite your own.</p>
+  <p>The conveyancer gives you an estimate directly for your transaction. You compare and choose from the panel, or invite your own.</p>
 
   <h3>Will it always be free?</h3>
   <p>Everything on PropXchain is free today. We may add paid extras later. If we do, you will see the price before you pay.</p>
@@ -297,7 +297,7 @@ export const pages = [
     main: `<main id="seo-fallback" role="main" aria-label="Find a conveyancer with PropXchain — summary">
 <p class="muted">Loading PropXchain…</p>
 <h1>Find a conveyancer — quoted on your actual transaction</h1>
-<p>Every conveyancer on PropXchain's panel is regulated by the CLC or the SRA, quotes you directly per transaction, and uses the same shared live transaction view so you always know where things stand.</p>
+<p>Every conveyancer on PropXchain's panel is regulated by the CLC or the SRA, gives you an estimate directly per transaction, and uses the same shared live transaction view so you always know where things stand.</p>
 
 <section aria-labelledby="why">
   <h2 id="why">Why use a PropXchain conveyancer</h2>
