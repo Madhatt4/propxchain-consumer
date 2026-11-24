@@ -11,6 +11,7 @@
  */
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import AddToCalendar from '@/components/common/AddToCalendar';
 import { icpService } from '@/services/icp.service';
 import { logger } from '@/utils/logger';
 import { conveyancerRecordRows, useConveyancerRecords, type RecordRow } from '@/hooks/useConveyancerRecords';
@@ -54,11 +55,14 @@ function useExchangeStatus(transactionId: string): LoadState {
   return state;
 }
 
-function Row({ label, value }: { label: string; value: string }): ReactNode {
+function Row({ label, value, action }: { label: string; value: string; action?: ReactNode }): ReactNode {
   return (
     <div className="grid grid-cols-1 gap-0.5 py-3 border-t border-gray-200 dark:border-slate-700 first:border-t-0 sm:grid-cols-[16rem_1fr] sm:gap-4">
       <dt className="text-sm font-medium text-gray-800 dark:text-gray-200">{label}</dt>
-      <dd className={MUTED}>{value}</dd>
+      <dd className={MUTED}>
+        {value}
+        {action && <span className="ml-3">{action}</span>}
+      </dd>
     </div>
   );
 }
@@ -74,12 +78,25 @@ function Section({ title, children }: { title: string; children: ReactNode }): R
   );
 }
 
+function CompletionCalendar({ status }: { status: ExchangeStatus }): ReactNode {
+  if (!status.completionDate) return null;
+  return (
+    <AddToCalendar
+      event={{
+        title: `Completion: ${status.propertyAddress ?? 'your move'}`,
+        date: status.completionDate,
+        details: 'The agreed completion date for your move, from PropXchain.',
+      }}
+    />
+  );
+}
+
 function ExchangeRecord({ status, recordRows }: { status: ExchangeStatus; recordRows: RecordRow[] }): ReactNode {
   return (
     <Section title="Exchange record">
       <dl className="flex flex-col">
         <Row label="Contracts" value={exchangeText(status)} />
-        <Row label="Agreed completion date" value={completionDateText(status)} />
+        <Row label="Agreed completion date" value={completionDateText(status)} action={<CompletionCalendar status={status} />} />
         <Row label="Buyer's conveyancer: exchange confirmed" value={confirmationText(status.buyerConveyancerConfirmed)} />
         <Row label="Seller's conveyancer: exchange confirmed" value={confirmationText(status.sellerConveyancerConfirmed)} />
         {recordRows.map((row) => <Row key={row.label} label={row.label} value={row.value} />)}
