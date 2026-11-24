@@ -31,8 +31,8 @@ export default function PriceRiseNotice({
     >
       <p className="font-medium">The price for this property is {pence(totalPence)}</p>
       <p className="mt-2">
-        Some searches are priced by the size of the site. Groundsure has priced this property at{' '}
-        {pence(totalPence)}, not the {pence(shownPence)} shown. Nothing has been charged.
+        That is more than the {pence(shownPence)} shown, because some searches are priced by the
+        size of the site. Nothing has been charged.
       </p>
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <button

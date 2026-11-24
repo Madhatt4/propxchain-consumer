@@ -495,6 +495,7 @@ export function SearchesPanel({
     pending: Awaited<ReturnType<typeof groundsureService.placeOrderForProperty>>;
     searches: SearchItem[];
     totalPence: number;
+    priceRose: boolean;
   } | null>(null);
   const [pendingPriceRise, setPendingPriceRise] = useState<{
     pending: Awaited<ReturnType<typeof groundsureService.placeOrderForProperty>>;
@@ -1194,6 +1195,7 @@ export function SearchesPanel({
         pending,
         searches: kept,
         totalPence,
+        priceRose: totalPence > grossPence(kept.reduce((sum, s) => sum + s.pricePence, 0)),
       });
       setIsOrdering(null);
       return;
@@ -1573,6 +1575,7 @@ export function SearchesPanel({
                 names={pendingDropped.names}
                 totalPence={pendingDropped.totalPence}
                 remainingCount={pendingDropped.searches.length}
+                priceRose={pendingDropped.priceRose}
                 isBusy={isOrdering === 'groundsure'}
                 onCancel={() => setPendingDropped(null)}
                 onContinue={() => {

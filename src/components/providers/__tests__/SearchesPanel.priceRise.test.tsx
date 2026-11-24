@@ -5,6 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { SearchesPanel } from '../SearchesPanel';
 import { postcodeService } from '../../../services/postcodeService';
 import { groundsureService } from '../../../services/groundsure.service';
+import { searchOrderService } from '../../../services/searchOrder.service';
 import { markExplainerSeen } from '../../explainer/explainerSeen';
 import stripePaymentService from '@/services/stripePayment.service';
 import type { LocalAuthorityInfo } from '../../../services/postcodeService';
@@ -120,7 +121,7 @@ describe('SearchesPanel - a price above the one shown', () => {
 
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent('The price for this property is £90.00');
-    expect(alert).toHaveTextContent('not the £75.54 shown');
+    expect(alert).toHaveTextContent('more than the £75.54 shown');
     expect(stripePaymentService.prepareSearchCheckoutSession).not.toHaveBeenCalled();
   });
 
@@ -132,6 +133,7 @@ describe('SearchesPanel - a price above the one shown', () => {
     fireEvent.click(await screen.findByRole('button', { name: /Continue with 1 search — £90.00/ }));
 
     await waitFor(() => expect(stripePaymentService.prepareSearchCheckoutSession).toHaveBeenCalledTimes(1));
+    expect(searchOrderService.createOrder).toHaveBeenCalledWith(expect.objectContaining({ totalPence: 9000 }));
   });
 
   it('should charge nothing when the customer cancels', async () => {
@@ -142,6 +144,27 @@ describe('SearchesPanel - a price above the one shown', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Cancel' }));
 
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(stripePaymentService.prepareSearchCheckoutSession).not.toHaveBeenCalled();
+    expect(searchOrderService.createOrder).not.toHaveBeenCalled();
+  });
+
+  it('should say the price rose when a line is dropped and the rest costs more than shown', async () => {
+    vi.mocked(groundsureService.placeOrderForProperty).mockResolvedValue({
+      success: true,
+      id: 'row-1',
+      ourReference: 'ref-1',
+      retailGbp: 90,
+      vatGbp: 15,
+      dropped: [{ code: 'flood', reason: 'needs_estimate' }],
+      orderedCodes: ['hs'],
+      status: 'pending_payment',
+    });
+    renderPanel();
+
+    await orderCheapestGroundsureBundle();
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('The rest costs £90.00, more than shown');
     expect(stripePaymentService.prepareSearchCheckoutSession).not.toHaveBeenCalled();
   });
 

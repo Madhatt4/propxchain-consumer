@@ -22,6 +22,7 @@ interface DroppedSearchesNoticeProps {
   totalPence: number;
   /** How many searches remain. */
   remainingCount: number;
+  priceRose?: boolean;
   onContinue: () => void;
   onCancel: () => void;
   isBusy: boolean;
@@ -35,6 +36,7 @@ export default function DroppedSearchesNotice({
   names,
   totalPence,
   remainingCount,
+  priceRose = false,
   onContinue,
   onCancel,
   isBusy,
@@ -63,6 +65,12 @@ export default function DroppedSearchesNotice({
         {single ? 'It is' : 'They are'} usually only available in specific areas. Nothing has been
         charged.
       </p>
+      {priceRose && (
+        <p className="mt-2">
+          The rest costs {pence(totalPence)}, more than shown, because some searches are priced by the
+          size of the site.
+        </p>
+      )}
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <button
