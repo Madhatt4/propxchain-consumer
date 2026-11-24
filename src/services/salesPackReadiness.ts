@@ -28,6 +28,9 @@ import { icpService } from './icp.service';
 import { enrichAndStoreListing } from './listingEnrichment';
 import { enrichListingFromRegisters, type FactDiscrepancy } from './listingFactsFromRegister';
 import { MATERIAL_INFO_FIELD_LABEL, materialInfoMissing, type MaterialInfoGap } from './materialInfo';
+import { TA6_STEP_COUNT, isSectionComplete } from '@/components/forms/ta6/sectionMeta';
+import type { TA6PropertyInformation } from '@/types/ta6.types';
+import { calculateTA7Completion, type TA7LeaseholdInformation } from '@/types/ta7.types';
 
 export type PackItemId =
   | 'materialInfo'
@@ -65,6 +68,11 @@ export interface PackReadiness {
   warnings: string[];
 }
 
+export interface FormProgress {
+  sectionsDone: number;
+  sectionsTotal: number;
+}
+
 export interface PackReadinessInputs {
   listing: PropertyListing | null;
   titlePulled: boolean;
@@ -73,8 +81,10 @@ export interface PackReadinessInputs {
   searchesOrdered: boolean;
   searchesBack: boolean;
   ta6: boolean;
+  ta6Progress?: FormProgress;
   ta10: boolean;
   ta7: boolean;
+  ta7Started?: boolean;
   idShared: boolean;
   registerDiscrepancies: FactDiscrepancy[];
 }
@@ -151,6 +161,28 @@ function formItem(id: 'ta6' | 'ta10' | 'ta7', label: string, done: boolean, notD
   return { id, label, done, status: done ? 'Completed' : notDoneStatus };
 }
 
+function ta6NotDoneStatus(progress: FormProgress | undefined): string {
+  if (!progress || progress.sectionsDone === 0) return 'Not started';
+  return `In progress: ${progress.sectionsDone} of ${progress.sectionsTotal} sections`;
+}
+
+function ta7NotDoneStatus(tenure: Tenure | undefined, started: boolean | undefined): string {
+  if (started) return 'In progress';
+  return tenure === 'leasehold' ? 'Not started' : 'Only if leasehold';
+}
+
+export function ta6Progress(form: TA6PropertyInformation): FormProgress {
+  let sectionsDone = 0;
+  for (let step = 1; step <= TA6_STEP_COUNT; step++) {
+    if (isSectionComplete(form, step)) sectionsDone++;
+  }
+  return { sectionsDone, sectionsTotal: TA6_STEP_COUNT };
+}
+
+export function isTa7Complete(form: TA7LeaseholdInformation): boolean {
+  return calculateTA7Completion(form).percentage === 100;
+}
+
 /** Rows in the signed-off order (Marc, 2026-11-15 mock-up). */
 export function computePackReadiness(inputs: PackReadinessInputs): PackReadiness {
   const tenure = inputs.listing?.tenure;
@@ -158,10 +190,10 @@ export function computePackReadiness(inputs: PackReadinessInputs): PackReadiness
     materialInfoItem(inputs.listing),
     epcItem(inputs.listing),
     titleItem(inputs.titlePulled, inputs.titleNumber),
-    formItem('ta6', 'Property information form (TA6)', inputs.ta6),
+    formItem('ta6', 'Property information form (TA6)', inputs.ta6, ta6NotDoneStatus(inputs.ta6Progress)),
     formItem('ta10', 'Fittings and contents form (TA10)', inputs.ta10),
     ...(includesTa7(tenure)
-      ? [formItem('ta7', 'Leasehold information form (TA7)', inputs.ta7, tenure === 'leasehold' ? 'Not started' : 'Only if leasehold')]
+      ? [formItem('ta7', 'Leasehold information form (TA7)', inputs.ta7, ta7NotDoneStatus(tenure, inputs.ta7Started))]
       : []),
     searchesItem(inputs.searchesOrdered, inputs.searchesBack),
     {
@@ -263,7 +295,7 @@ export async function loadPackReadinessInputs(
   const listing = facts?.listing ?? null;
   const registerDiscrepancies = facts?.discrepancies ?? [];
   const titleNumber = getTitleNumber(transactionId)?.trim() || undefined;
-  const [titlePulled, searchesOrdered, searchesBack, ta6, ta10, ta7, idShared] =
+  const [titlePulled, searchesOrdered, searchesBack, ta6Form, ta10, ta7Form, idShared] =
     await Promise.all([
       checkTitlePulled(transactionId, titleNumber),
       checkSearchesOrdered(transactionId),
@@ -271,12 +303,19 @@ export async function loadPackReadinessInputs(
         fetchReturnedOneSearchResults(transactionId).then((r) => r.length > 0),
         false,
       ),
-      swallow(icpService.getTA6(transactionId).then((f) => f != null), false),
+      swallow(icpService.getTA6(transactionId), null),
       swallow(icpService.getTA10(transactionId).then((f) => f != null), false),
-      swallow(icpService.getTA7(transactionId).then((f) => f != null), false),
+      swallow(icpService.getTA7(transactionId), null),
       checkIdShared(transactionId),
     ]);
-  return { listing, titlePulled, titleNumber, searchesOrdered, searchesBack, ta6, ta10, ta7, idShared, registerDiscrepancies };
+  const progress = ta6Form ? ta6Progress(ta6Form) : undefined;
+  const ta6 = progress != null && progress.sectionsDone === progress.sectionsTotal;
+  const ta7 = ta7Form != null && isTa7Complete(ta7Form);
+  return {
+    listing, titlePulled, titleNumber, searchesOrdered, searchesBack,
+    ta6, ta6Progress: progress, ta10, ta7, ta7Started: ta7Form != null,
+    idShared, registerDiscrepancies,
+  };
 }
 
 export async function loadPackReadiness(transactionId: string): Promise<PackReadiness> {
