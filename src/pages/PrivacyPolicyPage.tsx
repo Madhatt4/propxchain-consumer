@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { clearAnalyticsConsent } from '@/lib/analyticsConsent';
 
 import { Logo } from '@/components/brand/Logo';
 
@@ -262,8 +263,18 @@ const PrivacyPolicyPage: React.FC = () => {
                 <li>Analyse Platform usage</li>
                 <li>Improve user experience</li>
               </ul>
+              <p className="mb-4">
+                Analytics cookies (Google Analytics) are off until you accept them in the cookie bar. Cookies needed to keep you signed in are always on.
+              </p>
+              <p className="mb-4">
+                You can change your analytics choice at any time:{' '}
+                <button type="button" onClick={clearAnalyticsConsent} className="underline">
+                  change my cookie choice
+                </button>
+                .
+              </p>
               <p>
-                You can control cookies through your browser settings. Disabling cookies may affect Platform functionality.
+                You can also control cookies through your browser settings. Disabling cookies may affect Platform functionality.
               </p>
             </section>
 

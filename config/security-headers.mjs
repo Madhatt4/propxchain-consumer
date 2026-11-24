@@ -23,7 +23,7 @@
  * without updating them.
  */
 export const INLINE_SCRIPT_HASHES = [
-  "'sha256-7CQdg829/L7Jxgou0VsIfUnv9fcUGiYJp4fxlDgBdyI='", // gtag dataLayer bootstrap
+  "'sha256-aaMnQaivx2+wNujJaBsqWVdn1RhD0bELSXR4iTgIrOg='", // gtag dataLayer bootstrap
   "'sha256-YyBAZ4lLS6ENQIbBKRAUzKtEnmuHQ6iJ/zm7ENQCa6k='", // theme before React mounts
   "'sha256-gGt2r0fTuR5SCRnzwozO0D+RekZBjM33H8tcx8BPkO8='", // BrowserRouter auth redirects
   "'sha256-08FPA4mXi+p4WsPjojT/Zm+jSitvKMB/iOJ/Q13lH44='", // stale service-worker cleanup
