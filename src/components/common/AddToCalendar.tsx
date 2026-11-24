@@ -17,6 +17,8 @@ interface AddToCalendarProps {
 const ITEM_CLASS =
   'block w-full px-3 py-2 text-left text-sm text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 focus:bg-gray-100 dark:focus:bg-slate-700 focus:outline-none';
 
+const BLOB_URL_LIFETIME_MS = 60_000;
+
 function downloadIcs(content: string, fileName: string): void {
   const url = URL.createObjectURL(new Blob([content], { type: 'text/calendar;charset=utf-8' }));
   const link = document.createElement('a');
@@ -25,7 +27,7 @@ function downloadIcs(content: string, fileName: string): void {
   document.body.appendChild(link);
   link.click();
   link.remove();
-  URL.revokeObjectURL(url);
+  window.setTimeout(() => URL.revokeObjectURL(url), BLOB_URL_LIFETIME_MS);
 }
 
 export default function AddToCalendar({ event, fileName = 'completion-date.ics' }: AddToCalendarProps): ReactNode {
