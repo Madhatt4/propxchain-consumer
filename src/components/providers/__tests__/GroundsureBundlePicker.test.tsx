@@ -176,4 +176,21 @@ describe('GroundsureBundlePicker', () => {
     const summedGrossLines = catalogue.reduce((sum, item) => sum + grossPence(item.pricePence), 0);
     expect(summedGrossLines).toBe(netTotal + vatPenceOn(netTotal));
   });
+
+  it('should mark a search priced by site size as a from price', () => {
+    renderPicker({ areaCapabilities: [] });
+
+    fireEvent.click(screen.getByRole('checkbox', { name: /Cheshire Salt Search/ }));
+
+    expect(screen.getByRole('button', { name: /^Order 1 search — from £45\.00/ })).toBeInTheDocument();
+    expect(screen.getByText(/priced by site size\. You will see the exact price before you pay/)).toBeInTheDocument();
+  });
+
+  it('should show a fixed price without from when nothing is priced by site size', () => {
+    renderPicker();
+
+    fireEvent.click(screen.getByRole('button', { name: /Homebuyers/ }));
+
+    expect(screen.getByRole('button', { name: /^Order 1 search — £111\.12/ })).toBeInTheDocument();
+  });
 });

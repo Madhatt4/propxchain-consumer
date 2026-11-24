@@ -14,6 +14,7 @@ import { searchOrderService } from '../../services/searchOrder.service';
 import { onesearchService } from '../../services/onesearch.service';
 import { groundsureService } from '../../services/groundsure.service';
 import DroppedSearchesNotice from './DroppedSearchesNotice';
+import PriceRiseNotice from './PriceRiseNotice';
 import { tmgroupService, tmGroupAddressFromParts } from '../../services/tmgroup.service';
 import { describeQuoteFailure } from './tmGroupCardHelpers';
 import { groundsureCodeFor } from '../../services/searchProviderData';
@@ -493,6 +494,12 @@ export function SearchesPanel({
     names: string[];
     pending: Awaited<ReturnType<typeof groundsureService.placeOrderForProperty>>;
     searches: SearchItem[];
+    totalPence: number;
+  } | null>(null);
+  const [pendingPriceRise, setPendingPriceRise] = useState<{
+    pending: Awaited<ReturnType<typeof groundsureService.placeOrderForProperty>>;
+    searches: SearchItem[];
+    shownPence: number;
     totalPence: number;
   } | null>(null);
   const [oneSearchError, setOneSearchError] = useState<string | null>(null);
@@ -1130,6 +1137,7 @@ export function SearchesPanel({
     setIsOrdering('groundsure');
     setGroundsureError(null);
     setPendingDropped(null);
+    setPendingPriceRise(null);
 
     // Every catalogue item has a code, but an unmapped id would otherwise be
     // silently dropped from the basket while still being charged for.
@@ -1187,6 +1195,12 @@ export function SearchesPanel({
         searches: kept,
         totalPence,
       });
+      setIsOrdering(null);
+      return;
+    }
+
+    if (!pending.mock && totalPence > estimatePence) {
+      setPendingPriceRise({ pending, searches, shownPence: estimatePence, totalPence });
       setIsOrdering(null);
       return;
     }
@@ -1554,7 +1568,7 @@ export function SearchesPanel({
           isOrdering={isOrdering === 'groundsure'}
           errorMessage={groundsureError}
           notice={
-            pendingDropped && (
+            (pendingDropped && (
               <DroppedSearchesNotice
                 names={pendingDropped.names}
                 totalPence={pendingDropped.totalPence}
@@ -1572,7 +1586,26 @@ export function SearchesPanel({
                   );
                 }}
               />
-            )
+            )) ||
+            (pendingPriceRise && (
+              <PriceRiseNotice
+                shownPence={pendingPriceRise.shownPence}
+                totalPence={pendingPriceRise.totalPence}
+                searchCount={pendingPriceRise.searches.length}
+                isBusy={isOrdering === 'groundsure'}
+                onCancel={() => setPendingPriceRise(null)}
+                onContinue={() => {
+                  const confirmed = pendingPriceRise;
+                  setPendingPriceRise(null);
+                  setIsOrdering('groundsure');
+                  void completeGroundsureOrder(
+                    confirmed.pending,
+                    confirmed.searches,
+                    confirmed.totalPence,
+                  );
+                }}
+              />
+            ))
           }
         />
       </CollapsibleProviderCard>

@@ -163,6 +163,7 @@ export default function GroundsureProductListCard({
                       )}
                     </div>
                     <span className="shrink-0 font-mono text-xs tabular-nums text-gray-500 dark:text-gray-400">
+                      {item.pricedBySiteSize ? 'from ' : ''}
                       {pounds(grossPence(item.pricePence))}
                     </span>
                   </div>

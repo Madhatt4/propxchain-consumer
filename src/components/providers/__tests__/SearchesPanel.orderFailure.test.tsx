@@ -159,7 +159,7 @@ describe('SearchesPanel — Groundsure order failures are visible', () => {
     vi.mocked(groundsureService.placeOrderForProperty).mockResolvedValue({
       success: true,
       id: 'row-1',
-      retailGbp: 166.68,
+      retailGbp: 75.54,
     });
     vi.mocked(stripePaymentService.prepareSearchCheckoutSession).mockRejectedValue(
       new Error('409 Refusing to create a checkout session with no price'),
@@ -223,7 +223,7 @@ describe('SearchesPanel — Groundsure order failures are visible', () => {
     vi.mocked(groundsureService.placeOrderForProperty).mockResolvedValue({
       success: true,
       id: 'row-2',
-      retailGbp: 166.68,
+      retailGbp: 75.54,
     });
     fireEvent.click(screen.getByRole('button', { name: /^Order 1 search/i }));
 
@@ -233,12 +233,12 @@ describe('SearchesPanel — Groundsure order failures are visible', () => {
   });
 
   it('should let a good price through to checkout unchanged', async () => {
-    // The guard must not become a blanket refusal — Avista at £166.68 gross.
+    // The guard must not become a blanket refusal — Homescreen at £75.54 gross.
     vi.mocked(groundsureService.placeOrderForProperty).mockResolvedValue({
       success: true,
       id: 'row-1',
       ourReference: 'ref-1',
-      retailGbp: 166.68,
+      retailGbp: 75.54,
     });
     vi.mocked(stripePaymentService.prepareSearchCheckoutSession).mockResolvedValue({
       sessionId: 'cs_test_1',
@@ -337,7 +337,7 @@ describe('SearchesPanel — the audit row records intent, not a sale', () => {
   });
 
   it('writes the row as requested before payment and hands its id to the checkout to promote', async () => {
-    vi.mocked(groundsureService.placeOrderForProperty).mockResolvedValue({ success: true, id: 'row-1', ourReference: 'ref-1', retailGbp: 166.68 });
+    vi.mocked(groundsureService.placeOrderForProperty).mockResolvedValue({ success: true, id: 'row-1', ourReference: 'ref-1', retailGbp: 75.54 });
     vi.mocked(stripePaymentService.prepareSearchCheckoutSession).mockResolvedValue({ sessionId: 'cs_1', url: 'https://checkout.stripe.com/c/pay/cs_1' });
     renderPanel();
     await orderCheapestGroundsureBundle();
@@ -349,7 +349,7 @@ describe('SearchesPanel — the audit row records intent, not a sale', () => {
   });
 
   it('says ordered outright in demo mode, where nothing is owed and the panel confirms on the spot', async () => {
-    vi.mocked(groundsureService.placeOrderForProperty).mockResolvedValue({ success: true, id: 'GS-MOCK-1', ourReference: 'ref-1', retailGbp: 166.68, mock: true });
+    vi.mocked(groundsureService.placeOrderForProperty).mockResolvedValue({ success: true, id: 'GS-MOCK-1', ourReference: 'ref-1', retailGbp: 75.54, mock: true });
     renderPanel();
     await orderCheapestGroundsureBundle();
 
@@ -360,7 +360,7 @@ describe('SearchesPanel — the audit row records intent, not a sale', () => {
 
   it('still opens the checkout when the audit row could not be written, without an id to promote', async () => {
     vi.mocked(searchOrderService.createOrder).mockResolvedValue({ success: false, error: 'permission denied' });
-    vi.mocked(groundsureService.placeOrderForProperty).mockResolvedValue({ success: true, id: 'row-1', ourReference: 'ref-1', retailGbp: 166.68 });
+    vi.mocked(groundsureService.placeOrderForProperty).mockResolvedValue({ success: true, id: 'row-1', ourReference: 'ref-1', retailGbp: 75.54 });
     vi.mocked(stripePaymentService.prepareSearchCheckoutSession).mockResolvedValue({ sessionId: 'cs_1', url: 'https://checkout.stripe.com/c/pay/cs_1' });
     renderPanel();
     await orderCheapestGroundsureBundle();
