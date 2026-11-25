@@ -10,14 +10,15 @@ const GOOGLE_NATIVE_MIME_PREFIX = 'application/vnd.google-apps.';
 const PDF_MIME = 'application/pdf';
 const PICKER_LOAD_TIMEOUT_MS = 15_000;
 
-const DRIVE_PICKER_MIME_TYPES = [
-  PDF_MIME,
-  'image/jpeg',
-  'image/png',
+const GOOGLE_NATIVE_MIME_TYPES = [
   `${GOOGLE_NATIVE_MIME_PREFIX}document`,
   `${GOOGLE_NATIVE_MIME_PREFIX}spreadsheet`,
   `${GOOGLE_NATIVE_MIME_PREFIX}presentation`,
 ];
+
+export const DRIVE_PDF_ONLY_MIME_TYPES: readonly string[] = [PDF_MIME, ...GOOGLE_NATIVE_MIME_TYPES];
+
+const DRIVE_PICKER_MIME_TYPES: readonly string[] = [PDF_MIME, 'image/jpeg', 'image/png', ...GOOGLE_NATIVE_MIME_TYPES];
 
 const LOAD_FAILED_MESSAGE = 'Google Drive could not be opened. Check your connection and try again.';
 const SIGN_IN_CANCELLED_MESSAGE = 'Google sign-in was cancelled, so nothing was taken from Drive.';
@@ -125,6 +126,7 @@ export interface DrivePickerDeps {
 
 export interface PickFromDriveOptions {
   multiple?: boolean;
+  mimeTypes?: readonly string[];
 }
 
 type DriveEnv = Readonly<Record<string, string | undefined>>;
@@ -227,10 +229,11 @@ function showPicker(
   config: DriveConfig,
   token: string,
   isMultiple: boolean,
+  mimeTypes: readonly string[],
 ): Promise<PickedDriveFile[]> {
   return new Promise((resolve) => {
     const view = new picker.DocsView(picker.ViewId.DOCS)
-      .setMimeTypes(DRIVE_PICKER_MIME_TYPES.join(','))
+      .setMimeTypes(mimeTypes.join(','))
       .setIncludeFolders(true)
       .setSelectFolderEnabled(false);
     let builder = new picker.PickerBuilder()
@@ -289,7 +292,7 @@ export async function pickFromDrive(
 ): Promise<File[]> {
   const { accounts, picker } = await loadGoogle(deps);
   const token = await requestDriveToken(accounts, config.clientId);
-  const picked = await showPicker(picker, config, token, options.multiple ?? false);
+  const picked = await showPicker(picker, config, token, options.multiple ?? false, options.mimeTypes ?? DRIVE_PICKER_MIME_TYPES);
   return Promise.all(picked.map((file) => downloadDriveFile(file, token, deps.fetch)));
 }
 

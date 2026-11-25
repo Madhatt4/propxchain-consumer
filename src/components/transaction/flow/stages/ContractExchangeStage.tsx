@@ -1,5 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { PenTool, Upload, FileText, Check, Clock, ExternalLink, Calendar, X } from 'lucide-react';
+import GoogleDriveButton from '../../../common/GoogleDriveButton';
+import { DRIVE_PDF_ONLY_MIME_TYPES } from '../../../../lib/googleDrivePicker';
 import type { StageConfig, JourneyRole } from '../../../../types/stage.types';
 
 interface StageProps {
@@ -50,7 +52,10 @@ export function ContractExchangeStage({ stage, journeyRole = 'seller' }: StagePr
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>): void {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (file) acceptContractFile(file);
+  }
+
+  function acceptContractFile(file: File): void {
     if (file.size > 10 * 1024 * 1024) {
       setFileError(`${file.name} is too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Max 10 MB.`);
       return;
@@ -155,6 +160,13 @@ export function ContractExchangeStage({ stage, journeyRole = 'seller' }: StagePr
             <span className="text-xs text-gray-400 dark:text-slate-500">PDF only. Max 10MB</span>
             <input type="file" accept=".pdf" onChange={handleFileChange} className="hidden" />
           </label>
+          <GoogleDriveButton
+            className="mt-2"
+            mimeTypes={DRIVE_PDF_ONLY_MIME_TYPES}
+            onFiles={(files) => {
+              if (files[0]) acceptContractFile(files[0]);
+            }}
+          />
         </div>
       )}
 

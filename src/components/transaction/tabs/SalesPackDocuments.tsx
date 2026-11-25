@@ -19,6 +19,7 @@ import {
   uploadSalesPackDocument,
   type SalesPackDocument,
 } from '@/services/salesPackDocument.service';
+import GoogleDriveButton from '@/components/common/GoogleDriveButton';
 import { PACK_DOC_KINDS, isPackDocument, packDocLabel } from '@/lib/packDocKinds';
 
 const BUTTON =
@@ -178,6 +179,13 @@ function PackUploadControls({
       <button type="button" disabled={busy || !kind} onClick={() => inputRef.current?.click()} className={BUTTON}>
         {busy ? 'Adding…' : 'Add a document'}
       </button>
+      <GoogleDriveButton
+        className=""
+        disabled={busy || !kind}
+        onFiles={(files) => {
+          if (files[0]) void handleFile(files[0]);
+        }}
+      />
       {notice && <p role="status" className="text-xs text-gray-600 dark:text-gray-400">{notice}</p>}
       <input
         ref={inputRef}

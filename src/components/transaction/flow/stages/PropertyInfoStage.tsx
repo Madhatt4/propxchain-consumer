@@ -12,6 +12,7 @@ import { calculateTA6Completion } from '../../../../types/ta6.types';
 import { calculateTA10Completion } from '../../../../types/ta10.types';
 import { calculateTA7Completion } from '../../../../types/ta7.types';
 import type { Tenure } from '../../../../types/listing.types';
+import GoogleDriveButton from '../../../common/GoogleDriveButton';
 import ExplainerModal from '../../../explainer/ExplainerModal';
 import { CheckMyAnswers } from '../../../propertyInfo/CheckMyAnswers';
 import { RemoveFormUpload } from '../../../propertyInfo/RemoveFormUpload';
@@ -385,7 +386,7 @@ export function PropertyInfoStage({ stage, onComplete, transactionId, postcode, 
                 (an online form is continued or edited on its page), and in
                 edit mode for an uploaded one so it can be replaced. */}
             {(!isComplete || isEditing || completion.method === 'online') && !readOnly && !viewerIsBuyer && (
-              <div className="px-4 pb-3 flex gap-2">
+              <div className="px-4 pb-3 flex flex-wrap gap-2">
                 <button
                   type="button"
                   disabled={!transactionId}
@@ -425,6 +426,14 @@ export function PropertyInfoStage({ stage, onComplete, transactionId, postcode, 
                     <><Upload className="h-3.5 w-3.5" /> {completion.method === 'uploaded' ? 'Replace upload' : 'Upload completed form'}</>
                   )}
                 </button>
+
+                <GoogleDriveButton
+                  className=""
+                  disabled={!transactionId || isUploadingThis}
+                  onFiles={(files) => {
+                    if (files[0]) void handleUpload(form.id, files[0]);
+                  }}
+                />
 
                 {/* Hidden file input */}
                 <input

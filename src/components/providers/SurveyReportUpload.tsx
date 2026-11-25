@@ -1,5 +1,7 @@
 import { useState, type ReactElement } from 'react';
 import { FileUp, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
+import GoogleDriveButton from '../common/GoogleDriveButton';
+import { DRIVE_PDF_ONLY_MIME_TYPES } from '../../lib/googleDrivePicker';
 import { uploadSurveyReport } from '../../services/surveyDocument.service';
 import { declareBuyerPack } from '../../services/buyerPack.service';
 import { fileToBase64, runSurveyScan } from '../../services/scan.service';
@@ -61,12 +63,7 @@ export function SurveyReportUpload({
 
   if (!transactionId) return null;
 
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
-    const file = e.target.files?.[0];
-    // Reset so re-picking the same file after an error re-triggers onChange.
-    e.target.value = '';
-    if (!file) return;
-
+  const processFile = async (file: File): Promise<void> => {
     setError(null);
     setUploading(true);
     try {
@@ -80,6 +77,13 @@ export function SurveyReportUpload({
     } finally {
       setUploading(false);
     }
+  };
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
+    const file = e.target.files?.[0];
+    // Reset so re-picking the same file after an error re-triggers onChange.
+    e.target.value = '';
+    if (file) await processFile(file);
   };
 
   return (
@@ -139,6 +143,16 @@ export function SurveyReportUpload({
                 }}
               />
             </label>
+          )}
+
+          {!uploaded && (
+            <GoogleDriveButton
+              mimeTypes={DRIVE_PDF_ONLY_MIME_TYPES}
+              disabled={uploading}
+              onFiles={(files) => {
+                if (files[0]) void processFile(files[0]);
+              }}
+            />
           )}
 
           {error && (
