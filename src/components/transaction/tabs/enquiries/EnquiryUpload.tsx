@@ -8,6 +8,8 @@
  */
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import GoogleDriveButton from '@/components/common/GoogleDriveButton';
+import { DRIVE_PDF_ONLY_MIME_TYPES } from '@/lib/googleDrivePicker';
 import {
   ENQUIRY_CATEGORIES, MAX_PDF_BYTES, fileToBase64, raiseEnquiry, transcribeEnquiries,
   type Enquiry, type EnquiryCategory, type EnquiryDraft,
@@ -57,6 +59,12 @@ export function EnquiryUpload({ transactionId, onRaised }: Props): JSX.Element {
         <span className="mb-1 block font-medium">Enquiries PDF</span>
         <input aria-label="Enquiries PDF" type="file" accept="application/pdf" disabled={status !== 'idle'} onChange={(e) => onFile(e.target.files?.[0])} />
       </label>
+      <GoogleDriveButton
+        className=""
+        mimeTypes={DRIVE_PDF_ONLY_MIME_TYPES}
+        disabled={status !== 'idle'}
+        onFiles={(files) => { void onFile(files[0]); }}
+      />
       {status === 'reading' && <p className="text-sm text-muted-foreground">Reading {filename}…</p>}
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
       {rows.length > 0 && (

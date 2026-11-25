@@ -13,6 +13,7 @@ import {
 interface GoogleDriveButtonProps {
   onFiles: (files: File[]) => void;
   multiple?: boolean;
+  mimeTypes?: readonly string[];
   disabled?: boolean;
   className?: string;
 }
@@ -24,6 +25,7 @@ function googleSignInWorksHere(): boolean {
 export default function GoogleDriveButton({
   onFiles,
   multiple = false,
+  mimeTypes,
   disabled = false,
   className = 'mt-3',
 }: GoogleDriveButtonProps): JSX.Element | null {
@@ -39,7 +41,7 @@ export default function GoogleDriveButton({
     setError(null);
     setIsBusy(true);
     try {
-      const files = await pickFromDrive(config, { multiple });
+      const files = await pickFromDrive(config, { multiple, mimeTypes });
       if (files.length > 0) onFiles(files);
     } catch (err) {
       setError(driveErrorMessage(err));

@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { AlertTriangle, Loader2, Paperclip } from 'lucide-react';
 
+import GoogleDriveButton from '../../../common/GoogleDriveButton';
 import { AttachmentTypesContext } from './attachmentTypes';
 import { FactSuggestions } from './FactSuggestions';
 import { PromptHeader } from './PromptHeader';
@@ -97,9 +98,8 @@ const AttachedControls: React.FC<AttachedControlsProps> = ({
   const latest = useRef({ onUploaded, onClassified });
   latest.current = { onUploaded, onClassified };
 
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
-    const file = e.target.files?.[0];
-    if (!file || !onUpload) return;
+  const processFile = async (file: File): Promise<void> => {
+    if (!onUpload) return;
     const seq = ++pickSeq.current;
     setIsUploading(true);
     setUploadError(null);
@@ -147,6 +147,11 @@ const AttachedControls: React.FC<AttachedControlsProps> = ({
     } finally {
       setIsUploading(false);
     }
+  };
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
+    const file = e.target.files?.[0];
+    if (file) await processFile(file);
   };
 
   // The seller changed the kind or the link after uploading: the scan's
@@ -197,6 +202,15 @@ const AttachedControls: React.FC<AttachedControlsProps> = ({
             className="sr-only"
           />
         </label>
+      )}
+      {!readOnly && onUpload && (
+        <GoogleDriveButton
+          className=""
+          disabled={isUploading}
+          onFiles={(files) => {
+            if (files[0]) void processFile(files[0]);
+          }}
+        />
       )}
       {isUploading && (
         <span className="inline-flex items-center gap-1.5 text-sm font-medium text-teal-600 dark:text-teal-400">
