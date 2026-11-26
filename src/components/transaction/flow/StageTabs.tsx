@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2025 PropXchain Ltd
 
-import { useEffect, useRef } from 'react';
 import type { ReactElement } from 'react';
 import { Check, Lock, Eye, HelpCircle, Package } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { StageConfig, StageStatus } from '../../../types/stage.types';
+import { useJustCompletedIds } from './useJustCompletedIds';
 
 /** Pseudo-tab id for the seller view's "Stage 4 · Buyer side" slot. The real
  *  seller-4 stage is hidden from the seller journey (mortgage/funding is
@@ -80,25 +80,13 @@ function buildItems(
 
 const JUST_COMPLETED_CLASS = 'animate-stage-complete motion-reduce:animate-none';
 
-function useJustCompletedIds(items: StageTabItem[]): Set<string> {
-  const previousStatuses = useRef<Map<string, TabStatus> | null>(null);
-  const justCompleted = new Set<string>();
-  const previous = previousStatuses.current;
-  if (previous) {
-    for (const item of items) {
-      const before = previous.get(item.id);
-      if (item.status === 'completed' && before !== undefined && before !== 'completed') {
-        justCompleted.add(item.id);
-      }
-    }
-  }
-  useEffect(() => {
-    previousStatuses.current = new Map(items.map((i) => [i.id, i.status]));
-  });
-  return justCompleted;
+interface TabChipProps {
+  item: StageTabItem;
+  isJustCompleted: boolean;
+  onMotionDone: () => void;
 }
 
-function TabChip({ item, isJustCompleted }: { item: StageTabItem; isJustCompleted: boolean }): ReactElement {
+function TabChip({ item, isJustCompleted, onMotionDone }: TabChipProps): ReactElement {
   const base =
     'flex h-6 w-6 shrink-0 items-center justify-center rounded-[7px] text-[11px] font-extrabold';
   switch (item.status) {
@@ -106,6 +94,7 @@ function TabChip({ item, isJustCompleted }: { item: StageTabItem; isJustComplete
       return (
         <span
           data-just-completed={isJustCompleted || undefined}
+          onAnimationEnd={isJustCompleted ? onMotionDone : undefined}
           className={cn(base, 'bg-green-500/12 text-green-600 dark:text-green-400', isJustCompleted && JUST_COMPLETED_CLASS)}
         >
           <Check className="h-3.5 w-3.5" />
@@ -200,7 +189,7 @@ export function StageTabs({
   onHelpClick,
 }: StageTabsProps): ReactElement {
   const items = buildItems(stages, buyerSideOrder, salesPackSummary);
-  const justCompletedIds = useJustCompletedIds(items);
+  const justCompleted = useJustCompletedIds(items);
 
   return (
     <div className="mb-5 rounded-2xl border border-gray-200 bg-white p-2 shadow-sm dark:border-slate-700/40 dark:bg-white/[0.03]">
@@ -231,7 +220,11 @@ export function StageTabs({
               )}
             >
               <span className="flex items-center gap-2">
-                <TabChip item={item} isJustCompleted={justCompletedIds.has(item.id)} />
+                <TabChip
+                  item={item}
+                  isJustCompleted={justCompleted.ids.has(item.id)}
+                  onMotionDone={() => justCompleted.markDone(item.id)}
+                />
                 <span className="text-[9px] font-semibold uppercase tracking-[1.5px] text-gray-400 dark:text-slate-500">
                   Stage {item.order}
                 </span>

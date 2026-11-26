@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 
 import { StageTabs } from '../StageTabs';
 import type { StageConfig, StageStatus } from '../../../../types/stage.types';
@@ -36,11 +36,32 @@ describe('StageTabs just-completed motion', () => {
     expect(animated[0]).toHaveTextContent('Conveyancer Quotes');
   });
 
-  it('should stop marking the stage once a later render sees it already completed', () => {
+  it('should keep animating when the tabs re-render before the animation ends', () => {
     const { rerender } = renderTabs(stagesWith('active'));
     rerender(<StageTabs stages={stagesWith('completed')} activeStageId="seller-2" onSelect={() => undefined} />);
 
     rerender(<StageTabs stages={stagesWith('completed')} activeStageId="seller-1" onSelect={() => undefined} />);
+
+    const animated = justCompletedTabs();
+    expect(animated).toHaveLength(1);
+    expect(animated[0]).toHaveTextContent('Conveyancer Quotes');
+  });
+
+  it('should stop marking the stage once its animation ends', () => {
+    const { rerender } = renderTabs(stagesWith('active'));
+    rerender(<StageTabs stages={stagesWith('completed')} activeStageId="seller-2" onSelect={() => undefined} />);
+    const chip = justCompletedTabs()[0].querySelector('[data-just-completed]') as HTMLElement;
+
+    fireEvent.animationEnd(chip);
+
+    expect(justCompletedTabs()).toHaveLength(0);
+  });
+
+  it('should drop the mark when a just-completed stage is reopened', () => {
+    const { rerender } = renderTabs(stagesWith('active'));
+    rerender(<StageTabs stages={stagesWith('completed')} activeStageId="seller-2" onSelect={() => undefined} />);
+
+    rerender(<StageTabs stages={stagesWith('active')} activeStageId="seller-2" onSelect={() => undefined} />);
 
     expect(justCompletedTabs()).toHaveLength(0);
   });
