@@ -104,3 +104,15 @@ export function icsFile(event: CalendarEvent, now: Date = new Date()): string | 
   lines.push('END:VEVENT', 'END:VCALENDAR');
   return `${lines.map(foldLine).join('\r\n')}\r\n`;
 }
+
+export function completionCalendarEvent(propertyAddress: string | null | undefined, date: string): CalendarEvent {
+  return {
+    title: `Completion: ${propertyAddress?.trim() || 'your move'}`,
+    date,
+    details: 'The agreed completion date for your move, from PropXchain.',
+  };
+}
+
+export function isCalendarDate(date: string | null | undefined): date is string {
+  return Boolean(date && parseDate(date));
+}

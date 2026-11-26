@@ -2,7 +2,7 @@
 // Copyright (C) 2026 PropXchain Ltd
 
 import { describe, it, expect } from 'vitest';
-import { googleCalendarUrl, icsFile, outlookCalendarUrl } from '../calendarLinks';
+import { completionCalendarEvent, googleCalendarUrl, icsFile, isCalendarDate, outlookCalendarUrl } from '../calendarLinks';
 
 const NOW = new Date(Date.UTC(2026, 10, 24, 9, 30, 15));
 
@@ -99,5 +99,30 @@ describe('icsFile', () => {
 
   it('should return null for an invalid date', () => {
     expect(icsFile({ title: 'x', date: '2026-02-30' }, NOW)).toBeNull();
+  });
+});
+
+describe('completionCalendarEvent', () => {
+  it('should title the event with the property address', () => {
+    expect(completionCalendarEvent('1 High St', '2026-12-15').title).toBe('Completion: 1 High St');
+  });
+
+  it('should fall back to "your move" when there is no address', () => {
+    expect(completionCalendarEvent(null, '2026-12-15').title).toBe('Completion: your move');
+    expect(completionCalendarEvent('  ', '2026-12-15').title).toBe('Completion: your move');
+  });
+});
+
+describe('isCalendarDate', () => {
+  it('should accept a real day with or without a time part', () => {
+    expect(isCalendarDate('2026-12-15')).toBe(true);
+    expect(isCalendarDate('2026-12-15T09:00:00Z')).toBe(true);
+  });
+
+  it('should reject empty, missing and impossible dates', () => {
+    expect(isCalendarDate('')).toBe(false);
+    expect(isCalendarDate(null)).toBe(false);
+    expect(isCalendarDate(undefined)).toBe(false);
+    expect(isCalendarDate('2026-02-30')).toBe(false);
   });
 });

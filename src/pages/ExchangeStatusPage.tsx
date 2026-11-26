@@ -12,6 +12,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import AddToCalendar from '@/components/common/AddToCalendar';
+import { completionCalendarEvent } from '@/lib/calendarLinks';
 import { icpService } from '@/services/icp.service';
 import { logger } from '@/utils/logger';
 import { conveyancerRecordRows, useConveyancerRecords, type RecordRow } from '@/hooks/useConveyancerRecords';
@@ -80,15 +81,7 @@ function Section({ title, children }: { title: string; children: ReactNode }): R
 
 function CompletionCalendar({ status }: { status: ExchangeStatus }): ReactNode {
   if (!status.completionDate) return null;
-  return (
-    <AddToCalendar
-      event={{
-        title: `Completion: ${status.propertyAddress ?? 'your move'}`,
-        date: status.completionDate,
-        details: 'The agreed completion date for your move, from PropXchain.',
-      }}
-    />
-  );
+  return <AddToCalendar event={completionCalendarEvent(status.propertyAddress, status.completionDate)} />;
 }
 
 function ExchangeRecord({ status, recordRows }: { status: ExchangeStatus; recordRows: RecordRow[] }): ReactNode {

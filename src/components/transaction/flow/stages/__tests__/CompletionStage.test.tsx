@@ -84,6 +84,22 @@ describe('CompletionStage', () => {
     mockScheduleExpiry.mockResolvedValue('ok');
   });
 
+  it('should show the agreed completion date with Add to calendar before completion', async () => {
+    mockGetStatus.mockResolvedValue(makeStatus());
+    renderStage('buyer', { completionDate: '2026-12-15' });
+
+    expect(await screen.findByText('15 December 2026')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add to calendar' })).toBeInTheDocument();
+  });
+
+  it('should not offer Add to calendar once the deal has completed', async () => {
+    mockGetStatus.mockResolvedValue(makeStatus({ status: 'blockchain_completed' }));
+    renderStage('buyer', { completionDate: '2026-12-15' });
+
+    await waitFor(() => expect(mockGetStatus).toHaveBeenCalled());
+    expect(screen.queryByRole('button', { name: 'Add to calendar' })).not.toBeInTheDocument();
+  });
+
   it('should show read-only text and no button when a conveyancer acts for the viewer side', async () => {
     mockGetStatus.mockResolvedValue(makeStatus({ conveyancerActing: { buyer: true, seller: false } }));
     renderStage('buyer');
