@@ -5,6 +5,7 @@ import type { ReactElement } from 'react';
 import { Check, Lock, Eye, HelpCircle, Package } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { StageConfig, StageStatus } from '../../../types/stage.types';
+import { useJustCompletedIds } from './useJustCompletedIds';
 
 /** Pseudo-tab id for the seller view's "Stage 4 · Buyer side" slot. The real
  *  seller-4 stage is hidden from the seller journey (mortgage/funding is
@@ -77,13 +78,25 @@ function buildItems(
   return items;
 }
 
-function TabChip({ item }: { item: StageTabItem }): ReactElement {
+const JUST_COMPLETED_CLASS = 'animate-stage-complete motion-reduce:animate-none';
+
+interface TabChipProps {
+  item: StageTabItem;
+  isJustCompleted: boolean;
+  onMotionDone: () => void;
+}
+
+function TabChip({ item, isJustCompleted, onMotionDone }: TabChipProps): ReactElement {
   const base =
     'flex h-6 w-6 shrink-0 items-center justify-center rounded-[7px] text-[11px] font-extrabold';
   switch (item.status) {
     case 'completed':
       return (
-        <span className={`${base} bg-green-500/12 text-green-600 dark:text-green-400`}>
+        <span
+          data-just-completed={isJustCompleted || undefined}
+          onAnimationEnd={isJustCompleted ? onMotionDone : undefined}
+          className={cn(base, 'bg-green-500/12 text-green-600 dark:text-green-400', isJustCompleted && JUST_COMPLETED_CLASS)}
+        >
           <Check className="h-3.5 w-3.5" />
         </span>
       );
@@ -176,6 +189,7 @@ export function StageTabs({
   onHelpClick,
 }: StageTabsProps): ReactElement {
   const items = buildItems(stages, buyerSideOrder, salesPackSummary);
+  const justCompleted = useJustCompletedIds(items);
 
   return (
     <div className="mb-5 rounded-2xl border border-gray-200 bg-white p-2 shadow-sm dark:border-slate-700/40 dark:bg-white/[0.03]">
@@ -206,7 +220,11 @@ export function StageTabs({
               )}
             >
               <span className="flex items-center gap-2">
-                <TabChip item={item} />
+                <TabChip
+                  item={item}
+                  isJustCompleted={justCompleted.ids.has(item.id)}
+                  onMotionDone={() => justCompleted.markDone(item.id)}
+                />
                 <span className="text-[9px] font-semibold uppercase tracking-[1.5px] text-gray-400 dark:text-slate-500">
                   Stage {item.order}
                 </span>
