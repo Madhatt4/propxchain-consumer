@@ -195,6 +195,7 @@ interface StageComponentProps {
   keysRole?: KeysRole;
   /** The seller's conveyancer, who uploads the completion statement (Completion stage). */
   sellerConveyancer?: string | null;
+  completionDate?: string;
 }
 
 function renderStageContent(stageId: string, props: StageComponentProps): ReactElement | null {
@@ -885,6 +886,7 @@ export default function TransactionFlowPage(): ReactElement {
                           viewerIsParty: transaction ? isDealParty(transaction, principalId) : false,
                           keysRole: transaction ? keysRoleOf(transaction, principalId) : 'none',
                           sellerConveyancer: transaction?.sellerConveyancer ?? null,
+                          completionDate: transaction?.completionDate,
                           conveyancers: transaction?.conveyancers ?? NO_CONVEYANCERS,
                         }))}
                     </StageCard>

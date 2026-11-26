@@ -11,6 +11,7 @@ import { CompletionStatementLines, noStatementWarningOf, statementViewOf } from 
 import { CompletionRows } from './completion/CompletionRows';
 import { ConveyancerRecordRows } from './completion/ConveyancerRecordRows';
 import { CompletionCertificate } from './completion/CompletionCertificate';
+import CompletionDateLine from '@/components/common/CompletionDateLine';
 import type { ReactNode } from 'react';
 import type { KeysRole } from '@/lib/completionRoles';
 import type { StageConfig, JourneyRole } from '../../../../types/stage.types';
@@ -31,6 +32,7 @@ interface StageProps {
   keysRole?: KeysRole;
   /** The seller's conveyancer on the deal, who uploads the completion statement. */
   sellerConveyancer?: string | null;
+  completionDate?: string;
 }
 
 const INTRO = 'PropXchain records each confirmation. It never moves money.';
@@ -63,7 +65,7 @@ function ErrorLine({ message }: { message: string }): ReactNode {
  */
 export function CompletionStage({
   stage, onComplete, journeyRole = 'seller', viewerRole, viewerIsParty = false,
-  transactionId, propertyAddress, purchasePrice, keysRole = 'none', sellerConveyancer = null,
+  transactionId, propertyAddress, purchasePrice, keysRole = 'none', sellerConveyancer = null, completionDate,
 }: StageProps): ReactNode {
   const { status, loadState, reload } = useCompletionStatus(transactionId);
   const completed = isCompletedStatus(status?.status);
@@ -90,6 +92,7 @@ export function CompletionStage({
       {completed
         ? <CompletionCertificate journeyRole={journeyRole} transactionId={transactionId} status={status} />
         : <p className="text-sm text-gray-600 dark:text-slate-300">{INTRO}</p>}
+      {!completed && <CompletionDateLine date={completionDate} propertyAddress={propertyAddress} />}
       {sellerConveyancer && <CompletionStatementLines load={statementLoad} view={view} status={status} />}
       {actions.error && <ErrorLine message={actions.error} />}
       <CompletionRows

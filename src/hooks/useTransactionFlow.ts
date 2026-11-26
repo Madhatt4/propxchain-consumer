@@ -35,6 +35,7 @@ interface TransactionData {
   status?: string;
   /** Agreed price from the canister record. */
   amount?: number;
+  completionDate?: string;
   /** The seller's conveyancer from the solicitor slot, who uploads the completion statement. */
   sellerConveyancer?: string | null;
   /** Each side's conveyancer from the on-chain solicitor slots. */
@@ -561,6 +562,7 @@ export function useTransactionFlow(
             delegates,
             status: statusKeyOf(fullTx?.status),
             amount: fullTx?.amount != null ? Number(fullTx.amount) : undefined,
+            completionDate: fullTx?.completionDate || undefined,
             sellerConveyancer: sellerConveyancerOf(fullTx?.sellerSolicitor),
             conveyancers: dealConveyancersOf(fullTx),
             legacySolicitor: optPrincipalText(fullTx?.solicitor),

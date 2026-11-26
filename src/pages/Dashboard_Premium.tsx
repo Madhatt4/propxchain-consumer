@@ -8,6 +8,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import './Dashboard_Premium.css';
 import TransactionInvite from '../components/TransactionInvite';
 import SolicitorCard from '../components/dashboard/SolicitorCard';
+import CompletionDateLine from '../components/common/CompletionDateLine';
 import PropertyPriceHistory from '../components/property/PropertyPriceHistory';
 import TransactionDetailTabs from '../components/transaction/TransactionDetailTabs';
 import { Transaction, Document } from '../types/transaction.types';
@@ -985,6 +986,14 @@ const Dashboard_PremiumContent: React.FC = () => {
                 </section>
               );
             })()}
+
+            {selectedTransaction && (
+              <CompletionDateLine
+                date={selectedTransaction.completionDate}
+                propertyAddress={selectedTransaction.propertyAddress}
+                className="mb-4 sm:mb-6"
+              />
+            )}
 
             {/* Solicitor Card — shown above Exchange Readiness */}
             {selectedTransaction && (() => {
