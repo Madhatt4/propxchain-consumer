@@ -84,7 +84,7 @@ function normalizeEvent(raw: Record<string, unknown>): AuditEvent {
     timestamp: Number(raw.timestamp), // nanoseconds
     caller: String(raw.caller),
     // Codes become sentences; an older event's sentence is shown as written.
-    details: describeEventDetails(String(raw.eventType), sanitizeText(String(raw.details ?? ''))),
+    details: describeEventDetails(String(raw.eventType), sanitizeText(String(raw.details ?? '')), metadata),
     metadata,
   };
 }

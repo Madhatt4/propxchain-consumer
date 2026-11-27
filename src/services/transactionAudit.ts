@@ -10,6 +10,7 @@ import { supabase } from '../lib/supabase';
 import { logger } from '@/utils/logger';
 import { hiddenDocumentStatuses, toDocumentStatusRows, type DocumentStatusRow } from '@/lib/documentStatus';
 import { describeAuditCode } from '@/lib/auditCodes';
+import { describeSaleEvent } from '@/lib/saleEventDetails';
 import { simulatedLrNote } from '@/lib/simulatedLrSubmission';
 
 // ============================================
@@ -285,7 +286,9 @@ const DELEGATION_DETAILS: Record<string, string> = {
  * transaction_manager writes as a code from audit_codes.mo. Say it in words on
  * the audit trail; an older event's sentence is shown as written.
  */
-export function describeEventDetails(eventType: string, details: string): string {
+export function describeEventDetails(eventType: string, details: string, metadata?: string | null): string {
+  const saleEvent = describeSaleEvent(eventType, metadata);
+  if (saleEvent) return saleEvent;
   if (eventType === 'delegation_granted' || eventType === 'delegation_revoked') {
     return DELEGATION_DETAILS[details] ?? details;
   }
@@ -576,7 +579,7 @@ export async function fetchAuditReport(transactionId: string): Promise<AuditRepo
       eventType: String(e.eventType),
       timestamp: Number(e.timestamp),
       caller: String(e.caller),
-      details: describeEventDetails(String(e.eventType), sanitizeText(String(e.details))),
+      details: describeEventDetails(String(e.eventType), sanitizeText(String(e.details)), e.metadata ? String(e.metadata) : null),
       metadata: e.metadata ? sanitizeText(String(e.metadata)) : null,
       note: simulatedLrNote(String(e.eventType), String(e.details)),
     }));

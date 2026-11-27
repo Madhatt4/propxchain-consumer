@@ -58,6 +58,7 @@ export const AUDIT_CODES: Readonly<Record<string, CodeSpec>> = {
   logbook_sale_not_recorded: fixed('Property logbook: the sale could not be recorded'),
   logbook_call_failed: fixed('Property logbook could not be reached'),
   tx_created: fixed('Transaction created'),
+  price_changed: fixed('Price changed'),
   tx_deleted_by_seller: fixed('Transaction deleted by the seller'),
   tx_force_deleted: fixed('Transaction deleted by an admin'),
   exchange_signed: one(([side]) => `Exchange signed for the ${side} side; waiting for the ${otherSide(side)} side`),

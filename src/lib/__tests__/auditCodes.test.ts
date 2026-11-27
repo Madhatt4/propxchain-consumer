@@ -19,6 +19,7 @@ const CASES: Array<[string, string]> = [
   ['logbook_sale_not_recorded', 'Property logbook: the sale could not be recorded'],
   ['logbook_call_failed', 'Property logbook could not be reached'],
   ['tx_created', 'Transaction created'],
+  ['price_changed', 'Price changed'],
   ['tx_deleted_by_seller', 'Transaction deleted by the seller'],
   ['tx_force_deleted', 'Transaction deleted by an admin'],
   ['exchange_signed|buyer', 'Exchange signed for the buyer side; waiting for the seller side'],
