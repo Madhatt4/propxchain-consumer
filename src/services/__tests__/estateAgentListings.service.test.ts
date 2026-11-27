@@ -92,7 +92,7 @@ describe('estateAgentListingsService.create', () => {
     expect(result).toEqual(fakeListing);
     expect(supabase.from).toHaveBeenCalledWith('agent_listings');
     expect(mockInsert).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 'draft', material_info: emptyMaterialInfo() }),
+      expect.objectContaining({ status: 'instructed', material_info: emptyMaterialInfo() }),
     );
   });
 
@@ -360,8 +360,19 @@ describe('estateAgentListingsService.publish', () => {
     vi.clearAllMocks();
   });
 
-  it('should set slug, published_at and status for_sale on a draft with null slug', async () => {
-    const draft = fakeRow({ status: 'draft', slug: null, published_at: null });
+  it('should refuse to put a property on the market before the instruction is taken', async () => {
+    mockSingle.mockResolvedValue({ data: fakeRow({ status: 'valuation', slug: null, published_at: null }), error: null });
+    mockEq.mockReturnValueOnce({ single: mockSingle });
+    mockSelect.mockReturnValue({ eq: mockEq });
+    const { supabase } = await import('@/lib/supabase');
+    (supabase.from as ReturnType<typeof vi.fn>).mockImplementation(() => ({ select: mockSelect, update: mockUpdate }));
+
+    await expect(estateAgentListingsService.publish('id-1', 'Acme Estates')).rejects.toThrow('Take the instruction before putting this property on the market');
+    expect(mockUpdate).not.toHaveBeenCalled();
+  });
+
+  it('should set slug, published_at and status for_sale on an instructed property with null slug', async () => {
+    const draft = fakeRow({ status: 'instructed', slug: null, published_at: null });
 
     mockSingle.mockResolvedValue({ data: draft, error: null });
     mockEq.mockReturnValueOnce({ single: mockSingle });

@@ -3,8 +3,8 @@
 
 /**
  * startSale saga — creates the on-chain transaction for a listing, links the
- * listing to it, records the agent's role, moves the listing to
- * under_offer, and invites the seller. Mirrors reservation.service.ts's
+ * listing to it, records the agent's role, moves a property still at
+ * valuation to instructed, and invites the seller. Mirrors reservation.service.ts's
  * per-step saga shape, except step 4 (email) is best-effort: its failure is
  * reported but does not throw, so the caller still gets a usable result and
  * can offer a re-send.
@@ -133,9 +133,9 @@ async function linkAndRecordAgentRole(
   }
 }
 
-/** Step 3: move the listing to under_offer, now that it's linked and the deal has a role recorded. */
-async function markUnderOffer(listing: AgentListingRow): Promise<void> {
-  await estateAgentListingsService.setStatus(listing.id, 'under_offer');
+async function markInstructed(listing: AgentListingRow): Promise<void> {
+  if (listing.status !== 'valuation') return;
+  await estateAgentListingsService.setStatus(listing.id, 'instructed');
 }
 
 /** Step 4: email the seller their invite. Best-effort — never throws. */
@@ -206,7 +206,7 @@ export const startSaleService = {
 
     await runStep(2, onProgress, () => linkAndRecordAgentRole(input.listing, transactionId, input.agentPrincipal));
 
-    await runStep(3, onProgress, () => markUnderOffer(input.listing));
+    await runStep(3, onProgress, () => markInstructed(input.listing));
 
     onProgress({ step: 4, status: 'pending' });
     const emailResult = await inviteSeller(input, transactionId, inviteCode);

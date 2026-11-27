@@ -5,7 +5,9 @@ import type { PropertyListing, ProvenanceMap } from './listing.types';
 import type { MaterialInfo } from './materialInfo.types';
 
 export type AgentListingStatus =
+  | 'valuation' | 'valuation_lost' | 'instructed'
   | 'draft' | 'for_sale' | 'under_offer' | 'sold_stc' | 'exchanged' | 'completed' | 'withdrawn';
+export const PRE_MARKET_STATUSES: readonly AgentListingStatus[] = ['valuation', 'valuation_lost', 'instructed', 'draft'] as const;
 export const PUBLIC_STATUSES: readonly AgentListingStatus[] =
   ['for_sale', 'under_offer', 'sold_stc', 'exchanged', 'completed', 'withdrawn'] as const;
 export type AgentListingSource = 'rightmove' | 'website' | 'manual';

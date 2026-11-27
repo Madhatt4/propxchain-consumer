@@ -85,7 +85,7 @@ export const estateAgentListingsService = {
   async create(input: CreateAgentListingInput): Promise<AgentListingRow> {
     const { data, error } = await supabase
       .from('agent_listings')
-      .insert({ ...input, status: 'draft', material_info: emptyMaterialInfo() })
+      .insert({ ...input, status: 'instructed', material_info: emptyMaterialInfo() })
       .select()
       .single();
 
@@ -185,7 +185,10 @@ export const estateAgentListingsService = {
     const row = await this.getById(id);
     if (!row) throw new Error('Listing not found');
     const slug = row.slug ?? generateListingSlug(agencyName, row.listing.postcode, row.id);
-    const status: AgentListingStatus = row.status === 'draft' ? 'for_sale' : row.status;
+    if (row.status === 'valuation' || row.status === 'valuation_lost') {
+      throw new Error('Take the instruction before putting this property on the market');
+    }
+    const status: AgentListingStatus = row.status === 'instructed' || row.status === 'draft' ? 'for_sale' : row.status;
     const { error } = await supabase
       .from('agent_listings')
       .update({ slug, status, published_at: row.published_at ?? new Date().toISOString() })
