@@ -1075,7 +1075,7 @@
   "src/services/sites.service.ts": 8,
   "src/services/stageEvidence.service.ts": 3,
   "src/services/stall.service.ts": 8,
-  "src/services/startSale.service.ts": 18,
+  "src/services/startSale.service.ts": 17,
   "src/services/startSalePending.ts": 6,
   "src/services/stripePayment.service.ts": 22,
   "src/services/supabase.auth.service.ts": 42,

@@ -6,6 +6,9 @@ import type { AgentListingStatus } from '@/types/estateAgentListing.types';
 /** Human-readable label for each agent listing status. Exported for reuse
  *  (e.g. filter dropdowns) so the wording stays in one place. */
 export const STATUS_LABELS: Record<AgentListingStatus, string> = {
+  valuation: 'Valuation',
+  valuation_lost: 'Valuation lost',
+  instructed: 'Instructed',
   draft: 'Draft',
   for_sale: 'For sale',
   under_offer: 'Under offer',
@@ -16,6 +19,9 @@ export const STATUS_LABELS: Record<AgentListingStatus, string> = {
 };
 
 const STATUS_STYLES: Record<AgentListingStatus, string> = {
+  valuation: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
+  valuation_lost: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+  instructed: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
   draft: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
   for_sale: 'bg-[#84A98C]/20 text-[#5F8A68] dark:text-[#84A98C]',
   under_offer: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',

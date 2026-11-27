@@ -60,7 +60,7 @@ function fakeListing(overrides: Partial<AgentListingRow['listing']> = {}): Agent
     id: 'listing-1',
     organisation_id: 'org-1',
     slug: null,
-    status: 'draft',
+    status: 'valuation',
     source: 'manual',
     source_url: null,
     agent_url: null,
@@ -141,7 +141,7 @@ describe('startSaleService.startSale', () => {
       { step: 4, status: 'success' },
     ]);
     expect(mockLinkTransaction).toHaveBeenCalledWith('listing-1', 'tx_1');
-    expect(mockSetStatus).toHaveBeenCalledWith('listing-1', 'under_offer');
+    expect(mockSetStatus).toHaveBeenCalledWith('listing-1', 'instructed');
     // Load-bearing for RLS: the listing must be linked to the transaction
     // (the caller's provable relationship to it) before the role insert is
     // attempted, or the tightened transaction_party_roles policy denies it.
@@ -158,6 +158,17 @@ describe('startSaleService.startSale', () => {
         propertyAddress: '1 Test Street',
       }),
     );
+  });
+
+  it('should leave a property that is already on the market at its own status', async () => {
+    mockCreateTransactionWithInvite.mockResolvedValue({ ok: ['tx_1', 'INVITE1'] });
+    mockRequireTransactionManager.mockResolvedValue({ createTransactionWithInvite: mockCreateTransactionWithInvite });
+    mockRecordMyRole.mockResolvedValue(true);
+    mockSend.mockResolvedValue({ ok: true, error: null });
+    const onProgress = vi.fn();
+    await startSaleService.startSale({ ...baseInput, listing: { ...fakeListing(), status: 'for_sale' } }, onProgress);
+    expect(mockSetStatus).not.toHaveBeenCalled();
+    expect(onProgress).toHaveBeenCalledWith({ step: 3, status: 'success' });
   });
 
   it('should fail step 1 and call nothing else when the canister returns err', async () => {
