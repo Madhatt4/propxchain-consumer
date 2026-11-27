@@ -27,7 +27,7 @@ function listing(id = 'listing-1'): AgentListingRow {
     id,
     organisation_id: 'org-1',
     slug: null,
-    status: 'draft',
+    status: 'instructed',
     source: 'manual',
     source_url: null,
     listing: { address: '1 Test Street', postcode: 'SG19 1AB', price: 250000, propertyType: 'Detached', tenure: 'freehold' },

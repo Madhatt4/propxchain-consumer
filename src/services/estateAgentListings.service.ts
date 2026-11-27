@@ -188,7 +188,7 @@ export const estateAgentListingsService = {
     if (row.status === 'valuation' || row.status === 'valuation_lost') {
       throw new Error('Take the instruction before putting this property on the market');
     }
-    const status: AgentListingStatus = row.status === 'instructed' || row.status === 'draft' ? 'for_sale' : row.status;
+    const status: AgentListingStatus = row.status === 'instructed' ? 'for_sale' : row.status;
     const { error } = await supabase
       .from('agent_listings')
       .update({ slug, status, published_at: row.published_at ?? new Date().toISOString() })

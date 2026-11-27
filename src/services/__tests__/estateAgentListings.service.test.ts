@@ -44,7 +44,7 @@ function fakeRow(overrides: Partial<AgentListingRow> = {}): AgentListingRow {
     id: 'abcdef12-3456-7890-abcd-ef1234567890',
     organisation_id: 'org-1',
     slug: null,
-    status: 'draft',
+    status: 'instructed',
     source: 'manual',
     source_url: null,
     agent_url: null,

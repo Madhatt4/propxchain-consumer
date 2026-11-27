@@ -852,3 +852,25 @@ describe('describeEventDetails', () => {
     expect(describeEventDetails('transaction_created', 'Transaction created for 1 High Street')).toBe('Transaction created for 1 High Street');
   });
 });
+
+describe('describeEventDetails, estate agent sale events', () => {
+  const ANCHOR = 'anchor_kind=instruction;anchor_ref=11111111-1111-4111-8111-111111111111;anchor_version=1;anchor_digest=' + 'ab'.repeat(32);
+
+  it('should say a sale event in words instead of showing its anchor', () => {
+    expect(describeEventDetails('instruction_taken', ANCHOR)).toBe('Estate agent instructed; the terms are recorded as a fingerprint');
+    expect(describeEventDetails('offer_accepted', ANCHOR)).toBe('Offer accepted by the seller');
+    expect(describeEventDetails('memorandum_issued', ANCHOR)).toBe('Memorandum of sale issued');
+    expect(describeEventDetails('sale_fell_through', ANCHOR)).toBe('Sale fell through');
+  });
+
+  it('should say what the price was set to and on what basis', () => {
+    expect(describeEventDetails('price_changed', 'price_changed', 'basis=asking;amount_gbp=310000')).toBe('Asking price set to £310,000');
+    expect(describeEventDetails('price_changed', 'price_changed', 'basis=agreed;amount_gbp=305500')).toBe('Agreed price set to £305,500');
+  });
+
+  it('should fall back to plain words when the price fields are missing or malformed', () => {
+    expect(describeEventDetails('price_changed', 'price_changed')).toBe('Price changed');
+    expect(describeEventDetails('price_changed', 'price_changed', null)).toBe('Price changed');
+    expect(describeEventDetails('price_changed', 'price_changed', 'basis=other;amount_gbp=abc')).toBe('Price changed');
+  });
+});
