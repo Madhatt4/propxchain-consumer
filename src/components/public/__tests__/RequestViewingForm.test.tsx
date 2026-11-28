@@ -3,6 +3,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 vi.mock('@/services/viewingRequest.service', async () => {
@@ -19,7 +20,9 @@ function renderForm(): void {
   const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
   render(
     <QueryClientProvider client={client}>
-      <RequestViewingForm slug="acme-homes-sg19-abc123" agencyName="Acme Homes" />
+      <MemoryRouter>
+        <RequestViewingForm slug="acme-homes-sg19-abc123" agencyName="Acme Homes" />
+      </MemoryRouter>
     </QueryClientProvider>,
   );
 }
@@ -37,6 +40,9 @@ describe('RequestViewingForm', () => {
   it('should say who receives the details before anything is typed', () => {
     renderForm();
     expect(screen.getByText(/Your details go to Acme Homes, the estate agent for this property/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'How PropXchain handles your details' })).toHaveAttribute('href', '/privacy');
+    expect(screen.getByLabelText('Your name')).toHaveAttribute('maxlength', '120');
+    expect(screen.getByLabelText('When could you view? (optional)')).toHaveAttribute('maxlength', '300');
   });
 
   it('should send what was typed for this property, with marketing consent off unless ticked', async () => {

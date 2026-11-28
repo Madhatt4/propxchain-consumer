@@ -2,6 +2,7 @@
 // Copyright (C) 2026 PropXchain Ltd
 
 import { useState, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 
 import {
@@ -23,12 +24,13 @@ interface TextInputProps {
   label: string;
   type: string;
   autoComplete?: string;
+  maxLength: number;
   value: string;
   error?: string;
   onChange: (value: string) => void;
 }
 
-function TextInput({ name, label, type, autoComplete, value, error, onChange }: TextInputProps): JSX.Element {
+function TextInput({ name, label, type, autoComplete, maxLength, value, error, onChange }: TextInputProps): JSX.Element {
   const id = `viewing-request-${name}`;
   return (
     <div>
@@ -37,6 +39,7 @@ function TextInput({ name, label, type, autoComplete, value, error, onChange }: 
         id={id}
         type={type}
         autoComplete={autoComplete}
+        maxLength={maxLength}
         value={value}
         aria-invalid={!!error}
         aria-describedby={error ? `${id}-error` : undefined}
@@ -84,13 +87,14 @@ export function RequestViewingForm({ slug, agencyName }: RequestViewingFormProps
     <section aria-labelledby="request-viewing-heading" className="mx-4 rounded-lg border border-[#E5E7EB] bg-white p-4">
       <h2 id="request-viewing-heading" className="font-[DM_Sans] text-lg font-semibold text-[#1A1A1A]">Request a viewing</h2>
       <p className="mt-1 font-[DM_Sans] text-sm text-[#6B7280]">
-        Your details go to {agencyName}, the estate agent for this property, so they can arrange your viewing.
+        Your details go to {agencyName}, the estate agent for this property, so they can arrange your viewing.{' '}
+        <Link to="/privacy" className="text-[#0D9488] underline">How PropXchain handles your details</Link>.
       </p>
       <form onSubmit={submit} noValidate className="mt-4 space-y-4">
-        <TextInput name="name" label="Your name" type="text" autoComplete="name" value={request.name} error={errors.name} onChange={set('name')} />
-        <TextInput name="email" label="Email" type="email" autoComplete="email" value={request.email} error={errors.email} onChange={set('email')} />
-        <TextInput name="phone" label="Phone (optional)" type="tel" autoComplete="tel" value={request.phone} error={errors.phone} onChange={set('phone')} />
-        <TextInput name="preferredTimes" label="When could you view? (optional)" type="text" value={request.preferredTimes} onChange={set('preferredTimes')} />
+        <TextInput name="name" label="Your name" type="text" autoComplete="name" maxLength={120} value={request.name} error={errors.name} onChange={set('name')} />
+        <TextInput name="email" label="Email" type="email" autoComplete="email" maxLength={254} value={request.email} error={errors.email} onChange={set('email')} />
+        <TextInput name="phone" label="Phone (optional)" type="tel" autoComplete="tel" maxLength={30} value={request.phone} error={errors.phone} onChange={set('phone')} />
+        <TextInput name="preferredTimes" label="When could you view? (optional)" type="text" maxLength={300} value={request.preferredTimes} onChange={set('preferredTimes')} />
         <div>
           <label htmlFor="viewing-request-message" className={LABEL_CLASS}>Message (optional)</label>
           <textarea id="viewing-request-message" rows={3} maxLength={2000} value={request.message} onChange={(e) => set('message')(e.target.value)} className={INPUT_CLASS} />
