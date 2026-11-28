@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 PropXchain Ltd
+
 import { Principal } from '@propxchain/core-client';
 import type { UserManagementService } from '@propxchain/core-client';
 import { icpService } from './icp.service';
@@ -17,7 +20,29 @@ const KNOWN_CLIENTS: ReadonlyArray<{ pattern: RegExp; label: string }> = [
   { pattern: /chatgpt|openai/i, label: 'ChatGPT' },
 ];
 export const INACTIVE_ASSISTANT_MESSAGE =
-  'This assistant is switched off on your account. Switch it back on in your AI assistant settings, then try again.';
+  'This assistant is switched off. Remove PropXchain from your AI app, add it again, then come back here.';
+export const OTHER_ACCOUNT_MESSAGE = "This assistant is linked to a different PropXchain account, so it can't be added here.";
+export const ALREADY_CONNECTED_MESSAGE = 'That assistant is already on this deal.';
+export const NOT_PARTICIPANT_MESSAGE = 'Only people on this deal can add an assistant.';
+export const CONNECT_FALLBACK_MESSAGE = "Couldn't add the assistant. Please try again.";
+
+export interface ConnectFailure {
+  isAlreadyConnected: boolean;
+  text: string;
+}
+
+const CONNECT_ERROR_RULES: ReadonlyArray<{ pattern: RegExp; failure: ConnectFailure }> = [
+  { pattern: /already registered/i, failure: { isAlreadyConnected: false, text: OTHER_ACCOUNT_MESSAGE } },
+  { pattern: /already connected/i, failure: { isAlreadyConnected: true, text: ALREADY_CONNECTED_MESSAGE } },
+  { pattern: /only transaction participants/i, failure: { isAlreadyConnected: false, text: NOT_PARTICIPANT_MESSAGE } },
+];
+
+export function describeConnectError(err: unknown): ConnectFailure {
+  const raw = err instanceof Error ? err.message : '';
+  if (raw === INACTIVE_ASSISTANT_MESSAGE) return { isAlreadyConnected: false, text: raw };
+  const rule = CONNECT_ERROR_RULES.find((r) => r.pattern.test(raw));
+  return rule ? rule.failure : { isAlreadyConnected: false, text: CONNECT_FALLBACK_MESSAGE };
+}
 
 export function assistantLabel(clientId: string | null): string {
   if (!clientId) return 'AI assistant';

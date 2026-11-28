@@ -19,6 +19,7 @@ vi.mock('../icp.service', () => ({
 import {
   assistantConnectService,
   assistantLabel,
+  describeConnectError,
   INACTIVE_ASSISTANT_MESSAGE,
 } from '../assistantConnect.service';
 
@@ -48,6 +49,12 @@ describe('assistantConnectService.listMyActiveAssistants', () => {
 
   it('should return an active, unexpired grant labelled from its client id', async () => {
     getMyAgentGrants.mockResolvedValue([grant({ expiresAt: [NOW_NS + 1n] })]);
+    const result = await assistantConnectService.listMyActiveAssistants(NOW_MS);
+    expect(result).toEqual([{ principal: agent.toText(), label: 'claude.ai' }]);
+  });
+
+  it('should offer an active grant that has no expiry date', async () => {
+    getMyAgentGrants.mockResolvedValue([grant({ expiresAt: [] })]);
     const result = await assistantConnectService.listMyActiveAssistants(NOW_MS);
     expect(result).toEqual([{ principal: agent.toText(), label: 'claude.ai' }]);
   });
@@ -111,5 +118,37 @@ describe('assistantConnectService.connectToDeal', () => {
     getBotAgent.mockResolvedValue([{ isActive: true }]);
     connectBot.mockResolvedValue({ err: 'Only transaction participants can connect a bot' });
     await expect(assistantConnectService.connectToDeal('tx1', assistant)).rejects.toThrow('Only transaction participants can connect a bot');
+  });
+});
+
+describe('describeConnectError', () => {
+  it('should say the assistant belongs to another account when the bot is already registered', () => {
+    const failure = describeConnectError(new Error('Bot principal is already registered'));
+    expect(failure).toEqual({
+      isAlreadyConnected: false,
+      text: "This assistant is linked to a different PropXchain account, so it can't be added here.",
+    });
+  });
+
+  it('should treat an already connected bot as already on the deal', () => {
+    const failure = describeConnectError(new Error('Bot is already connected to this transaction'));
+    expect(failure).toEqual({ isAlreadyConnected: true, text: 'That assistant is already on this deal.' });
+  });
+
+  it('should say only people on the deal can add an assistant when the caller is not a participant', () => {
+    const failure = describeConnectError(new Error('Only transaction participants can connect a bot'));
+    expect(failure).toEqual({ isAlreadyConnected: false, text: 'Only people on this deal can add an assistant.' });
+  });
+
+  it('should keep the switched-off message as written', () => {
+    const failure = describeConnectError(new Error(INACTIVE_ASSISTANT_MESSAGE));
+    expect(failure).toEqual({ isAlreadyConnected: false, text: INACTIVE_ASSISTANT_MESSAGE });
+  });
+
+  it('should fall back to a generic retry message for an unknown error or a non-Error value', () => {
+    const fallback = { isAlreadyConnected: false, text: "Couldn't add the assistant. Please try again." };
+    expect(describeConnectError(new Error('IC0503: canister trapped'))).toEqual(fallback);
+    expect(describeConnectError('boom')).toEqual(fallback);
+    expect(describeConnectError(undefined)).toEqual(fallback);
   });
 });

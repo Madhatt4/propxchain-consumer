@@ -13,7 +13,8 @@ vi.mock('../../../services/botConnection.service', () => ({
   },
 }));
 
-vi.mock('../../../services/assistantConnect.service', () => ({
+vi.mock('../../../services/assistantConnect.service', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../../services/assistantConnect.service')>()),
   assistantConnectService: {
     listMyActiveAssistants: (...a: unknown[]) => listMyActiveAssistants(...a),
     connectToDeal: (...a: unknown[]) => connectToDeal(...a),
@@ -82,13 +83,49 @@ describe('BotPanelCard', () => {
     expect(getTransactionBots).toHaveBeenCalledTimes(2);
   });
 
-  it('shows the canister error text when connecting is refused', async () => {
+  it('shows plain English instead of the canister text when the assistant belongs to another account', async () => {
     getTransactionBots.mockResolvedValue([]);
     listMyActiveAssistants.mockResolvedValue([claudeGrant]);
     connectToDeal.mockRejectedValue(new Error('Bot principal is already registered'));
     render(<BotPanelCard transactionId="tx1" />);
     fireEvent.click(await screen.findByRole('button', { name: /add to this deal/i }));
-    await screen.findByText('Bot principal is already registered');
+    await screen.findByText(/linked to a different PropXchain account/i);
+    expect(screen.queryByText('Bot principal is already registered')).toBeNull();
+  });
+
+  it('refreshes the list and says the assistant is already on the deal when the canister says already connected', async () => {
+    getTransactionBots.mockResolvedValueOnce([]).mockResolvedValueOnce([{ ...ownBot, principal: claudeGrant.principal }]);
+    listMyActiveAssistants.mockResolvedValue([claudeGrant]);
+    connectToDeal.mockRejectedValue(new Error('Bot is already connected to this transaction'));
+    render(<BotPanelCard transactionId="tx1" />);
+    fireEvent.click(await screen.findByRole('button', { name: /add to this deal/i }));
+    await screen.findByText('That assistant is already on this deal.');
+    expect(getTransactionBots).toHaveBeenCalledTimes(2);
+  });
+
+  it('shows the generic retry message for an unknown connect error', async () => {
+    getTransactionBots.mockResolvedValue([]);
+    listMyActiveAssistants.mockResolvedValue([claudeGrant]);
+    connectToDeal.mockRejectedValue(new Error('IC0503: canister trapped'));
+    render(<BotPanelCard transactionId="tx1" />);
+    fireEvent.click(await screen.findByRole('button', { name: /add to this deal/i }));
+    await screen.findByText("Couldn't add the assistant. Please try again.");
+  });
+
+  it('disables Remove while an assistant is being added', async () => {
+    let finishAdd: () => void = () => undefined;
+    getTransactionBots.mockResolvedValue([ownBot]);
+    listMyActiveAssistants.mockResolvedValue([claudeGrant]);
+    connectToDeal.mockReturnValue(new Promise<void>((resolve) => { finishAdd = resolve; }));
+    render(<BotPanelCard transactionId="tx1" />);
+    const addButton = await screen.findByRole('button', { name: /add to this deal/i });
+    expect(screen.getByRole('button', { name: /^remove$/i }).hasAttribute('disabled')).toBe(false);
+
+    fireEvent.click(addButton);
+
+    await waitFor(() => expect(screen.getByRole('button', { name: /^remove$/i }).hasAttribute('disabled')).toBe(true));
+    finishAdd();
+    await waitFor(() => expect(screen.getByRole('button', { name: /^remove$/i }).hasAttribute('disabled')).toBe(false));
   });
 
   it('shows Remove only on bots the user owns, even though addedBy is the bot', async () => {

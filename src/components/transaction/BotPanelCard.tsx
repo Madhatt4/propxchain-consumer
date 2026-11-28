@@ -4,7 +4,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Bot } from 'lucide-react';
 import { botConnectionService, type BotConnectionInfo } from '../../services/botConnection.service';
-import { assistantConnectService, type AssistantGrant } from '../../services/assistantConnect.service';
+import { assistantConnectService, describeConnectError, type AssistantGrant } from '../../services/assistantConnect.service';
 import { canRemoveBot } from '../../services/botOwnership';
 import { useAuthStore } from '../../stores/authStore';
 import ConnectedBotItem from './ConnectedBotItem';
@@ -39,12 +39,13 @@ async function loadAssistantsOrEmpty(): Promise<AssistantGrant[]> {
   }
 }
 
+type BusyState = { action: 'add'; principal: string } | { action: 'remove' } | null;
+
 function useBotPanel(transactionId: string) {
   const [bots, setBots] = useState<BotConnectionInfo[] | null>(null);
   const [assistants, setAssistants] = useState<AssistantGrant[]>([]);
   const [confirming, setConfirming] = useState<string | null>(null);
-  const [isBusy, setIsBusy] = useState(false);
-  const [addingPrincipal, setAddingPrincipal] = useState<string | null>(null);
+  const [busy, setBusy] = useState<BusyState>(null);
   const [message, setMessage] = useState<PanelMessage | null>(null);
 
   const load = useCallback(async (): Promise<void> => {
@@ -53,12 +54,10 @@ function useBotPanel(transactionId: string) {
     setAssistants(grants);
   }, [transactionId]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  useEffect(() => void load(), [load]);
 
   const remove = async (bot: BotConnectionInfo): Promise<void> => {
-    setIsBusy(true);
+    setBusy({ action: 'remove' });
     setMessage(null);
     try {
       await botConnectionService.disconnectBot(transactionId, bot.principal);
@@ -68,25 +67,28 @@ function useBotPanel(transactionId: string) {
     } catch (err) {
       setMessage({ kind: 'err', text: errorText(err, 'Could not remove the assistant. Try again.') });
     } finally {
-      setIsBusy(false);
+      setBusy(null);
     }
   };
 
   const add = async (assistant: AssistantGrant): Promise<void> => {
-    setAddingPrincipal(assistant.principal);
+    setBusy({ action: 'add', principal: assistant.principal });
     setMessage(null);
     try {
       await assistantConnectService.connectToDeal(transactionId, assistant);
       setMessage({ kind: 'ok', text: `${assistant.label} added to this deal. This is recorded in the audit trail.` });
       await load();
     } catch (err) {
-      setMessage({ kind: 'err', text: errorText(err, 'Could not add the assistant. Try again.') });
+      const failure = describeConnectError(err);
+      setMessage({ kind: failure.isAlreadyConnected ? 'ok' : 'err', text: failure.text });
+      if (failure.isAlreadyConnected) await load();
     } finally {
-      setAddingPrincipal(null);
+      setBusy(null);
     }
   };
 
-  return { bots, assistants, confirming, setConfirming, isBusy, addingPrincipal, message, remove, add };
+  const addingPrincipal = busy?.action === 'add' ? busy.principal : null;
+  return { bots, assistants, confirming, setConfirming, isBusy: busy !== null, addingPrincipal, message, remove, add };
 }
 
 const PanelStatus: React.FC<{ message: PanelMessage }> = ({ message }) => (
@@ -100,6 +102,38 @@ const PanelStatus: React.FC<{ message: PanelMessage }> = ({ message }) => (
   >
     {message.text}
   </p>
+);
+
+type BotPanel = ReturnType<typeof useBotPanel>;
+
+const PanelHeader: React.FC<{ hasBots: boolean }> = ({ hasBots }) => (
+  <>
+    <div className="flex items-center gap-2 mb-1">
+      <Bot className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden="true" />
+      <h3 className="text-sm font-semibold text-stone-900 dark:text-stone-100 font-['DM_Sans']">AI assistants</h3>
+    </div>
+    <p className="text-xs text-stone-500 dark:text-stone-400 mb-3 font-['DM_Sans']">
+      {hasBots ? 'Assistants connected to this transaction.' : 'No assistants are connected to this transaction.'}
+    </p>
+  </>
+);
+
+const ConnectedBotList: React.FC<{ panel: BotPanel; bots: BotConnectionInfo[]; me: string }> = ({ panel, bots, me }) => (
+  <ul className="space-y-2">
+    {bots.map((bot) => (
+      <ConnectedBotItem
+        key={bot.principal}
+        bot={bot}
+        me={me}
+        canRemove={canRemoveBot(bot, me)}
+        isConfirming={panel.confirming === bot.principal}
+        isBusy={panel.isBusy}
+        onAskRemove={() => panel.setConfirming(bot.principal)}
+        onCancel={() => panel.setConfirming(null)}
+        onRemove={() => void panel.remove(bot)}
+      />
+    ))}
+  </ul>
 );
 
 const BotPanelCard: React.FC<BotPanelCardProps> = ({ transactionId }) => {
@@ -116,38 +150,14 @@ const BotPanelCard: React.FC<BotPanelCardProps> = ({ transactionId }) => {
       className="rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-[#0c1424] p-4"
       data-testid="bot-panel"
     >
-      <div className="flex items-center gap-2 mb-1">
-        <Bot className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden="true" />
-        <h3 className="text-sm font-semibold text-stone-900 dark:text-stone-100 font-['DM_Sans']">AI assistants</h3>
-      </div>
-      <p className="text-xs text-stone-500 dark:text-stone-400 mb-3 font-['DM_Sans']">
-        {panel.bots.length > 0 ? 'Assistants connected to this transaction.' : 'No assistants are connected to this transaction.'}
-      </p>
-
+      <PanelHeader hasBots={panel.bots.length > 0} />
       {panel.message && <PanelStatus message={panel.message} />}
-
-      {panel.bots.length > 0 && (
-        <ul className="space-y-2">
-          {panel.bots.map((bot) => (
-            <ConnectedBotItem
-              key={bot.principal}
-              bot={bot}
-              me={me}
-              canRemove={canRemoveBot(bot, me)}
-              isConfirming={panel.confirming === bot.principal}
-              isBusy={panel.isBusy}
-              onAskRemove={() => panel.setConfirming(bot.principal)}
-              onCancel={() => panel.setConfirming(null)}
-              onRemove={() => void panel.remove(bot)}
-            />
-          ))}
-        </ul>
-      )}
-
+      {panel.bots.length > 0 && <ConnectedBotList panel={panel} bots={panel.bots} me={me} />}
       {!isEveryAssistantConnected && (
         <ConnectAssistantSection
           assistants={notYetConnected}
           addingPrincipal={panel.addingPrincipal}
+          isBusy={panel.isBusy}
           onAdd={(a) => void panel.add(a)}
         />
       )}

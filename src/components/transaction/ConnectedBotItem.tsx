@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Copyright (C) 2025 PropXchain Ltd
+// Copyright (C) 2026 PropXchain Ltd
 
 import React from 'react';
 import { Loader2, Unplug } from 'lucide-react';
@@ -79,8 +79,9 @@ const ConnectedBotItem: React.FC<ConnectedBotItemProps> = ({
       {canRemove ? (
         <button
           type="button"
+          disabled={isBusy}
           onClick={onAskRemove}
-          className="shrink-0 inline-flex items-center gap-1 text-xs rounded-md border border-red-600/50 text-red-600 dark:text-red-400 px-2 py-1 hover:bg-red-50 dark:hover:bg-red-900/30"
+          className="shrink-0 inline-flex items-center gap-1 text-xs rounded-md border border-red-600/50 text-red-600 dark:text-red-400 px-2 py-1 hover:bg-red-50 dark:hover:bg-red-900/30 disabled:opacity-60"
         >
           <Unplug className="w-3.5 h-3.5" aria-hidden="true" /> Remove
         </button>

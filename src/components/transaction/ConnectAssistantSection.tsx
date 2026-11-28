@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Copyright (C) 2025 PropXchain Ltd
+// Copyright (C) 2026 PropXchain Ltd
 
 import React from 'react';
 import { Loader2, Plus } from 'lucide-react';
@@ -10,6 +10,7 @@ export const CONNECTOR_URL = 'https://mcp.propxchain.com/mcp';
 interface ConnectAssistantSectionProps {
   assistants: AssistantGrant[];
   addingPrincipal: string | null;
+  isBusy: boolean;
   onAdd: (assistant: AssistantGrant) => void;
 }
 
@@ -17,7 +18,7 @@ function shortPrincipal(principal: string): string {
   return principal.length > 13 ? `${principal.slice(0, 5)}…${principal.slice(-5)}` : principal;
 }
 
-const ConnectAssistantSection: React.FC<ConnectAssistantSectionProps> = ({ assistants, addingPrincipal, onAdd }) => (
+const ConnectAssistantSection: React.FC<ConnectAssistantSectionProps> = ({ assistants, addingPrincipal, isBusy, onAdd }) => (
   <div className="mt-3 pt-3 border-t border-stone-200 dark:border-stone-700" data-testid="connect-assistant">
     <p className="text-xs font-semibold text-stone-900 dark:text-stone-100 mb-1 font-['DM_Sans']">Connect your AI assistant</p>
     {assistants.length === 0 ? (
@@ -39,7 +40,7 @@ const ConnectAssistantSection: React.FC<ConnectAssistantSectionProps> = ({ assis
             </div>
             <button
               type="button"
-              disabled={addingPrincipal !== null}
+              disabled={isBusy}
               onClick={() => onAdd(assistant)}
               className="shrink-0 inline-flex items-center gap-1 text-xs rounded-md border border-teal-600/50 text-teal-700 dark:text-teal-300 px-2 py-1 hover:bg-teal-50 dark:hover:bg-teal-900/30 disabled:opacity-60"
             >
