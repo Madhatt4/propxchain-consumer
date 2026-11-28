@@ -19,7 +19,8 @@ ID and secret blank. The client discovers the rest and opens the consent page.
 
 ## Discover (two hops)
 
-1. Call the MCP endpoint without a credential. The `401` carries
+1. Call a tool on the MCP endpoint without a credential (`initialize` and
+   `tools/list` answer without one). The `401` carries
    `WWW-Authenticate: Bearer resource_metadata="https://mcp.propxchain.com/.well-known/oauth-protected-resource/mcp"`.
 2. Fetch that Protected Resource Metadata (RFC 9728), then the authorization
    server metadata it names:
