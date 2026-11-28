@@ -125,6 +125,20 @@ describe('PublicListingPage', () => {
     expect(document.body.innerHTML).not.toContain('transaction_id');
   });
 
+  it('offers a viewing request on a property that is for sale or under offer', async () => {
+    mockGetPublicBySlug.mockResolvedValue(makeRecord({ status: 'under_offer' }));
+    renderPage();
+    expect(await screen.findByRole('heading', { name: 'Request a viewing' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Request a viewing' })).toBeInTheDocument();
+  });
+
+  it('offers no viewing request once a property is sold subject to contract', async () => {
+    mockGetPublicBySlug.mockResolvedValue(makeRecord({ status: 'sold_stc' }));
+    renderPage();
+    await screen.findByText('Sold STC');
+    expect(screen.queryByRole('heading', { name: 'Request a viewing' })).not.toBeInTheDocument();
+  });
+
   it('shows a status ribbon for a sold_stc listing and no Enquire link', async () => {
     mockGetPublicBySlug.mockResolvedValue(makeRecord({ status: 'sold_stc' }));
     renderPage();
