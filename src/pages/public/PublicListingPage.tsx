@@ -14,6 +14,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import { estateAgentListingsService } from '@/services/estateAgentListings.service';
 import { MaterialInfoPanel } from '@/components/public/MaterialInfoPanel';
+import { RequestViewingForm } from '@/components/public/RequestViewingForm';
 import {
   StatusRibbon,
   PhotoStrip,
@@ -24,6 +25,9 @@ import {
   formatGbp,
 } from '@/components/public/PublicListingSections';
 import type { PublicListingRecord } from '@/services/estateAgentListings.service';
+import type { AgentListingStatus } from '@/types/estateAgentListing.types';
+
+const CAN_BE_VIEWED: readonly AgentListingStatus[] = ['for_sale', 'under_offer'];
 
 function CenteredMessage({ children }: { children: React.ReactNode }): JSX.Element {
   return <div className="mx-auto max-w-3xl px-6 py-12 text-center">{children}</div>;
@@ -104,6 +108,7 @@ function ListingBody({ record }: { record: PublicListingRecord }): JSX.Element {
       </div>
       <div className="mt-6 space-y-4">
         <AgencyCard agencyName={record.agency_name} agencyBranch={record.agency_branch} />
+        {record.slug && CAN_BE_VIEWED.includes(record.status) && <RequestViewingForm key={record.slug} slug={record.slug} agencyName={record.agency_name} />}
         <PropXchainReadyBadge />
       </div>
     </article>
