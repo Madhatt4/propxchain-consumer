@@ -914,8 +914,8 @@ export default function TransactionFlowPage(): ReactElement {
               )
             )}
 
-            {/* AI assistants connected to this deal, with Remove for the
-                bots this user owns. Hidden when none are connected. */}
+            {/* AI assistants on this deal: Remove for the bots this user
+                owns, and Add for the user's own connected assistants. */}
             {id && <BotPanelCard transactionId={id} />}
 
             {/* Help panel (shown when ? is clicked) */}
