@@ -40,13 +40,16 @@ the OAuth client ID and secret blank. The client discovers the rest
 
 Two hops.
 
-**2a. Call the MCP endpoint without a credential.** You get a `401` pointing
-at the PRM:
+**2a. Call a tool without a credential.** `initialize` and `tools/list`
+answer without one, so you can read the tool list first. A `tools/call`
+without a credential gets a `401` pointing at the PRM:
 
 ```http
 POST https://mcp.propxchain.com/mcp
 Content-Type: application/json
 Accept: application/json, text/event-stream
+
+{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"propxchain_list_my_transactions","arguments":{}}}
 ```
 ```http
 HTTP/1.1 401 Unauthorized

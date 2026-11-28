@@ -111,7 +111,7 @@
     "protectedResourceMetadata": "https://mcp.propxchain.com/.well-known/oauth-protected-resource/mcp",
     "httpGateway": "https://mcp.propxchain.com/mcp",
     "transport": "streamable-http",
-    "description": "MCP clients connect to the httpGateway with OAuth 2.1 (authorization code + PKCE S256, Client ID Metadata Documents, public client); see auth.md. An unauthenticated call returns 401 with WWW-Authenticate pointing at the protectedResourceMetadata. The user approves with their PropXchain email and a one-time code, which grants every scope; the on-chain consent checkpoint still gates money and legal actions. auth.md self-registration was retired on 2026-09-17.",
+    "description": "MCP clients connect to the httpGateway with OAuth 2.1 (authorization code + PKCE S256, Client ID Metadata Documents, public client); see auth.md. initialize and tools/list answer without a token, so the tool list is public; a tool call without a token returns 401 with WWW-Authenticate pointing at the protectedResourceMetadata. The user approves with their PropXchain email and a one-time code, which grants every scope; the on-chain consent checkpoint still gates money and legal actions. auth.md self-registration was retired on 2026-09-17.",
     "tiers": {
       "read_only": ["chain:read", "tx:read", "panel:read", "quote:read"],
       "consequential": ["aml:write", "conveyancer:instruct", "exchange:confirm", "completion:funds"]

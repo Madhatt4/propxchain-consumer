@@ -1612,7 +1612,7 @@ PropXchain runs a live, hosted MCP (Model Context Protocol) server. Any MCP clie
 
 - URL: https://mcp.propxchain.com/mcp
 - Transport: Streamable HTTP
-- Auth: OAuth 2.1 (authorization code + PKCE S256, Client ID Metadata Documents, public client). An unauthenticated call returns 401 with `WWW-Authenticate: Bearer resource_metadata="https://mcp.propxchain.com/.well-known/oauth-protected-resource/mcp"`; the authorization server is https://auth.propxchain.com. Full flow: https://propxchain.com/auth.md
+- Auth: OAuth 2.1 (authorization code + PKCE S256, Client ID Metadata Documents, public client). initialize and tools/list answer without a token (the tool list is public); a tool call without a token returns 401 with `WWW-Authenticate: Bearer resource_metadata="https://mcp.propxchain.com/.well-known/oauth-protected-resource/mcp"`; the authorization server is https://auth.propxchain.com. Full flow: https://propxchain.com/auth.md
 - claude.ai / Claude Desktop: Settings, Connectors, Add custom connector, paste the URL, leave client ID and secret blank.
 - Claude Code: `claude mcp add --transport http propxchain https://mcp.propxchain.com/mcp`
 - Local alternative: `npm install -g @propxchain/mcp-server` (stdio, generates its own Ed25519 keypair). Source: https://github.com/Madhatt4/propxchain-mcp-server
