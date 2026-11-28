@@ -2,8 +2,8 @@
 // Copyright (C) 2026 PropXchain Ltd
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { PropertyListing } from '@/types/listing.types';
 import type { PublicListingRecord } from '@/services/estateAgentListings.service';
@@ -130,6 +130,29 @@ describe('PublicListingPage', () => {
     renderPage();
     expect(await screen.findByRole('heading', { name: 'Request a viewing' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Request a viewing' })).toBeInTheDocument();
+  });
+
+  it('starts a fresh viewing request when the page moves to another property', async () => {
+    mockGetPublicBySlug.mockImplementation((slug) => Promise.resolve(makeRecord({ slug })));
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: Infinity } } });
+    queryClient.setQueryData(['public-listing', 'second-home'], makeRecord({ slug: 'second-home' }));
+    function NextProperty(): JSX.Element {
+      const navigate = useNavigate();
+      return <button type="button" onClick={() => navigate('/property/second-home')}>Next property</button>;
+    }
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/property/first-home']}>
+          <NextProperty />
+          <Routes>
+            <Route path="/property/:slug" element={<PublicListingPage />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    fireEvent.change(await screen.findByLabelText('Your name'), { target: { value: 'Jane Smith' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Next property' }));
+    await waitFor(() => expect(screen.getByLabelText('Your name')).toHaveValue(''));
   });
 
   it('offers no viewing request once a property is sold subject to contract', async () => {

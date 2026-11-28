@@ -108,7 +108,7 @@ function ListingBody({ record }: { record: PublicListingRecord }): JSX.Element {
       </div>
       <div className="mt-6 space-y-4">
         <AgencyCard agencyName={record.agency_name} agencyBranch={record.agency_branch} />
-        {record.slug && CAN_BE_VIEWED.includes(record.status) && <RequestViewingForm slug={record.slug} agencyName={record.agency_name} />}
+        {record.slug && CAN_BE_VIEWED.includes(record.status) && <RequestViewingForm key={record.slug} slug={record.slug} agencyName={record.agency_name} />}
         <PropXchainReadyBadge />
       </div>
     </article>
